@@ -67,6 +67,14 @@ jobs:
         run: |
           $bundle = (Resolve-Path bundle).Path
           $smoke = (Resolve-Path tools/windows-smoke).Path
+          Start-Service docker -ErrorAction Stop
+          $deadline = [DateTime]::UtcNow.AddSeconds(60)
+          do {
+            docker version --format '{{.Server.Version}}' 2>$null
+            if ($LASTEXITCODE -eq 0) { break }
+            if ([DateTime]::UtcNow -ge $deadline) { throw 'Windows container engine did not start.' }
+            Start-Sleep -Seconds 2
+          } while ($true)
           docker run --rm --isolation=process --network=none --user ContainerAdministrator `
             --mount "type=bind,source=$bundle,target=C:\bundle,readonly" `
             --mount "type=bind,source=$smoke,target=C:\smoke,readonly" `
