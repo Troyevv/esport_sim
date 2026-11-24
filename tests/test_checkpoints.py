@@ -144,3 +144,28 @@ def test_invalid_slot_rolls_back_both_checkpoints(tmp_path, damage):
     assert bodies(db) == before
     assert list(db.execute("SELECT * FROM round_log")) == blocks
     db.close()
+
+
+def test_desktop_reports_failed_migration_before_browser_handoff(tmp_path, monkeypatch):
+    import asyncio
+    import socket
+    import sys
+    from backend.desktop import serve
+
+    path = restore(tmp_path, "67e384f")
+    db = sqlite3.connect(path)
+    db.execute("DELETE FROM round_log")
+    db.commit()
+    db.close()
+    monkeypatch.setattr(sys, "_MEIPASS", tmp_path, raising=False)
+    index = tmp_path / "frontend" / "dist" / "index.html"
+    index.parent.mkdir(parents=True)
+    index.touch()  # The launcher checks the bundle before starting the database.
+    descriptor = tmp_path / "instance.json"
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        with pytest.raises(RuntimeError, match="журнал раунда 1"):
+            asyncio.run(
+                serve(tmp_path, descriptor, listener, lambda url: pytest.fail(url))
+            )
+    assert not descriptor.exists()
