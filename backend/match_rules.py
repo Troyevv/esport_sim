@@ -1,25 +1,75 @@
 """Versioned balance for the fictional Depo BO1 exhibition, in 100 ms ticks."""
 
 from dataclasses import dataclass
+
 from . import engine
 
 VERSION = "depo-bo1.1"
-RULES = dict(half=12, overtimeHalf=3, freeze=45, live=1150, fuse=400,
-             plant=32, defuse=100, kitDefuse=50, result=35, timeouts=3,
-             startMoney=800, overtimeMoney=10000, cap=16000, win=3250,
-             objectiveWin=3500, lossBase=1400, lossStep=500, lossMax=3400,
-             plantBonus=800, planter=300, defuser=300)
+RULES = dict(
+    half=12,
+    overtimeHalf=3,
+    freeze=45,
+    live=1150,
+    fuse=400,
+    plant=32,
+    defuse=100,
+    kitDefuse=50,
+    result=35,
+    timeouts=3,
+    startMoney=800,
+    overtimeMoney=10000,
+    cap=16000,
+    win=3250,
+    objectiveWin=3500,
+    lossBase=1400,
+    lossStep=500,
+    lossMax=3400,
+    plantBonus=800,
+    planter=300,
+    defuser=300,
+)
 CLUBS = ("Север", "Контур")
 ROLES = ("Капитан", "Энтри", "Опора", "Снайпер", "Поддержка")
-MAP = dict(engine.MAP, version=2, zones=[dict(name="A", **engine._rect(22, 1, 4, 3)),
-                                       dict(name="B", **engine._rect(20, 15, 3, 4))])
+MAP = dict(
+    engine.MAP,
+    version=2,
+    zones=[
+        dict(name="A", **engine._rect(22, 1, 4, 3)),
+        dict(name="B", **engine._rect(20, 15, 3, 4)),
+    ],
+)
 # Ordered execution slots. Attack positions also serve as post-plant cover.
 POSITIONS = {
     "A": [(235, 35), (225, 45), (255, 25), (195, 45), (245, 45)],
     "B": [(215, 165), (205, 155), (225, 175), (195, 185), (235, 165)],
 }
-STAGING = {"A": [(155, 55), (165, 65), (155, 65), (145, 55), (165, 55)],
-           "B": [(155, 145), (165, 135), (155, 155), (135, 145), (165, 145)]}
+STAGING = {
+    "A": [(155, 55), (165, 65), (155, 65), (145, 55), (165, 55)],
+    "B": [(155, 145), (165, 135), (155, 155), (135, 145), (165, 145)],
+}
+
+
+# The built-in plans bind five role slots to walkable approach and hold points.
+# Mirrored pairs take different corridors before converging on the announced site.
+APPROACH = {
+    "A": [(145, 55), (105, 15), (125, 65), (105, 25), (145, 65)],
+    "B": [(145, 145), (125, 185), (145, 155), (135, 185), (135, 145)],
+}
+
+
+def role_orders(side, site):
+    slots = []
+    for slot in range(5):
+        anchor = site if side == "T" or slot == 4 else ("A" if slot in (0, 2) else "B")
+        slots.append(
+            dict(
+                role=ROLES[slot],
+                approach=list(APPROACH[anchor][slot]),
+                stage=list(STAGING[anchor][slot]),
+                hold=list(POSITIONS[anchor][slot]),
+            )
+        )
+    return dict(version=1, map=MAP["id"], geometry=MAP["version"], slots=slots)
 
 
 @dataclass(frozen=True)

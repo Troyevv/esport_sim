@@ -18,8 +18,10 @@ class Conflict(ValueError):
 def validate_snapshot(state):
     world = state.get("world", {})
     model = (world.get("version"), world.get("map_version"), world.get("rules"))
-    supported = ((engine.VERSION, engine.MAP["version"], None),
-                 (2, match.MAP["version"], match.VERSION))
+    supported = (
+        (engine.VERSION, engine.MAP["version"], None),
+        (2, match.MAP["version"], match.VERSION),
+    )
     if state.get("version") != 1 or model not in supported:
         raise Conflict("Несовместимая версия снимка, ядра или геометрии")
 
@@ -84,7 +86,9 @@ class Store:
             for events in world["archive"]:
                 body = json.dumps(events, ensure_ascii=False, separators=(",", ":"))
                 digest = hashlib.sha256(body.encode()).hexdigest()
-                self.db.execute("INSERT OR IGNORE INTO round_log VALUES(?,?)", (digest, body))
+                self.db.execute(
+                    "INSERT OR IGNORE INTO round_log VALUES(?,?)", (digest, body)
+                )
                 world.setdefault("logs", []).append(digest)
             world["archive"] = []
         self.db.execute(
@@ -126,8 +130,14 @@ class Store:
                 # Backfill a slow subscriber only across contiguous batches of
                 # the same playback speed. Otherwise send a fresh projection.
                 batch_size = end - start
-                for prior_context, left, right, batch in reversed(list(self.motion)[:-1]):
-                    if prior_context != context or right != start or right - left != batch_size:
+                for prior_context, left, right, batch in reversed(
+                    list(self.motion)[:-1]
+                ):
+                    if (
+                        prior_context != context
+                        or right != start
+                        or right - left != batch_size
+                    ):
                         break
                     start, samples = left, batch + samples
                     if start <= previous[1]:
@@ -137,7 +147,9 @@ class Store:
                 tracks = {}
                 for agent in world["agents"]:
                     ident = agent["id"]
-                    if all(view == "full" or view in sample[ident][1] for sample in samples):
+                    if all(
+                        view == "full" or view in sample[ident][1] for sample in samples
+                    ):
                         tracks[ident] = [sample[ident][0] for sample in samples]
                 world["motion"] = {"startTick": start, "tracks": tracks}
         return state
@@ -168,11 +180,18 @@ class Store:
                 )
             kind, value = command["kind"], command.get("value")
             if kind in ("start", "pause"):
-                if kind == "start" and state["world"].get("phase") in ("finished", "timeout"):
+                if kind == "start" and state["world"].get("phase") in (
+                    "finished",
+                    "timeout",
+                ):
                     raise ValueError("Просмотр остановлен на границе матча")
                 state["running"] = kind == "start"
             elif kind == "speed":
-                if value not in ((1, 2, 4, 8, 128) if state["world"]["version"] == 2 else (1, 2, 4, 8)):
+                if value not in (
+                    (1, 2, 4, 8, 128)
+                    if state["world"]["version"] == 2
+                    else (1, 2, 4, 8)
+                ):
                     raise ValueError("Недопустимая скорость")
                 state["speed"] = value
             elif kind == "save":
@@ -203,7 +222,10 @@ class Store:
                 if type(value) is not int or not 0 <= value <= 2147483647:
                     raise ValueError("Seed должен быть целым числом от 0 до 2147483647")
                 state.update(
-                    world=(match if kind == "match" else engine).initial(value), running=False, speed=1, context=str(uuid4())
+                    world=(match if kind == "match" else engine).initial(value),
+                    running=False,
+                    speed=min(8, state["speed"]) if kind == "reset" else 1,
+                    context=str(uuid4()),
                 )
             else:
                 raise ValueError("Неизвестная команда")

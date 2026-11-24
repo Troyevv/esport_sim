@@ -1,21 +1,58 @@
 """Autonomous BO1. The same step drives the home server and headless matches."""
 
 from math import atan2
-from . import engine, match_ai as ai
-from .match_events import emit, money
-from .match_rules import CALLS, CLUBS, MAP, PRICES, ROLES, RULES, VERSION, WEAPONS
+
+from . import engine
+from . import match_ai as ai
+from .match_events import damage, emit, money
+from .match_rules import (
+    CALLS,
+    CLUBS,
+    MAP,
+    PRICES,
+    ROLES,
+    RULES,
+    VERSION,
+    WEAPONS,
+    role_orders,
+)
 
 
 def initial(seed):
     w = engine.initial(seed)
-    w.update(version=2, map_version=MAP["version"], rules=VERSION, round=0, serial=0,
-             score=[0,0], history=[], archive=[], events=[], stats={}, streak=[0,0],
-             remaining=RULES["timeouts"], pending=False, call=None, feedback=[])
-    for i,a in enumerate(w["agents"]):
-        a.update(club=i//5, slot=i%5, role=ROLES[i%5], aim=64+engine._draw(a)%25,
-                 reaction=62+engine._draw(a)%27, comms=60+engine._draw(a)%30,
-                 tactics=62+engine._draw(a)%29, cash=0, hp=0, evidence=None)
-        w["stats"][a["id"]] = dict(k=0,d=0,a=0,hs=0,damage=0,opening=0,kast=0,spent=0,clutches=0)
+    w.update(
+        version=2,
+        map_version=MAP["version"],
+        rules=VERSION,
+        round=0,
+        serial=0,
+        score=[0, 0],
+        history=[],
+        archive=[],
+        events=[],
+        stats={},
+        streak=[0, 0],
+        remaining=RULES["timeouts"],
+        pending=False,
+        call=None,
+        feedback=[],
+    )
+    for i, a in enumerate(w["agents"]):
+        a.update(
+            club=i // 5,
+            slot=i % 5,
+            role=ROLES[i % 5],
+            aim=64 + engine._draw(a) % 25,
+            reaction=62 + engine._draw(a) % 27,
+            comms=60 + engine._draw(a) % 30,
+            tactics=62 + engine._draw(a) % 29,
+            cash=0,
+            hp=0,
+            evidence=None,
+        )
+        w["stats"][a["id"]] = dict(
+            k=0, d=0, a=0, hs=0, damage=0, opening=0, kast=0, spent=0, clutches=0
+        )
     next_round(w)
     return w
 
@@ -25,325 +62,651 @@ def next_round(w):
         w["archive"].append(w["events"])
     n = w["round"] + 1
     half, ot = RULES["half"], RULES["overtimeHalf"]
-    period = (n-1)//half if n<=2*half else 2+(n-1-2*half)//ot
-    reset = n in (1,half+1) or (n>2*half and (n-1-2*half)%ot==0)
-    w.update(round=n, phase="freeze", deadline=w["tick"]+RULES["freeze"], events=[], action=None,
-             bomb=dict(carrier=None,site=None,x=None,y=None), effects=[], recentEffects=[], traces=[], messages=[],
-             kills=[], plans={}, clutch={}, roundStart=w["tick"])
+    period = (n - 1) // half if n <= 2 * half else 2 + (n - 1 - 2 * half) // ot
+    reset = n in (1, half + 1) or (n > 2 * half and (n - 1 - 2 * half) % ot == 0)
+    w.update(
+        round=n,
+        phase="freeze",
+        deadline=w["tick"] + RULES["freeze"],
+        events=[],
+        action=None,
+        bomb=dict(carrier=None, site=None, x=None, y=None),
+        effects=[],
+        recentEffects=[],
+        traces=[],
+        messages=[],
+        kills=[],
+        plans={},
+        clutch={},
+        roundStart=w["tick"],
+    )
     if reset:
-        w["streak"] = [0,0]
+        w["streak"] = [0, 0]
     for a in w["agents"]:
-        side = "T" if (a["club"]+period)%2==0 else "CT"
+        side = "T" if (a["club"] + period) % 2 == 0 else "CT"
         slot = a["slot"]
-        x,y = engine._center(engine._SPAWN_CELLS[side][slot])
+        x, y = engine._center(engine._SPAWN_CELLS[side][slot])
         if reset or not a["hp"]:
-            a.update(weapon="Glock" if side=="T" else "USP",armor=0,kit=False,utility=[])
+            a.update(
+                weapon="Glock" if side == "T" else "USP", armor=0, kit=False, utility=[]
+            )
         if reset:
-            a["team"]=side
-            money(w,a,(RULES["startMoney"] if n<=2*half else RULES["overtimeMoney"])-a["cash"],"Старт половины")
-        a.update(team=side,x=x,y=y,hp=100,status="Подготовка",heading=0 if side=="T" else atan2(0,-1),
-                 ammo=WEAPONS[a["weapon"]].mag,reserve=WEAPONS[a["weapon"]].mag*3,
-                 visible=[],knowledge={},path=[],dest=[],attackers={},blind=0,ready=0,
-                 throwAt=0,reloadAt=0,lastShot=-100,burst=0,target=None,heardSite=None)
-        if side=="T" and slot==2:
-            w["bomb"]["carrier"]=a["id"]
-    emit(w,"round_start",f"Раунд {n} · закупка", period=period, reset=reset)
+            a["team"] = side
+            money(
+                w,
+                a,
+                (RULES["startMoney"] if n <= 2 * half else RULES["overtimeMoney"])
+                - a["cash"],
+                "Старт половины",
+            )
+        a.update(
+            team=side,
+            x=x,
+            y=y,
+            hp=100,
+            status="Подготовка",
+            heading=0 if side == "T" else atan2(0, -1),
+            ammo=WEAPONS[a["weapon"]].mag,
+            reserve=WEAPONS[a["weapon"]].mag * 3,
+            visible=[],
+            knowledge={},
+            path=[],
+            dest=[],
+            attackers={},
+            blind=0,
+            ready=0,
+            throwAt=0,
+            reloadAt=0,
+            lastShot=-100,
+            burst=0,
+            target=None,
+            heardSite=None,
+            approached=None,
+        )
+        if side == "T" and slot == 2:
+            w["bomb"]["carrier"] = a["id"]
+    emit(w, "round_start", f"Раунд {n} · закупка", period=period, reset=reset)
     if w["pending"]:
         enter_timeout(w)
 
 
-def purchase(w,a,item,give=None):
+def purchase(w, a, item, give=None):
     price = WEAPONS[item].price if item in WEAPONS else PRICES[item]
-    if price>a["cash"]:
+    if price > a["cash"]:
         return False
-    money(w,a,-price,f"Покупка · {item}")
+    money(w, a, -price, f"Покупка · {item}")
     recipient = give or a
     if item in WEAPONS:
         weapon = WEAPONS[item]
-        recipient.update(weapon=item,ammo=weapon.mag,reserve=weapon.mag*3)
-    elif item=="Броня":
-        a["armor"]=100
-    elif item=="Набор":
-        a["kit"]=True
+        recipient.update(weapon=item, ammo=weapon.mag, reserve=weapon.mag * 3)
+    elif item == "Броня":
+        a["armor"] = 100
+    elif item == "Набор":
+        a["kit"] = True
     else:
         a["utility"].append(item)
-    emit(w,"buy", f"{a['name']} · {item}" + (f" для {recipient['name']}" if give else ""),
-         a["team"],player=a["id"],item=item,recipient=recipient["id"],price=price)
+    emit(
+        w,
+        "buy",
+        f"{a['name']} · {item}" + (f" для {recipient['name']}" if give else ""),
+        a["team"],
+        player=a["id"],
+        item=item,
+        recipient=recipient["id"],
+        price=price,
+    )
     return True
 
 
 def begin_live(w):
     now = w["tick"]
-    for side in ("T","CT"):
-        squad = [a for a in w["agents"] if a["team"]==side]
+    for side in ("T", "CT"):
+        squad = [a for a in w["agents"] if a["team"] == side]
         igl = squad[0]
-        call = w["call"] if igl["club"]==0 else None
-        average = sum(a["cash"] for a in squad)/5
-        buy = "Полная" if average>=3600 else "Форс" if average>=1900 else "Эко"
-        if w["round"] in (1,RULES["half"]+1):
-            buy="Пистолетная"
-        if call=="Экономить":
-            buy="Эко"
-        site = "AB"[(engine._draw(igl)>>16)%2]
-        if call in ("Выход A","Выход B"):
-            site=call[-1]
-        style = "Быстро" if call=="Ускориться" or engine._draw(igl)>>31 else "Сбор"
-        w["plans"][side] = dict(site=site,style=style,buy=buy,start=now,review=now,rotated=False,
-                                reinforce=site if side=="CT" and call in ("Выход A","Выход B") else None)
-        emit(w,"plan",f"{igl['name']} · {style}, {site} · {buy}",side,
-             player=igl["id"],site=site,style=style,buy=buy)
-        rifle = "AK-47" if side=="T" else "M4A1-S"
-        smg = "MAC-10" if side=="T" else "MP9"
+        call = w["call"] if igl["club"] == 0 else None
+        average = sum(a["cash"] for a in squad) / 5
+        buy = "Полная" if average >= 3600 else "Форс" if average >= 1900 else "Эко"
+        if w["round"] in (1, RULES["half"] + 1):
+            buy = "Пистолетная"
+        if call == "Экономить":
+            buy = "Эко"
+        site = "AB"[(engine._draw(igl) >> 16) % 2]
+        if call in ("Выход A", "Выход B"):
+            site = call[-1]
+        style = "Быстро" if call == "Ускориться" or engine._draw(igl) >> 31 else "Сбор"
+        w["plans"][side] = dict(
+            site=site,
+            style=style,
+            buy=buy,
+            start=now,
+            review=now,
+            rotated=False,
+            orders=role_orders(side, site),
+            captain=igl["id"],
+            reinforce=site if side == "CT" and call in ("Выход A", "Выход B") else None,
+        )
+        emit(
+            w,
+            "plan",
+            f"{igl['name']} · {style}, {site} · {buy}",
+            side,
+            player=igl["id"],
+            site=site,
+            style=style,
+            buy=buy,
+        )
+        rifle = "AK-47" if side == "T" else "M4A1-S"
+        smg = "MAC-10" if side == "T" else "MP9"
         for a in squad:
-            if buy in ("Полная","Форс") and not WEAPONS[a["weapon"]].price:
-                best = "AWP" if a["slot"]==3 and a["cash"]>=5400 else rifle
-                if not purchase(w,a,best):
-                    purchase(w,a,smg)
+            if buy in ("Полная", "Форс") and not WEAPONS[a["weapon"]].price:
+                best = "AWP" if a["slot"] == 3 and a["cash"] >= 5400 else rifle
+                if not purchase(w, a, best):
+                    purchase(w, a, smg)
         for a in squad:
-            if buy!="Эко" and not WEAPONS[a["weapon"]].price:
-                donor = max(squad,key=lambda p:p["cash"])
-                if WEAPONS[donor["weapon"]].price and donor["cash"]>=WEAPONS[rifle].price+650:
-                    purchase(w,donor,rifle,a)
-            if buy!="Эко":
-                if a["armor"]<45 and (buy!="Пистолетная" or a["slot"]<3):
-                    purchase(w,a,"Броня")
-                if side=="CT" and not a["kit"] and a["slot"] in (0,2,4):
-                    purchase(w,a,"Набор")
-                order = ["Дым","Свет","HE","Огонь"]
-                first = (a["slot"]+w["round"])%len(order)
-                for item in order[first:]+order[:first]:
-                    if len(a["utility"])>=2:
+            if buy != "Эко" and not WEAPONS[a["weapon"]].price:
+                donor = max(squad, key=lambda p: p["cash"])
+                if (
+                    WEAPONS[donor["weapon"]].price
+                    and donor["cash"] >= WEAPONS[rifle].price + 650
+                ):
+                    purchase(w, donor, rifle, a)
+            if buy != "Эко":
+                if a["armor"] < 45 and (buy != "Пистолетная" or a["slot"] < 3):
+                    purchase(w, a, "Броня")
+                if side == "CT" and not a["kit"] and a["slot"] in (0, 2, 4):
+                    purchase(w, a, "Набор")
+                order = ["Дым", "Свет", "HE", "Огонь"]
+                first = (a["slot"] + w["round"]) % len(order)
+                for item in order[first:] + order[:first]:
+                    if len(a["utility"]) >= 2:
                         break
                     if item not in a["utility"]:
-                        purchase(w,a,item)
-        if buy=="Эко":
-            event=emit(w,"budget",f"{igl['name']} предлагает сохранить деньги",side,player=igl["id"])
-            igl["evidence"]=dict(id=event["id"],round=w["round"],text="Мы играли эко. Предлагаю согласовать следующую закупку.")
-    w.update(call=None,phase="live",deadline=now+RULES["live"])
+                        purchase(w, a, item)
+        if buy == "Эко":
+            event = emit(
+                w,
+                "budget",
+                f"{igl['name']} предлагает сохранить деньги",
+                side,
+                player=igl["id"],
+            )
+            igl["evidence"] = dict(
+                id=event["id"],
+                round=w["round"],
+                text="Мы играли эко. Предлагаю согласовать следующую закупку.",
+            )
+    w.update(call=None, phase="live", deadline=now + RULES["live"])
 
 
 def enter_timeout(w):
-    if w["remaining"]<=0:
+    if w["remaining"] <= 0:
         raise ValueError("Все три тайм-аута использованы")
-    w.update(phase="timeout",pending=False,remaining=w["remaining"]-1,
-             feedback=[dict(player=a["name"],**a["evidence"]) for a in w["agents"] if a["club"]==0 and a["evidence"]])
-    emit(w,"timeout","Север берёт тактический тайм-аут")
+    w.update(
+        phase="timeout",
+        pending=False,
+        remaining=w["remaining"] - 1,
+        feedback=[
+            dict(player=a["name"], **a["evidence"])
+            for a in w["agents"]
+            if a["club"] == 0 and a["evidence"]
+        ],
+    )
+    emit(w, "timeout", "Север берёт тактический тайм-аут")
 
 
-def command(w,kind,value=None):
-    if w["phase"]=="finished":
+def command(w, kind, value=None):
+    if w["phase"] == "finished":
         raise ValueError("Матч завершён")
-    if kind=="timeout":
-        if w["remaining"]<=0 or w["pending"] or w["phase"]=="timeout":
+    if kind == "timeout":
+        if w["remaining"] <= 0 or w["pending"] or w["phase"] == "timeout":
             raise ValueError("Тайм-аут недоступен")
-        if w["phase"]=="freeze":
+        if w["phase"] == "freeze":
             enter_timeout(w)
         else:
-            w["pending"]=True
-            emit(w,"request","Север запросил тайм-аут на следующий раунд")
-    elif w["phase"]!="timeout":
+            w["pending"] = True
+            emit(w, "request", "Север запросил тайм-аут на следующий раунд")
+    elif w["phase"] != "timeout":
         raise ValueError("Колл разрешён только в собственный тактический тайм-аут")
-    elif kind=="call" and value in CALLS:
-        w["call"]=value
-        emit(w,"call",f"Указание на следующий раунд · {value}",w["agents"][0]["team"])
-    elif kind=="resume":
-        w.update(phase="freeze",deadline=w["tick"]+RULES["freeze"])
-        emit(w,"resume","Тайм-аут завершён")
+    elif kind == "call" and value in CALLS:
+        w["call"] = value
+        emit(
+            w, "call", f"Указание на следующий раунд · {value}", w["agents"][0]["team"]
+        )
+    elif kind == "resume":
+        w.update(phase="freeze", deadline=w["tick"] + RULES["freeze"])
+        emit(w, "resume", "Тайм-аут завершён")
     else:
         raise ValueError("Неизвестное указание")
 
 
-def finish_round(w,side,reason):
-    winner = next(a["club"] for a in w["agents"] if a["team"]==side)
-    event=emit(w,"round_end",f"{CLUBS[winner]} · {reason}",winner=winner,side=side,reason=reason)
-    w["score"][event["winner"]]+=1
-    kills=w["kills"]
+def finish_round(w, side, reason):
+    buys = [e for e in w["events"] if e["kind"] == "buy"]
+    winner = next(a["club"] for a in w["agents"] if a["team"] == side)
+    event = emit(
+        w,
+        "round_end",
+        f"{CLUBS[winner]} · {reason}",
+        winner=winner,
+        side=side,
+        reason=reason,
+    )
+    w["score"][event["winner"]] += 1
+    kills = w["kills"]
     for a in w["agents"]:
-        ident=a["id"]
-        contributed=a["hp"]>0 or any((ident==k["player"] and k["enemy"]) or ident in k["assists"] or ident==k["trade"] for k in kills)
-        w["stats"][ident]["kast"]+=int(contributed)
-        if a["team"]==side:
-            money(w,a,RULES["objectiveWin"] if reason in ("Взрыв C4","Обезвреживание") else RULES["win"],"Победа")
-        elif not (a["team"]=="T" and a["hp"] and reason=="Время"):
-            bonus=min(RULES["lossMax"],RULES["lossBase"]+RULES["lossStep"]*w["streak"][a["club"]])
-            money(w,a,bonus,"Поражение")
-            if a["team"]=="T" and w["bomb"]["site"]:
-                money(w,a,RULES["plantBonus"],"Установка в проигранном раунде")
+        ident = a["id"]
+        contributed = a["hp"] > 0 or any(
+            (ident == k["player"] and k["enemy"])
+            or ident in k["assists"]
+            or ident == k["trade"]
+            for k in kills
+        )
+        w["stats"][ident]["kast"] += int(contributed)
+        if a["team"] == side:
+            money(
+                w,
+                a,
+                RULES["objectiveWin"]
+                if reason in ("Взрыв C4", "Обезвреживание")
+                else RULES["win"],
+                "Победа",
+            )
+        elif not (a["team"] == "T" and a["hp"] and reason == "Время"):
+            bonus = min(
+                RULES["lossMax"],
+                RULES["lossBase"] + RULES["lossStep"] * w["streak"][a["club"]],
+            )
+            money(w, a, bonus, "Поражение")
+            if a["team"] == "T" and w["bomb"]["site"]:
+                money(w, a, RULES["plantBonus"], "Установка в проигранном раунде")
     if side in w["clutch"]:
-        w["stats"][w["clutch"][side]]["clutches"]+=1
-    w["history"].append(dict(round=w["round"],winner=winner,side=side,reason=reason,
-                             score=list(w["score"]),duration=w["tick"]-w["roundStart"]))
-    w["streak"][winner]=0
-    w["streak"][1-winner]+=1
-    n=w["round"]
-    half,ot=RULES["half"],RULES["overtimeHalf"]
-    target=half+1 if n<=half*2 else half+ot*(1+(n-2*half-1)//(2*ot))+1
-    finished=max(w["score"])>=target
-    w.update(phase="finished" if finished else "result",deadline=w["tick"]+RULES["result"],action=None)
+        w["stats"][w["clutch"][side]]["clutches"] += 1
+    w["history"].append(
+        dict(
+            round=w["round"],
+            winner=winner,
+            side=side,
+            reason=reason,
+            score=list(w["score"]),
+            duration=w["tick"] - w["roundStart"],
+            economy={
+                s: sum(e["price"] for e in buys if e["team"] == s) for s in ("T", "CT")
+            },
+        )
+    )
+    w["streak"][winner] = 0
+    w["streak"][1 - winner] += 1
+    n = w["round"]
+    half, ot = RULES["half"], RULES["overtimeHalf"]
+    target = (
+        half + 1
+        if n <= half * 2
+        else half + ot * (1 + (n - 2 * half - 1) // (2 * ot)) + 1
+    )
+    finished = max(w["score"]) >= target
+    w.update(
+        phase="finished" if finished else "result",
+        deadline=w["tick"] + RULES["result"],
+        action=None,
+    )
     if finished:
-        w["pending"]=False
-        emit(w,"match_end",f"{CLUBS[winner]} выиграл BO1",winner=winner)
+        w["pending"] = False
+        emit(w, "match_end", f"{CLUBS[winner]} выиграл BO1", winner=winner)
 
 
-def objective(w,a,kind,site=None):
-    now=w["tick"]
+def objective(w, a, kind, site=None):
+    now = w["tick"]
     if w["action"] is None:
-        duration = RULES["plant"] if kind=="plant" else RULES["kitDefuse"] if a["kit"] else RULES["defuse"]
-        w["action"]=dict(player=a["id"],kind=kind,site=site,start=now,end=now+duration)
-        a["status"]="Ставит C4" if kind=="plant" else "Обезвреживает"
-        emit(w,kind+"_start",a["name"]+" · "+a["status"],a["team"],player=a["id"])
-    action=w["action"]
-    if action["player"]!=a["id"] or now<action["end"]:
+        duration = (
+            RULES["plant"]
+            if kind == "plant"
+            else RULES["kitDefuse"]
+            if a["kit"]
+            else RULES["defuse"]
+        )
+        w["action"] = dict(
+            player=a["id"], kind=kind, site=site, start=now, end=now + duration
+        )
+        a["status"] = "Ставит C4" if kind == "plant" else "Обезвреживает"
+        emit(
+            w,
+            kind + "_start",
+            a["name"] + " · " + a["status"],
+            a["team"],
+            player=a["id"],
+        )
+    action = w["action"]
+    if action["player"] != a["id"] or now < action["end"]:
         return
-    if action["kind"]=="plant":
-        w["bomb"].update(carrier=None,site=action["site"],x=a["x"],y=a["y"])
-        w.update(phase="planted",deadline=now+RULES["fuse"],action=None)
-        money(w,a,RULES["planter"],"Установка C4")
-        emit(w,"plant",f"{a['name']} установил C4",player=a["id"])
+    if action["kind"] == "plant":
+        w["bomb"].update(carrier=None, site=action["site"], x=a["x"], y=a["y"])
+        w.update(phase="planted", deadline=now + RULES["fuse"], action=None)
+        money(w, a, RULES["planter"], "Установка C4")
+        emit(w, "plant", f"{a['name']} установил C4", player=a["id"])
     else:
-        money(w,a,RULES["defuser"],"Обезвреживание C4")
-        emit(w,"defuse",f"{a['name']} обезвредил C4",player=a["id"])
-        finish_round(w,"CT","Обезвреживание")
+        money(w, a, RULES["defuser"], "Обезвреживание C4")
+        emit(w, "defuse", f"{a['name']} обезвредил C4", player=a["id"])
+        finish_round(w, "CT", "Обезвреживание")
 
 
 def advance(w):
-    if w["phase"] in ("finished","timeout"):
+    if w["phase"] in ("finished", "timeout"):
         return
-    w["tick"]+=1
-    now=w["tick"]
-    if w["phase"]=="freeze":
-        if now>=w["deadline"]:
+    w["tick"] += 1
+    now = w["tick"]
+    if w["phase"] == "freeze":
+        if now >= w["deadline"]:
             begin_live(w)
         return
-    if w["phase"]=="result":
-        if now>=w["deadline"]:
+    if w["phase"] == "result":
+        if now >= w["deadline"]:
             next_round(w)
         return
-    ids={a["id"]:a for a in w["agents"]}
-    ai.apply_effects(w,ids)
-    players=[a for a in ids.values() if a["hp"]]
-    ai.observe(w,players)
-    bomb=w["bomb"]
-    w["traces"]=[t for t in w["traces"] if now-t["tick"]<45]
-    intents=[]
-    for side in ("T","CT"):
-        squad=[a for a in players if a["team"]==side]
+    ids = {a["id"]: a for a in w["agents"]}
+    ai.apply_effects(w, ids)
+    players = [a for a in ids.values() if a["hp"]]
+    ai.observe(w, players)
+    bomb = w["bomb"]
+    w["traces"] = [t for t in w["traces"] if now - t["tick"] < 45]
+    intents = []
+    for side in ("T", "CT"):
+        squad = [a for a in players if a["team"] == side]
         if not squad:
             continue
-        ai.captain(w,squad)
+        ai.captain(w, squad)
         for a in squad:
-            known_bomb = bomb if side=="T" else None
-            if side=="CT" and bomb["site"] and ai.distance(a,bomb)<72:
-                a["heardSite"]=bomb["site"]
-                if ai.distance(a,bomb)<30 and engine.clear_line(a["x"],a["y"],bomb["x"],bomb["y"]):
-                    known_bomb=bomb
-            if side=="T" and not bomb["carrier"] and not bomb["site"] and ai.distance(a,bomb)<=7:
-                bomb["carrier"]=a["id"]
-                emit(w,"pickup",f"{a['name']} поднял C4","T",player=a["id"])
-            fire=[f for f in w["effects"] if f["kind"]=="Огонь" and f["land"]<=now
-                  and ai.distance(a,f)<70 and engine.clear_line(a["x"],a["y"],f["x"],f["y"])]
-            intents.append((a,*ai.act(w,a,squad,known_bomb,fire)))
+            known_bomb = bomb if side == "T" else None
+            if side == "CT" and bomb["site"] and ai.distance(a, bomb) < 72:
+                if not a["heardSite"]:
+                    a["heardSite"] = bomb["site"]
+                    w["messages"].append(
+                        dict(
+                            team=side,
+                            sender=a["id"],
+                            site=bomb["site"],
+                            due=now + 1 + (100 - a["comms"]) // 12,
+                        )
+                    )
+                if ai.distance(a, bomb) < 30 and engine.clear_line(
+                    a["x"], a["y"], bomb["x"], bomb["y"]
+                ):
+                    known_bomb = bomb
+            if (
+                side == "T"
+                and not bomb["carrier"]
+                and not bomb["site"]
+                and ai.distance(a, bomb) <= 7
+            ):
+                bomb["carrier"] = a["id"]
+                emit(w, "pickup", f"{a['name']} поднял C4", "T", player=a["id"])
+            fire = [
+                f
+                for f in w["effects"]
+                if f["kind"] == "Огонь"
+                and f["land"] <= now
+                and ai.distance(a, f) < 70
+                and engine.clear_line(a["x"], a["y"], f["x"], f["y"])
+            ]
+            observation = dict(
+                tick=now,
+                phase=w["phase"],
+                deadline=w["deadline"],
+                plan=w["plans"][side],
+                action=w["action"]
+                if w["action"] and ids[w["action"]["player"]]["team"] == side
+                else None,
+            )
+            intents.append((a, *ai.act(observation, a, squad, known_bomb, fire)))
+            if a["reloadAt"] == now + WEAPONS[a["weapon"]].reload:
+                emit(
+                    w,
+                    "reload",
+                    f"{a['name']} перезаряжает {a['weapon']}",
+                    side,
+                    player=a["id"],
+                )
     # Alternate initiative on a tick. A dead or newly occluded target cannot be hit.
-    order=intents if now%2 else intents[::-1]
-    for a,kind,target in order:
-        if not a["hp"] or kind not in ("shoot","throw"):
+    order = intents if now % 2 else intents[::-1]
+    for a, kind, target in order:
+        if not a["hp"] or kind not in ("shoot", "throw"):
             continue
-        b=ids[target["id"]]
-        if not b["hp"] or not engine.clear_line(a["x"],a["y"],b["x"],b["y"]):
+        b = ids[target["id"]]
+        if not b["hp"] or not engine.clear_line(a["x"], a["y"], b["x"], b["y"]):
             continue
-        if kind=="throw":
-            ai.throw(w,a,target)
+        if kind == "throw":
+            ai.throw(w, a, target)
         else:
-            ai.shoot(w,a,b)
+            ai.shoot(w, a, b)
             for listener in players:
-                if listener["team"]!=a["team"] and listener["hp"] and a["id"] not in listener["visible"] and ai.distance(a,listener)<55:
+                if (
+                    listener["team"] != a["team"]
+                    and listener["hp"]
+                    and a["id"] not in listener["visible"]
+                    and ai.distance(a, listener) < 55
+                ):
                     # Sound identifies a sector, never a tracked live enemy position.
-                    p=ai.audible_sector(a["x"]//30, a["y"]//30)
-                    key="Шум"
-                    listener["knowledge"][key]=dict(id=key,**p,tick=now,source="Слух")
-    action=w["action"]
-    if action and not any(a["hp"] and a["id"]==action["player"] and kind=="objective" for a,kind,_ in intents):
-        emit(w,"interrupt","Действие с C4 прервано",ids[action["player"]]["team"],player=action["player"])
-        w["action"]=None
+                    p = ai.audible_sector(a["x"] // 30, a["y"] // 30)
+                    key = "Шум"
+                    listener["knowledge"][key] = dict(
+                        id=key, **p, tick=now, source="Слух"
+                    )
+    action = w["action"]
+    if action and not any(
+        a["hp"] and a["id"] == action["player"] and kind == "objective"
+        for a, kind, _ in intents
+    ):
+        emit(
+            w,
+            "interrupt",
+            "Действие с C4 прервано",
+            ids[action["player"]]["team"],
+            player=action["player"],
+        )
+        w["action"] = None
     # On the exact deadline, expiry precedes completion. Eliminations precede use.
-    living={s:[a for a in players if a["hp"] and a["team"]==s] for s in ("T","CT")}
-    if w["phase"]=="planted" and now>=w["deadline"]:
-        emit(w,"explode","C4 взорвалась")
-        from .match_events import damage
+    living = {
+        s: [a for a in players if a["hp"] and a["team"] == s] for s in ("T", "CT")
+    }
+    if w["phase"] == "planted" and now >= w["deadline"]:
+        emit(w, "explode", "C4 взорвалась")
         for a in players:
-            dist=ai.distance(a,bomb)
-            if a["hp"] and dist<80:
-                damage(w,a,a,max(1,round(370*(1-dist/80))),"C4")
-        finish_round(w,"T","Взрыв C4")
+            dist = ai.distance(a, bomb)
+            if a["hp"] and dist < 80:
+                damage(w, a, a, max(1, round(370 * (1 - dist / 80))), "C4")
+        finish_round(w, "T", "Взрыв C4")
     elif not living["CT"]:
-        finish_round(w,"T","Устранение")
-    elif w["phase"]=="live" and not living["T"]:
-        finish_round(w,"CT","Устранение")
-    elif w["phase"]=="live" and now>=w["deadline"]:
-        finish_round(w,"CT","Время")
+        finish_round(w, "T", "Устранение")
+    elif w["phase"] == "live" and not living["T"]:
+        finish_round(w, "CT", "Устранение")
+    elif w["phase"] == "live" and now >= w["deadline"]:
+        finish_round(w, "CT", "Время")
     else:
         for side in living:
-            other="T" if side=="CT" else "CT"
-            if len(living[side])==1 and living[other]:
-                w["clutch"].setdefault(side,living[side][0]["id"])
-        for a,kind,target in order:
+            other = "T" if side == "CT" else "CT"
+            if len(living[side]) == 1 and living[other]:
+                w["clutch"].setdefault(side, living[side][0]["id"])
+        for a, kind, target in order:
             if not a["hp"]:
                 continue
-            if kind=="objective" and w["action"]:
-                objective(w,a,w["action"]["kind"])
-            elif kind=="defuse" and w["phase"]=="planted":
-                objective(w,a,kind)
-            elif kind=="plant" and w["phase"]=="live":
-                objective(w,a,kind,target)
-            if w["phase"] in ("result","finished"):
+            if kind == "objective" and w["action"]:
+                objective(w, a, w["action"]["kind"])
+            elif kind == "defuse" and w["phase"] == "planted":
+                objective(w, a, kind)
+            elif kind == "plant" and w["phase"] == "live":
+                objective(w, a, kind, target)
+            if w["phase"] in ("result", "finished"):
                 break
 
+    # A move, flash or death can close a sight line during this very step.
+    # Neither the final projection nor sub-tick motion tracks may reveal it.
+    smoke = [f for f in w["effects"] if f["kind"] == "Дым" and f["land"] <= now]
+    for a in players:
+        a["visible"] = [
+            ident
+            for ident in a["visible"]
+            if a["hp"]
+            and ids[ident]["hp"]
+            and a["blind"] <= now
+            and engine.sees(a, ids[ident])
+            and not any(ai.near_line(a, ids[ident], f, f["radius"]) for f in smoke)
+        ]
 
-def project(w,view="full"):
-    if view not in ("full","T","CT"):
+
+def project(w, view="full"):
+    if view not in ("full", "T", "CT"):
         raise ValueError("Неизвестный режим обзора")
-    own=[a for a in w["agents"] if a["team"]==view]
-    visible={ident for a in own if a["hp"] for ident in a["visible"]}
-    agents=[]
+    own = [a for a in w["agents"] if a["team"] == view]
+    visible = {ident for a in own if a["hp"] for ident in a["visible"]}
+    agents = []
     for a in w["agents"]:
-        friendly=view=="full" or a["team"]==view
+        friendly = view == "full" or a["team"] == view
         if not friendly and (a["id"] not in visible or not a["hp"]):
             continue
-        marker={k:a[k] for k in ("id","name","team","x","y","heading","weapon","role","club")}
-        marker.update(alive=bool(a["hp"]),status=a["status"] if friendly else "В поле зрения",
-                      visible=a["visible"] if friendly else [],knowledge=list(a["knowledge"].values()) if friendly else [])
+        marker = {
+            k: a[k]
+            for k in (
+                "id",
+                "name",
+                "team",
+                "x",
+                "y",
+                "heading",
+                "weapon",
+                "role",
+                "club",
+            )
+        }
+        marker.update(
+            alive=bool(a["hp"]),
+            status=a["status"] if friendly else "В поле зрения",
+            visible=a["visible"] if friendly else [],
+            knowledge=list(a["knowledge"].values()) if friendly else [],
+        )
         if friendly:
-            marker.update({k:a[k] for k in ("hp","armor","ammo","reserve","cash","utility","kit")})
+            marker.update(
+                {
+                    k: a[k]
+                    for k in (
+                        "hp",
+                        "armor",
+                        "ammo",
+                        "reserve",
+                        "cash",
+                        "utility",
+                        "kit",
+                    )
+                }
+            )
         agents.append(marker)
-    bomb=w["bomb"]
-    carrier=next((a for a in w["agents"] if a["id"]==bomb["carrier"]),None)
-    point=carrier or bomb
-    def observable(p):
-        return view=="full" or any(a["hp"] and not a["blind"]>w["tick"] and engine.sees(a,p) for a in own)
-    public_bomb=None
-    if point["x"] is not None and (view in ("full","T") or (carrier and carrier["id"] in visible) or
-                                    (not carrier and observable(point))):
-        public_bomb=dict(x=point["x"],y=point["y"],carrier=bomb["carrier"],site=bomb["site"])
-    effects=[f for f in w["recentEffects"] if view in ("full",f["team"]) or
-             (w["tick"]>=f["land"] and observable(f))]
+    bomb = w["bomb"]
+    carrier = next((a for a in w["agents"] if a["id"] == bomb["carrier"]), None)
+    point = carrier or bomb
+    smoke = [f for f in w["effects"] if f["kind"] == "Дым" and f["land"] <= w["tick"]]
+
+    def observable(p, *, cloud=False):
+        return view == "full" or any(
+            a["hp"]
+            and a["blind"] <= w["tick"]
+            and engine.sees(a, p)
+            and not any(
+                ai.near_line(a, p, f, f["radius"]) for f in smoke if not cloud or f != p
+            )
+            for a in own
+        )
+
+    public_bomb = None
+    if point["x"] is not None and (
+        view in ("full", "T")
+        or (carrier and carrier["id"] in visible)
+        or (not carrier and observable(point))
+    ):
+        public_bomb = dict(
+            x=point["x"], y=point["y"], carrier=bomb["carrier"], site=bomb["site"]
+        )
+    effects = [
+        f
+        for f in w["recentEffects"]
+        if view in ("full", f["team"])
+        or (w["tick"] >= f["land"] and observable(f, cloud=f["kind"] == "Дым"))
+    ]
     # Do not reveal an unseen thrower's origin via the trajectory of a landed grenade.
-    effects=[f if view in ("full",f["team"]) else dict(f,sx=f["x"],sy=f["y"],player=None) for f in effects]
-    stats=[]
+    effects = [
+        f if view in ("full", f["team"]) else dict(f, sx=f["x"], sy=f["y"], player=None)
+        for f in effects
+    ]
+    stats = []
     for a in w["agents"]:
-        row=dict(id=a["id"],name=a["name"],club=a["club"],team=a["team"],role=a["role"],**w["stats"][a["id"]])
+        row = dict(
+            id=a["id"],
+            name=a["name"],
+            club=a["club"],
+            team=a["team"],
+            role=a["role"],
+            **w["stats"][a["id"]],
+        )
+        if view not in ("full", a["team"]) and w["phase"] != "finished":
+            row["spent"] = None
         stats.append(row)
-    audience=lambda e:view=="full" or e["team"] in (view,None)
-    journal=[e for e in w["events"] if audience(e) and e["kind"] not in ("money","buy","shot","damage")]
-    action=w["action"]
-    if action and view not in ("full",next(a["team"] for a in w["agents"] if a["id"]==action["player"])):
-        action=None
-    coach_view=view in ("full",w["agents"][0]["team"])
-    return dict(seed=w["seed"],tick=w["tick"],time=w["tick"]/10,map=MAP,agents=agents,view=view,
-                events=journal[-48:],match=dict(
-                    rules=w["rules"],round=w["round"],phase=w["phase"],clock=max(0,w["deadline"]-w["tick"]),
-                    teams=CLUBS,score=w["score"],sides=[w["agents"][i]["team"] for i in (0,5)],
-                    history=w["history"],stats=stats,bomb=public_bomb,action=action,effects=effects,
-                    shots=[e for e in w["traces"] if audience(e)],kills=w["kills"][-8:],
-                    plans={s:p for s,p in w["plans"].items() if view in ("full",s)},
-                    remaining=w["remaining"],pending=w["pending"],call=w["call"] if coach_view else None,
-                    calls=CALLS,feedback=w["feedback"] if coach_view and w["phase"]=="timeout" else []))
+    audience = lambda e: view == "full" or e["team"] in (view, None)
+    journal = [
+        e
+        for e in w["events"]
+        if audience(e) and e["kind"] not in ("money", "buy", "shot", "damage")
+    ]
+    action = w["action"]
+    if action and view not in (
+        "full",
+        next(a["team"] for a in w["agents"] if a["id"] == action["player"]),
+    ):
+        action = None
+    coach_view = view in ("full", w["agents"][0]["team"])
+    return dict(
+        seed=w["seed"],
+        tick=w["tick"],
+        time=w["tick"] / 10,
+        map=MAP,
+        agents=agents,
+        view=view,
+        events=journal[-48:],
+        match=dict(
+            rules=w["rules"],
+            round=w["round"],
+            phase=w["phase"],
+            clock=max(0, w["deadline"] - w["tick"]),
+            teams=CLUBS,
+            score=w["score"],
+            sides=[w["agents"][i]["team"] for i in (0, 5)],
+            history=[
+                dict(
+                    h,
+                    economy={
+                        s: v
+                        for s, v in h["economy"].items()
+                        if view in ("full", s) or w["phase"] == "finished"
+                    },
+                )
+                for h in w["history"]
+            ],
+            stats=stats,
+            bomb=public_bomb,
+            resolution=next(
+                (
+                    dict(kind=e["kind"], tick=e["tick"])
+                    for e in reversed(w["events"])
+                    if e["kind"] in ("explode", "defuse")
+                ),
+                None,
+            )
+            if w["phase"] in ("finished", "result")
+            else None,
+            action=action,
+            effects=effects,
+            shots=[e for e in w["traces"] if audience(e)],
+            kills=w["kills"][-8:],
+            plans={s: p for s, p in w["plans"].items() if view in ("full", s)},
+            remaining=w["remaining"],
+            pending=w["pending"],
+            call=w["call"] if coach_view else None,
+            calls=CALLS,
+            feedback=w["feedback"] if coach_view and w["phase"] == "timeout" else [],
+        ),
+    )
