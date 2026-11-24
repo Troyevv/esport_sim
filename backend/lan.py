@@ -94,9 +94,13 @@ class _Identity:
             _write(authority, _pem_key(issuer_key) + issuer.public_bytes(serialization.Encoding.PEM))
         _write(self.ca_file, issuer.public_bytes(serialization.Encoding.DER))
         server_key = ec.generate_private_key(ec.SECP256R1())
-        leaf = (_certificate(_name("esport_sim Home LAN"), issuer.subject, server_key, issuer_key, 90)
+        # Keep both the subject and every SAN within the home CA's permitted
+        # subtrees. Clients dialing the numeric URL verify the IP SAN.
+        host_name = "host.esport-sim.invalid"
+        leaf = (_certificate(_name(host_name), issuer.subject, server_key, issuer_key, 90)
                 .add_extension(x509.BasicConstraints(ca=False, path_length=None), True)
-                .add_extension(x509.SubjectAlternativeName([x509.IPAddress(ipaddress.ip_address(address))]), False)
+                .add_extension(x509.SubjectAlternativeName([x509.IPAddress(ipaddress.ip_address(address)),
+                                                           x509.DNSName(host_name)]), False)
                 .add_extension(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.SERVER_AUTH]), False)
                 .add_extension(x509.KeyUsage(True, False, False, False, False, False, False, None, None), True)
                 .sign(issuer_key, hashes.SHA256()))
