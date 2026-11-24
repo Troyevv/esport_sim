@@ -91,8 +91,6 @@ function Test-Lan([string]$Origin) {
         $qr = Invoke-WebRequest "$Origin/api/host/qr.svg" -UseBasicParsing
         $svg = if ($qr.Content -is [byte[]]) { [Text.Encoding]::UTF8.GetString($qr.Content) } else { $qr.Content }
         if ($svg -notmatch '<svg' -or $svg -notmatch '<path') { throw 'QR rendering failed' }
-        $invite = Invoke-RestMethod "$Origin/api/host/invite" -Method Post -Headers $headers
-        if ([string]::IsNullOrEmpty($invite.code)) { throw 'Invitation unavailable' }
 
         $authority = Join-Path $testRoot 'home.cer'
         Invoke-WebRequest "$Origin/api/host/authority.cer" -UseBasicParsing -OutFile $authority
@@ -106,7 +104,6 @@ function Test-Lan([string]$Origin) {
         $probeHandler = [Net.Http.HttpClientHandler]::new()
         $probeHandler.UseProxy = $false
         $probe = [Net.Http.HttpClient]::new($probeHandler)
-        $trustedClient = $null
         $imported = $false
         try {
             $untrusted = $false
@@ -126,18 +123,9 @@ function Test-Lan([string]$Origin) {
             # trust exactly as a client would, then remove only our new certificate.
             $store.Add($certificate)
             $imported = $true
-            $handler = [Net.Http.HttpClientHandler]::new()
-            $handler.UseProxy = $false
-            $trustedClient = [Net.Http.HttpClient]::new($handler)
-            $trustedClient.DefaultRequestHeaders.Add('Origin', $lan)
-            $access = $trustedClient.GetAsync("$lan/api/state").GetAwaiter().GetResult()
-            if ([int]$access.StatusCode -ne 401) { throw "Unexpected unpaired response: $($access.StatusCode)" }
-            $json = @{code=$invite.code; name='Windows smoke test'} | ConvertTo-Json -Compress
-            $content = [Net.Http.StringContent]::new($json, [Text.Encoding]::UTF8, 'application/json')
-            $paired = $trustedClient.PostAsync("$lan/api/pair", $content).GetAwaiter().GetResult()
-            if ([int]$paired.StatusCode -ne 200) { throw "Pair failed: $($paired.StatusCode)" }
-            $state = $trustedClient.GetStringAsync("$lan/api/state").GetAwaiter().GetResult() | ConvertFrom-Json
-            if ($state.context -ne (Invoke-RestMethod "$Origin/api/state").context) { throw 'Paired device has different world.' }
+            $test = Join-Path $PSScriptRoot 'trusted-lan.ps1'
+            & $psExe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $test -Lan $lan -Origin $Origin
+            if ($LASTEXITCODE) { throw "Trusted HTTPS client exited with $LASTEXITCODE" }
         } catch {
             $reason = $_.Exception
             while ($null -ne $reason) {
@@ -146,7 +134,6 @@ function Test-Lan([string]$Origin) {
             }
             throw
         } finally {
-            if ($trustedClient) { $trustedClient.Dispose() }
             $probe.Dispose()
             if ($imported) { $store.Remove($certificate) }
             $store.Close()
