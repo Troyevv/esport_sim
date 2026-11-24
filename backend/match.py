@@ -1,6 +1,7 @@
 """Autonomous BO1. The same step drives the home server and headless matches."""
 
 from collections import Counter
+from copy import deepcopy
 from math import atan2
 
 from . import checkpoints, engine, tactics
@@ -180,7 +181,7 @@ def next_buy(w, squad):
 
 
 def assign(w, board):
-    tactics.validate(board)
+    board = deepcopy(tactics.validate(board) | tactics.reference(board))
     side, buy = board["side"], board["buy"]
     if w["phase"] == "timeout":
         squad = [a for a in w["agents"] if a["club"] == 0]
@@ -553,6 +554,7 @@ def advance(w):
                 elif previous != a["status"] and a["status"] in (
                     "К капитану после потери союзника",
                     "Пережидает огонь за укрытием",
+                    "Обходит огонь",
                     "Подбирает C4",
                 ):
                     emit(
@@ -776,7 +778,13 @@ def project(w, view="full"):
             sides=[w["agents"][i]["team"] for i in (0, 5)],
             history=[
                 dict(
-                    h,
+                    {
+                        k: v
+                        for k, v in h.items()
+                        if k != "tactic"
+                        or view in ("full", v["side"])
+                        or w["phase"] == "finished"
+                    },
                     economy={
                         s: v
                         for s, v in h["economy"].items()

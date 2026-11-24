@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from backend import engine, match, tactic_library, tactic_preview, tactics
+from backend import match, tactic_library, tactic_preview, tactics
 from backend.match_events import damage
 from backend.store import Conflict, Store
 from test_server import envelope, local_server, send, snapshot
@@ -110,11 +110,12 @@ def test_fire_contact_and_casualty_interrupt_board_with_local_evidence():
     fire = dict(kind="Огонь", x=35, y=105, land=0, end=50, radius=6, player=enemy["id"])
     w["effects"].append(fire)
     match.advance(w)
-    assert leader["status"] == "Пережидает огонь за укрытием"
+    assert leader["status"] == "Обходит огонь"
     assert leader["stepIndex"] == 0 and leader["x"] == 25
+    assert all(list(point) != [35, 105] for point in leader["path"])
     w["effects"].clear()
     # A direct contact takes precedence over reaching the next waypoint.
-    enemy.update(x=45, y=105, hp=100)
+    enemy.update(x=25, y=125, hp=100)
     leader["utility"].clear()
     match.advance(w)
     assert enemy["id"] in leader["knowledge"] and leader["status"] == "Держит контакт"

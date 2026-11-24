@@ -84,7 +84,11 @@ def upgrade_match(db, world):
 
 
 def validate_current(world):
-    boards = list(world.get("playbook", {}).values())
+    playbook = world.get("playbook", {})
+    for key, board in playbook.items():
+        if key != board["side"] + "/" + board["buy"]:
+            raise CheckpointError("Назначение не соответствует стороне или закупке")
+    boards = list(playbook.values())
     if world.get("nextBoard"):
         boards.append(world["nextBoard"])
     for side, plan in world["plans"].items():
@@ -95,7 +99,8 @@ def validate_current(world):
                 raise CheckpointError("Сторона назначенной тактики не совпадает")
             for a in world["agents"]:
                 if a["team"] == side and not (
-                    type(a.get("stepIndex")) is int
+                    (a["stepUntil"] is None or type(a["stepUntil"]) is int)
+                    and type(a.get("stepIndex")) is int
                     and 0 <= a["stepIndex"] <= len(board["slots"][a["slot"]])
                 ):
                     raise CheckpointError("Повреждён прогресс маршрута")

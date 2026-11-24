@@ -408,3 +408,7 @@ th small {
   font: 11px var(--mono);
   margin-top: 3px;
 }
+
+.tactic-results {padding-top:14px;border-bottom:1px solid var(--line)}
+.tactic-results small {color:var(--muted)}
+.tactic-results p {margin-top:6px}

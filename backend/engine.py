@@ -111,7 +111,7 @@ MAP = {
 }
 
 
-def route(start, goal):
+def route(start, goal, blocked=frozenset()):
     """Shortest traversable route between cells, excluding the starting cell."""
     if start not in _FLOOR_SET or goal not in _FLOOR_SET:
         raise ValueError("Недоступная точка маршрута")
@@ -126,7 +126,7 @@ def route(start, goal):
                 here = parents[here]
             return path[::-1]
         for neighbor in _NEIGHBORS[here]:
-            if neighbor not in parents:
+            if neighbor not in parents and neighbor not in blocked:
                 parents[neighbor] = here
                 frontier.append(neighbor)
     raise ValueError("Нет пути между точками")

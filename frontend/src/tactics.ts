@@ -29,10 +29,12 @@ export interface Plan extends PlanRef {
   geometry: number;
   slots: Step[][];
   standard: boolean;
+  familiarity?: number;
 }
 export interface Library {
   maps: RadarMap[];
   roles: string[];
+  players: string[];
   buys: string[];
   plans: Plan[];
 }

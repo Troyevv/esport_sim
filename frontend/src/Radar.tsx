@@ -444,7 +444,7 @@ function bindNavigation(host: HTMLDivElement, api: RadarApi) {
   };
 }
 
-function CameraButton({
+export function CameraButton({
   label,
   disabled,
   onActivate,

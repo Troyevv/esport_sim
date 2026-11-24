@@ -67,7 +67,14 @@ test("доска, жесты, библиотека, спарринг и назн
     ]);
     await touch("touchEnd", []);
     await expect(button("Центрировать доску")).not.toHaveText("100%");
+    await page.getByRole("button", { name: /Сдвиг/ }).tap();
+    await map.scrollIntoViewIfNeeded();
+    const origin = await location(155, 105);
+    await touch("touchStart", [origin]);
+    await touch("touchMove", [{ x: origin.x + 26, y: origin.y + 12 }]);
+    await touch("touchEnd", []);
     await press("Центрировать доску");
+    await expect(button("Центрировать доску")).toHaveText("100%");
     await cdp.detach();
   } else {
     await page.mouse.move(start.x, start.y);
@@ -78,6 +85,10 @@ test("доска, жесты, библиотека, спарринг и назн
   await expect(page.locator(".board-sequence li")).toHaveCount(5);
   await page.getByRole("button", { name: /Ожидание/ }).click();
   await at(95, 105);
+  await expect(page.locator(".board-sequence li")).toHaveCount(6);
+  await page.reload();
+  await press("Редактор тактик");
+  await expect(page.getByLabel("Название тактики")).toHaveValue(name);
   await expect(page.locator(".board-sequence li")).toHaveCount(6);
   await press("Сохранить тактику");
   await expect(page.getByText("Сохранено в библиотеке")).toBeVisible();
@@ -145,6 +156,24 @@ test("доска, жесты, библиотека, спарринг и назн
     await press("Запустить");
     await expect(page.locator(".plan-line").first()).toContainText(
       name + " · в1",
+    );
+    await press("Запросить тайм-аут");
+    await expect(page.locator(".round-clock")).toContainText("ПАУЗА", {
+      timeout: 25000,
+    });
+    await press("Выбрать тактику");
+    await press("Предложение штаба");
+    await page.getByLabel("Название тактики").fill("Смена направления");
+    await press("Сохранить тактику");
+    await expect(page.getByText("Сохранено в библиотеке")).toBeVisible();
+    await press("Назначить в BO1");
+    await expect(
+      page.getByText("Тактика назначена", { exact: false }),
+    ).toBeVisible();
+    await press("← К матчу");
+    await press("Завершить тайм-аут");
+    await expect(page.locator(".plan-line").first()).toContainText(
+      "Смена направления · в1",
     );
     await press("Пауза просмотра");
     await page.getByText("Новый сценарий", { exact: true }).click();

@@ -16,7 +16,7 @@ import {
   type Step,
   type Tool,
 } from "./tactics";
-import type { Frame } from "./session";
+import { serverURL, type Frame } from "./session";
 import "./tactics.css";
 
 type Props = {
@@ -52,6 +52,20 @@ const help: Record<Tool, string> = {
   select: "Коснитесь маркера игрока или точки маршрута.",
   pan: "Перетащите карту. Два пальца перемещают и масштабируют её в любом режиме.",
 };
+const draftKey = "tactics-draft:" + serverURL("/").origin;
+function readDraft(): Plan | null {
+  try {
+    const plan = JSON.parse(sessionStorage.getItem(draftKey) || "null");
+    return plan?.format === 1 &&
+      Array.isArray(plan.slots) &&
+      plan.slots.length === 5 &&
+      plan.slots.every(Array.isArray)
+      ? plan
+      : null;
+  } catch {
+    return null;
+  }
+}
 const errorText = (e: unknown) =>
   e instanceof Error ? e.message : "Домашний сервер недоступен";
 
@@ -64,14 +78,14 @@ export default function TacticEditor({
   clearNotice,
 }: Props) {
   const [library, setLibrary] = useState<Library | null>(null),
-    [plan, setPlan] = useState<Plan | null>(null);
+    [plan, setPlan] = useState<Plan | null>(readDraft);
   const [slot, setSlot] = useState(0),
     [tool, setTool] = useState<Tool>("move");
   const [seconds, setSeconds] = useState(3),
     [utility, setUtility] = useState("Дым");
   const [index, selectIndex] = useState<number | null>(null),
     [replace, setReplace] = useState(false);
-  const [dirty, setDirty] = useState(false),
+  const [dirty, setDirty] = useState(!!plan),
     [history, setHistory] = useState<Plan[]>([]);
   const [libOpen, setLibOpen] = useState(false),
     [error, setError] = useState(""),
@@ -86,12 +100,24 @@ export default function TacticEditor({
     version = frame.libraryRevision || 0;
   const request = useRef(0);
   useEffect(() => {
+    if (dirty && plan) sessionStorage.setItem(draftKey, JSON.stringify(plan));
+    else sessionStorage.removeItem(draftKey);
+  }, [plan, dirty]);
+  useEffect(() => {
     let live = true;
     readJSON<Library>("/api/tactics")
       .then((data) => {
         if (!live) return;
         setLibrary(data);
-        setPlan((old) => old || data.plans.find((p) => p.standard)!);
+        const match = frame.world.match;
+        const initial =
+          data.plans.find(
+            (p) =>
+              p.standard &&
+              p.side === match?.sides[0] &&
+              p.buy === match.nextBuy,
+          ) || data.plans.find((p) => p.standard)!;
+        setPlan((old) => old || initial);
       })
       .catch((e) => {
         if (live) setError(errorText(e));
@@ -124,6 +150,13 @@ export default function TacticEditor({
     id = requestAnimationFrame(update);
     return () => cancelAnimationFrame(id);
   }, [playing, preview, rate]);
+  useEffect(() => {
+    const point = /Игрок (\d+), точка (\d+)/.exec(commandNotice || error);
+    if (point) {
+      setSlot(Number(point[1]) - 1);
+      selectIndex(Number(point[2]) - 1);
+    }
+  }, [commandNotice, error]);
   if (!plan || !library)
     return (
       <section className="board-loading">
@@ -179,6 +212,7 @@ export default function TacticEditor({
     selectIndex(null);
     setReplace(false);
     setSlot(0);
+    setTool("move");
     setLibOpen(false);
     setError("");
     setNotice("");
@@ -207,7 +241,7 @@ export default function TacticEditor({
     });
   }
   function draw(points: Point[]) {
-    if (tool === "pan" || tool === "select") return;
+    if (working || tool === "pan" || tool === "select") return;
     if (
       tool === "plant" &&
       !map.zones.some(
@@ -343,7 +377,10 @@ export default function TacticEditor({
         <div className="board-buttons">
           <button
             onClick={() => {
-              if (canDiscard()) onClose();
+              if (canDiscard()) {
+                sessionStorage.removeItem(draftKey);
+                onClose();
+              }
             }}
           >
             ← {match ? "К матчу" : "К радару"}
@@ -409,12 +446,22 @@ export default function TacticEditor({
               {library.roles.map((role, i) => (
                 <button
                   key={role}
-                  aria-label={"Игрок " + (i + 1) + " · " + role}
+                  aria-label={
+                    "Игрок " +
+                    (i + 1) +
+                    " · " +
+                    library.players[i] +
+                    " · " +
+                    role
+                  }
                   aria-pressed={slot === i}
                   onClick={() => pick(i, null)}
                 >
                   <b style={{ background: colors[i] }}>{i + 1}</b>
-                  <span>{role}</span>
+                  <span>
+                    {library.players[i]}
+                    <small>{role}</small>
+                  </span>
                 </button>
               ))}
             </div>
@@ -483,7 +530,7 @@ export default function TacticEditor({
                       aria-pressed={tool === t}
                       onClick={() => {
                         setTool(t);
-                        setReplace(false);
+                        if (t === "pan" || t === "select") setReplace(false);
                         setError("");
                       }}
                     >
@@ -649,6 +696,11 @@ export default function TacticEditor({
                   Удалить
                 </button>
               </div>
+              {plan.revision > 0 && !plan.standard && !dirty && (
+                <small>
+                  Освоение версии {plan.revision} · {plan.familiarity || 0}%
+                </small>
+              )}
               {stale && (
                 <p role="alert" className="board-error">
                   В библиотеке другая версия. Откройте её или сохраните черновик
@@ -702,7 +754,9 @@ export default function TacticEditor({
             </section>
             <section className="panel board-sequence">
               <div className="board-section">
-                <h2>Маршрут №{slot + 1}</h2>
+                <h2>
+                  Маршрут №{slot + 1} · {library.players[slot]}
+                </h2>
                 <small>{steps.length} точ.</small>
               </div>
               <ol>

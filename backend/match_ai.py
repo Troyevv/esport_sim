@@ -151,7 +151,23 @@ def path_between(start, goal):
     return tuple(tuple(p) for p in engine.route(start, goal))
 
 
-def walk(a, goal, pace, hazards):
+@lru_cache(maxsize=128)
+def fire_detour(start, goal, sources):
+    blocked = {
+        cell
+        for cell in engine._FLOOR
+        if any(
+            hypot(engine._center(cell)[0] - x, engine._center(cell)[1] - y) < radius
+            for x, y, radius in sources
+        )
+    }
+    try:
+        return engine.route(start, goal, blocked)
+    except ValueError:
+        return []
+
+
+def walk(a, goal, pace, hazards, *, allow_detour=False):
     cell = engine._cell(a["x"], a["y"])
     dest = engine._cell(*goal)
     # Replan at cell centres; preserve the current edge when redirected mid-step.
@@ -174,8 +190,21 @@ def walk(a, goal, pace, hazards):
         distance(at((x, y)), f) < f["radius"] and distance(a, f) >= f["radius"]
         for f in hazards
     ):
-        a["status"] = "Пережидает огонь за укрытием"
-        return False
+        detour = (
+            fire_detour(
+                cell, dest, tuple((f["x"], f["y"], f["radius"]) for f in hazards)
+            )
+            if allow_detour
+            else []
+        )
+        if not detour:
+            a["status"] = "Пережидает огонь за укрытием"
+            return False
+        centre = engine._center(cell)
+        # Return to this cell centre before taking a different edge mid-stride.
+        a["path"] = ([centre] if centre != (a["x"], a["y"]) else []) + list(detour)
+        x, y = a["path"][0]
+        a["status"] = "Обходит огонь"
     dx, dy = x - a["x"], y - a["y"]
     a["heading"] = atan2(dy, dx)
     a["x"] += max(-pace, min(pace, dx))

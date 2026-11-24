@@ -115,6 +115,17 @@ export default function MatchCenter({
   const finished = m.phase === "finished",
     timeout = m.phase === "timeout";
   const rounds = m.history.length;
+  const played = new Map<string, {plan: PlanRef; rounds: number; wins: number}>();
+  if (tab === "Раунды") {
+    for (const row of m.history) {
+      if (!row.tactic) continue;
+      const key = row.tactic.id + "/" + row.tactic.revision;
+      const entry = played.get(key) || {plan: row.tactic, rounds: 0, wins: 0};
+      entry.rounds++;
+      if (row.winner === 0) entry.wins++;
+      played.set(key, entry);
+    }
+  }
   return (
     <article className="match-center">
       <header className="match-title">
@@ -320,6 +331,13 @@ export default function MatchCenter({
                 </table>
               </div>
             )}
+            {tab === "Раунды" && played.size > 0 && <section className="inventory tactic-results">
+              <h3>Тактики против «{m.teams[1]}»</h3>
+              <small>{world.map.name} · {m.stats.filter(p=>p.club===0).map(p=>p.name).join(", ")}</small>
+              {[...played.values()].map(({plan, rounds, wins})=><p key={plan.id+plan.revision}>
+                <b>{plan.name}</b> · в{plan.revision} · {plan.side} · {plan.buy} · выиграно {wins} из {rounds}
+              </p>)}
+            </section>}
             {tab === "Раунды" && (
               <div className="round-list">
                 {!rounds && <p>История появится после первого раунда.</p>}

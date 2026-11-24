@@ -360,3 +360,22 @@
 .board-sequence {
   align-content: start;
 }
+
+.board-players button span {
+  display: grid;
+  line-height: 1.2;
+  text-align: left;
+}
+.board-players button small {
+  font-size: 10px;
+  font-weight: normal;
+}
+@media (max-width: 1020px) {
+  .board-players button span {
+    text-align: center;
+  }
+}
+
+.tactics button {
+  touch-action: manipulation;
+}

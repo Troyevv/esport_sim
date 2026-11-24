@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Application, Container } from "pixi.js";
-import { drawPlan, type RadarMap } from "./Radar";
+import { CameraButton, drawPlan, type RadarMap } from "./Radar";
 import {
   colors,
   floor,
@@ -412,21 +412,27 @@ export default function TacticMap(props: Props) {
         )}
       </div>
       <div className="board-camera">
-        <button
-          aria-label="Уменьшить доску"
-          onClick={() => zoomAt(0.8, centre)}
+        <CameraButton
+          disabled={!ready}
+          label="Уменьшить доску"
+          onActivate={() => zoomAt(0.8, centre)}
         >
           −
-        </button>
-        <button aria-label="Центрировать доску" onClick={() => setCamera(home)}>
+        </CameraButton>
+        <CameraButton
+          disabled={!ready}
+          label="Центрировать доску"
+          onActivate={() => setCamera(home)}
+        >
           {Math.round(camera.zoom * 100)}%
-        </button>
-        <button
-          aria-label="Увеличить доску"
-          onClick={() => zoomAt(1.25, centre)}
+        </CameraButton>
+        <CameraButton
+          disabled={!ready}
+          label="Увеличить доску"
+          onActivate={() => zoomAt(1.25, centre)}
         >
           +
-        </button>
+        </CameraButton>
       </div>
     </div>
   );
