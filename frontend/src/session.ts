@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { RadarPlayback } from "./playback";
+import type { MatchView } from "./MatchCenter";
 import type { Agent, RadarMap } from "./Radar";
 
 export type View = "full" | "CT" | "T";
@@ -11,6 +12,7 @@ export interface Frame {
   speed: number;
   hasSave: boolean;
   world: {
+    match?: MatchView;
     map: RadarMap;
     agents: Agent[];
     motion?: { startTick: number; tracks: Record<string, [number, number, number][]> };
@@ -26,7 +28,7 @@ type Intent = {
   context: string;
   revision: number;
   kind: string;
-  value?: number;
+  value?: number|string;
 };
 const base = new URL(import.meta.env.VITE_SERVER_URL || location.origin);
 export const serverURL = (path: string) => new URL(path, base);
@@ -152,7 +154,7 @@ export function useSession(view: View) {
     };
   }, [view, generation]);
 
-  async function act(kind: string, value?: number) {
+  async function act(kind: string, value?: number|string) {
     const seen = current.current;
     if (!seen || locked.current) return;
     locked.current = true;

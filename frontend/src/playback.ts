@@ -134,6 +134,7 @@ export class RadarPlayback {
       online &&
       old.context === next.context &&
       old.world.view === world.view &&
+      old.world.match?.round === world.match?.round &&
       old.world.map.id === world.map.id &&
       old.world.map.version === world.map.version &&
       next.running &&
@@ -218,6 +219,13 @@ export class RadarPlayback {
     }
     this.received = now;
     this.end = end;
+  }
+
+  displayTick(now: number) {
+    this.advance(now);
+    if (!this.last) return 0;
+    if (!this.last.running || !this.online || this.last.speed > 8) return this.last.world.tick;
+    return this.last.world.tick - Math.max(0, this.end - this.cursor) * this.last.speed / 100;
   }
 
   has(id: string) {

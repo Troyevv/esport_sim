@@ -28,8 +28,8 @@ class Command(BaseModel):
     id: UUID
     revision: StrictInt
     context: str
-    kind: Literal["start", "pause", "speed", "reset", "save", "load"]
-    value: StrictInt | None = None
+    kind: Literal["start", "pause", "speed", "reset", "save", "load", "match", "timeout", "call", "resume"]
+    value: StrictInt | Literal["Капитану", "Выход A", "Выход B", "Ускориться", "Экономить"] | None = None
 
 
 class Pair(BaseModel):
