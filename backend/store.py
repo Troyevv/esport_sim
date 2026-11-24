@@ -34,8 +34,12 @@ def validate_snapshot(state):
             raise Conflict("Несовместимая пара версий правил и контрольной точки")
 
 
+from .portrait_library import PortraitLibrary
+
+
 class Store:
     def __init__(self, path: Path):
+        self.portraits = PortraitLibrary(Path(path).with_suffix(".portraits.sqlite"))
         self.motion = deque(maxlen=6)  # Recent committed poses, never part of a save.
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.db.executescript("""
@@ -64,7 +68,7 @@ class Store:
                     database.install(self.db, database.STARTER.read_bytes())
                 if not self.db.execute(
                     "SELECT 1 FROM data_pack WHERE id=? AND revision=1",
-                    ("scene-202611",),
+                    (database.RELEASE_ID,),
                 ).fetchone():
                     database.install(
                         self.db, gzip.decompress(database.RELEASE.read_bytes())
@@ -306,6 +310,12 @@ class Store:
                 )
                 pack = database.get(self.db, value["id"], value["revision"])
                 domain = database.match_input(pack, value["rosters"])
+                cached = self.portraits.index(
+                    {pid: pack["players"][pid] for pid in domain["players"]}
+                )
+                for pid, portrait in cached.items():
+                    if not domain["players"][pid]["visual"].get("head"):
+                        domain["players"][pid]["visual"]["head"] = portrait["image"]
                 state.update(
                     world=match.initial(seed, domain, value["rosters"]),
                     running=False,

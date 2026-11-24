@@ -20,6 +20,7 @@ VERSIONS = dict(
     map=match.MAP["version"],
 )
 STARTER = Path(__file__).with_name("data") / "austin.json"
+RELEASE_ID = "scene-20261124"
 RELEASE = STARTER.with_name("scene-202611.json.gz")
 MAPS = (
     "depo",
@@ -142,6 +143,8 @@ def validate_photo(photo):
             "CC BY 2.0",
             "CC BY 3.0",
             "CC BY 4.0",
+            "CC BY-SA 2.0",
+            "CC BY-SA 3.0",
             "CC BY-SA 4.0",
         ),
         "Неизвестная лицензия фотографии",
@@ -520,7 +523,8 @@ def _validate(p):
 
 def installed(db):
     rows = db.execute(
-        "SELECT id,title,revision FROM data_pack ORDER BY (id='scene-202611') DESC,title,id,revision DESC"
+        "SELECT id,title,revision FROM data_pack ORDER BY (id=?) DESC,title,id,revision DESC",
+        (RELEASE_ID,),
     )
     return [dict(id=k, title=t, revision=r) for k, t, r in rows]
 

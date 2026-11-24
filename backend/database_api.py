@@ -19,7 +19,11 @@ def editor_router(app):
     @router.get("/{key}/{revision}")
     async def package(key: str, revision: int):
         try:
-            return data.envelope(data.get(app.state.store.db, key, revision))
+            p = data.get(app.state.store.db, key, revision)
+            return dict(
+                data.envelope(p),
+                portraits=app.state.store.portraits.index(p["players"]),
+            )
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
 

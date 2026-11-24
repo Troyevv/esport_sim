@@ -156,7 +156,7 @@ def corroborated_accounts(sample):
 def build():
     sample = json.loads(gzip.decompress((DIR / "round-sample.json.gz").read_bytes()))
     ranks = read("skinory-202611.json")
-    p = blank("scene-202611", "Профессиональная сцена · ноябрь 2026", DAY)
+    p = blank(db.RELEASE_ID, "Профессиональная сцена · ноябрь 2026", DAY)
     src = p["origins"]
     src.update(
         demo=origin("confirmed", "2026-04-20", DEMO),
@@ -546,25 +546,13 @@ def enrich_bios(p, lookup):
 
 def attach_images(p):
     media = read("media.json")
-    photos = {
-        **read("commons-portraits.json"),
-        **{k.casefold(): v for k, v in media["players"].items()},
-    }
     for group, field, assets in [
-        ("players", "photo", photos),
         ("staff", "photo", media["staff"]),
         ("teams", "logo", media["teams"]),
         ("organizations", "logo", media["teams"]),
     ]:
         by_name = {n.casefold(): value for n, value in assets.items()}
-        duplicates = Counter(r["name"].casefold() for r in p[group].values())
         for r in p[group].values():
-            if (
-                group == "players"
-                and duplicates[r["name"].casefold()] > 1
-                and not r.get("realName")
-            ):
-                continue
             entry = by_name.get(r["name"].casefold())
             if entry:
                 r[field] = photo_asset(entry)

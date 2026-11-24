@@ -9,7 +9,7 @@ test("Ноябрьский срез, доступный флаг и клубна
   await page.goto("/");
   await page.getByRole("button", { name: "База сцены", exact: true }).click();
   await expect(page.getByLabel("Пакет и редакция")).toHaveValue(
-    "scene-202611/1",
+    "scene-20261124/1",
   );
   await page.getByLabel("Поиск", { exact: true }).fill("ZywOo");
   await page.locator(".db-list").getByRole("button", { name: /ZywOo/ }).click();
@@ -47,6 +47,21 @@ test("Одна внешность в двух командах и у свобо�
   const pack = (
     await (await page.request.get("/api/database/austin-registration/1")).json()
   ).package;
+  const seasonal = (
+    await (await page.request.get("/api/database/scene-20261124/1")).json()
+  ).package;
+  for (const [k, team] of Object.entries(seasonal.teams) as [string, any][]) {
+    if (team.name === "Astralis")
+      pack.teams[k] = {
+        name: team.name,
+        fields: {},
+        origin: "model",
+        organization: null,
+        region: team.region,
+        tier: team.tier,
+        logo: team.logo,
+      };
+  }
   pack.id = "portrait-pilot-" + info.project.name;
   pack.title = "Проверка внешности · демонстрационные персонажи";
   const roster = Object.values(pack.rosters).find(
@@ -87,13 +102,11 @@ test("Одна внешность в двух командах и у свобо�
   const sha256 = createHash("sha256")
     .update(JSON.stringify(canonical(pack)))
     .digest("hex");
-  await page
-    .getByLabel("Файл пакета")
-    .setInputFiles({
-      name: "pilot.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify({ package: pack, sha256 })),
-    });
+  await page.getByLabel("Файл пакета").setInputFiles({
+    name: "pilot.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({ package: pack, sha256 })),
+  });
   await expect(page.getByLabel("Пакет и редакция")).toHaveValue(pack.id + "/1");
   for (const [i, pid] of pids.entries()) {
     await page
@@ -112,7 +125,7 @@ test("Одна внешность в двух командах и у свобо�
     const portrait = lab.locator(".game-portrait");
     for (const [key, label] of [
       ["first", "Vitality"],
-      ["second", "Falcons"],
+      ["second", "Astralis"],
       ["free", "Свободный агент"],
     ]) {
       await lab.locator("select").selectOption({ label });
@@ -171,4 +184,66 @@ test("Одна внешность в двух командах и у свобо�
   await expect(
     page.locator('.pf-heading [data-layer="appearance"]'),
   ).toHaveAttribute("href", heads[0]);
+});
+
+test("Однокнопочный импорт сохраняет уже подготовленную внешность", async ({
+  page,
+}, info) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "База сцены", exact: true }).click();
+  const { package: p } = await (
+    await page.request.get("/api/database/austin-registration/1")
+  ).json();
+  const [pid, r] = Object.entries(p.players)[0] as [string, any];
+  const bytes = readFileSync(resolve("e2e/fixtures/portraits/model-a.png"));
+  r.appearance = {
+    image: "data:image/png;base64," + bytes.toString("base64"),
+    author: "EsportSim",
+    source: "https://github.com/Troyevv/esport_sim",
+    license: "CC0",
+    changes: "Тестовая модель",
+  };
+  Object.assign(p, {
+    id: "studio-ready-" + info.project.name,
+    title: "Готовая внешность · пилот",
+    players: { [pid]: r },
+    rosters: {},
+    teams: {},
+    organizations: {},
+    history: {},
+    staff: {},
+  });
+  const ordered = (v: any): any =>
+    Array.isArray(v)
+      ? v.map(ordered)
+      : v && typeof v === "object"
+        ? Object.fromEntries(
+            Object.keys(v)
+              .sort()
+              .map((k) => [k, ordered(v[k])]),
+          )
+        : v;
+  const sha256 = createHash("sha256")
+    .update(JSON.stringify(ordered(p)))
+    .digest("hex");
+  await page
+    .getByLabel("Файл пакета")
+    .setInputFiles({
+      name: "studio.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify({ package: p, sha256 })),
+    });
+  await expect(page.getByLabel("Пакет и редакция")).toHaveValue(p.id + "/1");
+  await page.getByText("Студийные портреты", { exact: true }).click();
+  await page.getByRole("button", { name: "Пилот · 3 игрока" }).click();
+  await expect(page.locator(".db-import-studio")).toContainText("Завершено", {
+    timeout: 16000,
+  });
+  await expect(
+    page.locator('.pf-heading [data-layer="appearance"]'),
+  ).toHaveAttribute("href", r.appearance.image);
+  if (info.project.name === "phone-portrait")
+    await page
+      .locator(".db-import-studio")
+      .screenshot({ path: info.outputPath("studio-import.png") });
 });

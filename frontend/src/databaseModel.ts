@@ -309,6 +309,16 @@ export function evidence(
   );
 }
 
+const studioCache = new WeakMap<Pack, Record<string, PhotoAsset>>();
+export function attachPortraitCache(
+  pack: Pack,
+  cache: Record<string, PhotoAsset>,
+) {
+  studioCache.set(pack, cache);
+}
+export function playerAppearance(pack: Pack, id: string) {
+  return pack.players[id]?.appearance ?? studioCache.get(pack)?.[id] ?? null;
+}
 const memberships = new WeakMap<
   Pack,
   Map<string, { id: string | null; date: string }>
@@ -347,7 +357,7 @@ export function entityVisual(p: Pack, g: Group, id: string) {
   return {
     club,
     player: g === "players",
-    head: r.appearance?.image,
+    head: g === "players" ? playerAppearance(p, id)?.image : null,
     kit: g === "players" ? teamKit(p, latestTeam(p, id)) : null,
     photo: club ? team.logo : r.photo,
     flag: club ? team.nationality || team.region : r.nationality,

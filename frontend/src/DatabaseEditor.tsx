@@ -18,6 +18,9 @@ import {
   type Ref,
 } from "./databaseModel";
 import "./database.css";
+import { PortraitImport } from "./PortraitImport";
+import type { PhotoAsset } from "./portraits";
+import { attachPortraitCache, playerAppearance } from "./databaseModel";
 import { KitEditor, KitPreview } from "./KitStudio";
 import { Identity } from "./SceneIdentity";
 import { entityVisual } from "./databaseModel";
@@ -256,9 +259,11 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
   async function load(ref?: Ref, select?: Destination) {
     const list = (await request("")) as (Ref & { title: string })[];
     const target = ref || list[0];
-    const { package: p } = (await request("/" + refKey(target))) as {
+    const { package: p, portraits } = (await request("/" + refKey(target))) as {
       package: Pack;
+      portraits?: Record<string, PhotoAsset>;
     };
+    attachPortraitCache(p, portraits || {});
     setCatalog(list);
     setPack(p);
     setDraft(null);
@@ -333,7 +338,10 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
     await run(async () => {
       const obj = await request("/" + refKey(pack));
       const url = URL.createObjectURL(
-        new Blob([JSON.stringify(obj)], { type: "application/json" }),
+        new Blob(
+          [JSON.stringify({ package: obj.package, sha256: obj.sha256 })],
+          { type: "application/json" },
+        ),
       );
       const a = document.createElement("a");
       a.href = url;
@@ -590,6 +598,23 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
           {notice}
         </p>
       )}
+      <PortraitImport
+        pack={pack}
+        onRefresh={async () => {
+          const response = await fetch(
+            serverURL("/api/portraits/" + refKey(pack) + "/index"),
+            { credentials: "include" },
+          );
+          if (!response.ok) throw Error("Не удалось обновить портреты");
+          const cache = await response.json();
+          setPack((previous) => {
+            if (!previous || refKey(previous) !== refKey(pack)) return previous;
+            const next = { ...previous };
+            attachPortraitCache(next, cache);
+            return next;
+          });
+        }}
+      />
       <nav className="db-tabs" aria-label="Раздел базы">
         {groupKeys.map((k) => (
           <button
@@ -713,7 +738,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
                   subtitle={r.realName}
                   photo={
                     g === "players"
-                      ? r.appearance
+                      ? playerAppearance(pack, at.id)
                       : entityVisual(pack, g, at.id).photo
                   }
                   visual={entityVisual(pack, g, at.id)}

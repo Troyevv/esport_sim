@@ -1,63 +1,46 @@
 {
- "players": {
-  "ZywOo": [
-   "IEM Chicago Final Edits-9731 ZywOo (48353577846) (cropped).jpg",
-   "Esports Kingdom",
-   "CC BY 2.0"
-  ],
-  "FalleN": [
-   "FalleN IEM Chicago (48353708812) (cropped).jpg",
-   "Esports Kingdom",
-   "CC BY 2.0"
-  ],
-  "ropz": [
-   "Ropz at Blast Paris Major 2023 (cropped).jpg",
-   "VaKarM.net",
-   "CC BY 2.0"
-  ]
- },
- "staff": {
-  "zonic": [
-   "Zonic (Astralis) - Blast Copenhagen 2019.png",
-   "BLAST Premier",
-   "CC BY 3.0"
-  ],
-  "Xizt": [
-   "Interview Xizt - NiP (DH Masters Malmö 2017) (cropped).jpg",
-   "VaKarM - Vidéos CS:GO",
-   "CC BY 3.0"
-  ],
-  "NEO": [
-   "Filip \"NEO\" Kubski closeup.jpg",
-   "SteelSeries",
-   "CC BY 2.0"
-  ]
- },
- "teams": {
-  "Alliance": [
-   "Alliance esports logo.png",
-   "Alliance",
-   "PD-textlogo"
-  ],
-  "Astralis": [
-   "Astralis logo.svg",
-   "Astralis",
-   "PD-textlogo"
-  ],
-  "100 Thieves": [
-   "100 Thieves logo (Version 2).svg",
-   "100 Thieves",
-   "PD-textlogo"
-  ],
-  "NRG": [
-   "NRG Esports logo.svg",
-   "NRG Esports",
-   "PD-textlogo"
-  ],
-  "MOUZ": [
-   "MOUZlogo2021.png",
-   "mousesports",
-   "PD-textlogo"
-  ]
- }
+  "staff": {
+    "zonic": [
+      "Zonic (Astralis) - Blast Copenhagen 2019.png",
+      "BLAST Premier",
+      "CC BY 3.0"
+    ],
+    "Xizt": [
+      "Interview Xizt - NiP (DH Masters Malmö 2017) (cropped).jpg",
+      "VaKarM - Vidéos CS:GO",
+      "CC BY 3.0"
+    ],
+    "NEO": [
+      "Filip \"NEO\" Kubski closeup.jpg",
+      "SteelSeries",
+      "CC BY 2.0"
+    ]
+  },
+  "teams": {
+    "Alliance": [
+      "Alliance esports logo.png",
+      "Alliance",
+      "PD-textlogo"
+    ],
+    "Astralis": [
+      "Astralis logo.svg",
+      "Astralis",
+      "PD-textlogo"
+    ],
+    "100 Thieves": [
+      "100 Thieves logo (Version 2).svg",
+      "100 Thieves",
+      "PD-textlogo"
+    ],
+    "NRG": [
+      "NRG Esports logo.svg",
+      "NRG Esports",
+      "PD-textlogo"
+    ],
+    "MOUZ": [
+      "MOUZlogo2021.png",
+      "mousesports",
+      "PD-textlogo"
+    ]
+  }
 }

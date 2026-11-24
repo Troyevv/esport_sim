@@ -1,6 +1,10 @@
 # Exercise the user's BAT entry points in a fresh checkout with a Unicode path.
 param([Parameter(Mandatory)][string]$PackagedExe)
 $ErrorActionPreference = 'Stop'
+$sample = (Resolve-Path 'tests/portrait_samples/studio-1.jpg').Path
+$head = Join-Path $env:TEMP 'esportsim-portrait-smoke.png'
+$ml = Start-Process -FilePath $PackagedExe -ArgumentList "--prepare-head `"$sample`" `"$head`"" -Wait -PassThru
+if ($ml.ExitCode -ne 0 -or -not (Test-Path $head) -or (Get-Item $head).Length -lt 1000) { throw 'Packaged local portrait processor failed.' }
 $exe = (Resolve-Path $PackagedExe).Path
 $checkout = Join-Path $env:RUNNER_TEMP 'Исходники Esport Sim'
 $archive = Join-Path $env:RUNNER_TEMP 'source.zip'

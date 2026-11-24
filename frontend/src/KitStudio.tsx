@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { GamePortrait, kitDesign } from "./GamePortrait";
-import { teamKit, type Entity, type Pack } from "./databaseModel";
+import {
+  playerAppearance,
+  teamKit,
+  type Entity,
+  type Pack,
+} from "./databaseModel";
 
 export function KitPreview({
   pack,
@@ -23,7 +28,7 @@ export function KitPreview({
       <div className="kit-preview">
         <GamePortrait
           name={player.name}
-          head={player.appearance?.image}
+          head={playerAppearance(pack, id)?.image}
           kit={teamKit(pack, current)}
         />
         <div>

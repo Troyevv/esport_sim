@@ -59,6 +59,10 @@ def main():
             f"{frontend}:frontend/dist",
             "--add-data",
             f"{ROOT / 'backend' / 'data'}:backend/data",
+            "--collect-data",
+            "mediapipe",
+            "--collect-binaries",
+            "mediapipe",
             "--collect-submodules",
             "uvicorn",
             str(ROOT / "backend" / "desktop.py"),
@@ -77,7 +81,9 @@ def main():
     shutil.copyfile(ROOT / "docs" / "WORLD_R31.md", output / "WORLD_R31.md")
     shutil.copyfile(ROOT / "SOURCES.md", output / "SOURCES.md")
     guide = (ROOT / "docs" / "DATABASE_R32.md").read_text(encoding="utf-8")
-    (output / "DATABASE_R32.md").write_text(guide.replace("../SOURCES.md", "SOURCES.md"), encoding="utf-8")
+    (output / "DATABASE_R32.md").write_text(
+        guide.replace("../SOURCES.md", "SOURCES.md"), encoding="utf-8"
+    )
     for name in ("SCENE_202611.md", "PORTRAITS_R32.md"):
         shutil.copyfile(ROOT / "docs" / name, output / name)
     screenshots = output / "screenshots"

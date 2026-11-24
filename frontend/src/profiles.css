@@ -409,3 +409,20 @@
   font-size: 0.84rem;
   color: #b1c3be;
 }
+.db-import-studio {
+  margin: 0.7rem 0;
+  border: 1px solid #3d554b;
+  background: #20332e;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+}
+.db-import-studio summary {
+  font-weight: 650;
+  cursor: pointer;
+}
+.db-import-studio > div {
+  max-width: 65rem;
+}
+.db-import-studio ul {
+  padding-left: 1rem;
+}
