@@ -141,8 +141,8 @@ def test_zip_import_requires_pinned_reports():
     manifest = json.loads(valve_import.MANIFEST.read_bytes())
     buffer = BytesIO()
     with ZipFile(buffer, "w") as archive:
-        for name in manifest:
-            archive.writestr(name, "wrong version")
+        for i in range(len(manifest)):
+            archive.writestr(f"{i:04}.md", "wrong version")
     with pytest.raises(ValueError, match="не совпадает"):
         valve_import.import_zip(buffer.getvalue())
 

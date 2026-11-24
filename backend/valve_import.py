@@ -79,17 +79,18 @@ def verified_reports(raw):
             )
             names = [e.filename.split("/")[-1] for e in items]
             db.require(
-                len(items) == len(manifest) and set(names) == set(manifest),
+                len(items) == len(manifest) and len(set(names)) == len(names),
                 "Нужны все 297 файлов из details/2025_05_05 без посторонних записей",
             )
-            for name, entry in zip(names, items):
+            for name, entry, expected in zip(names, items, manifest):
                 db.require(
                     entry.file_size <= 128 * 1024 and not entry.flag_bits & 1,
                     "Недопустимый файл в ZIP",
                 )
                 content = archive.read(entry).replace(b"\r\n", b"\n")
+                fingerprint = name + "\0" + hashlib.sha256(content).hexdigest()
                 db.require(
-                    hashlib.sha256(content).hexdigest() == manifest[name],
+                    hashlib.sha256(fingerprint.encode()).hexdigest() == expected,
                     f"Файл не совпадает со срезом Valve: {name}",
                 )
                 yield DIRECTORY + name, content.decode("utf-8")
