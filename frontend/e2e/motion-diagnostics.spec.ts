@@ -95,14 +95,22 @@ test("доставка снимков, движение за кадр и вид�
   const incoming: number[] = [];
   await page.routeWebSocket("**/api/stream**", (socket) => {
     const upstream = socket.connectToServer();
-    let due = 0;
+    const held: (string | Buffer)[] = [];
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    socket.onClose(() => { clearTimeout(timer); upstream.close(); });
     upstream.onMessage((data) => {
       const now = performance.now();
       incoming.push(now);
       // Preserve TCP ordering and every real server message. Delayed packets
       // catch up in a burst after a 215 ms head-of-line delay every 1.2 s.
-      due = Math.max(due, now + (jitter && number++ % 12 === 5 ? 215 : 0));
-      setTimeout(() => socket.send(data), Math.max(0, due - now));
+      const delay = jitter && number++ % 12 === 5;
+      if (timer || delay) {
+        held.push(data);
+        if (!timer) timer = setTimeout(() => {
+          for (const message of held.splice(0)) socket.send(message);
+          timer = undefined;
+        },215);
+      } else socket.send(data);
     });
   });
   await page.addInitScript(() => {
@@ -172,6 +180,7 @@ test("доставка снимков, движение за кадр и вид�
   const reports = [];
   for (const [condition, speed] of [
     ["loopback", 1],
+    ["loopback", 8],
     ["jitter", 1],
     ["jitter", 4],
     ["jitter", 8],
@@ -190,6 +199,8 @@ test("доставка снимков, движение за кадр и вид�
       p.sampling = false;
       return { frames: p.refreshes, packets: p.packets };
     });
+    const ticks = data.packets.map(p=>p.tick);
+    expect(ticks).toEqual([...ticks].sort((a,b)=>a-b));
     const result = {
       condition,
       speed,
