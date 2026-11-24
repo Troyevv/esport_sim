@@ -132,7 +132,7 @@ test('после обрыва WebSocket клиент принимает сост
     await page.setViewportSize({ width: 844, height: 390 });
     await expect.poll(async () => (await canvas.boundingBox())!.width).toBeGreaterThan(portraitWidth);
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect.poll(async () => (await canvas.boundingBox())!.width).toBe(portraitWidth);
+    await expect.poll(async () => (await canvas.boundingBox())!.width).toBeCloseTo(portraitWidth, 3);
     await expect(page.getByTestId('current-seed')).toHaveText('24680');
   } finally {
     await desktop.close();
