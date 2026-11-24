@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import TacticEditor from "./TacticEditor";
 import MatchCenter from "./MatchCenter";
 import Radar from "./Radar";
 import HostSettings from "./HostSettings";
@@ -63,6 +64,7 @@ function takePairingCode() {
 }
 
 function App() {
+  const [board, showBoard] = useState(false);
   const [view, setView] = useState<View>("full");
   const [selected, setSelected] = useState<string | null>(null);
   const [seed, setSeed] = useState("42");
@@ -71,7 +73,7 @@ function App() {
     const platform = navigator.userAgent.match(/iPhone|iPad|Android/i)?.[0];
     return platform || "Мой браузер";
   });
-  const { frame, playback, connection, loadError, resync, busy, notice, act, pair } = useSession(view);
+  const { frame, playback, connection, loadError, resync, busy, notice, clearNotice, act, pair } = useSession(view);
   useEffect(() => {
     if (connection === "На связи") setCode("");
   }, [connection]);
@@ -105,14 +107,14 @@ function App() {
         <HostSettings connected={connection === "На связи"}/>
       </header>
       <main>
-        {!world?.match && <div className="intro">
+        {!board && !world?.match && <div className="intro">
           <div>
             <div className="eyebrow">
               <i /> СТЕНД СИМУЛЯЦИИ <span>/ R0</span>
             </div>
             <h1>Тактический радар</h1>
           </div>
-          {world && <button className="primary" disabled={!enabled || !validSeed} onClick={()=>act("match",Number(seed))}>Открыть матч BO1</button>}
+          {world && <div className="board-buttons"><button onClick={()=>showBoard(true)}>Редактор тактик</button><button className="primary" disabled={!enabled || !validSeed} onClick={()=>act("match",Number(seed))}>Открыть матч BO1</button></div>}
           {world && (
             <div className="clock">
               <span>МОДЕЛЬНОЕ ВРЕМЯ</span>
@@ -151,13 +153,14 @@ function App() {
         {!world && !loadError && connection !== "Требуется код" && (
           <p role="status">Получаем состояние домашнего сервера…</p>
         )}
-        {notice && (
+        {notice && !board && (
           <p className="notice" role="status">
             {notice}
           </p>
         )}
-        {world?.match && frame && <MatchCenter key={frame.context} frame={frame} playback={playback} connected={connection==="На связи"} enabled={enabled} act={act} setView={setView}/>}
-        {world && !world.match && frame && (
+        {board && frame && <TacticEditor frame={frame} enabled={enabled} act={act} commandNotice={notice} clearNotice={clearNotice} onClose={()=>{clearNotice();showBoard(false);}}/>}
+        {!board && world?.match && frame && <MatchCenter openBoard={()=>showBoard(true)} key={frame.context} frame={frame} playback={playback} connected={connection==="На связи"} enabled={enabled} act={act} setView={setView}/>}
+        {!board && world && !world.match && frame && (
           <div className="dashboard">
             <div className="column">
               <section className="panel mapcard">

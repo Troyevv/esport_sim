@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
 
-from . import checkpoints, engine, match
+from . import checkpoints, engine, match, tactic_library
 
 
 class Conflict(ValueError):
@@ -25,7 +25,7 @@ def validate_snapshot(state):
         raise Conflict("Несовместимая версия снимка, ядра или геометрии")
     if world.get("version") == 2:
         version = world.get("checkpointVersion", 1)
-        if type(version) is not int or version not in (1, checkpoints.VERSION):
+        if type(version) is not int or version not in (1, 2, checkpoints.VERSION):
             raise Conflict(f"Неподдерживаемая версия сохранения BO1: {version}")
 
 
@@ -38,6 +38,10 @@ class Store:
             CREATE TABLE IF NOT EXISTS active (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS round_log (digest TEXT PRIMARY KEY, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS slot (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS tactic (id TEXT NOT NULL, revision INTEGER NOT NULL, body TEXT,
+                PRIMARY KEY(id, revision));
+            CREATE TABLE IF NOT EXISTS tactic_mastery (id TEXT, revision INTEGER, familiarity INTEGER NOT NULL,
+                PRIMARY KEY(id, revision));
             CREATE TABLE IF NOT EXISTS receipt (id TEXT PRIMARY KEY, request TEXT NOT NULL, result TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS device (digest TEXT PRIMARY KEY);
             CREATE TABLE IF NOT EXISTS device_info (digest TEXT PRIMARY KEY, name TEXT NOT NULL, paired_at INTEGER NOT NULL);
@@ -77,8 +81,10 @@ class Store:
             state = json.loads(body)
             validate_snapshot(state)
             world = state["world"]
-            if world["version"] == 2 and world.get("checkpointVersion", 1) == 1:
-                checkpoints.upgrade_match(self.db, world)
+            if world["version"] == 2 and world.get("checkpointVersion", 1) < checkpoints.VERSION:
+                if world.get("checkpointVersion", 1) == 1:
+                    checkpoints.upgrade_match(self.db, world)
+                world["checkpointVersion"] = checkpoints.VERSION
                 self.db.execute("""CREATE TABLE IF NOT EXISTS checkpoint_backup (
                     source TEXT NOT NULL, body TEXT NOT NULL, UNIQUE(source, body))""")
                 self.db.execute(
@@ -206,13 +212,26 @@ class Store:
                     "Другое устройство уже изменило состояние. Проверьте данные и повторите действие."
                 )
             kind, value = command["kind"], command.get("value")
-            if kind in ("start", "pause"):
+            if kind in ("tactic-save", "tactic-delete", "tactic-assign"):
+                try:
+                    if kind == "tactic-assign":
+                        if state["world"]["version"] != 2:
+                            raise ValueError("Сначала откройте матч BO1")
+                        match.assign(state["world"], tactic_library.resolve(self.db, value))
+                    else:
+                        tactic_library.change(self.db, kind, value)
+                        state["libraryRevision"] = state.get("libraryRevision", 0) + 1
+                except tactic_library.StalePlan as err:
+                    raise Conflict(str(err)) from err
+            elif kind in ("start", "pause"):
                 if kind == "start" and state["world"].get("phase") in (
                     "finished",
                     "timeout",
                 ):
                     raise ValueError("Просмотр остановлен на границе матча")
                 state["running"] = kind == "start"
+                if state["running"] and state["world"]["version"] == 2:
+                    state["world"]["started"] = True
             elif kind == "speed":
                 if value not in (
                     (1, 2, 4, 8, 128)

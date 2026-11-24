@@ -219,7 +219,12 @@ if ($again.pid -ne $first.pid -or $again.port -ne $first.port -or $again.nonce -
 Wait-Check 'secondary launcher exit' { @(Get-Process -Name EsportSim -ErrorAction SilentlyContinue).Count -eq 1 }
 $origin = "http://127.0.0.1:$($first.port)"
 if ($DesktopBrowser) { Test-Lan $origin }
+if (!(Test-Path (Join-Path $install 'EsportSim\TACTICS.md'))) { throw 'Tactics guide missing from archive.' }
+$library = Invoke-RestMethod "$origin/api/tactics"
+$plan = $library.plans | Where-Object { $_.id -eq 'std-T-0' }
+if ($plan.slots.Count -ne 5) { throw 'Packaged board has no five-slot plan.' }
 Command $origin 'match' 705177
+Command $origin 'tactic-assign' @{id=$plan.id; revision=$plan.revision}
 Command $origin 'timeout'
 Command $origin 'resume'
 Command $origin 'speed' 128
@@ -228,6 +233,8 @@ Wait-Check 'packaged BO1 reaches a final score' {
     $world.match.phase -eq 'finished' -and $world.match.remaining -eq 2 -and
         ($world.match.score[0] + $world.match.score[1]) -eq $world.match.history.Count
 }
+$world = (Invoke-RestMethod "$origin/api/state").world
+if ($world.match.history[0].tactic.id -ne $plan.id) { throw 'BO1 did not execute the packaged board.' }
 Command $origin 'save'
 Command $origin 'reset' 47
 Stop-HostInstance $first

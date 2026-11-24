@@ -1,8 +1,9 @@
 """Autonomous BO1. The same step drives the home server and headless matches."""
 
+from collections import Counter
 from math import atan2
 
-from . import checkpoints, engine
+from . import checkpoints, engine, tactics
 from . import match_ai as ai
 from .match_events import damage, emit, money
 from .match_rules import (
@@ -159,22 +160,81 @@ def purchase(w, a, item, give=None):
     return True
 
 
+def buy_context(w, squad, call=None):
+    average = sum(a["cash"] for a in squad) / len(squad)
+    if call == "Экономить":
+        return "Эко"
+    if w["round"] in (1, RULES["half"] + 1):
+        return "Пистолетная"
+    return "Полная" if average >= 3600 else "Форс" if average >= 1900 else "Эко"
+
+
+def board_buy(buy):
+    return "Оружейная" if buy in ("Полная", "Форс") else buy
+
+
+def next_buy(w, squad):
+    if w.get("nextBoard"):
+        return "Эко" if w["nextBoard"]["buy"] == "Эко" else buy_context(w, squad)
+    return buy_context(w, squad, w.get("call"))
+
+
+def assign(w, board):
+    tactics.validate(board)
+    side, buy = board["side"], board["buy"]
+    if w["phase"] == "timeout":
+        squad = [a for a in w["agents"] if a["club"] == 0]
+        if side != squad[0]["team"] or buy != board_buy(next_buy(w, squad)):
+            raise ValueError(
+                "Тактика не соответствует стороне или закупке ближайшего раунда"
+            )
+        w.update(nextBoard=board, call=board["name"])
+    elif (
+        w["round"] == 1
+        and w["tick"] == 0
+        and w["phase"] == "freeze"
+        and not w.get("started")
+        and w["remaining"] == RULES["timeouts"]
+    ):
+        w.setdefault("playbook", {})[side + "/" + buy] = board
+    else:
+        raise ValueError(
+            "Назначение возможно до старта матча или в свой тактический тайм-аут"
+        )
+    emit(
+        w,
+        "board_call",
+        f"Назначена тактика «{board['name']}» · в{board['revision']}",
+        w["agents"][0]["team"],
+        tactic=tactics.reference(board),
+    )
+
+
 def begin_live(w):
     now = w["tick"]
     for side in ("T", "CT"):
         squad = [a for a in w["agents"] if a["team"] == side]
         igl = squad[0]
         call = w["call"] if igl["club"] == 0 else None
-        average = sum(a["cash"] for a in squad) / 5
-        buy = "Полная" if average >= 3600 else "Форс" if average >= 1900 else "Эко"
-        if w["round"] in (1, RULES["half"] + 1):
-            buy = "Пистолетная"
-        if call == "Экономить":
-            buy = "Эко"
+        board = None
+        if igl["club"] == 0:
+            board = w.pop("nextBoard", None)
+            if board:
+                call = "Экономить" if board["buy"] == "Эко" else None
+        buy = buy_context(w, squad, call)
+        if igl["club"] == 0 and not board and call in (None, "Экономить"):
+            board = w.get("playbook", {}).get(side + "/" + board_buy(buy))
         site = "AB"[(engine._draw(igl) >> 16) % 2]
         if call in ("Выход A", "Выход B"):
             site = call[-1]
         style = "Быстро" if call == "Ускориться" or engine._draw(igl) >> 31 else "Сбор"
+        if board:
+            plant = next(
+                (s for steps in board["slots"] for s in steps if s["kind"] == "plant"),
+                None,
+            )
+            if plant:
+                site = tactics.zone_at(plant["x"], plant["y"])
         w["plans"][side] = dict(
             site=site,
             style=style,
@@ -196,6 +256,25 @@ def begin_live(w):
             style=style,
             buy=buy,
         )
+        if board:
+            w["plans"][side]["board"] = board
+            emit(
+                w,
+                "board",
+                f"{igl['name']} вызывает «{board['name']}» · в{board['revision']}",
+                side,
+                tactic=tactics.reference(board),
+            )
+            for a in squad:
+                steps = board["slots"][a["slot"]]
+                a.update(stepIndex=0, stepUntil=None)
+                if any(s["kind"] == "plant" for s in steps):
+                    w["bomb"]["carrier"] = a["id"]
+                for item in (
+                    tactics.equipment(steps) - Counter(a["utility"])
+                ).elements():
+                    if len(a["utility"]) < 2:
+                        purchase(w, a, item)
         rifle = "AK-47" if side == "T" else "M4A1-S"
         smg = "MAC-10" if side == "T" else "MP9"
         for a in squad:
@@ -269,6 +348,7 @@ def command(w, kind, value=None):
     elif w["phase"] != "timeout":
         raise ValueError("Колл разрешён только в собственный тактический тайм-аут")
     elif kind == "call" and value in CALLS:
+        w.pop("nextBoard", None)
         w["call"] = value
         emit(
             w, "call", f"Указание на следующий раунд · {value}", w["agents"][0]["team"]
@@ -331,6 +411,9 @@ def finish_round(w, side, reason):
             economy=checkpoints.purchases(w["events"]),
         )
     )
+    for plan in w["plans"].values():
+        if plan.get("board"):
+            w["history"][-1]["tactic"] = tactics.reference(plan["board"])
     w["streak"][winner] = 0
     w["streak"][1 - winner] += 1
     n = w["round"]
@@ -389,6 +472,7 @@ def objective(w, a, kind, site=None):
 def advance(w):
     if w["phase"] in ("finished", "timeout"):
         return
+    w["started"] = True
     w["tick"] += 1
     now = w["tick"]
     if w["phase"] == "freeze":
@@ -453,7 +537,27 @@ def advance(w):
                 if w["action"] and ids[w["action"]["player"]]["team"] == side
                 else None,
             )
+            previous = a["status"]
+            step_index = a.get("stepIndex", 0)
             intents.append((a, *ai.act(observation, a, squad, known_bomb, fire)))
+            if observation["plan"].get("board"):
+                if a["stepIndex"] != step_index:
+                    emit(
+                        w,
+                        "board_step",
+                        f"{a['name']} · {a['status']}",
+                        side,
+                        player=a["id"],
+                        step=step_index,
+                    )
+                elif previous != a["status"] and a["status"] in (
+                    "К капитану после потери союзника",
+                    "Пережидает огонь за укрытием",
+                    "Подбирает C4",
+                ):
+                    emit(
+                        w, "adapt", f"{a['name']} · {a['status']}", side, player=a["id"]
+                    )
             if a["reloadAt"] == now + WEAPONS[a["weapon"]].reload:
                 emit(
                     w,
@@ -697,7 +801,22 @@ def project(w, view="full"):
             effects=effects,
             shots=[e for e in w["traces"] if audience(e)],
             kills=w["kills"][-8:],
-            plans={s: p for s, p in w["plans"].items() if view in ("full", s)},
+            plans={
+                s: {k: v for k, v in p.items() if k != "board"}
+                | ({"tactic": tactics.reference(p["board"])} if "board" in p else {})
+                for s, p in w["plans"].items()
+                if view in ("full", s)
+            },
+            prepared=[tactics.reference(p) for p in w.get("playbook", {}).values()]
+            if coach_view
+            else [],
+            pregame=not w.get("started")
+            and w["tick"] == 0
+            and w["phase"] == "freeze"
+            and w["remaining"] == RULES["timeouts"],
+            nextBuy=board_buy(next_buy(w, [a for a in w["agents"] if a["club"] == 0]))
+            if coach_view
+            else None,
             remaining=w["remaining"],
             timeoutLimit=RULES["timeouts"],
             pending=w["pending"],

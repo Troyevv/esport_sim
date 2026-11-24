@@ -3,7 +3,7 @@
 from functools import lru_cache
 from math import atan2, hypot, pi, sin
 
-from . import engine
+from . import engine, tactic_execution
 from .match_events import damage, emit
 from .match_rules import MAP, POSITIONS, RULES, UTILITY, WEAPONS, role_orders
 
@@ -225,6 +225,27 @@ def act(w, a, allies, bomb, visible_fire):
     a["target"] = None
     if w["action"] and w["action"]["player"] == a["id"]:
         return ("objective", None)
+    board = plan.get("board")
+    if board and not plan["rotated"]:
+        recover = side == "T" and bomb and not bomb["carrier"] and not bomb["site"]
+        rescuer = (
+            recover and min(alive, key=lambda p: (distance(p, bomb), p["id"])) is a
+        )
+        reinforce = side == "CT" and (
+            w["phase"] == "planted" or (plan["reinforce"] and slot in (1, 4))
+        )
+        # The surviving support slot rejoins the acting captain after a casualty.
+        regroup = len(alive) < 5 and a is alive[-1] and distance(a, alive[0]) > 34
+        if not rescuer and not reinforce and regroup:
+            a["status"] = "К капитану после потери союзника"
+            moved = walk(a, (alive[0]["x"], alive[0]["y"]), 2, visible_fire)
+            return ("move" if moved else "hold", None)
+        if not rescuer and not reinforce:
+            intent = tactic_execution.execute(
+                a, board["slots"][slot], now, bomb, visible_fire, walk
+            )
+            if intent:
+                return intent
     if w["phase"] == "planted":
         if side == "CT":
             site = (
@@ -355,7 +376,8 @@ def shoot(w, a, sight, b):
 
 
 def throw(w, a, target):
-    name = a["utility"].pop(0)
+    name = target.get("utility") or a["utility"][0]
+    a["utility"].remove(name)
     now = w["tick"]
     radius, duration = UTILITY[name]
     flight = max(3, round(distance(a, target) / 7))

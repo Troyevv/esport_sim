@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
+from . import tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
@@ -28,8 +29,8 @@ class Command(BaseModel):
     id: UUID
     revision: StrictInt
     context: str
-    kind: Literal["start", "pause", "speed", "reset", "save", "load", "match", "timeout", "call", "resume"]
-    value: StrictInt | Literal["Капитану", "Выход A", "Выход B", "Ускориться", "Экономить"] | None = None
+    kind: Literal["start", "pause", "speed", "reset", "save", "load", "match", "timeout", "call", "resume", "tactic-save", "tactic-delete", "tactic-assign"]
+    value: StrictInt | Literal["Капитану", "Выход A", "Выход B", "Ускориться", "Экономить"] | dict | None = None
 
 
 class Pair(BaseModel):
@@ -211,6 +212,24 @@ def create_app(
             max_age=2592000,
         )
         return response
+
+    @app.get("/api/tactics")
+    async def library():
+        return tactic_library.catalog(app.state.store.db)
+
+    @app.get("/api/tactics/proposal")
+    async def proposal(side: Literal["T", "CT"], buy: str):
+        try:
+            return tactics.propose(side, buy, secrets.randbits(32))
+        except ValueError as err:
+            raise HTTPException(422, str(err)) from err
+
+    @app.post("/api/tactics/preview")
+    def preview(body: dict):
+        try:
+            return tactic_preview.simulate(body)
+        except ValueError as err:
+            raise HTTPException(422, str(err)) from err
 
     @app.get("/api/state")
     async def state(view: View = "full"):

@@ -4,8 +4,9 @@ import hashlib
 import json
 
 from .match_rules import role_orders
+from . import tactics
 
-VERSION = 2
+VERSION = 3
 
 
 class CheckpointError(ValueError):
@@ -83,6 +84,29 @@ def upgrade_match(db, world):
 
 
 def validate_current(world):
+    boards = list(world.get("playbook", {}).values())
+    if world.get("nextBoard"):
+        boards.append(world["nextBoard"])
+    for side, plan in world["plans"].items():
+        if plan.get("board"):
+            board = plan["board"]
+            boards.append(board)
+            if board["side"] != side:
+                raise CheckpointError("Сторона назначенной тактики не совпадает")
+            for a in world["agents"]:
+                if a["team"] == side and not (
+                    type(a.get("stepIndex")) is int
+                    and 0 <= a["stepIndex"] <= len(board["slots"][a["slot"]])
+                ):
+                    raise CheckpointError("Повреждён прогресс маршрута")
+    for board in boards:
+        tactics.validate(board)
+        if (
+            not isinstance(board.get("id"), str)
+            or type(board.get("revision")) is not int
+        ):
+            raise CheckpointError("Повреждена ссылка на версию тактики")
+
     for row in world["history"]:
         totals = row["economy"]
         if set(totals) != {"T", "CT"} or any(

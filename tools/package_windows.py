@@ -71,6 +71,7 @@ def main():
         if not (output / file).is_file():
             raise RuntimeError(f"В сборке отсутствует {file}")
     shutil.copyfile(ROOT / "LICENSE", output / "LICENSE")
+    shutil.copyfile(ROOT / "docs" / "TACTICS.md", output / "TACTICS.md")
     archive = dist / "EsportSim-windows-x64.zip"
     with zipfile.ZipFile(archive, "w") as bundle:
         for path in sorted(output.rglob("*")):
