@@ -5,7 +5,7 @@ from math import atan2, hypot, pi, sin
 
 from . import engine
 from .match_events import damage, emit
-from .match_rules import MAP, POSITIONS, UTILITY, WEAPONS, role_orders
+from .match_rules import MAP, POSITIONS, RULES, UTILITY, WEAPONS, role_orders
 
 
 def distance(a, b):
@@ -242,7 +242,8 @@ def act(w, a, allies, bomb, visible_fire):
                 )
             too_late = (
                 w["deadline"] - now
-                < (50 if a["kit"] else 100) + distance(a, at(goal)) / 2
+                < (RULES["kitDefuse"] if a["kit"] else RULES["defuse"])
+                + distance(a, at(goal)) / 2
             )
             if too_late and not w["action"]:
                 goal = engine._center(engine._SPAWN_CELLS["CT"][slot])
@@ -310,11 +311,13 @@ def act(w, a, allies, bomb, visible_fire):
     return ("hold", None)
 
 
-def shoot(w, a, b):
+def shoot(w, a, sight, b):
+    """Commit the shot toward the observed point, then resolve the collision."""
+
     spec = WEAPONS[a["weapon"]]
     gap = w["tick"] - a["lastShot"]
     burst = 0 if gap > 4 else min(4, a["burst"] + 1)
-    dist = distance(a, b)
+    dist = distance(a, sight)
     accuracy = round(spec.accuracy + (a["aim"] - 70) * 0.5 - dist * 0.36 - burst * 5)
     a.update(
         ammo=a["ammo"] - 1,
@@ -331,13 +334,18 @@ def shoot(w, a, b):
         target=b["id"],
         x=a["x"],
         y=a["y"],
-        tx=b["x"],
-        ty=b["y"],
+        tx=sight["x"],
+        ty=sight["y"],
         accuracy=accuracy,
         burst=burst,
     )
     w["traces"].append(event)
-    if engine._draw(a) % 100 < max(8, min(96, accuracy)):
+    intersects = (
+        b["hp"]
+        and near_line(a, sight, b, 3)
+        and engine.clear_line(a["x"], a["y"], b["x"], b["y"])
+    )
+    if engine._draw(a) % 100 < max(8, min(96, accuracy)) and intersects:
         head = engine._draw(a) % 100 < 14 + a["aim"] // 6
         amount = spec.damage * (3 if head else 1)
         if b["armor"] and not head:

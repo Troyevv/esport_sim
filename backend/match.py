@@ -469,13 +469,10 @@ def advance(w):
     for a, kind, target in order:
         if not a["hp"] or kind not in ("shoot", "throw"):
             continue
-        b = ids[target["id"]]
-        if not b["hp"] or not engine.clear_line(a["x"], a["y"], b["x"], b["y"]):
-            continue
         if kind == "throw":
             ai.throw(w, a, target)
         else:
-            ai.shoot(w, a, b)
+            ai.shoot(w, a, target, ids[target["id"]])
             for listener in players:
                 if (
                     listener["team"] != a["team"]
@@ -704,6 +701,7 @@ def project(w, view="full"):
             kills=w["kills"][-8:],
             plans={s: p for s, p in w["plans"].items() if view in ("full", s)},
             remaining=w["remaining"],
+            timeoutLimit=RULES["timeouts"],
             pending=w["pending"],
             call=w["call"] if coach_view else None,
             calls=CALLS,

@@ -303,3 +303,16 @@ def test_timeout_comments_reference_author_experience_and_survive_boundary():
         match.command(checkpoint, "resume")
         until(checkpoint, lambda: checkpoint["phase"] == "finished")
     assert json.dumps(w, sort_keys=True) == json.dumps(saved, sort_keys=True)
+
+
+def test_shot_targets_only_the_position_available_at_decision_time():
+    w, a, b = duel()
+    a.update(x=25, y=55)
+    sight = dict(id=b["id"], x=35, y=55)
+    # Between observation and resolution the target is now behind the solid pillar.
+    b.update(x=55, y=55)
+    before = a["ammo"]
+    ai.shoot(w, a, sight, b)
+    shot = w["traces"][-1]
+    assert (shot["tx"], shot["ty"]) == (35, 55)
+    assert a["ammo"] == before - 1 and b["hp"] == 100

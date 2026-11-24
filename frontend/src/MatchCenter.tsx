@@ -61,6 +61,7 @@ export interface MatchView {
   }[];
   plans: Partial<Record<Side, { site: string; style: string; buy: string }>>;
   remaining: number;
+  timeoutLimit: number;
   pending: boolean;
   call: string | null;
   calls: string[];
@@ -373,7 +374,7 @@ export default function MatchCenter({
           <section className="panel coaching">
             <h2>Скамейка тренера</h2>
             <p>
-              Север · осталось тайм-аутов <b>{m.remaining} / 3</b>
+              Север · осталось тайм-аутов <b>{m.remaining} / {m.timeoutLimit}</b>
             </p>
             {!timeout ? (
               <button
