@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import Radar from "./Radar";
+import HostSettings from "./HostSettings";
 import { useSession, type View } from "./session";
 import "./style.css";
 
@@ -55,6 +56,10 @@ function App() {
   const [selected, setSelected] = useState<string | null>(null);
   const [seed, setSeed] = useState("42");
   const [code, setCode] = useState("");
+  const [deviceName, setDeviceName] = useState(() => {
+    const platform = navigator.userAgent.match(/iPhone|iPad|Android/i)?.[0];
+    return platform || "Мой браузер";
+  });
   const { frame, connection, busy, notice, act, pair } = useSession(view);
   const world = frame?.world;
   const agent = world?.agents.find((item) => item.id === selected);
@@ -83,6 +88,7 @@ function App() {
           <i />
           {connection}
         </span>
+        <HostSettings/>
       </header>
       <main>
         <div className="intro">
@@ -104,10 +110,11 @@ function App() {
             className="panel pair"
             onSubmit={(e) => {
               e.preventDefault();
-              void pair(code);
+              void pair(code, deviceName.trim());
             }}
           >
             <h2>Подключение устройства</h2>
+            <label>Название устройства<input value={deviceName} onChange={e => setDeviceName(e.target.value)} maxLength={48} required autoComplete="off"/></label>
             <label>
               Одноразовый код с домашнего ПК{" "}
               <input

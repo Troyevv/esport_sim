@@ -1,6 +1,7 @@
 import asyncio
 import ipaddress
 import secrets
+from collections import Counter
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from typing import Literal
@@ -10,11 +11,13 @@ from uuid import UUID
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, StrictInt
+from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
+from .home_settings import home_router
+from .lan import LanAccess
 
 View = Literal["full", "T", "CT"]
 COOKIE = "esport_device"
@@ -31,12 +34,17 @@ class Command(BaseModel):
 
 class Pair(BaseModel):
     code: str
+    name: str = Field(default="Устройство", max_length=80)
 
 
-def create_app(db_path: Path, mode="local", origins=(), pairing_code=None):
+def create_app(db_path: Path, mode="local", origins=(), pairing_code=None,
+               *, managed=True, on_shutdown=None, _shared=None):
     origins = frozenset(origins)
     hosts = {urlsplit(item).netloc for item in origins}
-    condition = asyncio.Condition()
+    # A second TLS listener serves the same store and wakes the same subscribers.
+    # Only the owning application runs the lifespan and advances model time.
+    condition, connections = _shared[:2] if _shared else (asyncio.Condition(), Counter())
+    manages_home = mode == "local" and managed
 
     @asynccontextmanager
     async def lifespan(app):
@@ -54,6 +62,14 @@ def create_app(db_path: Path, mode="local", origins=(), pairing_code=None):
                         if store.tick():
                             condition.notify_all()
 
+            if manages_home:
+                def guest_app(origin):
+                    return create_app(db_path, "lan", [origin], managed=False,
+                                      _shared=(condition, connections, store))
+
+                app.state.lan = LanAccess(db_path.parent, guest_app)
+                await app.state.lan.restore()
+
             task = asyncio.create_task(clock())
             try:
                 yield
@@ -61,9 +77,16 @@ def create_app(db_path: Path, mode="local", origins=(), pairing_code=None):
                 task.cancel()
                 with suppress(asyncio.CancelledError):
                     await task
-                store.db.close()
+                try:
+                    if manages_home:
+                        await app.state.lan.close()
+                finally:
+                    store.db.close()
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+
+    if _shared:
+        app.state.store = _shared[2]
 
     def trusted(conn, require_origin):
         host = conn.headers.get("host", "")
@@ -71,7 +94,8 @@ def create_app(db_path: Path, mode="local", origins=(), pairing_code=None):
         if mode == "local":
             try:
                 name = urlsplit("//" + host).hostname
-                loopback = name == "localhost" or ipaddress.ip_address(name).is_loopback
+                loopback = (ipaddress.ip_address(conn.client.host).is_loopback and
+                            (name == "localhost" or ipaddress.ip_address(name).is_loopback))
             except (TypeError, ValueError):
                 return False
             return loopback and (
@@ -108,7 +132,7 @@ def create_app(db_path: Path, mode="local", origins=(), pairing_code=None):
             )
         if (
             request.url.path.startswith("/api/")
-            and request.url.path != "/api/pair"
+            and request.url.path not in ("/api/pair", "/api/capabilities")
             and not paired(request)
         ):
             return JSONResponse(
@@ -121,6 +145,13 @@ def create_app(db_path: Path, mode="local", origins=(), pairing_code=None):
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
         return response
+
+    @app.get("/api/capabilities")
+    async def capabilities():
+        return {"hostSettings": manages_home}
+
+    if manages_home:
+        app.include_router(home_router(app, connections, on_shutdown))
 
     @app.post("/api/pair")
     async def pair(body: Pair):
@@ -137,7 +168,10 @@ def create_app(db_path: Path, mode="local", origins=(), pairing_code=None):
             if valid != 1:
                 raise HTTPException(403, "Неверный или использованный код устройства")
             token = secrets.token_urlsafe(32)
-            store.db.execute("INSERT INTO device VALUES(?)", (digest(token),))
+            key = digest(token)
+            store.db.execute("INSERT INTO device VALUES(?)", (key,))
+            store.db.execute("INSERT INTO device_info VALUES(?, ?, unixepoch())",
+                             (key, body.name.strip() or "Устройство"))
         response = JSONResponse({"paired": True})
         response.set_cookie(
             COOKIE,
@@ -178,6 +212,9 @@ def create_app(db_path: Path, mode="local", origins=(), pairing_code=None):
             await ws.close(code=1008)
             return
         await ws.accept()
+        key = digest(ws.cookies.get(COOKIE, "")) if mode != "local" else None
+        if key:
+            connections[key] += 1
         last = -1
         try:
             while True:
@@ -197,6 +234,11 @@ def create_app(db_path: Path, mode="local", origins=(), pairing_code=None):
                 last = snapshot["sequence"]
         except (WebSocketDisconnect, OSError):
             pass
+        finally:
+            if key:
+                connections[key] -= 1
+                if not connections[key]:
+                    del connections[key]
 
     dist = Path(__file__).resolve().parents[1] / "frontend" / "dist"
     if dist.is_dir():

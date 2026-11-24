@@ -2,6 +2,7 @@
 
 import argparse
 import ipaddress
+import os
 from pathlib import Path
 import secrets
 import sqlite3
@@ -10,6 +11,7 @@ from urllib.parse import urlsplit
 import uvicorn
 
 from .server import create_app
+from .paths import migrate_legacy, windows_data_dir
 from .host import issue_code
 
 
@@ -21,13 +23,17 @@ def main():
     parser.add_argument("--origin", action="append", default=[])
     parser.add_argument("--cert")
     parser.add_argument("--key")
-    parser.add_argument("--data", type=Path, default=Path("runtime-data"))
+    parser.add_argument("--data", type=Path)
     admin = parser.add_mutually_exclusive_group()
     admin.add_argument("--revoke-all", action="store_true")
     admin.add_argument("--list-devices", action="store_true")
     admin.add_argument("--revoke-device", metavar="ID")
     admin.add_argument("--pair-new", action="store_true")
     args = parser.parse_args()
+    if args.data is None:
+        args.data = windows_data_dir() if os.name == "nt" else Path("runtime-data")
+        if os.name == "nt":
+            migrate_legacy(Path("runtime-data/scenario.sqlite"), args.data / "scenario.sqlite")
     args.data.mkdir(parents=True, exist_ok=True)
     db = args.data / "scenario.sqlite"
     if args.revoke_all or args.list_devices or args.revoke_device or args.pair_new:

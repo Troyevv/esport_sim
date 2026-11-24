@@ -32,6 +32,9 @@ class Store:
             CREATE TABLE IF NOT EXISTS slot (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS receipt (id TEXT PRIMARY KEY, request TEXT NOT NULL, result TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS device (digest TEXT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS device_info (digest TEXT PRIMARY KEY, name TEXT NOT NULL, paired_at INTEGER NOT NULL);
+            CREATE TRIGGER IF NOT EXISTS remove_device_info AFTER DELETE ON device
+                BEGIN DELETE FROM device_info WHERE digest=OLD.digest; END;
             CREATE TABLE IF NOT EXISTS invitation (digest TEXT PRIMARY KEY, expires INTEGER NOT NULL);
         """)
         existing = self.db.execute("SELECT body FROM active WHERE id=1").fetchone()

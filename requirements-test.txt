@@ -12,10 +12,14 @@ certifi==2026.11.20
     # via
     #   httpcore
     #   httpx
+cffi==2.1.1 ; platform_python_implementation != 'PyPy'
+    # via cryptography
 click==8.5.1
     # via uvicorn
 colorama==0.4.6 ; sys_platform == 'win32'
     # via pytest
+cryptography==50.0.0
+    # via -r requirements.in
 fastapi==0.141.1
     # via -r requirements.in
 h11==0.16.0
@@ -36,6 +40,10 @@ packaging==26.4
     # via pytest
 pluggy==1.7.0
     # via pytest
+psutil==7.2.2
+    # via -r requirements.in
+pycparser==3.12 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
+    # via cffi
 pydantic==2.14.4
     # via fastapi
 pydantic-core==2.50.5
@@ -44,6 +52,8 @@ pygments==2.21.0
     # via pytest
 pytest==9.0.2
     # via -r requirements-test.in
+segno==1.6.6
+    # via -r requirements.in
 starlette==1.10.0
     # via fastapi
 typing-extensions==4.16.0

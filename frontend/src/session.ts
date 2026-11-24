@@ -27,6 +27,7 @@ type Intent = {
   value?: number;
 };
 const base = new URL(import.meta.env.VITE_SERVER_URL || location.origin);
+export const serverURL = (path: string) => new URL(path, base);
 const storageKey = "pending-command:" + base.origin;
 async function request(path: string, body?: unknown) {
   return fetch(new URL(path, base), {
@@ -181,9 +182,9 @@ export function useSession(view: View) {
       setBusy(false);
     }
   }
-  async function pair(code: string) {
+  async function pair(code: string, name: string) {
     try {
-      const result = await request("/api/pair", { code });
+      const result = await request("/api/pair", { code, name });
       if (result.ok) {
         setNotice("");
         resync();

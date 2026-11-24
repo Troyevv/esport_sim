@@ -1,0 +1,3 @@
+-r requirements.in
+-c requirements.txt
+pyinstaller==6.17.0

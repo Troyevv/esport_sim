@@ -6,18 +6,28 @@ annotated-types==0.8.0
     # via pydantic
 anyio==4.16.0
     # via starlette
+cffi==2.1.1 ; platform_python_implementation != 'PyPy'
+    # via cryptography
 click==8.5.1
     # via uvicorn
+cryptography==50.0.0
+    # via -r requirements.in
 fastapi==0.141.1
     # via -r requirements.in
 h11==0.16.0
     # via uvicorn
 idna==3.20
     # via anyio
+psutil==7.2.2
+    # via -r requirements.in
+pycparser==3.12 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
+    # via cffi
 pydantic==2.14.4
     # via fastapi
 pydantic-core==2.50.5
     # via pydantic
+segno==1.6.6
+    # via -r requirements.in
 starlette==1.10.0
     # via fastapi
 typing-extensions==4.16.0
