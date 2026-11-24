@@ -79,17 +79,14 @@ def ready(port, nonce):
 
 
 def open_existing(descriptor, open_url):
-    deadline = time.monotonic() + 30
-    while time.monotonic() < deadline:
-        try:
-            data = json.loads(descriptor.read_text(encoding="utf-8"))
-            if ready(data["port"], data["nonce"]):
-                open_url(f"http://127.0.0.1:{data['port']}/")
-                return
-        except (FileNotFoundError, ValueError, KeyError):
-            pass
-        time.sleep(0.15)
-    raise RuntimeError("Запущенный экземпляр не ответил в течение 30 секунд.")
+    try:
+        data = json.loads(descriptor.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError):
+        return False
+    if ready(data["port"], data["nonce"]):
+        open_url(f"http://127.0.0.1:{data['port']}/")
+        return True
+    return False
 
 
 async def serve(data, descriptor, listener, open_url):
@@ -149,6 +146,7 @@ async def serve(data, descriptor, listener, open_url):
             json.dumps(dict(port=port, pid=os.getpid(), nonce=nonce)), encoding="utf-8"
         )
         temporary.replace(descriptor)
+        logging.info("Сервер готов на loopback, порт %s. Открываем браузер.", port)
         open_url(f"http://127.0.0.1:{port}/")
         await task
     finally:
@@ -160,19 +158,30 @@ async def serve(data, descriptor, listener, open_url):
 def launch(data, open_url, legacy_source=None):
     data.mkdir(parents=True, exist_ok=True)
     descriptor = data / "instance.json"
-    with launcher_lock(data / "launcher.lock") as owner:
-        if not owner:
-            open_existing(descriptor, open_url)
-            return
-        handler = RotatingFileHandler(
-            data / "launcher.log", maxBytes=512_000, backupCount=1, encoding="utf-8"
-        )
-        logging.basicConfig(level=logging.INFO, handlers=[handler])
-        descriptor.unlink(missing_ok=True)
-        if legacy_source is not None:
-            migrate_legacy(legacy_source, data / "scenario.sqlite")
-        with reserve_listener() as listener:
-            asyncio.run(serve(data, descriptor, listener, open_url))
+    deadline = time.monotonic() + 30
+    while True:
+        with launcher_lock(data / "launcher.lock") as owner:
+            if owner:
+                handler = RotatingFileHandler(
+                    data / "launcher.log",
+                    maxBytes=512_000,
+                    backupCount=1,
+                    encoding="utf-8",
+                )
+                logging.basicConfig(level=logging.INFO, handlers=[handler])
+                descriptor.unlink(missing_ok=True)
+                if legacy_source is not None:
+                    migrate_legacy(legacy_source, data / "scenario.sqlite")
+                with reserve_listener() as listener:
+                    asyncio.run(serve(data, descriptor, listener, open_url))
+                return
+            if open_existing(descriptor, open_url):
+                return
+        # A previous owner may be starting or shutting down. Acquire ownership
+        # after its exit instead of opening a dead URL or starting another clock.
+        if time.monotonic() >= deadline:
+            raise RuntimeError("Запущенный экземпляр не ответил в течение 30 секунд.")
+        time.sleep(0.15)
 
 
 def main():

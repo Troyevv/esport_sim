@@ -12,7 +12,13 @@ function Wait-Check([string]$Description, [scriptblock]$Check) {
         Start-Sleep -Milliseconds 200
     } while ([DateTime]::UtcNow -lt $until)
     $launcherLog = Join-Path $env:LOCALAPPDATA 'EsportSim\launcher.log'
-    if (Test-Path $launcherLog) { Get-Content -Tail 40 -LiteralPath $launcherLog | Write-Warning }
+    Write-Warning ("Descriptor={0}, protocol handoffs={1}, profile={2}" -f (Test-Path $instancePath), @(Urls).Count, $env:LOCALAPPDATA)
+    if (Test-Path $launcherLog) {
+        Get-Content -Tail 30 -LiteralPath $launcherLog | Where-Object { $_ -notmatch '(?i)token|nonce|cookie|private key|code=' } | Write-Warning
+    }
+    Get-Process EsportSim,msedge,chrome -ErrorAction SilentlyContinue | ForEach-Object { Write-Warning "$($_.ProcessName) pid=$($_.Id)" }
+    Get-WinEvent -FilterHashtable @{LogName='Application'; Level=2; StartTime=(Get-Date).AddMinutes(-5)} -MaxEvents 5 -ErrorAction SilentlyContinue |
+        ForEach-Object { Write-Warning ("Windows event {0}/{1}" -f $_.ProviderName, $_.Id) }
     throw "Timed out: $Description. $lastError"
 }
 
@@ -34,13 +40,15 @@ function Assert-FreePort([int]$Port) {
 function Launch-Archive([string]$Exe) {
     $previous = @(Urls).Count
     $process = Start-Process -FilePath $Exe -PassThru
-    Wait-Check 'server readiness file and browser handoff' {
+    Wait-Check 'server readiness descriptor' {
         if ($process.HasExited -and $process.ExitCode -ne 0) {
             throw "Launcher exited with $($process.ExitCode)"
         }
-        (Test-Path $instancePath) -and (@(Urls).Count -eq ($previous + 1))
+        Test-Path $instancePath
     }
     $instance = Read-Instance
+    Write-Output "Ready on loopback port $($instance.port), pid=$($instance.pid)" | Out-Host
+    Wait-Check 'fresh URL delivered by Windows ShellExecute' { @(Urls).Count -eq ($previous + 1) }
     $origin = "http://127.0.0.1:$($instance.port)"
     if ((@(Urls)[-1]).TrimEnd('/') -ne $origin) { throw 'Opened URL differs from running server.' }
     $index = Invoke-WebRequest -UseBasicParsing -Uri "$origin/" -TimeoutSec 8
@@ -49,10 +57,15 @@ function Launch-Archive([string]$Exe) {
     $asset = Invoke-WebRequest -UseBasicParsing -Uri ($origin + $script.Groups[1].Value) -TimeoutSec 8
     if ($asset.RawContentLength -lt 1) { throw 'Bundled frontend asset is empty.' }
     if ($DesktopBrowser) {
-        Wait-Check 'Chromium opened the requested game tab' {
-            $tabs = Invoke-RestMethod 'http://127.0.0.1:9227/json/list' -TimeoutSec 3
+        $target = Get-Content -LiteralPath $env:ESPORT_SMOKE_TARGET -Raw | ConvertFrom-Json
+        $portFile = Join-Path $target.profile 'DevToolsActivePort'
+        Wait-Check 'Chromium debugger port file' { Test-Path -LiteralPath $portFile }
+        $debugPort = (Get-Content -LiteralPath $portFile)[0]
+        Wait-Check "Chromium loaded game on $origin" {
+            $tabs = Invoke-RestMethod "http://127.0.0.1:$debugPort/json/list" -TimeoutSec 3
             @($tabs | Where-Object { $_.type -eq 'page' -and $_.url.TrimEnd('/') -eq $origin -and $_.title -match 'esport_sim' }).Count -ge 1
         }
+        $null = taskkill /T /F /PID $target.pid
     }
     return $instance
 }
@@ -136,7 +149,8 @@ if ($DesktopBrowser) {
         "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"
     ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
     if (-not $env:ESPORT_SMOKE_BROWSER) { throw 'Windows test browser unavailable.' }
-    $env:ESPORT_SMOKE_PROFILE = Join-Path $testRoot 'browser-profile'
+    $env:ESPORT_SMOKE_PROFILE = Join-Path $testRoot 'browser-profiles'
+    $env:ESPORT_SMOKE_TARGET = Join-Path $testRoot 'last-browser.json'
 }
 
 # Redirect the ephemeral account's HTTP association. Preserve the OS ShellExecute
@@ -146,18 +160,30 @@ $psExe = Join-Path $PSHOME 'powershell.exe'
 if (!(Test-Path $psExe)) { $psExe = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" }
 $openCommand = '"{0}" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{1}" "%1"' -f $psExe,$handler
 $choice = Get-ItemPropertyValue 'HKCU:\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice' -Name ProgId -ErrorAction SilentlyContinue
-foreach ($class in @('http', $choice) | Where-Object { $_ } | Select-Object -Unique) {
-    $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Software\Classes\$class")
-    $key.SetValue('URL Protocol','')
-    $open = $key.CreateSubKey('shell\open\command')
-    $open.SetValue('', $openCommand)
-    $open.SetValue('DelegateExecute','')
-    $open.Dispose()
-    $key.Dispose()
+$hives = @([Microsoft.Win32.Registry]::CurrentUser)
+if ($CleanCore) { $hives += [Microsoft.Win32.Registry]::LocalMachine }
+foreach ($hive in $hives) {
+    foreach ($class in @('http', $choice) | Where-Object { $_ } | Select-Object -Unique) {
+        $key = $hive.CreateSubKey("Software\Classes\$class")
+        $key.SetValue('URL Protocol','')
+        $key.CreateSubKey('shell').SetValue('', 'open')
+        $open = $key.CreateSubKey('shell\open\command')
+        $open.SetValue('', $openCommand)
+        $open.SetValue('DelegateExecute','')
+        $open.Dispose()
+        $key.Dispose()
+    }
 }
 
 $instancePath = Join-Path $env:LOCALAPPDATA 'EsportSim\instance.json'
 if (Test-Path $instancePath) { throw 'Existing launcher state found in fresh Windows environment.' }
+if ($CleanCore) {
+    # Probe the disposable HTTP registration before attributing renderer failures to the launcher.
+    $probe = [Diagnostics.ProcessStartInfo]::new('http://127.0.0.1:9/')
+    $probe.UseShellExecute = $true
+    $null = [Diagnostics.Process]::Start($probe)
+    Wait-Check 'stock Windows ShellExecute test handler' { @(Urls).Count -eq 1 }
+}
 $install = Join-Path $testRoot 'first install'
 Expand-Archive -LiteralPath $Archive -DestinationPath $install
 $exe = Join-Path $install 'EsportSim\EsportSim.exe'
