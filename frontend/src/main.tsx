@@ -70,7 +70,7 @@ function App() {
     const platform = navigator.userAgent.match(/iPhone|iPad|Android/i)?.[0];
     return platform || "Мой браузер";
   });
-  const { frame, connection, busy, notice, act, pair } = useSession(view);
+  const { frame, playback, connection, busy, notice, act, pair } = useSession(view);
   useEffect(() => {
     if (connection === "На связи") setCode("");
   }, [connection]);
@@ -181,6 +181,7 @@ function App() {
                 </div>
                 <Radar
                   frame={frame}
+                  playback={playback}
                   connected={connection === "На связи"}
                   selected={agent?.id ?? null}
                   onSelect={setSelected}

@@ -97,7 +97,10 @@ test("доставка снимков, движение за кадр и вид�
     const upstream = socket.connectToServer();
     const held: (string | Buffer)[] = [];
     let timer: ReturnType<typeof setTimeout> | undefined;
-    socket.onClose(() => { clearTimeout(timer); upstream.close(); });
+    socket.onClose(() => {
+      clearTimeout(timer);
+      upstream.close();
+    });
     upstream.onMessage((data) => {
       const now = performance.now();
       incoming.push(now);
@@ -106,10 +109,11 @@ test("доставка снимков, движение за кадр и вид�
       const delay = jitter && number++ % 12 === 5;
       if (timer || delay) {
         held.push(data);
-        if (!timer) timer = setTimeout(() => {
-          for (const message of held.splice(0)) socket.send(message);
-          timer = undefined;
-        },215);
+        if (!timer)
+          timer = setTimeout(() => {
+            for (const message of held.splice(0)) socket.send(message);
+            timer = undefined;
+          }, 215);
       } else socket.send(data);
     });
   });
@@ -122,6 +126,13 @@ test("доставка снимков, движение за кадр и вид�
       sampling: false,
     };
     window.motionProbe = probe;
+    const nativeRAF = window.requestAnimationFrame.bind(window);
+    let presentationTime = 0;
+    window.requestAnimationFrame = (callback) =>
+      nativeRAF((at) => {
+        presentationTime = at;
+        callback(at);
+      });
     const Native = window.WebSocket;
     window.WebSocket = class extends Native {
       constructor(url: string | URL, protocols?: string | string[]) {
@@ -146,10 +157,19 @@ test("доставка снимков, движение за кадр и вид�
           render();
           probe.renders++;
           probe.cost = performance.now() - before;
+          // Both RAF callbacks share a vsync timestamp. Match the image to that
+          // refresh even when the observer callback runs before Pixi's callback.
+          if (
+            probe.sampling &&
+            probe.refreshes.at(-1)?.at === presentationTime
+          ) {
+            probe.refreshes.pop();
+            record(presentationTime);
+          }
         };
       },
     });
-    function observe(at: number) {
+    function record(at: number) {
       const players = probe.app?.stage.getChildByLabel("players", true);
       if (probe.sampling && players?.children.length) {
         const poses = players.children.map(
@@ -163,6 +183,9 @@ test("доставка снимков, движение за кадр и вид�
           poses,
         });
       }
+    }
+    function observe(at: number) {
+      record(at);
       requestAnimationFrame(observe);
     }
     requestAnimationFrame(observe);
@@ -199,8 +222,8 @@ test("доставка снимков, движение за кадр и вид�
       p.sampling = false;
       return { frames: p.refreshes, packets: p.packets };
     });
-    const ticks = data.packets.map(p=>p.tick);
-    expect(ticks).toEqual([...ticks].sort((a,b)=>a-b));
+    const ticks = data.packets.map((p) => p.tick);
+    expect(ticks).toEqual([...ticks].sort((a, b) => a - b));
     const result = {
       condition,
       speed,
@@ -262,4 +285,10 @@ test("доставка снимков, движение за кадр и вид�
     });
   }
   await control("Пауза").click();
+  for (const report of reports) {
+    // Catch a scene that submits on every refresh but repeats poses and then
+    // teleports. Hardware-dependent timing is kept in the evidence alongside it.
+    expect(report.strideRatio.p05).toBeGreaterThan(0.2);
+    expect(report.strideRatio.p95).toBeLessThan(1.45);
+  }
 });

@@ -364,3 +364,35 @@ def test_accelerated_projection_contains_only_observed_model_poses(tmp_path):
         assert "motion" not in store.read()["world"]
     finally:
         store.db.close()
+
+
+def test_slow_subscriber_recovers_only_contiguous_observable_ticks(tmp_path):
+    from backend.store import Store
+    from backend import engine
+    store = Store(tmp_path / "history.sqlite")
+    try:
+        state = store.read()
+        state.update(speed=4, running=True)
+        store.write(state)
+        expected = []
+        for _ in range(8):
+            for _ in range(4):
+                expected.append({a["id"]: (a["x"],a["y"],a["heading"])
+                                 for a in engine.project(state["world"], "T")["agents"]})
+                engine.advance(state["world"])
+            store.tick()
+        world = store.snapshot("T", (state["context"],16))["world"]
+        history = world["motion"]
+        assert history["startTick"] == 16
+        assert set(history["tracks"]) == {a["id"] for a in world["agents"]}.intersection(*expected[16:])
+        for ident, track in history["tracks"].items():
+            assert track == [step[ident] for step in expected[16:]]
+        assert store.snapshot("T", (state["context"],0))["world"]["motion"]["startTick"] == 8
+        assert store.snapshot("T", ("other",16))["world"]["motion"]["startTick"] == 28
+        changed = store.read()
+        changed["speed"] = 1
+        store.write(changed)
+        store.tick()
+        assert "motion" not in store.snapshot("T", (state["context"],16))["world"]
+    finally:
+        store.db.close()

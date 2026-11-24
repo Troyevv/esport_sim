@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { RadarPlayback } from "./playback";
 import type { Agent, RadarMap } from "./Radar";
 
 export type View = "full" | "CT" | "T";
@@ -42,6 +43,7 @@ async function request(path: string, body?: unknown) {
 }
 
 export function useSession(view: View) {
+  const [playback] = useState(() => new RadarPlayback());
   const [frame, setFrame] = useState<Frame | null>(null);
   const [connection, setConnection] = useState("Подключение");
   const [notice, setNotice] = useState("");
@@ -85,11 +87,13 @@ export function useSession(view: View) {
     let timer: ReturnType<typeof setTimeout>;
     let heartbeat: ReturnType<typeof setTimeout>;
     let delay = 300;
+    if (current.current) playback.push(current.current, false, performance.now());
     current.current = null;
     setConnection("Подключение");
     setFrame(null);
     const retry = () => {
       if (!active) return;
+      if (current.current) playback.push(current.current, false, performance.now());
       setConnection("Переподключение");
       current.current = null;
       timer = setTimeout(connect, delay);
@@ -121,6 +125,7 @@ export function useSession(view: View) {
           const snapshot: Frame = JSON.parse(event.data);
           if (current.current && snapshot.sequence < current.current.sequence)
             return;
+          playback.push(snapshot, true, performance.now());
           current.current = snapshot;
           setFrame(snapshot);
           setConnection("На связи");
@@ -171,6 +176,7 @@ export function useSession(view: View) {
         current.current?.world.view === view &&
         snapshot.sequence >= current.current.sequence
       ) {
+        playback.push(snapshot, true, performance.now());
         current.current = snapshot;
         setFrame(snapshot);
       }
@@ -194,5 +200,5 @@ export function useSession(view: View) {
       setNotice("Домашний сервер недоступен");
     }
   }
-  return { frame, connection, notice, busy, act, pair };
+  return { frame, playback, connection, notice, busy, act, pair };
 }

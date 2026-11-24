@@ -66,8 +66,14 @@ def create_app(
                     issue_code(store.db, pairing_code)
 
             async def clock():
+                loop = asyncio.get_running_loop()
+                deadline = loop.time()
                 while True:
-                    await asyncio.sleep(TICK_SECONDS)
+                    deadline += TICK_SECONDS
+                    if deadline <= loop.time():
+                        # Resume from a long stall without a burst of catch-up ticks.
+                        deadline = loop.time() + TICK_SECONDS
+                    await asyncio.sleep(max(0, deadline - loop.time()))
                     async with condition:
                         if store.tick():
                             condition.notify_all()
@@ -234,6 +240,7 @@ def create_app(
         key = digest(ws.cookies.get(COOKIE, "")) if mode != "local" else None
         if key:
             connections[key] += 1
+        previous = None
         last = -1
         try:
             while True:
@@ -241,7 +248,7 @@ def create_app(
                     await ws.close(code=1008)
                     return
                 async with condition:
-                    snapshot = app.state.store.snapshot(view)
+                    snapshot = app.state.store.snapshot(view, previous)
                     if snapshot["sequence"] == last:
                         try:
                             await asyncio.wait_for(condition.wait(), timeout=1)
@@ -251,6 +258,7 @@ def create_app(
                 # Each message is a complete projection. Slow readers can skip frames.
                 await ws.send_json(snapshot)
                 last = snapshot["sequence"]
+                previous = snapshot["context"], snapshot["world"]["tick"]
         except (WebSocketDisconnect, OSError):
             pass
         finally:

@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+from collections import deque
 from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
@@ -25,7 +26,7 @@ def validate_snapshot(state):
 
 class Store:
     def __init__(self, path: Path):
-        self.motion = None  # Transient render samples from the last committed batch.
+        self.motion = deque(maxlen=6)  # Recent committed poses, never part of a save.
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.db.executescript("""
             PRAGMA journal_mode=WAL;
@@ -88,21 +89,32 @@ class Store:
             start = world["tick"]
             samples = []
             for _ in range(state["speed"]):
-                if state["speed"] > 1:
-                    samples.append(engine.motion_sample(world))
+                samples.append(engine.motion_sample(world))
                 engine.advance(world)
             state["sequence"] += 1
             self.write(state)
-        self.motion = (state["context"], start, world["tick"], samples)
+        self.motion.append((state["context"], start, world["tick"], samples))
         return True
 
-    def snapshot(self, view):
+    def snapshot(self, view, previous=None):
         state = self.read()
         state["world"] = engine.project(state["world"], view)
         world = state["world"]
         if self.motion and state["running"]:
-            context, start, end, samples = self.motion
-            if samples and context == state["context"] and end == world["tick"]:
+            context, start, end, samples = self.motion[-1]
+            if context != state["context"] or end != world["tick"]:
+                return state
+            if previous and previous[0] == context and previous[1] < start:
+                # Backfill a slow subscriber only across contiguous batches of
+                # the same playback speed. Otherwise send a fresh projection.
+                batch_size = end - start
+                for prior_context, left, right, batch in reversed(list(self.motion)[:-1]):
+                    if prior_context != context or right != start or right - left != batch_size:
+                        break
+                    start, samples = left, batch + samples
+                    if start <= previous[1]:
+                        break
+            if len(samples) > 1:
                 # A side only receives tracks that were continuously observable.
                 tracks = {}
                 for agent in world["agents"]:

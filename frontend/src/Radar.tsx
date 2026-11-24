@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Application, Container, Graphics, Text } from "pixi.js";
-import { RadarPlayback } from "./playback";
+import type { RadarPlayback } from "./playback";
 import type { Frame } from "./session";
 import "./radar.css";
 
@@ -29,6 +29,7 @@ export interface Agent extends Point {
 }
 interface Props {
   frame: Frame;
+  playback: RadarPlayback;
   connected: boolean;
   selected: string | null;
   onSelect: (id: string) => void;
@@ -181,29 +182,19 @@ function setupScene(
   plan.cacheAsTexture({ resolution: 3, antialias: true });
   const players = new Container({ label: "players" });
   const markers = new Map<string, ReturnType<typeof marker>>();
-  const playback = new RadarPlayback();
+  const playback = props.playback;
   app.stage.addChild(world);
   world.addChild(plan, players);
   let dirty = true;
   let request = 0;
-  let lastFrame = -Infinity;
-  const period = 1000 / 60;
-
   function present(now: number) {
     request = 0;
-    if (!dirty && now - lastFrame < period - 0.8) {
-      schedule();
-      return;
-    }
-    // Retain the fractional remainder on high-refresh displays.
-    lastFrame =
-      !dirty && Number.isFinite(lastFrame)
-        ? lastFrame +
-          Math.max(1, Math.floor((now - lastFrame + 0.8) / period)) * period
-        : now;
     let changed = dirty;
     for (const a of current.frame.world.agents) {
       const m = markers.get(a.id)!;
+      const visible = playback.has(a.id);
+      if (m.group.visible !== visible) { m.group.visible = visible; changed = true; }
+      if (!visible) continue;
       const p = playback.sample(a.id, now);
       if (
         m.group.x !== p.x ||
@@ -256,7 +247,7 @@ function setupScene(
         map = next.frame.world.map;
       const changed = oldMap.id !== map.id || oldMap.version !== map.version;
       current = next;
-      playback.push(next.frame, next.connected, performance.now());
+
       for (const [id, m] of markers) {
         if (!next.frame.world.agents.some((a) => a.id === id)) {
           m.group.destroy({ children: true });
@@ -319,6 +310,7 @@ function setupScene(
       let nearest = Math.max(12, 5 * world.scale.x),
         target: string | undefined;
       for (const [id, { group }] of markers) {
+        if (!group.visible) continue;
         const d = Math.hypot(
           at.x - world.x - group.x * world.scale.x,
           at.y - world.y - group.y * world.scale.y,

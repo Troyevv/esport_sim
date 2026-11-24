@@ -1,3 +1,4 @@
+import type { Container } from "pixi.js";
 import { expect, test } from "@playwright/test";
 import { RadarPlayback } from "../src/playback";
 import type { Frame } from "../src/session";
@@ -61,21 +62,21 @@ test("интерполяция поз, безопасные повороты и 
   p.push(frame(0, point(15, 15, 3.1)), true, 0);
   const one = frame(1, point(17, 15, -3.1));
   p.push(one, true, 100);
-  expect(p.sample("T1", 175).x).toBeCloseTo(16);
-  expect(Math.abs(p.sample("T1", 175).heading)).toBeCloseTo(Math.PI);
-  p.push(one, true, 180); // repeated heartbeat
-  expect(p.sample("T1", 200).x).toBeCloseTo(16.5);
+  expect(p.sample("T1", 250).x).toBeCloseTo(16);
+  expect(Math.abs(p.sample("T1", 250).heading)).toBeCloseTo(Math.PI);
+  p.push(one, true, 255); // repeated heartbeat
+  expect(p.sample("T1", 275).x).toBeCloseTo(16.5);
   expect(p.sample("T1", 690).x).toBe(17);
   p.push(frame(3, point(25)), true, 710); // missing snapshots and stall
   expect(p.sample("T1", 710).x).toBe(25);
   const across = frame(4, point(25, 35));
   p.push(across, true, 810);
   expect(p.sample("T1", 880).y).toBe(15);
-  expect(p.sample("T1", 1000).y).toBe(35);
+  expect(p.sample("T1", 1015).y).toBe(35);
 
-  const fast = frame(4, point(15, 15), { speed: 4 });
-  p.push(fast, true, 1000);
-  const turn = frame(8, point(35, 35), { speed: 4 });
+  const fast = frame(4, point(15, 15), { speed: 4, context: "corners" });
+  p.push(fast, true, 1020);
+  const turn = frame(8, point(35, 35), { speed: 4, context: "corners" });
   turn.world.motion = {
     startTick: 4,
     tracks: {
@@ -87,14 +88,14 @@ test("интерполяция поз, безопасные повороты и 
       ],
     },
   };
-  p.push(turn, true, 1100);
-  expect(p.sample("T1", 1175)).toMatchObject({ x: 35, y: 15 });
-  expect(p.sample("T1", 1212.5)).toMatchObject({ x: 35, y: 30 });
-  p.push({ ...turn, running: false }, true, 1215);
-  expect(p.sample("T1", 1215)).toMatchObject({ x: 35, y: 35 });
+  p.push(turn, true, 1120);
+  expect(p.sample("T1", 1270)).toMatchObject({ x: 35, y: 15 });
+  expect(p.sample("T1", 1307.5)).toMatchObject({ x: 35, y: 30 });
+  p.push({ ...turn, running: false }, true, 1310);
+  expect(p.sample("T1", 1310)).toMatchObject({ x: 35, y: 35 });
   for (const context of ["reset", "loaded"]) {
-    p.push(frame(0, point(15), { context }), true, 1300);
-    expect(p.sample("T1", 1300).x).toBe(15);
+    p.push(frame(0, point(15), { context }), true, 1320);
+    expect(p.sample("T1", 1320).x).toBe(15);
   }
   const fresh = frame(1, point(17), { context: "loaded" });
   p.push(fresh, true, 1400);
@@ -141,6 +142,9 @@ test("радар показывает промежуточные положен�
   const control = (name: string) =>
     page.getByRole("button", { name, exact: true });
   if (await control("Пауза").count()) await control("Пауза").click();
+  await page.getByLabel("Seed", {exact:true}).fill("42");
+  await control("Сбросить").click();
+  await expect(page.getByTestId("tick")).toHaveText("0");
   await control("1×").click();
   await control("Запустить").click();
   await radar.scrollIntoViewIfNeeded();
@@ -258,4 +262,154 @@ test("нажатие выбирает отображаемого игрока п
     "aria-pressed",
     "true",
   );
+});
+
+test("пачка пакетов сохраняет каждый поворот и непрерывность смены скорости", () => {
+  const p = new RadarPlayback();
+  p.push(frame(0, point(10)), true, 0);
+  // Model runs along the top of the wall, then down its right-hand side.
+  const poses = Array.from({ length: 51 }, (_, i) =>
+    i <= 12 ? point(10 + 2 * i) : point(34, 15 + (i - 12) * 2, Math.PI / 2),
+  );
+  let tick = 0,
+    last = p.sample("T1", 0),
+    x = last.x,
+    y = last.y;
+  let held = 0,
+    moving = 0;
+  for (let ms = 5; ms <= 4800; ms += 5) {
+    // Delay three consecutive updates and then deliver them at once.
+    const head = Math.min(50, Math.floor(ms / 100));
+    if (head % 12 < 5 || head % 12 > 7) {
+      while (tick < head) {
+        tick++;
+        p.push(frame(tick, poses[tick]), true, ms);
+      }
+    }
+    last = p.sample("T1", ms);
+    const stride = Math.hypot(last.x - x, last.y - y);
+    expect(stride).toBeLessThan(0.106);
+    expect(last.x >= 30 || last.y <= 20).toBeTruthy();
+    if (ms > 2000) {
+      if (stride === 0) held++;
+      else moving++;
+    }
+    x = last.x;
+    y = last.y;
+  }
+  expect(held).toBeLessThan(4);
+  expect(moving).toBeGreaterThan(500);
+  p.push(frame(tick, poses[tick], { speed: 8 }), true, 4800);
+  expect(p.sample("T1", 4800)).toMatchObject({ x, y });
+});
+
+test("поворот проходит через серверный узел с непрерывным направлением и безопасным запасом до стены", () => {
+  const corners = (wall: boolean) => {
+    const p = new RadarPlayback();
+    const f = (tick: number, x: number, y: number) => {
+      const next = frame(tick, point(x, y), { speed: 4 });
+      if (wall) next.world.map.walls = [{ x: 29, y: 14, w: 0.4, h: 0.9 }];
+      return next;
+    };
+    p.push(f(0, 25, 15), true, 0);
+    const end = f(4, 29, 19);
+    end.world.motion = {
+      startTick: 0,
+      tracks: {
+        T1: [
+          [25, 15, 0],
+          [27, 15, 0],
+          [29, 15, 0],
+          [29, 17, Math.PI / 2],
+        ],
+      },
+    };
+    p.push(end, true, 100);
+    const sample = (ms: number) => ({ ...p.sample("T1", ms) });
+    return [sample(249.9), sample(250), sample(250.1)];
+  };
+  const [left, node, right] = corners(false);
+  expect(node).toMatchObject({ x: 29, y: 15 });
+  const incoming = Math.atan2(node.y - left.y, node.x - left.x);
+  const outgoing = Math.atan2(right.y - node.y, right.x - node.x);
+  expect(Math.abs(incoming - outgoing)).toBeLessThan(0.05);
+  const [approach, onWall, after] = corners(true);
+  expect(left.y).toBeLessThan(15);
+  expect(approach.y).toBe(15);
+  expect(onWall.x).toBe(29);
+  expect(after.y).toBeGreaterThan(15);
+});
+
+test("готовые серверные позы отображаются на каждом сигнале экрана 144 Гц", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "desktop");
+  await page.addInitScript(() => {
+    const nativeRAF = window.requestAnimationFrame.bind(window);
+    const clock = {
+      enabled: false,
+      callbacks: [] as FrameRequestCallback[],
+      app: null as any,
+    };
+    Object.assign(window, {
+      testDisplay: clock,
+      __PIXI_APP_INIT__: (app: any) => (clock.app = app),
+    });
+    window.requestAnimationFrame = (cb) => {
+      if (!clock.enabled) return nativeRAF(cb);
+      clock.callbacks.push(cb);
+      return clock.callbacks.length;
+    };
+  });
+  await page.goto("/");
+  await expect(page.getByTestId("radar")).toHaveAttribute("data-ready", "true");
+  const button = (name: string) =>
+    page.getByRole("button", { name, exact: true });
+  if (await button("Пауза").count()) await button("Пауза").click();
+  await button("1×").click();
+  await button("Запустить").click();
+  await expect
+    .poll(async () => Number(await page.getByTestId("tick").innerText()))
+    .toBeGreaterThan(5);
+  await page.waitForTimeout(500);
+  const changed = await page.evaluate(async () => {
+    const d = (window as any).testDisplay;
+    const tick = document.querySelector('[data-testid="tick"]')!;
+    await new Promise<void>((resolve) => {
+      const observer = new MutationObserver(() => {
+        observer.disconnect();
+        resolve();
+      });
+      observer.observe(tick, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+    });
+    // Deliver display signals at a known cadence independently of the physical CI display.
+    const start = await new Promise<number>((r) =>
+      requestAnimationFrame((at) => {
+        d.enabled = true;
+        r(at);
+      }),
+    );
+    await new Promise((r) => setTimeout(r, 35));
+    let n = 0,
+      previous = "";
+    for (let i = 1; i <= 14; i++) {
+      const list = d.callbacks.splice(0);
+      for (const cb of list) cb(start + 35 + (i * 1000) / 144);
+      const coords = d.app.stage
+        .getChildByLabel("players", true)
+        .children.map((m: Container) => [m.x, m.y]);
+      const fingerprint = JSON.stringify(coords);
+      if (i > 1 && fingerprint !== previous) n++;
+      previous = fingerprint;
+    }
+    d.enabled = false;
+    for (const cb of d.callbacks.splice(0)) requestAnimationFrame(cb);
+    return n;
+  });
+  await button("Пауза").click();
+  expect(changed).toBe(13);
 });

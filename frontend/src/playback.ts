@@ -2,9 +2,18 @@ import type { Agent, RadarMap } from "./Radar";
 import type { Frame } from "./session";
 
 export type Pose = Pick<Agent, "x" | "y" | "heading">;
-type Key = Pose & { at: number; blend: boolean };
-type Track = { keys: Key[]; pose: Pose };
-const bufferMs = 125;
+type Control = { x: number; y: number };
+type Key = Pose & {
+  at: number;
+  blend: boolean;
+  curve?: { c1: Control; c2: Control; lengths: number[] };
+};
+type Track = { keys: Key[]; pose: Pose; sampledAt: number };
+// In milliseconds of playback at the selected speed. Grow on delivery stalls;
+// shrink slowly so successive bursts do not repeatedly drain the same buffer.
+const initialReserve = 200;
+const maxReserve = 450;
+const maxTurnPerMs = (Math.PI / 180) * 0.9;
 
 // On a missing or incompatible track the marker holds, then jumps to the known
 // position. A straight segment may never cross (or graze a corner of) a wall.
@@ -34,12 +43,87 @@ function key(p: Pose, at: number, blend: boolean): Key {
   return { x: p.x, y: p.y, heading: p.heading, at, blend };
 }
 
+function cubic(a: number, c1: number, c2: number, b: number, t: number) {
+  const u = 1 - t;
+  return (
+    u * u * u * a + 3 * u * u * t * c1 + 3 * u * t * t * c2 + t * t * t * b
+  );
+}
+
+// Finish a segment only when the following observed point is available and
+// presentation has not entered it. Cubic Bézier stays inside its control hull.
+function roundCorner(keys: Key[], cursor: number, map: RadarMap) {
+  const prev = keys.at(-4),
+    a = keys.at(-3),
+    b = keys.at(-2)!,
+    next = keys.at(-1)!;
+  if (!a || !b.blend || !next.blend || a.at < cursor) return;
+  const dx = b.x - a.x,
+    dy = b.y - a.y;
+  if (!dx && !dy) return;
+  const px = prev && a.blend ? a.x - prev.x : dx;
+  const py = prev && a.blend ? a.y - prev.y : dy;
+  const nx = next.x - b.x,
+    ny = next.y - b.y;
+  if (px === dx && py === dy && nx === dx && ny === dy) return;
+  // Average adjacent step vectors at a turn. A stop or reversal has zero tangent.
+  const inScale = (!px && !py) || px * dx + py * dy < 0 ? 0 : 1 / 6;
+  const outScale = (!nx && !ny) || nx * dx + ny * dy < 0 ? 0 : 1 / 6;
+  const c1 = { x: a.x + (px + dx) * inScale, y: a.y + (py + dy) * inScale };
+  const c2 = { x: b.x - (dx + nx) * outScale, y: b.y - (dy + ny) * outScale };
+  const left = Math.min(a.x, b.x, c1.x, c2.x),
+    right = Math.max(a.x, b.x, c1.x, c2.x);
+  const top = Math.min(a.y, b.y, c1.y, c2.y),
+    bottom = Math.max(a.y, b.y, c1.y, c2.y);
+  if (
+    left < 0 ||
+    right > map.width ||
+    top < 0 ||
+    bottom > map.height ||
+    map.walls.some(
+      (w) =>
+        left <= w.x + w.w && right >= w.x && top <= w.y + w.h && bottom >= w.y,
+    )
+  )
+    return;
+  const lengths = [0];
+  if (inScale && outScale) {
+    // Retiming by distance avoids speeding up on the shoulders of a turn.
+    // Deliberate stops and reversals retain their zero endpoint velocity.
+    let x = a.x,
+      y = a.y;
+    for (let i = 1; i <= 16; i++) {
+      const t = i / 16,
+        nx = cubic(a.x, c1.x, c2.x, b.x, t),
+        ny = cubic(a.y, c1.y, c2.y, b.y, t);
+      lengths.push(lengths[i - 1] + Math.hypot(nx - x, ny - y));
+      x = nx;
+      y = ny;
+    }
+  }
+  b.curve = { c1, c2, lengths };
+}
+
 export class RadarPlayback {
   private tracks = new Map<string, Track>();
   private last?: Frame;
   private online = false;
   private received = 0;
   private end = 0;
+  private cursor = 0;
+  private clockAt = 0;
+  private rate = 1;
+  private reserve = initialReserve;
+
+  private advance(now: number) {
+    if (now > this.clockAt) {
+      this.cursor = Math.min(
+        this.end,
+        this.cursor + (now - this.clockAt) * this.rate,
+      );
+      this.clockAt = now;
+    }
+  }
 
   push(next: Frame, online: boolean, now: number) {
     const old = this.last;
@@ -53,24 +137,49 @@ export class RadarPlayback {
       old.world.map.id === world.map.id &&
       old.world.map.version === world.map.version &&
       next.running &&
-      old.running &&
-      old.speed === next.speed;
+      old.running;
+    this.online = online;
+    this.last = next;
+    // A speed command can have the same tick as the preceding snapshot. Keep
+    // queued movement at its original speed; the new speed applies to future ticks.
     if (continuous && world.tick === old.world.tick) return;
     const ticks = old ? world.tick - old.world.tick : 0;
+    const gap = now - this.received;
+    const estimatedCursor = Math.min(
+      this.end,
+      this.cursor + Math.max(0, now - this.clockAt) * this.rate,
+    );
+    const covered =
+      ticks === next.speed ||
+      (ticks > 0 &&
+        world.motion !== undefined &&
+        world.motion.startTick === old?.world.tick);
     const bridge =
       continuous &&
-      ticks === next.speed &&
-      now - this.received < 450 &&
-      this.end < now + 350;
-    const start = bridge ? Math.max(now, this.end) : now;
+      covered &&
+      gap < 1000 &&
+      now - this.clockAt < 1000 &&
+      this.end - estimatedCursor < maxReserve + 250;
+    const start = bridge ? this.end : 0;
     const duration = bridge
       ? ((world.time - old.world.time) * 1000) / next.speed
       : 0;
-    const correction = Math.max(
-      -8,
-      Math.min(8, (now + bufferMs - start - duration) * 0.2),
-    );
-    const end = bridge ? start + duration + correction : now + bufferMs;
+    const end = start + duration;
+    if (bridge) {
+      // Packet arrival determines how much to buffer, never the duration of a
+      // model segment. A bounded clock servo compensates for sustained drift.
+      this.reserve = Math.min(
+        maxReserve,
+        Math.max(initialReserve, gap + 55, this.reserve - gap / 1000),
+      );
+      const error = end - estimatedCursor - this.reserve;
+      const target = 1 + Math.max(-0.07, Math.min(0.035, error / 1100));
+      this.rate += (target - this.rate) * Math.min(0.4, gap / 500);
+    } else {
+      this.cursor = -this.reserve;
+      this.clockAt = now;
+      this.rate = 1;
+    }
     const visible = new Set(world.agents.map((a) => a.id));
     for (const id of this.tracks.keys())
       if (!visible.has(id)) this.tracks.delete(id);
@@ -87,14 +196,12 @@ export class RadarPlayback {
         this.tracks.set(agent.id, {
           keys: [key(agent, end, false)],
           pose: key(agent, end, false),
+          sampledAt: now,
         });
         continue;
       }
-      // If delivery stalled, extend the final confirmed pose up to the new start.
-      while (track.keys.length > 1 && track.keys[1].at <= now)
+      while (track.keys.length > 1 && track.keys[1].at <= this.cursor)
         track.keys.shift();
-      const tail = track.keys[track.keys.length - 1];
-      if (start > tail.at) track.keys.push(key(tail, start, false));
       for (let i = 1; i <= ticks; i++) {
         const s = i < ticks ? samples![i] : null;
         const pose = s ? { x: s[0], y: s[1], heading: s[2] } : agent;
@@ -106,28 +213,55 @@ export class RadarPlayback {
             clearSegment(previous, pose, world.map.walls),
           ),
         );
+        roundCorner(track.keys, this.cursor, world.map);
       }
     }
     this.received = now;
     this.end = end;
-    this.online = online;
-    this.last = next;
+  }
+
+  has(id: string) {
+    return this.tracks.has(id);
   }
 
   sample(id: string, now: number): Pose {
-    const { keys, pose } = this.tracks.get(id)!;
-    while (keys.length > 1 && keys[1].at <= now) keys.shift();
+    this.advance(now);
+    const track = this.tracks.get(id)!;
+    const { keys, pose } = track;
+    while (keys.length > 1 && keys[1].at <= this.cursor) keys.shift();
     const [a, b] = keys;
-    const t = b?.blend ? Math.max(0, (now - a.at) / (b.at - a.at)) : 0;
+    const t = b?.blend ? Math.max(0, (this.cursor - a.at) / (b.at - a.at)) : 0;
     pose.x = t ? a.x + (b.x - a.x) * t : a.x;
     pose.y = t ? a.y + (b.y - a.y) * t : a.y;
+    if (t && b.curve) {
+      const { c1, c2, lengths } = b.curve;
+      let parameter = t;
+      if (lengths.length > 1) {
+        const distance = t * lengths[lengths.length - 1];
+        let i = 1;
+        while (i < lengths.length - 1 && lengths[i] < distance) i++;
+        parameter =
+          (i -
+            1 +
+            (distance - lengths[i - 1]) / (lengths[i] - lengths[i - 1])) /
+          (lengths.length - 1);
+      }
+      pose.x = cubic(a.x, c1.x, c2.x, b.x, parameter);
+      pose.y = cubic(a.y, c1.y, c2.y, b.y, parameter);
+    }
     const turn = t
       ? Math.atan2(
           Math.sin(b.heading - a.heading),
           Math.cos(b.heading - a.heading),
         )
       : 0;
-    pose.heading = a.heading + turn * t;
+    // At 8× a genuine 90° change can span just 12.5 ms. Slew only the
+    // indicator toward the confirmed heading, also across the ±π boundary.
+    const diff = a.heading + turn * t - pose.heading;
+    const shortest = Math.atan2(Math.sin(diff), Math.cos(diff));
+    const limit = Math.max(0, now - track.sampledAt) * maxTurnPerMs;
+    pose.heading += Math.max(-limit, Math.min(limit, shortest));
+    track.sampledAt = Math.max(track.sampledAt, now);
     return pose;
   }
 }

@@ -53,3 +53,10 @@ jobs:
         with:
           name: browser-evidence-${{ matrix.os }}
           path: frontend/test-results/
+      - name: Publish radar motion video
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          archive: false
+          path: frontend/test-results/*desktop/radar-motion.webm
+          if-no-files-found: error
