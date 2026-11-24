@@ -66,9 +66,15 @@ async function check(mode) {
     const page = await device.newPage()
     const errors = []
     page.on('pageerror', err => errors.push(err.message))
-    await page.goto(origin)
+    await page.goto(mode === 'lan' ? origin + '/#pair=' + encodeURIComponent(code) : origin)
     await expect(page.getByTestId('connection')).toHaveText('Требуется код')
-    await page.getByLabel('Одноразовый код с домашнего ПК').fill(code)
+    await expect(page.getByRole('button', {name:'Настройки сервера'})).toHaveCount(0)
+    const field = page.getByLabel('Одноразовый код с домашнего ПК')
+    if (mode === 'lan') {
+      await expect(field).toHaveValue(code)
+      expect(new URL(page.url()).hash).toBe('')
+    } else await field.fill(code)
+    await page.getByLabel('Название устройства').fill('Тестовый телефон')
     await page.getByRole('button', {name: 'Подключить', exact: true}).tap()
     await expect(page.getByTestId('connection')).toHaveText('На связи')
     await expect(page.locator('canvas')).toBeVisible()

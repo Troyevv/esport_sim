@@ -1,4 +1,5 @@
 """User data locations and the one-time migration for earlier source checkouts."""
+
 import os
 from pathlib import Path
 import sqlite3
@@ -19,7 +20,11 @@ def migrate_legacy(source: Path, destination: Path):
 
     Never replace an existing home. Preserve the old file even after success.
     """
-    if not source.is_file() or destination.exists() or source.resolve() == destination.resolve():
+    if (
+        not source.is_file()
+        or destination.exists()
+        or source.resolve() == destination.resolve()
+    ):
         return
     destination.parent.mkdir(parents=True, exist_ok=True)
     with own_clock(destination):
@@ -30,18 +35,23 @@ def migrate_legacy(source: Path, destination: Path):
             os.close(fd)
             temporary = Path(name)
             try:
-                origin = sqlite3.connect(source.resolve().as_uri() + "?mode=ro", uri=True)
+                origin = sqlite3.connect(
+                    source.resolve().as_uri() + "?mode=ro", uri=True
+                )
                 try:
                     copy = sqlite3.connect(temporary)
                     try:
                         origin.backup(copy)
                         if copy.execute("PRAGMA quick_check").fetchone() != ("ok",):
                             raise ValueError("Файл сохранения повреждён")
-                        row = copy.execute("SELECT body FROM active WHERE id=1").fetchone()
+                        row = copy.execute(
+                            "SELECT body FROM active WHERE id=1"
+                        ).fetchone()
                         if not row:
                             raise ValueError("В файле нет активного сценария")
                         from .store import validate_snapshot
                         import json
+
                         validate_snapshot(json.loads(row[0]))
                     finally:
                         copy.close()

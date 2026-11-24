@@ -18,7 +18,7 @@ from pathlib import Path
 import uvicorn
 from fastapi.responses import JSONResponse
 
-from backend.paths import windows_data_dir
+from backend.paths import migrate_legacy, windows_data_dir
 from backend.server import create_app
 
 
@@ -157,7 +157,7 @@ async def serve(data, descriptor, listener, open_url):
         descriptor.unlink(missing_ok=True)
 
 
-def launch(data, open_url):
+def launch(data, open_url, legacy_source=None):
     data.mkdir(parents=True, exist_ok=True)
     descriptor = data / "instance.json"
     with launcher_lock(data / "launcher.lock") as owner:
@@ -169,6 +169,8 @@ def launch(data, open_url):
         )
         logging.basicConfig(level=logging.INFO, handlers=[handler])
         descriptor.unlink(missing_ok=True)
+        if legacy_source is not None:
+            migrate_legacy(legacy_source, data / "scenario.sqlite")
         with reserve_listener() as listener:
             asyncio.run(serve(data, descriptor, listener, open_url))
 
@@ -176,7 +178,12 @@ def launch(data, open_url):
 def main():
     try:
         data = windows_data_dir()
-        launch(data, os.startfile)
+        directory = (
+            Path(sys.executable).parent
+            if getattr(sys, "frozen", False)
+            else Path(__file__).resolve().parents[1]
+        )
+        launch(data, os.startfile, directory / "runtime-data" / "scenario.sqlite")
     except (Exception, SystemExit) as err:
         logging.exception("Ошибка запуска EsportSim")
         ctypes.windll.user32.MessageBoxW(

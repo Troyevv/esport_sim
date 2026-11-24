@@ -37,13 +37,23 @@ class Pair(BaseModel):
     name: str = Field(default="Устройство", max_length=80)
 
 
-def create_app(db_path: Path, mode="local", origins=(), pairing_code=None,
-               *, managed=True, on_shutdown=None, _shared=None):
+def create_app(
+    db_path: Path,
+    mode="local",
+    origins=(),
+    pairing_code=None,
+    *,
+    managed=True,
+    on_shutdown=None,
+    _shared=None,
+):
     origins = frozenset(origins)
     hosts = {urlsplit(item).netloc for item in origins}
     # A second TLS listener serves the same store and wakes the same subscribers.
     # Only the owning application runs the lifespan and advances model time.
-    condition, connections = _shared[:2] if _shared else (asyncio.Condition(), Counter())
+    condition, connections = (
+        _shared[:2] if _shared else (asyncio.Condition(), Counter())
+    )
     manages_home = mode == "local" and managed
 
     @asynccontextmanager
@@ -63,9 +73,15 @@ def create_app(db_path: Path, mode="local", origins=(), pairing_code=None,
                             condition.notify_all()
 
             if manages_home:
+
                 def guest_app(origin):
-                    return create_app(db_path, "lan", [origin], managed=False,
-                                      _shared=(condition, connections, store))
+                    return create_app(
+                        db_path,
+                        "lan",
+                        [origin],
+                        managed=False,
+                        _shared=(condition, connections, store),
+                    )
 
                 app.state.lan = LanAccess(db_path.parent, guest_app)
                 await app.state.lan.restore()
@@ -94,8 +110,9 @@ def create_app(db_path: Path, mode="local", origins=(), pairing_code=None,
         if mode == "local":
             try:
                 name = urlsplit("//" + host).hostname
-                loopback = (ipaddress.ip_address(conn.client.host).is_loopback and
-                            (name == "localhost" or ipaddress.ip_address(name).is_loopback))
+                loopback = ipaddress.ip_address(conn.client.host).is_loopback and (
+                    name == "localhost" or ipaddress.ip_address(name).is_loopback
+                )
             except (TypeError, ValueError):
                 return False
             return loopback and (
@@ -170,8 +187,10 @@ def create_app(db_path: Path, mode="local", origins=(), pairing_code=None,
             token = secrets.token_urlsafe(32)
             key = digest(token)
             store.db.execute("INSERT INTO device VALUES(?)", (key,))
-            store.db.execute("INSERT INTO device_info VALUES(?, ?, unixepoch())",
-                             (key, body.name.strip() or "Устройство"))
+            store.db.execute(
+                "INSERT INTO device_info VALUES(?, ?, unixepoch())",
+                (key, body.name.strip() or "Устройство"),
+            )
         response = JSONResponse({"paired": True})
         response.set_cookie(
             COOKIE,

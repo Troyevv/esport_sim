@@ -45,17 +45,24 @@ function SettingsDialog({ close }: { close: () => void }) {
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [invite, setInvite] = useState<{code: string; until: number} | null>(null);
+  const [invite, setInvite] = useState<{code: string; qrDataUrl: string; until: number} | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
   const [stopping, setStopping] = useState(false);
   const serial = useRef(0);
   const locked = useRef(false);
+  const known = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!invite) return;
+    const id = window.setTimeout(() => setInvite(null), Math.max(0, invite.until - Date.now()));
+    return () => window.clearTimeout(id);
+  }, [invite]);
 
   function receive(next: Host) {
     setState(next);
     setAddress(old => next.enabled && next.address ? next.address : next.addresses.includes(old) ? old : next.addresses[0] || "");
-    if (!next.enabled) setInvite(null);
-    setInvite(old => old && old.until > Date.now() ? old : null);
+    const previous = known.current;
+    if (!next.enabled || next.devices.some(d => previous && !previous.has(d.id))) setInvite(null);
+    known.current = new Set(next.devices.map(d => d.id));
   }
   async function refresh() {
     if (locked.current) return;
@@ -98,17 +105,17 @@ function SettingsDialog({ close }: { close: () => void }) {
     receive(await hostRequest<Host>("/api/host"));
   });
   const issue = () => action(async () => {
-    const next = await hostRequest<{code: string; expiresIn: number}>("/api/host/invite", "POST");
-    setInvite({code: next.code, until: Date.now() + next.expiresIn * 1000});
+    const next = await hostRequest<{code: string; qrDataUrl: string; expiresIn: number}>("/api/host/invite", "POST");
+    setInvite({code: next.code, qrDataUrl: next.qrDataUrl, until: Date.now() + next.expiresIn * 1000});
   });
   const shutdown = () => action(async () => {
     await hostRequest("/api/host/shutdown", "POST");
     setStopping(true);
   });
-  return <dialog ref={dialog} className="host-dialog" aria-labelledby="host-title" onCancel={close} onClose={close}>
+  return <dialog ref={dialog} className="host-dialog" aria-labelledby="host-title" onClose={close}>
     <header className="host-titlebar">
       <div className="host-heading"><div className="host-emblem"><NetworkGlyph/></div><div><span>ESPORT_SIM</span><h2 id="host-title">Домашний сервер</h2></div></div>
-      <button className="host-x" aria-label="Закрыть настройки" onClick={close} autoFocus>×</button>
+      <button className="host-x" aria-label="Закрыть настройки" onClick={() => dialog.current?.close()} autoFocus>×</button>
     </header>
     <div className="host-sections">
     {stopping ? <p role="status">Завершается работа сервера. Это окно можно закрыть.</p> : <>
@@ -128,9 +135,9 @@ function SettingsDialog({ close }: { close: () => void }) {
         {state.enabled && state.url && <section className="host-block">
           <h3>Подключение телефона</h3>
           {state.fingerprint && <TrustInstructions fingerprint={state.fingerprint}/>}
-          <div className="host-pairing"><img src={serverURL("/api/host/qr.svg?address=" + encodeURIComponent(state.url)).href} alt="QR-код адреса сервера" width="128" height="128"/>
-          <div><h4>Адрес сервера</h4><code className="host-url">{state.url}</code>
-            <p>После установки сертификата отсканируйте QR-код камерой телефона или введите адрес в браузере.</p></div></div>
+          <div className="host-pairing"><img src={invite?.qrDataUrl || serverURL("/api/host/qr.svg?address=" + encodeURIComponent(state.url)).href} alt={invite ? "QR-код одноразового приглашения" : "QR-код адреса сервера"} width="128" height="128"/>
+          <div><h4>Адрес сервера</h4><code className="host-url">https://<wbr/><span>{new URL(state.url).host}</span></code>
+            <p>{invite ? "Отсканируйте приглашение на телефоне. Код заполнится автоматически. Проверьте название устройства и нажмите «Подключить»." : "После установки сертификата выдайте код, чтобы показать QR-приглашение. Также можно открыть этот адрес и ввести код вручную."}</p></div></div>
           <div className="host-invite"><div><h4>Одноразовый код</h4><p>Введите его на телефоне в течение 10 минут. Новый код заменяет предыдущий.</p></div>
           <button className="host-action" disabled={busy} onClick={() => void issue()}>Выдать код</button></div>
           {invite && <output aria-label="Одноразовый код" className="host-code">{invite.code}</output>}
@@ -153,7 +160,7 @@ function SettingsDialog({ close }: { close: () => void }) {
   </dialog>;
 }
 
-export default function HostSettings() {
+export default function HostSettings({ connected }: { connected: boolean }) {
   const [available, setAvailable] = useState(false);
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -163,7 +170,7 @@ export default function HostSettings() {
     void check();
     window.addEventListener("online", check);
     return () => { mounted = false; window.removeEventListener("online", check); };
-  }, []);
+  }, [connected]);
   if (!available) return null;
   return <><button className="host-trigger" aria-label="Настройки сервера" onClick={() => setOpen(true)}><NetworkGlyph/><span>Настройки сервера</span></button>
     {open && <SettingsDialog close={() => setOpen(false)}/>}</>;

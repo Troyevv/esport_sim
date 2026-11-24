@@ -51,16 +51,29 @@ function Icon({ name }: { name: Glyph }) {
     </svg>
   );
 }
+function takePairingCode() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  const value = params.get("pair");
+  if (!value) return "";
+  params.delete("pair");
+  const rest = params.toString();
+  history.replaceState(history.state, "", location.pathname + location.search + (rest ? "#" + rest : ""));
+  return value;
+}
+
 function App() {
   const [view, setView] = useState<View>("full");
   const [selected, setSelected] = useState<string | null>(null);
   const [seed, setSeed] = useState("42");
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(takePairingCode);
   const [deviceName, setDeviceName] = useState(() => {
     const platform = navigator.userAgent.match(/iPhone|iPad|Android/i)?.[0];
     return platform || "Мой браузер";
   });
   const { frame, connection, busy, notice, act, pair } = useSession(view);
+  useEffect(() => {
+    if (connection === "На связи") setCode("");
+  }, [connection]);
   const world = frame?.world;
   const agent = world?.agents.find((item) => item.id === selected);
   const enabled = !!frame && connection === "На связи" && !busy;
@@ -88,7 +101,7 @@ function App() {
           <i />
           {connection}
         </span>
-        <HostSettings/>
+        <HostSettings connected={connection === "На связи"}/>
       </header>
       <main>
         <div className="intro">

@@ -1,4 +1,6 @@
 """Routes registered only on the authoritative loopback application."""
+
+import base64
 import io
 import secrets
 from collections.abc import Callable
@@ -17,6 +19,12 @@ class LanChange(BaseModel):
     address: str | None = None
 
 
+def qr_svg(url):
+    buffer = io.BytesIO()
+    segno.make_qr(url, error="m").save(buffer, kind="svg", scale=5, light="white")
+    return buffer.getvalue()
+
+
 def home_router(app, connections, on_shutdown: Callable | None):
     router = APIRouter(prefix="/api/host")
 
@@ -27,12 +35,22 @@ def home_router(app, connections, on_shutdown: Callable | None):
             LEFT JOIN device_info m ON d.digest=m.digest ORDER BY d.rowid
         """)
         return {
-            "enabled": lan["enabled"], "url": lan["origin"], "address": lan["address"],
-            "addresses": lan["addresses"], "fingerprint": lan["fingerprint"], "error": lan["error"],
+            "enabled": lan["enabled"],
+            "url": lan["origin"],
+            "address": lan["address"],
+            "addresses": lan["addresses"],
+            "fingerprint": lan["fingerprint"],
+            "error": lan["error"],
             "shutdownAvailable": on_shutdown is not None,
-            "devices": [{"id": key[:16], "name": name or "Устройство",
-                         "pairedAt": stamp, "connected": bool(connections.get(key))}
-                        for key, name, stamp in devices],
+            "devices": [
+                {
+                    "id": key[:16],
+                    "name": name or "Устройство",
+                    "pairedAt": stamp,
+                    "connected": bool(connections.get(key)),
+                }
+                for key, name, stamp in devices
+            ],
         }
 
     @router.get("")
@@ -53,18 +71,27 @@ def home_router(app, connections, on_shutdown: Callable | None):
 
     @router.post("/invite")
     async def invite():
-        if not app.state.lan.status()["enabled"]:
+        url = app.state.lan.status()["origin"]
+        if not url:
             raise HTTPException(409, "Сначала включите доступ по локальной сети")
         code = secrets.token_urlsafe(18)
         with app.state.store.transaction():
             issue_code(app.state.store.db, code)
-        return {"code": code, "expiresIn": 600}
+        # Fragments are consumed by the pairing form and never sent in the URL to the server.
+        image = base64.b64encode(qr_svg(f"{url}/#pair={code}")).decode("ascii")
+        return {
+            "code": code,
+            "expiresIn": 600,
+            "qrDataUrl": f"data:image/svg+xml;base64,{image}",
+        }
 
     @router.delete("/devices/{device_id}", status_code=204)
     async def revoke(device_id: str):
         store = app.state.store
         with store.transaction():
-            deleted = store.db.execute("DELETE FROM device WHERE substr(digest,1,16)=?", (device_id,))
+            deleted = store.db.execute(
+                "DELETE FROM device WHERE substr(digest,1,16)=?", (device_id,)
+            )
             if not deleted.rowcount:
                 raise HTTPException(404, "Устройство уже отключено")
         # Commands check access on each request. The stream rechecks on wake or heartbeat.
@@ -75,16 +102,16 @@ def home_router(app, connections, on_shutdown: Callable | None):
         url = app.state.lan.status()["origin"]
         if not url:
             raise HTTPException(409, "Сетевой доступ выключен")
-        buffer = io.BytesIO()
-        segno.make_qr(url, error="m").save(buffer, kind="svg", scale=5, light="white")
-        return Response(buffer.getvalue(), media_type="image/svg+xml")
+        return Response(qr_svg(url), media_type="image/svg+xml")
 
     @router.get("/authority.cer")
     async def authority():
         cert = app.state.lan.ca_file
         if not cert.is_file():
             raise HTTPException(404, "Сначала включите доступ по локальной сети")
-        return FileResponse(cert, media_type="application/pkix-cert", filename="EsportSim-Home.cer")
+        return FileResponse(
+            cert, media_type="application/pkix-cert", filename="EsportSim-Home.cer"
+        )
 
     @router.post("/shutdown")
     async def shutdown(tasks: BackgroundTasks):

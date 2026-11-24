@@ -2,7 +2,7 @@
 param([Parameter(Mandatory)][string]$Archive, [switch]$CleanCore, [switch]$DesktopBrowser)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-if ($CleanCore -eq $DesktopBrowser) { throw 'Choose exactly one Windows test environment.' }
+if ($CleanCore.IsPresent -eq $DesktopBrowser.IsPresent) { throw 'Choose exactly one Windows test environment.' }
 
 function Wait-Check([string]$Description, [scriptblock]$Check) {
     $until = [DateTime]::UtcNow.AddSeconds(60)
@@ -11,6 +11,8 @@ function Wait-Check([string]$Description, [scriptblock]$Check) {
         try { if (& $Check) { return } } catch { $lastError = $_.Exception.Message }
         Start-Sleep -Milliseconds 200
     } while ([DateTime]::UtcNow -lt $until)
+    $launcherLog = Join-Path $env:LOCALAPPDATA 'EsportSim\launcher.log'
+    if (Test-Path $launcherLog) { Get-Content -Tail 40 -LiteralPath $launcherLog | Write-Warning }
     throw "Timed out: $Description. $lastError"
 }
 
@@ -62,6 +64,51 @@ function Command([string]$Origin, [string]$Kind, $Value = $null) {
     $null = Invoke-RestMethod "$Origin/api/command" -Method Post -Headers @{Origin=$Origin} -ContentType 'application/json' -Body ($body | ConvertTo-Json -Compress)
 }
 
+function Test-Lan([string]$Origin) {
+    $headers = @{Origin=$Origin}
+    $settings = Invoke-RestMethod "$Origin/api/host"
+    if ($settings.enabled -or @($settings.addresses).Count -lt 1) {
+        throw 'Expected disabled LAN with an eligible private Windows interface.'
+    }
+    $body = @{enabled=$true; address=$settings.addresses[0]} | ConvertTo-Json -Compress
+    $settings = Invoke-RestMethod "$Origin/api/host/lan" -Method Post -Headers $headers -ContentType 'application/json' -Body $body
+    try {
+        $lan = $settings.url
+        if (!$settings.enabled -or !$lan.StartsWith('https://')) { throw 'LAN URL unavailable' }
+        $qr = Invoke-WebRequest "$Origin/api/host/qr.svg" -UseBasicParsing
+        $svg = if ($qr.Content -is [byte[]]) { [Text.Encoding]::UTF8.GetString($qr.Content) } else { $qr.Content }
+        if ($svg -notmatch '<svg' -or $svg -notmatch '<path') { throw 'QR rendering failed' }
+        $invite = Invoke-RestMethod "$Origin/api/host/invite" -Method Post -Headers $headers
+        if ([string]::IsNullOrEmpty($invite.code)) { throw 'Invitation unavailable' }
+
+        $authority = Join-Path $testRoot 'home.cer'
+        Invoke-WebRequest "$Origin/api/host/authority.cer" -UseBasicParsing -OutFile $authority
+        $fingerprint = (Get-FileHash $authority -Algorithm SHA256).Hash
+        if ($fingerprint -ne $settings.fingerprint.Replace(':', '')) { throw 'Authority fingerprint mismatch' }
+
+        # Limit trust to this curl process. Never modify the runner's root store.
+        $pem = Join-Path $testRoot 'home.pem'
+        $null = certutil -encode $authority $pem
+        if ($LASTEXITCODE) { throw 'Could not encode public CA' }
+        $opts = @('--silent', '--noproxy', '*', '--max-time', '8')
+        $null = & curl.exe @opts "$lan/api/capabilities"
+        if ($LASTEXITCODE -ne 60) { throw "Expected untrusted certificate before explicit trust, curl exit $LASTEXITCODE" }
+        $trusted = $opts + @('--cacert', $pem)
+        $code = & curl.exe @trusted -o NUL -w '%{http_code}' "$lan/api/state"
+        if ($LASTEXITCODE -or $code -ne '401') { throw "Protected LAN state: HTTP $code, curl exit $LASTEXITCODE" }
+        $cookie = Join-Path $testRoot 'device.cookies'
+        $pair = @{code=$invite.code; name='Windows smoke test'} | ConvertTo-Json -Compress
+        $code = $pair | & curl.exe @trusted -o NUL -w '%{http_code}' -c $cookie -H "Origin: $lan" -H 'Content-Type: application/json' --data-binary '@-' "$lan/api/pair"
+        if ($LASTEXITCODE -or $code -ne '200') { throw "Pair: HTTP $code, curl exit $LASTEXITCODE" }
+        $paired = & curl.exe @trusted --fail -b $cookie "$lan/api/state" | ConvertFrom-Json
+        if ($LASTEXITCODE -or $paired.context -ne (Invoke-RestMethod "$Origin/api/state").context) { throw 'Paired device has different world.' }
+    } finally {
+        $settings = Invoke-RestMethod "$Origin/api/host/lan" -Method Post -Headers $headers -ContentType 'application/json' -Body '{"enabled":false}'
+        if ($settings.enabled) { throw 'LAN failed to shut down.' }
+    }
+    Write-Output 'Packaged LAN adapter selection, QR, CA fingerprint, explicit TLS trust and client pairing verified.'
+}
+
 function Stop-HostInstance($Instance) {
     $origin = "http://127.0.0.1:$($Instance.port)"
     $null = Invoke-RestMethod "$origin/api/host/shutdown" -Method Post -Headers @{Origin=$origin}
@@ -75,7 +122,7 @@ if ($CleanCore) {
     foreach ($name in @('py.exe','python.exe','python3.exe','node.exe','npm.cmd','git.exe')) {
         if (Get-Command $name -ErrorAction SilentlyContinue) { throw "$name installed on clean image" }
     }
-    if ((Get-ComputerInfo -Property WindowsInstallationType).WindowsInstallationType -ne 'Server Core') {
+    if ((Get-ItemPropertyValue 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name InstallationType) -ne 'Server Core') {
         throw 'Expected Windows Server Core'
     }
     Write-Output 'Pristine Server Core image verified. Python, Node.js, npm and Git are absent.'
@@ -120,6 +167,7 @@ $again = Launch-Archive $exe
 if ($again.pid -ne $first.pid -or $again.port -ne $first.port -or $again.nonce -ne $first.nonce) { throw 'Second launch did not reuse the same instance.' }
 Wait-Check 'secondary launcher exit' { @(Get-Process -Name EsportSim -ErrorAction SilentlyContinue).Count -eq 1 }
 $origin = "http://127.0.0.1:$($first.port)"
+if ($DesktopBrowser) { Test-Lan $origin }
 Command $origin 'reset' 705177
 Command $origin 'save'
 Command $origin 'reset' 47

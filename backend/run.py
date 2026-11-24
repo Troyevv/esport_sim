@@ -33,7 +33,9 @@ def main():
     if args.data is None:
         args.data = windows_data_dir() if os.name == "nt" else Path("runtime-data")
         if os.name == "nt":
-            migrate_legacy(Path("runtime-data/scenario.sqlite"), args.data / "scenario.sqlite")
+            migrate_legacy(
+                Path("runtime-data/scenario.sqlite"), args.data / "scenario.sqlite"
+            )
     args.data.mkdir(parents=True, exist_ok=True)
     db = args.data / "scenario.sqlite"
     if args.revoke_all or args.list_devices or args.revoke_device or args.pair_new:
