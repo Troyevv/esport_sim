@@ -1,0 +1,106 @@
+.sim-radar {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  overflow: hidden;
+  background-color: #101c20;
+  background-image:
+    radial-gradient(ellipse at 50% 48%, #19303455, transparent 75%),
+    radial-gradient(#71939155 0.65px, transparent 0.9px);
+  background-size:
+    auto,
+    14px 14px;
+}
+.sim-radar-viewport {
+  width: 100%;
+  height: clamp(360px, min(62vh, 54vw), 640px);
+  touch-action: none;
+  outline: 0;
+  cursor: grab;
+}
+.sim-radar-viewport:active {
+  cursor: grabbing;
+}
+.sim-radar-viewport:focus-visible {
+  outline: 2px solid #8ce2d6;
+  outline-offset: -3px;
+}
+.sim-radar-viewport canvas {
+  display: block;
+}
+.sim-radar-tools {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  height: 34px;
+  border: 1px solid #42565a;
+  background: #142126f5;
+  border-radius: 5px;
+  overflow: hidden;
+  color: #dbe9e7;
+}
+.sim-radar-tools > button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 100%;
+  padding: 0;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  background: transparent;
+  font:
+    20px/1 Consolas,
+    monospace;
+  cursor: pointer;
+}
+.sim-radar-tools > button:last-child {
+  border-left: 1px solid #42565a;
+}
+.sim-radar-tools > button:focus-visible {
+  outline: 2px solid #92ddce;
+  outline-offset: -3px;
+}
+.sim-radar-tools > button:hover {
+  background: #264044;
+}
+.sim-radar-tools > button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.sim-radar-tools > output {
+  font:
+    12px/1 Consolas,
+    monospace;
+  min-width: 36px;
+  text-align: center;
+}
+.sim-radar-error {
+  position: absolute;
+  inset: 35% 10% auto;
+  color: #ffdca3;
+  text-align: center;
+  font-size: 1rem;
+}
+@media (max-width: 700px) {
+  .sim-radar-viewport {
+    height: clamp(310px, 84vw, 460px);
+  }
+  .sim-radar-tools {
+    height: 40px;
+    bottom: 6px;
+    right: 6px;
+  }
+  .sim-radar-tools > button {
+    width: 40px;
+  }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  .sim-radar-viewport {
+    height: clamp(300px, 74vh, 450px);
+  }
+}

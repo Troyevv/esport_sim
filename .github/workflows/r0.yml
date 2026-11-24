@@ -1,0 +1,48 @@
+name: R0 acceptance
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-test.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install server and test dependencies
+        run: python -m pip install -r requirements-test.txt
+      - name: Install frontend
+        working-directory: frontend
+        run: npm ci
+      - name: Type-check and build
+        working-directory: frontend
+        run: npm run build
+      - name: Engine, persistence and network contracts
+        run: python -m pytest -q
+      - name: Headless scenario
+        run: python -m backend.headless --seed 42 --ticks 1200
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Browser acceptance
+        working-directory: frontend
+        run: npm test
+      - name: Mobile pairing over LAN and a TLS tunnel
+        run: node frontend/e2e/mobile-tls.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence-${{ matrix.os }}
+          path: frontend/test-results/
