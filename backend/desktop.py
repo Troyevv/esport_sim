@@ -84,7 +84,15 @@ async def serve(data, descriptor, listener, open_url):
         timeout_graceful_shutdown=3,
     )
     server = uvicorn.Server(config)
-    task = asyncio.create_task(server.serve(sockets=[listener]))
+    async def run_server():
+        try:
+            await server.serve(sockets=[listener])
+        except SystemExit as exc:
+            # Uvicorn exits on lifespan failure. Propagate the concrete save error
+            # to the launcher dialog before SystemExit reaches the event loop.
+            raise RuntimeError(getattr(app.state, "load_error", "Ошибка запуска сервера")) from exc
+
+    task = asyncio.create_task(run_server())
     try:
         deadline = time.monotonic() + 30
         while not server.started or not await asyncio.to_thread(ready, port, nonce):

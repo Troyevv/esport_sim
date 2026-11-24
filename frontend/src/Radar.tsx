@@ -3,6 +3,7 @@ import { Application, Container, Graphics, Text } from "pixi.js";
 import type { RadarPlayback } from "./playback";
 import type { Frame } from "./session";
 import "./radar.css";
+import { drawEvents } from "./matchRadar";
 
 type Point = { x: number; y: number };
 type Rect = Point & { w: number; h: number };
@@ -23,6 +24,8 @@ export interface Agent extends Point {
   name: string;
   team: Team;
   heading: number;
+  hp?: number; armor?: number; cash?: number; ammo?: number; reserve?: number; weapon?: string;
+  utility?: string[]; kit?: boolean; alive?: boolean;
   visible: string[];
   knowledge: (Point & { id: string; tick: number })[];
   status: string;
@@ -143,7 +146,7 @@ type RadarApi = {
   selectAt: (at: Point) => void;
 };
 
-function marker(agent: Agent) {
+function marker(agent: Agent, match: boolean) {
   const group = new Container({ label: agent.id });
   const color = colors[agent.team];
   const ring = new Graphics()
@@ -164,7 +167,13 @@ function marker(agent: Agent) {
   );
   text.scale.set(1.52 / 14);
   group.addChild(tip, ring, body, text);
-  return { group, tip, ring };
+  if (match) {
+    const nick = label(agent.name, 12, color, "bold");
+    nick.scale.set(0.075);
+    nick.position.y = 1.9;
+    group.addChild(nick);
+  }
+  return { group, tip, ring, team:agent.team };
 }
 
 function setupScene(
@@ -184,7 +193,8 @@ function setupScene(
   const markers = new Map<string, ReturnType<typeof marker>>();
   const playback = props.playback;
   app.stage.addChild(world);
-  world.addChild(plan, players);
+  const effects = new Graphics();
+  world.addChild(plan, effects, players);
   let dirty = true;
   let request = 0;
   function present(now: number) {
@@ -205,6 +215,14 @@ function setupScene(
         m.tip.rotation = p.heading;
         changed = true;
       }
+    }
+    const match = current.frame.world.match;
+    if (match) {
+      const tick = playback.displayTick(now);
+      const id = match.bomb?.carrier;
+      const carrier = id && playback.has(id) ? playback.sample(id, now) : undefined;
+      drawEvents(effects, match, tick, carrier);
+      changed = true;
     }
     if (changed) app.render();
     dirty = false;
@@ -249,7 +267,7 @@ function setupScene(
       current = next;
 
       for (const [id, m] of markers) {
-        if (!next.frame.world.agents.some((a) => a.id === id)) {
+        if (changed || !next.frame.world.agents.some((a) => a.id === id && a.team === m.team)) {
           m.group.destroy({ children: true });
           markers.delete(id);
           dirty = true;
@@ -258,13 +276,14 @@ function setupScene(
       for (const a of next.frame.world.agents) {
         let m = markers.get(a.id);
         if (!m) {
-          m = marker(a);
+          m = marker(a, !!next.frame.world.match);
           markers.set(a.id, m);
           players.addChild(m.group);
           const scale = fit * zoom;
           m.group.scale.set(limit(4.5 * scale, 6.3, 13) / scale);
           dirty = true;
         }
+        m.group.alpha = a.alive === false ? 0.32 : 1;
         if (m.ring.visible !== (a.id === next.selected)) {
           m.ring.visible = a.id === next.selected;
           dirty = true;

@@ -413,3 +413,25 @@ test("готовые серверные позы отображаются на �
   await button("Пауза").click();
   expect(changed).toBe(13);
 });
+
+test("подтверждённый буфер переживает задержку источника 392 мс без остановки и экстраполяции", () => {
+  const playback = new RadarPlayback();
+  let tick = 0;
+  let previous = 0;
+  let smallest = Infinity;
+  for (let ms = 0; ms < 4200; ms += 5) {
+    while (tick * 100 + (tick >= 15 ? 292 : 0) <= ms) {
+      const state = frame(tick, point(15 + tick * 2));
+      state.world.map.walls = [];
+      playback.push(state, true, ms);
+      tick++;
+    }
+    const x = playback.sample("T1", ms).x;
+    if (ms >= 1300 && ms < 1900) smallest = Math.min(smallest, x - previous);
+    expect(x).toBeLessThanOrEqual(15 + (tick - 1) * 2);
+    previous = x;
+  }
+  // Nominal movement is 0.1 units per 5 ms. A held pose would be zero.
+  expect(smallest).toBeGreaterThan(0.02);
+  expect(playback.sample("T1", 8000).x).toBe(15 + (tick - 1) * 2);
+});

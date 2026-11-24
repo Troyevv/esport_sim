@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
 
-from . import engine
+from . import checkpoints, engine, match
 
 
 class Conflict(ValueError):
@@ -16,12 +16,17 @@ class Conflict(ValueError):
 
 def validate_snapshot(state):
     world = state.get("world", {})
-    if (state.get("version"), world.get("version"), world.get("map_version")) != (
-        1,
-        engine.VERSION,
-        engine.MAP["version"],
-    ):
+    model = (world.get("version"), world.get("map_version"), world.get("rules"))
+    supported = (
+        (engine.VERSION, engine.MAP["version"], None),
+        (2, match.MAP["version"], match.VERSION),
+    )
+    if state.get("version") != 1 or model not in supported:
         raise Conflict("Несовместимая версия снимка, ядра или геометрии")
+    if world.get("version") == 2:
+        version = world.get("checkpointVersion", 1)
+        if type(version) is not int or version not in (1, checkpoints.VERSION):
+            raise Conflict(f"Неподдерживаемая версия сохранения BO1: {version}")
 
 
 class Store:
@@ -31,6 +36,7 @@ class Store:
         self.db.executescript("""
             PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS active (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS round_log (digest TEXT PRIMARY KEY, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS slot (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS receipt (id TEXT PRIMARY KEY, request TEXT NOT NULL, result TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS device (digest TEXT PRIMARY KEY);
@@ -39,26 +45,53 @@ class Store:
                 BEGIN DELETE FROM device_info WHERE digest=OLD.digest; END;
             CREATE TABLE IF NOT EXISTS invitation (digest TEXT PRIMARY KEY, expires INTEGER NOT NULL);
         """)
-        existing = self.db.execute("SELECT body FROM active WHERE id=1").fetchone()
-        if existing:
-            try:
-                validate_snapshot(json.loads(existing[0]))
-            except (ValueError, TypeError, AttributeError):
-                self.db.close()
-                raise
-        else:
-            self.write(
-                dict(
-                    version=1,
-                    context=str(uuid4()),
-                    revision=0,
-                    sequence=0,
-                    running=False,
-                    speed=1,
-                    world=engine.initial(42),
-                    hasSave=False,
+        try:
+            with self.transaction():
+                for table in ("active", "slot"):
+                    row = self.db.execute(
+                        f"SELECT body FROM {table} WHERE id=1"
+                    ).fetchone()
+                    if row:
+                        self.restore_checkpoint(table, row[0])
+                    elif table == "active":
+                        self.write(
+                            dict(
+                                version=1,
+                                context=str(uuid4()),
+                                revision=0,
+                                sequence=0,
+                                running=False,
+                                speed=1,
+                                world=engine.initial(42),
+                                hasSave=False,
+                            )
+                        )
+        except BaseException:
+            self.db.close()
+            raise
+
+    def restore_checkpoint(self, table, body):
+        """Caller owns the transaction. Keep original JSON and immutable log blocks."""
+        label = "активный сценарий" if table == "active" else "ручное сохранение"
+        try:
+            state = json.loads(body)
+            validate_snapshot(state)
+            world = state["world"]
+            if world["version"] == 2 and world.get("checkpointVersion", 1) == 1:
+                checkpoints.upgrade_match(self.db, world)
+                self.db.execute("""CREATE TABLE IF NOT EXISTS checkpoint_backup (
+                    source TEXT NOT NULL, body TEXT NOT NULL, UNIQUE(source, body))""")
+                self.db.execute(
+                    "INSERT OR IGNORE INTO checkpoint_backup VALUES(?,?)", (table, body)
                 )
-            )
+                self.db.execute(
+                    f"UPDATE {table} SET body=? WHERE id=1", (json.dumps(state),)
+                )
+            if world["version"] == 2:
+                checkpoints.validate_current(world)
+            return state
+        except (ValueError, TypeError, AttributeError, KeyError, IndexError) as exc:
+            raise Conflict(f"Не удалось прочитать {label}: {exc}") from exc
 
     @contextmanager
     def transaction(self):
@@ -76,6 +109,15 @@ class Store:
         )
 
     def write(self, state):
+        # Completed rounds are immutable and shared by the active game and save slot.
+        # Only their hashes travel with the checkpoint, including after a load/fork.
+        world = state["world"]
+        if world.get("archive"):
+            for events in world["archive"]:
+                world.setdefault("logs", []).append(
+                    checkpoints.put_round(self.db, events)
+                )
+            world["archive"] = []
         self.db.execute(
             "INSERT OR REPLACE INTO active VALUES(1,?)", (json.dumps(state),)
         )
@@ -88,9 +130,15 @@ class Store:
             world = state["world"]
             start = world["tick"]
             samples = []
+            is_match = world["version"] == 2
+            step = match.advance if is_match else engine.advance
             for _ in range(state["speed"]):
-                samples.append(engine.motion_sample(world))
-                engine.advance(world)
+                if state["speed"] <= 8:
+                    samples.append(engine.motion_sample(world))
+                step(world)
+                if is_match and world["phase"] in ("finished", "timeout"):
+                    state["running"] = False
+                    break
             state["sequence"] += 1
             self.write(state)
         self.motion.append((state["context"], start, world["tick"], samples))
@@ -98,7 +146,8 @@ class Store:
 
     def snapshot(self, view, previous=None):
         state = self.read()
-        state["world"] = engine.project(state["world"], view)
+        model = match if state["world"]["version"] == 2 else engine
+        state["world"] = model.project(state["world"], view)
         world = state["world"]
         if self.motion and state["running"]:
             context, start, end, samples = self.motion[-1]
@@ -108,8 +157,14 @@ class Store:
                 # Backfill a slow subscriber only across contiguous batches of
                 # the same playback speed. Otherwise send a fresh projection.
                 batch_size = end - start
-                for prior_context, left, right, batch in reversed(list(self.motion)[:-1]):
-                    if prior_context != context or right != start or right - left != batch_size:
+                for prior_context, left, right, batch in reversed(
+                    list(self.motion)[:-1]
+                ):
+                    if (
+                        prior_context != context
+                        or right != start
+                        or right - left != batch_size
+                    ):
                         break
                     start, samples = left, batch + samples
                     if start <= previous[1]:
@@ -119,7 +174,9 @@ class Store:
                 tracks = {}
                 for agent in world["agents"]:
                     ident = agent["id"]
-                    if all(view == "full" or view in sample[ident][1] for sample in samples):
+                    if all(
+                        view == "full" or view in sample[ident][1] for sample in samples
+                    ):
                         tracks[ident] = [sample[ident][0] for sample in samples]
                 world["motion"] = {"startTick": start, "tracks": tracks}
         return state
@@ -150,9 +207,18 @@ class Store:
                 )
             kind, value = command["kind"], command.get("value")
             if kind in ("start", "pause"):
+                if kind == "start" and state["world"].get("phase") in (
+                    "finished",
+                    "timeout",
+                ):
+                    raise ValueError("Просмотр остановлен на границе матча")
                 state["running"] = kind == "start"
             elif kind == "speed":
-                if value not in (1, 2, 4, 8):
+                if value not in (
+                    (1, 2, 4, 8, 128)
+                    if state["world"]["version"] == 2
+                    else (1, 2, 4, 8)
+                ):
                     raise ValueError("Недопустимая скорость")
                 state["speed"] = value
             elif kind == "save":
@@ -167,16 +233,28 @@ class Store:
                 row = self.db.execute("SELECT body FROM slot").fetchone()
                 if not row:
                     raise Conflict("Нет сохранения")
-                saved = json.loads(row[0])
-                validate_snapshot(saved)
+                saved = self.restore_checkpoint("slot", row[0])
                 state.update(saved)
                 state["context"] = str(uuid4())
-            elif kind == "reset":
-                if value is None or not 0 <= value <= 2147483647:
+            elif kind in ("timeout", "call", "resume"):
+                if state["world"]["version"] != 2:
+                    raise ValueError("Сначала откройте матч BO1")
+                match.command(state["world"], kind, value)
+                if state["world"]["phase"] == "timeout":
+                    state["running"] = False
+                elif kind == "resume":
+                    state["running"] = True
+            elif kind in ("reset", "match"):
+                if type(value) is not int or not 0 <= value <= 2147483647:
                     raise ValueError("Seed должен быть целым числом от 0 до 2147483647")
                 state.update(
-                    world=engine.initial(value), running=False, context=str(uuid4())
+                    world=(match if kind == "match" else engine).initial(value),
+                    running=False,
+                    speed=min(8, state["speed"]) if kind == "reset" else 1,
+                    context=str(uuid4()),
                 )
+            else:
+                raise ValueError("Неизвестная команда")
             state["revision"] += 1
             state["sequence"] += 1
             self.write(state)

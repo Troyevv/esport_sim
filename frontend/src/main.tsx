@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import MatchCenter from "./MatchCenter";
 import Radar from "./Radar";
 import HostSettings from "./HostSettings";
 import { useSession, type View } from "./session";
@@ -70,7 +71,7 @@ function App() {
     const platform = navigator.userAgent.match(/iPhone|iPad|Android/i)?.[0];
     return platform || "Мой браузер";
   });
-  const { frame, playback, connection, busy, notice, act, pair } = useSession(view);
+  const { frame, playback, connection, loadError, resync, busy, notice, act, pair } = useSession(view);
   useEffect(() => {
     if (connection === "На связи") setCode("");
   }, [connection]);
@@ -104,20 +105,21 @@ function App() {
         <HostSettings connected={connection === "На связи"}/>
       </header>
       <main>
-        <div className="intro">
+        {!world?.match && <div className="intro">
           <div>
             <div className="eyebrow">
               <i /> СТЕНД СИМУЛЯЦИИ <span>/ R0</span>
             </div>
             <h1>Тактический радар</h1>
           </div>
+          {world && <button className="primary" disabled={!enabled || !validSeed} onClick={()=>act("match",Number(seed))}>Открыть матч BO1</button>}
           {world && (
             <div className="clock">
               <span>МОДЕЛЬНОЕ ВРЕМЯ</span>
               <strong>{formatTime(world.time)}</strong>
             </div>
           )}
-        </div>
+        </div>}
         {connection === "Требуется код" && (
           <form
             className="panel pair"
@@ -140,7 +142,13 @@ function App() {
             <button>Подключить</button>
           </form>
         )}
-        {!world && connection !== "Требуется код" && (
+        {loadError && (
+          <section className="panel">
+            <p role="alert">{loadError}</p>
+            <button onClick={resync}>Повторить подключение</button>
+          </section>
+        )}
+        {!world && !loadError && connection !== "Требуется код" && (
           <p role="status">Получаем состояние домашнего сервера…</p>
         )}
         {notice && (
@@ -148,7 +156,8 @@ function App() {
             {notice}
           </p>
         )}
-        {world && frame && (
+        {world?.match && frame && <MatchCenter key={frame.context} frame={frame} playback={playback} connected={connection==="На связи"} enabled={enabled} act={act} setView={setView}/>}
+        {world && !world.match && frame && (
           <div className="dashboard">
             <div className="column">
               <section className="panel mapcard">

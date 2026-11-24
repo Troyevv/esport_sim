@@ -28,8 +28,8 @@ class Command(BaseModel):
     id: UUID
     revision: StrictInt
     context: str
-    kind: Literal["start", "pause", "speed", "reset", "save", "load"]
-    value: StrictInt | None = None
+    kind: Literal["start", "pause", "speed", "reset", "save", "load", "match", "timeout", "call", "resume"]
+    value: StrictInt | Literal["Капитану", "Выход A", "Выход B", "Ускориться", "Экономить"] | None = None
 
 
 class Pair(BaseModel):
@@ -59,7 +59,11 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app):
         with own_clock(db_path):
-            store = Store(db_path)
+            try:
+                store = Store(db_path)
+            except Conflict as exc:
+                app.state.load_error = str(exc)
+                raise
             app.state.store = store
             if pairing_code:
                 with store.transaction():

@@ -114,13 +114,31 @@ export class RadarPlayback {
   private clockAt = 0;
   private rate = 1;
   private reserve = initialReserve;
+  private batches = 0;
+
+  private nextCursor(now: number) {
+    let step = Math.max(0, now - this.clockAt) * this.rate;
+    const room = this.end - this.cursor;
+    // Once a continuous stream is established, protect its last confirmed
+    // segment against late delivery. Integrate the speed curve analytically
+    // so 60 Hz, 144 Hz and repeated samples at one vsync have the same clock.
+    const tail = 180;
+    if (this.batches < 2 || room - step >= tail)
+      return Math.min(this.end, this.cursor + step);
+    step -= Math.max(0, room - tail);
+    const remaining = Math.min(room, tail);
+    const floorRate = 0.32;
+    const floorRoom = floorRate * tail;
+    const taper = remaining > floorRoom ? tail * Math.log(remaining / floorRoom) : 0;
+    const left = step < taper
+      ? remaining * Math.exp(-step / tail)
+      : Math.max(0, Math.min(remaining, floorRoom) - (step - taper) * floorRate);
+    return this.end - left;
+  }
 
   private advance(now: number) {
     if (now > this.clockAt) {
-      this.cursor = Math.min(
-        this.end,
-        this.cursor + (now - this.clockAt) * this.rate,
-      );
+      this.cursor = this.nextCursor(now);
       this.clockAt = now;
     }
   }
@@ -134,6 +152,7 @@ export class RadarPlayback {
       online &&
       old.context === next.context &&
       old.world.view === world.view &&
+      old.world.match?.round === world.match?.round &&
       old.world.map.id === world.map.id &&
       old.world.map.version === world.map.version &&
       next.running &&
@@ -145,10 +164,7 @@ export class RadarPlayback {
     if (continuous && world.tick === old.world.tick) return;
     const ticks = old ? world.tick - old.world.tick : 0;
     const gap = now - this.received;
-    const estimatedCursor = Math.min(
-      this.end,
-      this.cursor + Math.max(0, now - this.clockAt) * this.rate,
-    );
+    const estimatedCursor = this.nextCursor(now);
     const covered =
       ticks === next.speed ||
       (ticks > 0 &&
@@ -160,6 +176,8 @@ export class RadarPlayback {
       gap < 1000 &&
       now - this.clockAt < 1000 &&
       this.end - estimatedCursor < maxReserve + 250;
+    if (bridge) this.advance(now);
+    this.batches = bridge ? this.batches + 1 : 0;
     const start = bridge ? this.end : 0;
     const duration = bridge
       ? ((world.time - old.world.time) * 1000) / next.speed
@@ -218,6 +236,13 @@ export class RadarPlayback {
     }
     this.received = now;
     this.end = end;
+  }
+
+  displayTick(now: number) {
+    this.advance(now);
+    if (!this.last) return 0;
+    if (!this.last.running || !this.online || this.last.speed > 8) return this.last.world.tick;
+    return this.last.world.tick - Math.max(0, this.end - this.cursor) * this.last.speed / 100;
   }
 
   has(id: string) {

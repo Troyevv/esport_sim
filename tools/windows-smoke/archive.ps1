@@ -219,7 +219,15 @@ if ($again.pid -ne $first.pid -or $again.port -ne $first.port -or $again.nonce -
 Wait-Check 'secondary launcher exit' { @(Get-Process -Name EsportSim -ErrorAction SilentlyContinue).Count -eq 1 }
 $origin = "http://127.0.0.1:$($first.port)"
 if ($DesktopBrowser) { Test-Lan $origin }
-Command $origin 'reset' 705177
+Command $origin 'match' 705177
+Command $origin 'timeout'
+Command $origin 'resume'
+Command $origin 'speed' 128
+Wait-Check 'packaged BO1 reaches a final score' {
+    $world = (Invoke-RestMethod "$origin/api/state").world
+    $world.match.phase -eq 'finished' -and $world.match.remaining -eq 2 -and
+        ($world.match.score[0] + $world.match.score[1]) -eq $world.match.history.Count
+}
 Command $origin 'save'
 Command $origin 'reset' 47
 Stop-HostInstance $first
@@ -237,7 +245,8 @@ try {
     $state = Invoke-RestMethod "$origin/api/state"
     if (-not $state.hasSave -or $state.world.seed -ne 47) { throw 'Persisted state lost after restart.' }
     Command $origin 'load'
-    if ((Invoke-RestMethod "$origin/api/state").world.seed -ne 705177) { throw 'Saved snapshot lost after restart.' }
+    $restored = (Invoke-RestMethod "$origin/api/state").world
+    if ($restored.seed -ne 705177 -or $restored.match.phase -ne 'finished') { throw 'Saved BO1 lost after restart.' }
     Stop-HostInstance $other
 } finally { $occupied.Stop() }
 $last = Launch-Archive $exe

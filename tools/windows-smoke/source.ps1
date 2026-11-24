@@ -8,7 +8,6 @@ git archive --format=zip --output=$archive HEAD
 if ($LASTEXITCODE) { throw 'Cannot export source tree' }
 Expand-Archive -LiteralPath $archive -DestinationPath $checkout
 Push-Location $checkout
-$descriptor = Join-Path $env:LOCALAPPDATA 'EsportSim\instance.json'
 function Instance { Get-Content -Raw -LiteralPath $descriptor | ConvertFrom-Json }
 function Batch($name) {
     & cmd.exe /d /c "$name.bat <nul"
@@ -24,11 +23,23 @@ function Stop-Game {
     if (Test-Path $descriptor) { throw 'Launcher did not shut down' }
 }
 $other = Start-Process python -ArgumentList '-c "import time; time.sleep(600)"' -PassThru
+# Import a real interrupted game from the first commit of PR #3 into a fresh home.
+$env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP 'BAT profile'
+$descriptor = Join-Path $env:LOCALAPPDATA 'EsportSim\instance.json'
+$null = New-Item -ItemType Directory -Force (Join-Path $env:LOCALAPPDATA 'EsportSim')
+$save = Join-Path $env:LOCALAPPDATA 'EsportSim\scenario.sqlite'
+python -c "import gzip,sys,pathlib; pathlib.Path(sys.argv[1]).write_bytes(gzip.decompress(pathlib.Path('tests/fixtures/bo1-67e384f.sqlite.gz').read_bytes()))" $save
+if ($LASTEXITCODE) { throw 'Cannot restore legacy profile fixture' }
+$occupied = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 8765)
 try {
+    $occupied.Start()
     Batch 'start'
     $initial = Instance
     $before = @(Stamps)
     $origin = "http://127.0.0.1:$($initial.port)"
+    if ($initial.port -eq 8765) { throw 'Expected fallback port' }
+    node frontend/e2e/windows-launch.mjs $origin
+    if ($LASTEXITCODE) { throw 'BAT browser regression failed' }
     $state = Invoke-RestMethod "$origin/api/state"
     $body = @{id=[guid]::NewGuid().ToString();context=$state.context;revision=$state.revision;kind='save'} | ConvertTo-Json
     $null = Invoke-RestMethod "$origin/api/command" -Method Post -Headers @{Origin=$origin} -ContentType 'application/json' -Body $body
@@ -64,6 +75,9 @@ try {
     if ($other.HasExited) { throw 'Unrelated Python process was terminated' }
     Write-Output 'BAT cold start, cached restart, source and lockfile changes, shared EXE state and targeted shutdown passed.'
 } finally {
+    $occupied.Stop()
+    $log = Join-Path $env:LOCALAPPDATA 'EsportSim\launcher.log'
+    if (Test-Path $log) { Get-Content -LiteralPath $log -Tail 24 }
     if (Test-Path $descriptor) { Batch 'stop' }
     if (!$other.HasExited) { $other.Kill() }
     Pop-Location

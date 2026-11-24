@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { RadarPlayback } from "./playback";
+import type { MatchView } from "./MatchCenter";
 import type { Agent, RadarMap } from "./Radar";
 
 export type View = "full" | "CT" | "T";
@@ -11,6 +12,7 @@ export interface Frame {
   speed: number;
   hasSave: boolean;
   world: {
+    match?: MatchView;
     map: RadarMap;
     agents: Agent[];
     motion?: { startTick: number; tracks: Record<string, [number, number, number][]> };
@@ -26,7 +28,7 @@ type Intent = {
   context: string;
   revision: number;
   kind: string;
-  value?: number;
+  value?: number|string;
 };
 const base = new URL(import.meta.env.VITE_SERVER_URL || location.origin);
 export const serverURL = (path: string) => new URL(path, base);
@@ -47,6 +49,7 @@ export function useSession(view: View) {
   const [frame, setFrame] = useState<Frame | null>(null);
   const [connection, setConnection] = useState("Подключение");
   const [notice, setNotice] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [generation, setGeneration] = useState(0);
   const current = useRef<Frame | null>(null);
@@ -91,6 +94,7 @@ export function useSession(view: View) {
     current.current = null;
     setConnection("Подключение");
     setFrame(null);
+    setLoadError("");
     const retry = () => {
       if (!active) return;
       if (current.current) playback.push(current.current, false, performance.now());
@@ -105,6 +109,13 @@ export function useSession(view: View) {
         if (!active) return;
         if (response.status === 401) {
           setConnection("Требуется код");
+          return;
+        }
+        if (response.status === 500 || response.status === 403) {
+          setConnection("Ошибка загрузки");
+          setLoadError(response.status === 500
+            ? "Сервер не смог прочитать состояние (HTTP 500). На домашнем ПК проверьте launcher.log в папке %LOCALAPPDATA%\\EsportSim."
+            : "Сервер отклонил этот адрес (HTTP 403). Откройте игру по адресу, выданному домашним сервером.");
           return;
         }
         if (!response.ok) throw new Error();
@@ -152,7 +163,7 @@ export function useSession(view: View) {
     };
   }, [view, generation]);
 
-  async function act(kind: string, value?: number) {
+  async function act(kind: string, value?: number|string) {
     const seen = current.current;
     if (!seen || locked.current) return;
     locked.current = true;
@@ -200,5 +211,5 @@ export function useSession(view: View) {
       setNotice("Домашний сервер недоступен");
     }
   }
-  return { frame, playback, connection, notice, busy, act, pair };
+  return { frame, playback, connection, loadError, resync, notice, busy, act, pair };
 }
