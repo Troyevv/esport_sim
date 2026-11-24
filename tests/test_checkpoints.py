@@ -57,10 +57,14 @@ def test_upgrade_active_and_manual_and_finish_match(tmp_path, commit):
         old, world = before.pop("world"), after.pop("world")
         assert before == after
         assert world["checkpointVersion"] == checkpoints.VERSION
-        for key in old.keys() - {"history", "logs", "events", "agents", "plans", "checkpointVersion"}:
+        for key in old.keys() - {"history", "logs", "events", "agents", "plans", "checkpointVersion", "rules"}:
             assert world[key] == old[key]
         for player, prior in zip(world["agents"], old["agents"], strict=True):
-            assert all(player[k] == value for k, value in prior.items())
+            renamed = {"aim": "aim", "reaction": "reaction", "comms": "communication", "tactics": "calling"}
+            base = world["domain"]["players"][player["playerId"]]["skills"]
+            assert all(base[new] == prior[old] for old, new in renamed.items())
+            assert all(player[k] == value for k, value in prior.items() if k not in renamed)
+            assert world["rules"] == match.VERSION
             assert "approached" in player
         for side, plan in world["plans"].items():
             assert all(plan[k] == v for k, v in old["plans"][side].items())
@@ -169,3 +173,28 @@ def test_desktop_reports_failed_migration_before_browser_handoff(tmp_path, monke
                 serve(tmp_path, descriptor, listener, lambda url: pytest.fail(url))
             )
     assert not descriptor.exists()
+
+
+def test_r2_board_upgrade_resumes_exact_step_in_both_slots(tmp_path):
+    path = restore(tmp_path, "r2-34afd90")
+    db = sqlite3.connect(path)
+    original = bodies(db)
+    store = Store(path)
+    for table, raw in bodies(db).items():
+        before = json.loads(original[table])["world"]
+        current = json.loads(raw)["world"]
+        assert before["checkpointVersion"] == 3
+        assert current["plans"] == before["plans"] and current["playbook"] == before["playbook"]
+        for a, b in zip(current["agents"], before["agents"], strict=True):
+            assert all(a[k] == v for k, v in b.items() if k not in {"aim", "reaction", "comms", "tactics"})
+        assert current["messages"] == before["messages"]
+        assert current["events"] == before["events"]
+        twin = json.loads(json.dumps(current))
+        for _ in range(130):
+            match.advance(current)
+            match.advance(twin)
+        assert current == twin
+        assert len(current["events"]) > len(before["events"])
+    assert dict(db.execute("SELECT source,body FROM checkpoint_backup")) == original
+    store.db.close()
+    db.close()

@@ -3,7 +3,8 @@
 from functools import lru_cache
 from math import atan2, hypot, pi, sin
 
-from . import engine, tactic_execution
+from . import engine, tactic_execution, world
+from . import match_performance as perf
 from .match_events import damage, emit
 from .match_rules import MAP, POSITIONS, RULES, UTILITY, WEAPONS, role_orders
 
@@ -34,6 +35,10 @@ def audible_sector(col, row):
         engine._FLOOR, key=lambda p: (p[0] - centre[0]) ** 2 + (p[1] - centre[1]) ** 2
     )
     return at(engine._center(floor))
+
+
+def radio_delay(skills):
+    return 1 + (100 - skills["communication"]) // 12
 
 
 def observe(w, players):
@@ -67,6 +72,9 @@ def observe(w, players):
             if any(near_line(a, b, fog, fog["radius"]) for fog in smoke):
                 continue
             sight = dict(id=b["id"], x=b["x"], y=b["y"], tick=now, source="Зрение")
+            prior = a["knowledge"].get(b["id"])
+            if prior and b["id"] in previous and prior["tick"] == now - 1:
+                sight["speed"] = distance(prior, sight)
             a["visible"].append(b["id"])
             a["knowledge"][b["id"]] = sight
             if b["id"] not in previous or now % 10 == 0:
@@ -75,7 +83,7 @@ def observe(w, players):
                         team=a["team"],
                         sender=a["id"],
                         sight=sight,
-                        due=now + 1 + (100 - a["comms"]) // 12,
+                        due=now + radio_delay(world.match_player(w, a)["skills"]),
                     )
                 )
             if b["id"] not in previous:
@@ -97,11 +105,12 @@ def observe(w, players):
 
 
 def captain(w, squad):
-    leader = min(squad, key=lambda a: a["slot"])
+    leader = min(squad, key=lambda a: (not a["appointed"], a["slot"]))
     plan = w["plans"][leader["team"]]
     now = w["tick"]
+    s = world.match_player(w, leader)["skills"]
     if plan["captain"] != leader["id"]:
-        plan.update(captain=leader["id"], review=now)
+        plan.update(captain=leader["id"], review=now + (100 - s["leadership"]) // 4)
         emit(
             w,
             "captain",
@@ -111,9 +120,13 @@ def captain(w, squad):
         )
     if now < plan["review"]:
         return
-    plan["review"] = now + 18 + (100 - leader["tactics"]) // 2
+    plan["review"] = now + 18 + (100 - s["calling"]) // 2
     # Only the acting captain's timestamped reports are available here.
-    contacts = [p for p in leader["knowledge"].values() if p["source"] != "Слух"]
+    contacts = [
+        p
+        for p in leader["knowledge"].values()
+        if p["source"] != "Слух" and now - p["tick"] <= 74 - s["game_reading"] // 2
+    ]
     counts = {
         s: sum(distance(at(POSITIONS[s][0]), p) < 80 for p in contacts)
         for s in POSITIONS
@@ -122,6 +135,7 @@ def captain(w, squad):
     if (
         leader["team"] == "T"
         and counts[site] >= 3
+        and now - plan["start"] >= (100 - s["adaptability"]) // 2
         and not plan["rotated"]
         and w["deadline"] - now > 250
         and w["phase"] == "live"
@@ -207,8 +221,8 @@ def walk(a, goal, pace, hazards, *, allow_detour=False):
         a["status"] = "Обходит огонь"
     dx, dy = x - a["x"], y - a["y"]
     a["heading"] = atan2(dy, dx)
-    a["x"] += max(-pace, min(pace, dx))
-    a["y"] += max(-pace, min(pace, dy))
+    a["x"] = round(a["x"] + max(-pace, min(pace, dx)), 3)
+    a["y"] = round(a["y"] + max(-pace, min(pace, dy)), 3)
     if (a["x"], a["y"]) == (x, y):
         a["path"].pop(0)
     return True
@@ -218,11 +232,33 @@ def act(w, a, allies, bomb, visible_fire):
     """Choose an intention using allies, own sensory memory and known objective."""
     now = w["tick"]
     plan = w["plan"]
+    player = w["player"]
+    s = player["skills"]
     side, slot = a["team"], a["slot"]
+
+    def travel(agent, goal, pace, fire, **options):
+        return walk(agent, goal, pace * perf.move_speed(player), fire, **options)
+
     site = plan["site"]
     alive = sorted(allies, key=lambda p: p["slot"])
     visible = [a["knowledge"][i] for i in a["visible"]]
-    contact = min(visible, key=lambda p: distance(a, p), default=None)
+    if len(visible) > 1:
+        # Focus fire uses teammates' current targets only when directly nearby.
+        focus = {
+            mate["target"]
+            for mate in allies
+            if mate is not a
+            and distance(a, mate) < 25
+            and engine.clear_line(a["x"], a["y"], mate["x"], mate["y"])
+        }
+        contact = min(
+            visible,
+            key=lambda p: (
+                distance(a, p) - (s["coordination"] / 4 if p["id"] in focus else 0)
+            ),
+        )
+    else:
+        contact = visible[0] if visible else None
     spec = WEAPONS[a["weapon"]]
     if a["reloadAt"] and now >= a["reloadAt"]:
         count = min(spec.mag - a["ammo"], a["reserve"])
@@ -235,19 +271,43 @@ def act(w, a, allies, bomb, visible_fire):
         contact
         and w["action"]
         and w["action"]["player"] == a["id"]
-        and w["action"]["end"] - now <= 10
+        and w["action"]["end"] - now <= perf.commit_ticks(s, player["morale"])
     ):
         contact = None
     if contact:
+        old_heading = a["heading"]
         a["heading"] = atan2(contact["y"] - a["y"], contact["x"] - a["x"])
         if a["target"] != contact["id"]:
+            angle = (a["heading"] - old_heading + pi) % (2 * pi) - pi
+            previous = a["previousTarget"]
+            delay = perf.acquisition(
+                s,
+                angle,
+                previous is not None and previous != contact["id"],
+                now - a["lastMove"] <= 2,
+                side == "T" and a["playingRole"] == "entry" and previous is None,
+                contact["id"] == a["tradeTarget"] and now <= a["tradeUntil"],
+                len(alive) == 1,
+            )
             a.update(
                 target=contact["id"],
-                ready=max(a["ready"], now + 1 + (100 - a["reaction"]) // 12),
+                previousTarget=contact["id"],
+                ready=max(a["ready"], now + delay),
             )
+        a["observedSpeed"] = contact.get("speed", 0)
         a["status"] = "Перезаряжается" if a["reloadAt"] else "Держит контакт"
         if a["utility"] and now >= a["throwAt"] and distance(a, contact) > 18:
-            return ("throw", contact)
+            grenade = a["utility"][0]
+            clearance = UTILITY[grenade][0] * s["decisions"] / 100
+            unsafe = grenade in ("HE", "Огонь", "Свет") and any(
+                distance(mate, contact) < clearance for mate in allies
+            )
+            # Throwing occupies the hands for five ticks. Close targets can be
+            # engaged sooner with a loaded weapon, especially a lethal first shot.
+            shot_soon = a["ammo"] and not a["reloadAt"] and a["ready"] < now + 5
+            shot_range = 18 + s["decisions"] * min(0.6, spec.damage / 75)
+            if not unsafe and not (shot_soon and distance(a, contact) <= shot_range):
+                return ("throw", contact)
         if not a["reloadAt"] and a["ammo"] and now >= a["ready"]:
             return ("shoot", contact)
         return ("hold", None)
@@ -255,26 +315,42 @@ def act(w, a, allies, bomb, visible_fire):
     if w["action"] and w["action"]["player"] == a["id"]:
         return ("objective", None)
     board = plan.get("board")
-    if board and not plan["rotated"]:
-        recover = side == "T" and bomb and not bomb["carrier"] and not bomb["site"]
-        rescuer = (
-            recover and min(alive, key=lambda p: (distance(p, bomb), p["id"])) is a
+    recover = side == "T" and bomb and not bomb["carrier"] and not bomb["site"]
+    rescuer = recover and min(alive, key=lambda p: (distance(p, bomb), p["id"])) is a
+    reinforce = side == "CT" and (
+        w["phase"] == "planted" or (plan["reinforce"] and slot in (1, 4))
+    )
+    if (
+        not rescuer
+        and not reinforce
+        and len(alive) < 5
+        and a["playingRole"] == "support"
+        and w["phase"] == "live"
+        and not (bomb and bomb.get("carrier") == a["id"])
+    ):
+        partner = next(
+            (mate for mate in alive if mate["id"] == plan["captain"]), alive[0]
         )
-        reinforce = side == "CT" and (
-            w["phase"] == "planted" or (plan["reinforce"] and slot in (1, 4))
-        )
-        # The surviving support slot rejoins the acting captain after a casualty.
-        regroup = len(alive) < 5 and a is alive[-1] and distance(a, alive[0]) > 34
-        if not rescuer and not reinforce and regroup:
+        pair = w["chemistry"].get(world.pair_key(a["playerId"], partner["playerId"]), 0)
+        if distance(a, partner) > 75 - s["support"] * 0.45 - pair * 0.15:
             a["status"] = "К капитану после потери союзника"
-            moved = walk(a, (alive[0]["x"], alive[0]["y"]), 2, visible_fire)
+            moved = travel(a, (partner["x"], partner["y"]), 2, visible_fire)
             return ("move" if moved else "hold", None)
-        if not rescuer and not reinforce:
-            intent = tactic_execution.execute(
-                a, board["slots"][slot], now, bomb, visible_fire, walk
+    if board and not plan["rotated"] and not rescuer and not reinforce:
+        if now < a["stepReady"]:
+            a["status"] = "Готовит следующий шаг"
+            return ("hold", None)
+        before = a["stepIndex"]
+        intent = tactic_execution.execute(
+            a, board["slots"][slot], now, bomb, visible_fire, travel
+        )
+        if a["stepIndex"] != before:
+            mastery = player["roleMastery"].get(a["playingRole"], 0)
+            a["stepReady"] = (
+                now + 1 + (100 - s["execution"]) // 20 + (100 - mastery) // 35
             )
-            if intent:
-                return intent
+        if intent:
+            return intent
     if w["phase"] == "planted":
         if side == "CT":
             site = (
@@ -290,11 +366,11 @@ def act(w, a, allies, bomb, visible_fire):
                 goal = (
                     POSITIONS[site][slot] if teammate_using else (bomb["x"], bomb["y"])
                 )
-            too_late = (
-                w["deadline"] - now
-                < (RULES["kitDefuse"] if a["kit"] else RULES["defuse"])
-                + distance(a, at(goal)) / 2
-            )
+            too_late = w["deadline"] - now < (
+                RULES["kitDefuse"] if a["kit"] else RULES["defuse"]
+            ) + distance(a, at(goal)) / (
+                2 * perf.move_speed(player)
+            ) + perf.retake_margin(s, distance(a, at(goal)), WEAPONS[a["weapon"]].price)
             if too_late and not w["action"]:
                 goal = engine._center(engine._SPAWN_CELLS["CT"][slot])
                 a["status"] = "Сохраняет оружие"
@@ -305,7 +381,9 @@ def act(w, a, allies, bomb, visible_fire):
             goal = POSITIONS[site][slot]
             a["status"] = "Прикрывает C4"
     elif side == "T":
-        staging = plan["style"] == "Сбор" and now - plan["start"] < 85
+        staging = plan["style"] == "Сбор" and now - plan["start"] < perf.staging_ticks(
+            s, any(distance(a, mate) > 50 for mate in allies)
+        )
         order = plan["orders"]["slots"][slot]
         approach = a["approached"] != site
         if approach and distance(a, at(order["approach"])) < 6:
@@ -318,6 +396,14 @@ def act(w, a, allies, bomb, visible_fire):
             if staging
             else order["hold"]
         )
+        if (
+            approach
+            and a["playingRole"] == "lurker"
+            and s["lurking"] + player["mapKnowledge"].get("depo", 0) >= 145
+        ):
+            goal = plan["orders"]["slots"][3]["approach"]
+            if distance(a, at(goal)) < 6:
+                a["approached"] = site
         a["status"] = "Собирается с командой" if staging else f"Выход на {site}"
         if bomb and not bomb["carrier"]:
             collector = min(alive, key=lambda p: (distance(p, bomb), p["id"]))
@@ -342,13 +428,15 @@ def act(w, a, allies, bomb, visible_fire):
     memory = max(a["knowledge"].values(), key=lambda m: m["tick"], default=None)
     if (
         memory
-        and now - memory["tick"] < 32
+        and now - memory["tick"] < perf.pursuit_window(s, memory["source"] == "Слух")
         and a["status"] not in ("Сохраняет оружие", "Подбирает C4")
+        # A disciplined holder stays within reach of the assigned objective.
+        and (side != "CT" or distance(at(goal), memory) <= 145 - s["discipline"])
     ):
         if side == "CT" or (bomb and a["id"] != bomb["carrier"]):
             goal = memory["x"], memory["y"]
             a["status"] = "Проверяет сообщение о контакте"
-    if walk(
+    if travel(
         a,
         goal,
         2 if plan["style"] == "Быстро" or w["phase"] == "planted" else 1,
@@ -357,7 +445,17 @@ def act(w, a, allies, bomb, visible_fire):
         return ("move", None)
     if a["status"].startswith(("Занимает", "Выход")):
         a["status"] = f"Контролирует {site}"
-    a["heading"] = (pi if side == "CT" else 0) + 1.6 * sin((now + slot * 12) / 16)
+    # Orient toward the approach corridor when holding a position on site.
+    base = pi if side == "CT" else 0
+    if side == "T" and w["phase"] == "planted":
+        anchor = POSITIONS[site][0]
+        outward = atan2(a["y"] - anchor[1], a["x"] - anchor[0])
+        base += ((outward - base + pi) % (2 * pi) - pi) * s["postplant"] / 100
+    elif side == "CT":
+        approach_xy = plan["orders"]["slots"][slot]["approach"]
+        lane = atan2(approach_xy[1] - a["y"], approach_xy[0] - a["x"])
+        base += ((lane - base + pi) % (2 * pi) - pi) * s["positioning"] / 100
+    a["heading"] = base + 1.6 * sin((now + slot * 12) / (24 - s["map_control"] / 8))
     return ("hold", None)
 
 
@@ -368,12 +466,15 @@ def shoot(w, a, sight, b):
     gap = w["tick"] - a["lastShot"]
     burst = 0 if gap > 4 else min(4, a["burst"] + 1)
     dist = distance(a, sight)
-    accuracy = round(spec.accuracy + (a["aim"] - 70) * 0.5 - dist * 0.36 - burst * 5)
+    player = world.match_player(w, a)
+    accuracy = perf.accuracy(player, a, spec, dist, burst, w["tick"])
     a.update(
         ammo=a["ammo"] - 1,
         lastShot=w["tick"],
         burst=burst,
-        ready=w["tick"] + spec.interval + (3 if burst >= 3 else 0),
+        ready=w["tick"]
+        + spec.interval
+        + (1 + (100 - player["skills"]["burst_control"]) // 13 if burst >= 3 else 0),
     )
     event = emit(
         w,
@@ -395,8 +496,8 @@ def shoot(w, a, sight, b):
         and near_line(a, sight, b, 3)
         and engine.clear_line(a["x"], a["y"], b["x"], b["y"])
     )
-    if engine._draw(a) % 100 < max(8, min(96, accuracy)) and intersects:
-        head = engine._draw(a) % 100 < 14 + a["aim"] // 6
+    if (engine._draw(a) >> 16) % 100 < accuracy and intersects:
+        head = (engine._draw(a) >> 16) % 100 < 24
         amount = spec.damage * (3 if head else 1)
         if b["armor"] and not head:
             b["armor"] = max(0, b["armor"] - max(1, amount // 8))
@@ -410,12 +511,16 @@ def throw(w, a, target):
     now = w["tick"]
     radius, duration = UTILITY[name]
     flight = max(3, round(distance(a, target) / 7))
+    mastery = world.match_player(w, a)["skills"][perf.GRENADE_SKILL[name]]
+    x, y = perf.grenade_landing(a, target, mastery, engine._draw(a) >> 16)
+    if not engine.clear_line(a["x"], a["y"], x, y):
+        x, y = a["x"], a["y"]
     effect = dict(
         kind=name,
         player=a["id"],
         team=a["team"],
-        x=target["x"],
-        y=target["y"],
+        x=x,
+        y=y,
         sx=a["x"],
         sy=a["y"],
         start=now,
@@ -442,6 +547,19 @@ def apply_effects(w, ids):
     w["effects"] = [f for f in w["effects"] if f["end"] > now]
     for f in w["effects"]:
         if now < f["land"] or f["kind"] == "Дым":
+            continue
+        if f["kind"] == "Ложная":
+            if (now - f["land"]) % 10 == 0:
+                sector = audible_sector(f["x"] // 30, f["y"] // 30)
+                for a in ids.values():
+                    if (
+                        a["hp"]
+                        and a["team"] != f["team"]
+                        and distance(f, a) < f["radius"]
+                    ):
+                        a["knowledge"]["Шум"] = dict(
+                            id="Шум", **sector, tick=now, source="Слух"
+                        )
             continue
         if f["kind"] == "Огонь" and (now - f["land"]) % 5:
             continue

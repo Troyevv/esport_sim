@@ -61,6 +61,11 @@ def test_authored_board_runs_in_complete_bo1(side, buy, seed):
     board = dict(hand_plan(side, buy), revision=1)
     w = match.initial(seed)
     match.assign(w, board)
+    if buy == "Эко":
+        # Request an eco at the next buy. Seed alone no longer fixes team finances.
+        match.command(w, "timeout")
+        match.command(w, "call", "Экономить")
+        match.command(w, "resume")
     for _ in range(50000):
         match.advance(w)
         if w["phase"] == "finished":

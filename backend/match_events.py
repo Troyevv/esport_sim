@@ -55,6 +55,7 @@ def damage(w, shooter, target, amount, weapon, head=False):
         weapon=weapon,
         head=head,
     )
+    target["lastHurt"] = w["tick"]
     target["hp"] -= event["amount"]
     if enemy:
         w["stats"][shooter["id"]]["damage"] += amount
@@ -92,6 +93,11 @@ def damage(w, shooter, target, amount, weapon, head=False):
         opening=enemy and not any(k["enemy"] for k in kills),
     )
     kills.append(event)
+    if enemy:
+        # The kill feed identifies the killer, never their position.
+        for mate in ids.values():
+            if mate["hp"] and mate["team"] == target["team"]:
+                mate.update(tradeTarget=shooter["id"], tradeUntil=w["tick"] + 50)
     target.update(status="Выбыл", visible=[], path=[])
     stats = w["stats"]
     stats[target["id"]]["d"] += 1

@@ -562,7 +562,7 @@ export default function TacticEditor({
                         value={utility}
                         onChange={(e) => setUtility(e.target.value)}
                       >
-                        {["Дым", "Свет", "HE", "Огонь"].map((g) => (
+                        {["Дым", "Свет", "HE", "Огонь", "Ложная"].map((g) => (
                           <option key={g}>{g}</option>
                         ))}
                       </select>

@@ -224,6 +224,11 @@ $library = Invoke-RestMethod "$origin/api/tactics"
 $plan = $library.plans | Where-Object { $_.id -eq 'std-T-0' }
 if ($plan.slots.Count -ne 5) { throw 'Packaged board has no five-slot plan.' }
 Command $origin 'match' 705177
+$projection = (Invoke-RestMethod "$origin/api/state").world
+if ($projection.match.rules -ne 'depo-bo1.2' -or $null -eq $projection.match.teamRating -or
+    $projection.match.roleRatings.T1.PSObject.Properties.Name.Count -ne 6 -or $projection.domain) {
+    throw 'R3.1 match projection is missing or exposes the private world.'
+}
 Command $origin 'tactic-assign' @{id=$plan.id; revision=$plan.revision}
 Command $origin 'timeout'
 Command $origin 'resume'

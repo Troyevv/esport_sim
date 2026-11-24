@@ -9,6 +9,8 @@ type Side = "CT" | "T";
 type Point = { x: number; y: number };
 export interface MatchView {
   rules: string;
+  roleRatings: Record<string, Record<string, number>>;
+  teamRating: number | null;
   round: number;
   phase: string;
   clock: number;
@@ -72,6 +74,10 @@ export interface MatchView {
   calls: string[];
   feedback: { player: string; id: number; round: number; text: string }[];
 }
+const roles: Record<string, string> = {
+  rifler: "Рифлер", entry: "Энтри", lurker: "Люркер",
+  support: "Поддержка", awper: "Снайпер", igl: "Капитан",
+};
 const phases: Record<string, string> = {
   freeze: "Подготовка",
   live: "В игре",
@@ -227,7 +233,7 @@ export default function MatchCenter({
                 {m.teams.map((club, i) => (
                   <div key={club}>
                     <h3>
-                      {club} <small>{m.sides[i]}</small>
+                      {club} <small>{m.sides[i]}{i === 0 && m.teamRating != null && ` · OVR ${m.teamRating}`}</small>
                     </h3>
                     {m.stats
                       .filter((row) => row.club === i)
@@ -267,6 +273,12 @@ export default function MatchCenter({
             {tab === "Составы" && selectedAgent && (
               <p className="inventory">
                 <b>{selectedAgent.name}</b> · {selectedAgent.status}
+                {m.roleRatings[selectedAgent.id] && (
+                  <span className="role-ratings">
+                    Рейтинги ролей · {Object.entries(m.roleRatings[selectedAgent.id])
+                      .map(([role, value]) => `${roles[role]} ${value}`).join(" · ")}
+                  </span>
+                )}
                 {selectedAgent.hp !== undefined && (
                   <>
                     {" "}

@@ -27,6 +27,10 @@ test("полный BO1, колл, сохранение и итог матча", 
   await press("Открыть матч BO1");
   await expect(page.locator(".scoreboard")).toContainText("РАУНД 1");
   await expect(page.getByTestId("radar")).toHaveAttribute("data-ready", "true");
+  await expect(page.locator(".lineups")).toContainText(/Север.*OVR/s);
+  await page.getByRole("button", { name: /Sable/ }).click();
+  await expect(page.locator(".role-ratings")).toContainText(/Рифлер.*Снайпер.*Капитан/);
+  await page.screenshot({ path: info.outputPath("r31-ratings.png"), fullPage: true });
   if (hasTouch) {
     await touchCamera(page);
     await press("Центрировать карту");

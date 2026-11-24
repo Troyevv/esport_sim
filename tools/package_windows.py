@@ -72,6 +72,7 @@ def main():
             raise RuntimeError(f"В сборке отсутствует {file}")
     shutil.copyfile(ROOT / "LICENSE", output / "LICENSE")
     shutil.copyfile(ROOT / "docs" / "TACTICS.md", output / "TACTICS.md")
+    shutil.copyfile(ROOT / "docs" / "WORLD_R31.md", output / "WORLD_R31.md")
     screenshots = output / "screenshots"
     screenshots.mkdir(exist_ok=True)
     for source in (ROOT / "docs" / "screenshots").glob("r2-*.png"):

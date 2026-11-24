@@ -4,15 +4,15 @@ from collections import Counter
 from copy import deepcopy
 from math import atan2
 
-from . import checkpoints, engine, tactics
+from . import checkpoints, engine, tactics, world
+from . import match_performance as perf
+from .world import match_player as profile
 from . import match_ai as ai
 from .match_events import damage, emit, money
 from .match_rules import (
     CALLS,
-    CLUBS,
     MAP,
     PRICES,
-    ROLES,
     RULES,
     VERSION,
     WEAPONS,
@@ -20,7 +20,52 @@ from .match_rules import (
 )
 
 
-def initial(seed):
+def team(w, club):
+    data = w["domain"]
+    return data["teams"][data["rosters"][w["rosterIds"][club]]["team"]]
+
+
+def check_coach(w):
+    world.authorize(w["domain"]["authority"], team(w, 0)["organization"], "coach_match")
+
+
+def bind_rosters(w, data, roster_ids):
+    world.validate(data)
+    if len(roster_ids) != 2 or roster_ids[0] == roster_ids[1]:
+        raise ValueError("Нужны два разных состава")
+    w.update(domain=data, rosterIds=list(roster_ids))
+    for club, roster in enumerate(roster_ids):
+        for slot, member in enumerate(world.validate_five(data, roster)):
+            a = w["agents"][club * 5 + slot]
+            ident = member["player"]
+            label = "Капитан" if member["captain"] else world.ROLE_NAMES[member["role"]]
+            a.update(
+                role=label,
+                playerId=ident,
+                playingRole=member["role"],
+                appointed=member["captain"],
+                name=data["players"][ident]["name"],
+            )
+    check_coach(w)
+
+
+def init_performance(a, now):
+    a.update(
+        lastMove=-100,
+        lastHurt=-100,
+        previousTarget=None,
+        observedSpeed=0,
+        movingTicks=0,
+        liveStart=now,
+        dayRoll=0,
+        pressure=0,
+        stepReady=0,
+        tradeTarget=None,
+        tradeUntil=0,
+    )
+
+
+def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS):
     w = engine.initial(seed)
     w.update(
         version=2,
@@ -40,15 +85,15 @@ def initial(seed):
         call=None,
         feedback=[],
     )
+    bind_rosters(
+        w,
+        world.exhibition(w["agents"]) if domain is None else deepcopy(domain),
+        roster_ids,
+    )
     for i, a in enumerate(w["agents"]):
         a.update(
             club=i // 5,
             slot=i % 5,
-            role=ROLES[i % 5],
-            aim=64 + engine._draw(a) % 25,
-            reaction=62 + engine._draw(a) % 27,
-            comms=60 + engine._draw(a) % 30,
-            tactics=62 + engine._draw(a) % 29,
             cash=0,
             hp=0,
             evidence=None,
@@ -58,6 +103,63 @@ def initial(seed):
         )
     next_round(w)
     return w
+
+
+def migrate_legacy(w):
+    w["rulesTransition"] = dict(
+        previous=w["rules"], tick=w["tick"], lastEvent=w["serial"]
+    )
+    data = world.exhibition(w["agents"], legacy=True)
+    roles = [a["role"] for a in w["agents"]]
+    bind_rosters(w, data, world.FIXTURE_ROSTERS)
+    for a, label in zip(w["agents"], roles, strict=True):
+        a["role"] = label
+        init_performance(a, w["plans"].get(a["team"], {}).get("start", w["tick"]))
+        a["previousTarget"] = a["target"]
+        for key in ("aim", "reaction", "comms", "tactics"):
+            del a[key]
+    w["rules"] = VERSION
+
+
+def validate_bindings(w):
+    data = w["domain"]
+    world.validate(data)
+    if (
+        len(w["rosterIds"]) != 2
+        or len(set(w["rosterIds"])) != 2
+        or len(w["agents"]) != 10
+    ):
+        raise ValueError("Некорректный состав BO1")
+    for club, roster in enumerate(w["rosterIds"]):
+        for slot, m in enumerate(world.validate_five(data, roster)):
+            a = w["agents"][club * 5 + slot]
+            clocks = (
+                "lastMove",
+                "lastHurt",
+                "movingTicks",
+                "liveStart",
+                "stepReady",
+                "tradeUntil",
+            )
+            if any(type(a[k]) is not int for k in clocks) or not (
+                0 <= a["movingTicks"] <= w["tick"]
+                and -8 <= a["dayRoll"] <= 8
+                and a["pressure"] in (0, 1)
+                and 0 <= a["observedSpeed"] < float("inf")
+            ):
+                raise ValueError("Некорректное состояние исполнения игрока")
+            for key in ("tradeTarget", "previousTarget"):
+                if a[key] is not None and a[key] not in w["stats"]:
+                    raise ValueError("Неизвестная цель игрока")
+            if (
+                a["club"],
+                a["slot"],
+                a["playerId"],
+                a["playingRole"],
+                a["appointed"],
+            ) != (club, slot, m["player"], m["role"], m["captain"]):
+                raise ValueError("Участник матча расходится с заявленной пятёркой")
+    check_coach(w)
 
 
 def next_round(w):
@@ -126,6 +228,7 @@ def next_round(w):
             heardSite=None,
             approached=None,
         )
+        init_performance(a, w["tick"])
         if side == "T" and slot == 2:
             w["bomb"]["carrier"] = a["id"]
     emit(w, "round_start", f"Раунд {n} · закупка", period=period, reset=reset)
@@ -181,6 +284,7 @@ def next_buy(w, squad):
 
 
 def assign(w, board):
+    check_coach(w)
     board = deepcopy(tactics.validate(board) | tactics.reference(board))
     side, buy = board["side"], board["buy"]
     if w["phase"] == "timeout":
@@ -215,7 +319,7 @@ def begin_live(w):
     now = w["tick"]
     for side in ("T", "CT"):
         squad = [a for a in w["agents"] if a["team"] == side]
-        igl = squad[0]
+        igl = next(a for a in squad if a["appointed"])
         call = w["call"] if igl["club"] == 0 else None
         board = None
         if igl["club"] == 0:
@@ -228,7 +332,13 @@ def begin_live(w):
         site = "AB"[(engine._draw(igl) >> 16) % 2]
         if call in ("Выход A", "Выход B"):
             site = call[-1]
-        style = "Быстро" if call == "Ускориться" or engine._draw(igl) >> 31 else "Сбор"
+        style = (
+            "Быстро"
+            if call == "Ускориться"
+            or (engine._draw(igl) >> 16) % 100
+            < 20 + profile(w, igl)["skills"]["aggression"] * 0.6
+            else "Сбор"
+        )
         if board:
             plant = next(
                 (s for steps in board["slots"] for s in steps if s["kind"] == "plant"),
@@ -257,6 +367,15 @@ def begin_live(w):
             style=style,
             buy=buy,
         )
+        for a in squad:
+            a.update(
+                liveStart=now,
+                dayRoll=(engine._draw(a) >> 16) % 17 - 8,
+                pressure=int(
+                    max(w["score"]) >= RULES["half"]
+                    and abs(w["score"][0] - w["score"][1]) <= 2
+                ),
+            )
         if board:
             w["plans"][side]["board"] = board
             emit(
@@ -280,7 +399,15 @@ def begin_live(w):
         smg = "MAC-10" if side == "T" else "MP9"
         for a in squad:
             if buy in ("Полная", "Форс") and not WEAPONS[a["weapon"]].price:
-                best = "AWP" if a["slot"] == 3 and a["cash"] >= 5400 else rifle
+                s = profile(w, a)["skills"]
+                best = rifle
+                if a["playingRole"] == "awper" and a["cash"] >= 5400:
+                    best = "AWP"
+                elif (
+                    buy == "Форс"
+                    and max(s["shotguns"], s["machine_guns"]) > s["rifles"]
+                ):
+                    best = "Nova" if s["shotguns"] > s["machine_guns"] else "Negev"
                 if not purchase(w, a, best):
                     purchase(w, a, smg)
         for a in squad:
@@ -296,7 +423,7 @@ def begin_live(w):
                     purchase(w, a, "Броня")
                 if side == "CT" and not a["kit"] and a["slot"] in (0, 2, 4):
                     purchase(w, a, "Набор")
-                order = ["Дым", "Свет", "HE", "Огонь"]
+                order = ["Дым", "Свет", "HE", "Огонь", "Ложная"]
                 first = (a["slot"] + w["round"]) % len(order)
                 for item in order[first:] + order[:first]:
                     if len(a["utility"]) >= 2:
@@ -332,10 +459,11 @@ def enter_timeout(w):
             if a["club"] == 0 and a["evidence"]
         ],
     )
-    emit(w, "timeout", "Север берёт тактический тайм-аут")
+    emit(w, "timeout", f"{team(w, 0)['name']} берёт тактический тайм-аут")
 
 
 def command(w, kind, value=None):
+    check_coach(w)
     if w["phase"] == "finished":
         raise ValueError("Матч завершён")
     if kind == "timeout":
@@ -345,7 +473,11 @@ def command(w, kind, value=None):
             enter_timeout(w)
         else:
             w["pending"] = True
-            emit(w, "request", "Север запросил тайм-аут на следующий раунд")
+            emit(
+                w,
+                "request",
+                f"{team(w, 0)['name']} запросил тайм-аут на следующий раунд",
+            )
     elif w["phase"] != "timeout":
         raise ValueError("Колл разрешён только в собственный тактический тайм-аут")
     elif kind == "call" and value in CALLS:
@@ -366,7 +498,7 @@ def finish_round(w, side, reason):
     event = emit(
         w,
         "round_end",
-        f"{CLUBS[winner]} · {reason}",
+        f"{team(w, winner)['name']} · {reason}",
         winner=winner,
         side=side,
         reason=reason,
@@ -374,6 +506,8 @@ def finish_round(w, side, reason):
     w["score"][event["winner"]] += 1
     kills = w["kills"]
     for a in w["agents"]:
+        player = profile(w, a)
+        player["fatigue"] = perf.next_fatigue(player, a["movingTicks"])
         ident = a["id"]
         contributed = a["hp"] > 0 or any(
             (ident == k["player"] and k["enemy"])
@@ -432,7 +566,7 @@ def finish_round(w, side, reason):
     )
     if finished:
         w["pending"] = False
-        emit(w, "match_end", f"{CLUBS[winner]} выиграл BO1", winner=winner)
+        emit(w, "match_end", f"{team(w, winner)['name']} выиграл BO1", winner=winner)
 
 
 def objective(w, a, kind, site=None):
@@ -506,7 +640,7 @@ def advance(w):
                             team=side,
                             sender=a["id"],
                             site=bomb["site"],
-                            due=now + 1 + (100 - a["comms"]) // 12,
+                            due=now + ai.radio_delay(profile(w, a)["skills"]),
                         )
                     )
                 if ai.distance(a, bomb) < 30 and engine.clear_line(
@@ -531,6 +665,8 @@ def advance(w):
             ]
             observation = dict(
                 tick=now,
+                player=profile(w, a),
+                chemistry=w["domain"]["chemistry"],
                 phase=w["phase"],
                 deadline=w["deadline"],
                 plan=w["plans"][side],
@@ -541,6 +677,9 @@ def advance(w):
             previous = a["status"]
             step_index = a.get("stepIndex", 0)
             intents.append((a, *ai.act(observation, a, squad, known_bomb, fire)))
+            if intents[-1][1] == "move":
+                a["lastMove"] = now
+                a["movingTicks"] += 1
             if observation["plan"].get("board"):
                 if a["stepIndex"] != step_index:
                     emit(
@@ -683,6 +822,7 @@ def project(w, view="full"):
             knowledge=list(a["knowledge"].values()) if friendly else [],
         )
         if friendly:
+            marker.update(playerId=a["playerId"])
             marker.update(
                 {
                     k: a[k]
@@ -760,6 +900,13 @@ def project(w, view="full"):
     ):
         action = None
     coach_view = view in ("full", w["agents"][0]["team"])
+    ratings = {}
+    if coach_view:
+        for a in w["agents"]:
+            if a["club"] == 0:
+                ratings[a["id"]] = world.player_report(w["domain"], a["playerId"])[
+                    "ratings"
+                ]
     return dict(
         seed=w["seed"],
         tick=w["tick"],
@@ -770,10 +917,14 @@ def project(w, view="full"):
         events=journal[-48:],
         match=dict(
             rules=w["rules"],
+            roleRatings=ratings,
+            teamRating=world.team_rating(w["domain"], w["rosterIds"][0], MAP["id"])
+            if coach_view
+            else None,
             round=w["round"],
             phase=w["phase"],
             clock=max(0, w["deadline"] - w["tick"]),
-            teams=CLUBS,
+            teams=[team(w, i)["name"] for i in (0, 1)],
             score=w["score"],
             sides=[w["agents"][i]["team"] for i in (0, 5)],
             history=[
@@ -807,7 +958,11 @@ def project(w, view="full"):
             else None,
             action=action,
             effects=effects,
-            shots=[e for e in w["traces"] if audience(e)],
+            shots=[
+                {k: v for k, v in e.items() if k != "accuracy"}
+                for e in w["traces"]
+                if audience(e)
+            ],
             kills=w["kills"][-8:],
             plans={
                 s: {k: v for k, v in p.items() if k != "board"}
