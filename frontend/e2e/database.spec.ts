@@ -28,6 +28,8 @@ test("Пакет, поиск, правка, перенос и BO1", async ({ pag
   await catalog.selectOption(target);
   const search = page.getByLabel("Поиск", { exact: true });
   await search.fill("ZywOo");
+  const sections = page.getByRole("navigation", { name: "Раздел базы" });
+  await expect(sections.getByRole("button", { name: /Организации/ })).toBeDisabled();
   release();
   await expect(catalog).toHaveValue(target);
   await expect(search).toHaveValue("ZywOo");

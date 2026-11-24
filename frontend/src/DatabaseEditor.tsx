@@ -487,6 +487,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
           </button>
           <button
             className="primary"
+            disabled={busy}
             aria-expanded={matchSetup}
             onClick={() => setMatchSetup((v) => !v)}
           >
@@ -519,7 +520,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
         />
       </section>
       {matchSetup && (
-        <section className="db-match">
+        <section className="db-match" inert={busy}>
           <h2>Выставочный матч</h2>
           <p>
             Депо · пять на пять. Для неизвестных ролей и капитана движок
@@ -619,6 +620,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
         {groupKeys.map((k) => (
           <button
             key={k}
+            disabled={busy}
             aria-pressed={k === g}
             onClick={() => move(k, firstId(pack, k))}
           >
@@ -646,7 +648,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
               }}
             />
           </label>
-          <div className="db-filters">
+          <div className="db-filters" inert={busy}>
             {filterOptions.length > 0 && (
               <Select
                 label="Фильтр"
@@ -699,7 +701,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
             })}
             {!rows.length && <p>Записей по запросу нет.</p>}
           </div>
-          <div className="db-pages">
+          <div className="db-pages" inert={busy}>
             <small>
               {rows.length ? page * 10 + 1 : 0}–
               {Math.min(rows.length, page * 10 + 10)} из {rows.length}
@@ -720,7 +722,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
             </button>
           </div>
         </section>
-        <section ref={card} className="db-card">
+        <section ref={card} className="db-card" inert={busy}>
           {!r ? (
             <p>Выберите запись или создайте новую.</p>
           ) : (
