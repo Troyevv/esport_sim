@@ -204,7 +204,7 @@ export function Facts({ rows }: { rows: ProfileFact[] }) {
           <dd>
             {r.name === "Сайт" && r.value.startsWith("https://") ? (
               <a href={r.value} rel="noreferrer" target="_blank">
-                {new URL(r.value).hostname} ↗
+                {r.value.replace(/^https:\/\//, "")} ↗
               </a>
             ) : (
               r.value

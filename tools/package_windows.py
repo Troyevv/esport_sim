@@ -75,10 +75,14 @@ def main():
     shutil.copyfile(ROOT / "LICENSE", output / "LICENSE")
     shutil.copyfile(ROOT / "docs" / "TACTICS.md", output / "TACTICS.md")
     shutil.copyfile(ROOT / "docs" / "WORLD_R31.md", output / "WORLD_R31.md")
-    shutil.copyfile(ROOT / "docs" / "DATABASE_R32.md", output / "DATABASE_R32.md")
+    shutil.copyfile(ROOT / "SOURCES.md", output / "SOURCES.md")
+    guide = (ROOT / "docs" / "DATABASE_R32.md").read_text(encoding="utf-8")
+    (output / "DATABASE_R32.md").write_text(guide.replace("../SOURCES.md", "SOURCES.md"), encoding="utf-8")
     screenshots = output / "screenshots"
     screenshots.mkdir(exist_ok=True)
-    for source in (ROOT / "docs" / "screenshots").glob("r2-*.png"):
+    for source in sorted((ROOT / "docs" / "screenshots").glob("*.png")):
+        if not source.name.startswith(("r2-", "r32-")):
+            continue
         shutil.copyfile(source, screenshots / source.name)
     archive = dist / "EsportSim-windows-x64.zip"
     with zipfile.ZipFile(archive, "w") as bundle:

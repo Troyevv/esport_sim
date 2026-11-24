@@ -132,7 +132,10 @@ def _validate(p):
     )
     valid_id(p["id"])
     label(p["title"])
-    require(type(p["revision"]) is int and p["revision"] > 0, "Некорректная редакция")
+    require(
+        type(p["revision"]) is int and 0 < p["revision"] <= 2147483647,
+        "Некорректная редакция",
+    )
     cutoff = day(p["asOf"])
     origins = p["origins"]
     for k, o in origins.items():

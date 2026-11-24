@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 
-from . import database as data
+from . import database as data, valve_import
 
 
 def editor_router(app):
@@ -41,6 +41,9 @@ def editor_router(app):
                 raise HTTPException(413, "Пакет больше 24 МиБ")
         store = app.state.store
         try:
+            if request.headers.get("content-type") == "application/zip":
+                pack = valve_import.import_zip(content)
+                content = data.encode(data.envelope(pack))
             with store.transaction():
                 return data.install(store.db, content)
         except (ValueError, TypeError, KeyError, RecursionError) as exc:

@@ -37,12 +37,18 @@ const sorted = (items: Record<string, Entity>) =>
   Object.entries(items).sort(([, a], [, b]) =>
     a.name.localeCompare(b.name, "ru"),
   );
-async function request(path: string, body?: string) {
+async function request(path: string, body?: string | Blob) {
   const res = await fetch(serverURL("/api/database" + path), {
     credentials: "include",
     cache: "no-store",
     method: body === undefined ? "GET" : "POST",
-    headers: body === undefined ? {} : { "Content-Type": "application/json" },
+    headers:
+      body === undefined
+        ? {}
+        : {
+            "Content-Type":
+              body instanceof Blob ? "application/zip" : "application/json",
+          },
     body,
   });
   if (!res.ok) {
@@ -219,7 +225,10 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
   }, [pack, at]);
   function guard() {
     return (
-      !draft || window.confirm("Закрыть карточку без сохранения изменений?")
+      !draft ||
+      (!create &&
+        JSON.stringify(draft) === JSON.stringify(pack?.[at.group][at.id])) ||
+      window.confirm("Закрыть карточку без сохранения изменений?")
     );
   }
   function move(g: Group, id: string, scroll = false) {
@@ -261,6 +270,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
             id: firstId(p, select?.group || "players"),
           },
     );
+    if (!select || !p[select.group][select.id]) setSection("Профиль");
     const rs = sorted(p.rosters).filter(([, r]) => r.players?.length === 5);
     setHome(rs[0]?.[0] || "");
     setAway(rs.find(([, r]) => r.team !== rs[0]?.[1].team)?.[0] || "");
@@ -468,7 +478,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
         <input
           ref={input}
           type="file"
-          accept=".json,application/json"
+          accept=".json,.zip,application/json,application/zip"
           hidden
           aria-label="Файл пакета"
           onChange={async (e) => {
@@ -478,7 +488,12 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
             await run(async () => {
               if (file.size > 24 * 1024 * 1024)
                 throw Error("Пакет больше 24 МиБ");
-              const ref = await request("/import", await file.text());
+              const ref = await request(
+                "/import",
+                file.name.toLowerCase().endsWith(".zip")
+                  ? file
+                  : await file.text(),
+              );
               await load(ref);
               setNotice("Пакет проверен и открыт");
             });

@@ -70,3 +70,54 @@ test("Пакет, поиск, правка, перенос и BO1", async ({ pag
     page.getByRole("heading", { name: "Тактический радар" }),
   ).toBeVisible();
 });
+
+test("Профили организации, штаба и новая редакция", async ({ page }, info) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "База сцены", exact: true }).click();
+  const tabs = page.getByRole("navigation", { name: "Раздел базы" });
+  await tabs.getByRole("button", { name: /Организации/ }).click();
+  await page
+    .locator(".db-list")
+    .getByRole("button", { name: /Team Vitality/ })
+    .click();
+  await expect(page.locator(".pf-facts")).toContainText("2013");
+  await page
+    .locator(".pf-roster")
+    .getByRole("button", { name: /XTQZZZ/ })
+    .click();
+  await expect(page.locator(".pf-heading")).toContainText("Rémy Quoniam");
+  await page.screenshot({
+    path: info.outputPath("staff-profile.png"),
+    fullPage: true,
+  });
+  await tabs.getByRole("button", { name: /Организации/ }).click();
+  await page.getByRole("button", { name: "Создать", exact: true }).click();
+  await page.getByLabel("Название", { exact: true }).fill("Клуб редактора");
+  await page.getByLabel("Год основания", { exact: true }).fill("2024");
+  await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+  await expect(page.locator(".pf-heading h2")).toHaveText("Клуб редактора");
+  await page
+    .getByRole("button", { name: "Редактировать", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Копировать", exact: true }).click();
+  await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+  await expect(page.locator(".pf-heading h2")).toHaveText(
+    "Клуб редактора · копия",
+  );
+  for (const name of ["Клуб редактора · копия", "Клуб редактора"]) {
+    await page.getByLabel("Поиск", { exact: true }).fill(name);
+    await page
+      .locator(".db-list")
+      .getByRole("button", { name: new RegExp(name) })
+      .first()
+      .click();
+    await page
+      .getByRole("button", { name: "Редактировать", exact: true })
+      .click();
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByRole("button", { name: "Удалить", exact: true }).click();
+    await expect(
+      page.getByRole("status").filter({ hasText: /Запись удалена/ }),
+    ).toBeVisible();
+  }
+});

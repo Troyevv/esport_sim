@@ -129,3 +129,34 @@ def test_real_rosters_finish_by_events(home, away, seed, monkeypatch):
     ]
     assert len(ends) == sum(w["score"])
     print(home, away, seed, w["score"], w["serial"], w["tick"])
+
+
+def test_zip_import_requires_pinned_reports():
+    from io import BytesIO
+    from zipfile import ZipFile
+    from backend import valve_import
+
+    with pytest.raises(ValueError, match="ZIP"):
+        valve_import.import_zip(b"bad")
+    manifest = json.loads(valve_import.MANIFEST.read_bytes())
+    buffer = BytesIO()
+    with ZipFile(buffer, "w") as archive:
+        for name in manifest:
+            archive.writestr(name, "wrong version")
+    with pytest.raises(ValueError, match="не совпадает"):
+        valve_import.import_zip(buffer.getvalue())
+
+
+def test_familiarity_and_staff_follow_selected_revision():
+    p = starter()
+    pid = ident("p", "ZywOo")
+    p["players"][pid]["mapKnowledge"]["depo"] = 17
+    p["players"][pid]["roleMastery"]["awper"] = 91
+    coach = ident("s", "XTQZZZ")
+    p["staff"][coach]["preparation"] = 82
+    domain = data.match_input(
+        data.validate(p), [ident("r", "Vitality"), ident("r", "M80")]
+    )
+    assert domain["players"][pid]["mapKnowledge"] == {"depo": 17}
+    assert domain["players"][pid]["roleMastery"]["awper"] == 91
+    assert domain["staff"][coach]["preparation"] == 82

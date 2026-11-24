@@ -276,3 +276,6 @@
     min-height: 34px;
   }
 }
+.pf-facts a {
+  color: var(--accent);
+}
