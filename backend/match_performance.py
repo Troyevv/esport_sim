@@ -3,15 +3,27 @@
 from math import pi
 
 WEAPON_CLASS = {
-    "Glock": "pistols", "USP": "pistols", "MP9": "smgs", "MAC-10": "smgs",
-    "AK-47": "rifles", "M4A1-S": "rifles", "AWP": "sniper_rifles",
-    "Nova": "shotguns", "Negev": "machine_guns",
+    "Glock": "pistols",
+    "USP": "pistols",
+    "MP9": "smgs",
+    "MAC-10": "smgs",
+    "AK-47": "rifles",
+    "M4A1-S": "rifles",
+    "AWP": "sniper_rifles",
+    "Nova": "shotguns",
+    "Negev": "machine_guns",
 }
-GRENADE_SKILL = {"Дым": "smokes", "Свет": "flashes", "HE": "he", "Огонь": "incendiaries", "Ложная": "decoys"}
+GRENADE_SKILL = {
+    "Дым": "smokes",
+    "Свет": "flashes",
+    "HE": "he",
+    "Огонь": "incendiaries",
+    "Ложная": "decoys",
+}
 
 
 def acquisition(s, angle, switching, peeking, opening, trading, alone):
-    ticks = 1 + (100 - s["reaction"]) / 18 + abs(angle) / pi * (100 - s["flick"]) / 11
+    ticks = 1 + (100 - s["reaction"]) / 23 + abs(angle) / pi * (100 - s["flick"]) / 11
     if switching:
         ticks += (100 - s["target_switch"]) / 20
     if peeking:
@@ -28,13 +40,13 @@ def acquisition(s, angle, switching, peeking, opening, trading, alone):
 def accuracy(player, a, spec, dist, burst, now):
     s = player["skills"]
     # Aim locates the target. Weapon handling converts that aim at range.
-    base = spec.accuracy + (s["aim"] - 65) * .26
-    falloff = .95 if a["weapon"] == "Nova" else .36
+    base = spec.accuracy + (s["aim"] - 65) * 0.19
+    falloff = 0.95 if a["weapon"] == "Nova" else 0.36
     base -= dist * falloff * (1.4 - s[WEAPON_CLASS[a["weapon"]]] / 140)
     if burst:
-        base -= burst * (8 - s["recoil"] * .065)
+        base -= burst * (8 - s["recoil"] * 0.065)
     else:
-        base += (s["first_shot"] - 65) * .14
+        base += (s["first_shot"] - 65) * 0.10
     base -= min(3, a["observedSpeed"]) * (100 - s["tracking"]) / 16
     base -= max(0, 6 - (now - a["lastMove"])) * (100 - s["counter_strafe"]) / 30
     base += a["dayRoll"] * (100 - s["consistency"]) / 100
@@ -47,7 +59,11 @@ def accuracy(player, a, spec, dist, burst, now):
 
 def move_speed(player):
     s = player["skills"]
-    return .82 + s["movement"] * .003 - player["fatigue"] * (110 - s["fatigue_resistance"]) / 35000
+    return (
+        0.82
+        + s["movement"] * 0.003
+        - player["fatigue"] * (110 - s["fatigue_resistance"]) / 35000
+    )
 
 
 def next_fatigue(player, moving_ticks):
@@ -59,22 +75,26 @@ def next_fatigue(player, moving_ticks):
 
 def commit_ticks(s, morale):
     # How long a player will stick to a nearly completed objective under fire.
-    return 2 + s["decisions"] // 12 + s["confidence"] // 25 + morale // 30
+    return 3 + s["confidence"] // 10 + morale // 30
 
 
-def retake_margin(s):
+def retake_margin(s, distance, weapon_price):
     # An inexperienced defender budgets more travel time. Risk is a preference.
-    return (100 - s["retakes"]) / 3 + (50 - s["risk"]) / 3
+    navigation = min(50, distance / 2) * (100 - s["retakes"]) / 100
+    save_margin = (50 - s["risk"]) * min(1, weapon_price / 3000) / 2
+    return navigation + save_margin
 
 
 def pursuit_window(s, sound):
     if sound:
         return 8 + (100 - s["patience"]) // 3
-    return 10 + s["aggression"] // 3 + (100 - s["discipline"]) // 5
+    return 12 + s["aggression"] // 2
 
 
 def staging_ticks(s, separated):
-    return 65 + (100 - s["timing"]) // 3 + (s["synchronization"] // 3 if separated else 0)
+    return (
+        65 + (100 - s["timing"]) // 3 + (s["synchronization"] // 3 if separated else 0)
+    )
 
 
 def grenade_landing(a, target, mastery, roll):
