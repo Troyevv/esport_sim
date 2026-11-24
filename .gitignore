@@ -1,0 +1,36 @@
+# Local credentials and provider configuration
+.env
+.env.*
+!.env.example
+
+# Python runtime and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# JavaScript dependencies and build outputs
+node_modules/
+dist/
+build/
+coverage/
+
+# Runtime careers, downloads, logs, and local diagnostics
+/saves/
+/runtime-data/
+/tmp/
+*.log
+
+# Browser test artifacts
+playwright-report/
+test-results/
+
+# Editors and OS files
+.DS_Store
+Thumbs.db
+.idea/

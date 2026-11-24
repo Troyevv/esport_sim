@@ -1,0 +1,742 @@
+:root {
+  color-scheme: dark;
+  --ink: #edf1ef;
+  --muted: #a2b2b3;
+  --line: #344449;
+  --surface: #182428;
+  --accent: #a3f0bd;
+  --mono: ui-monospace, Consolas, monospace;
+  font:
+    16px/1.45 system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  color: var(--ink);
+  background: #10191c;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  min-width: 280px;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button,
+select,
+input {
+  border-radius: 6px;
+  border: 1px solid #405155;
+  background: #203035;
+  color: var(--ink);
+}
+button,
+select {
+  cursor: pointer;
+}
+button {
+  min-height: 42px;
+  padding: 7px 12px;
+  font-weight: 620;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+button:hover:not(:disabled),
+select:hover {
+  border-color: #839c99;
+  background: #2c4145;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+input,
+select {
+  padding: 9px 10px;
+  min-width: 0;
+}
+input {
+  width: 100%;
+  font-family: var(--mono);
+}
+select {
+  max-width: 100%;
+}
+.mast {
+  min-height: 64px;
+  border-bottom: 1px solid var(--line);
+  background: #131e21;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px max(4vw, env(safe-area-inset-left));
+}
+.identity {
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+  font-weight: 790;
+  letter-spacing: -1.6px;
+}
+.identity span {
+  color: var(--accent);
+}
+.brandmark {
+  width: 34px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transform: skew(-19deg);
+  margin-right: 11px;
+}
+.brandmark b {
+  background: var(--accent);
+  width: 7px;
+  height: 100%;
+}
+.brandmark b:first-child {
+  height: 52%;
+}
+.brandmark b:nth-child(2) {
+  height: 77%;
+}
+.mastline {
+  height: 21px;
+  width: 1px;
+  background: var(--line);
+}
+.masttitle {
+  color: var(--muted);
+  font-size: 14px;
+}
+.connection {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-left: auto;
+  font: 13px var(--mono);
+  color: #e3bd87;
+}
+.connection i,
+.state i,
+.eyebrow i {
+  width: 7px;
+  height: 7px;
+  background: currentColor;
+  border-radius: 50%;
+}
+.connection.up {
+  color: var(--accent);
+}
+main {
+  width: min(1480px, 92%);
+  margin: auto;
+  padding-bottom: max(3rem, env(safe-area-inset-bottom));
+}
+.intro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 32px 0 22px;
+}
+.eyebrow,
+.clock span,
+.maphead small,
+.tick {
+  font: 600 12px var(--mono);
+  letter-spacing: 1.2px;
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--accent);
+}
+.eyebrow i {
+  border-radius: 0;
+  transform: skewX(-15deg);
+}
+.eyebrow span {
+  color: var(--muted);
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+h1 {
+  font-size: clamp(32px, 3.45vw, 56px);
+  line-height: 1.1;
+  letter-spacing: -0.055em;
+  margin-top: 9px;
+}
+h2 {
+  font-size: 20px;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
+}
+.clock {
+  text-align: right;
+}
+.clock span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.clock strong {
+  display: block;
+  font: 500 clamp(23px, 2vw, 34px) / 1.3 var(--mono);
+  letter-spacing: -1px;
+}
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) minmax(290px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+.maphead,
+.mapfoot,
+.sectionhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.maphead {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  gap: 8px;
+}
+.mapname {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mapname s {
+  width: 38px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #4a6162;
+  border-radius: 5px;
+  color: #a9c8c4;
+}
+.maphead small {
+  font-size: 10px;
+  letter-spacing: 1.3px;
+  color: #a5b8b8;
+}
+.maphead h2 {
+  font-size: 25px;
+}
+.view {
+  display: grid;
+  gap: 2px;
+}
+.view span,
+.field > label,
+.metadata,
+.sectionhead > span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.view select {
+  padding: 5px 9px;
+  min-height: 36px;
+  font-size: 14px;
+}
+.mapfoot {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+}
+.mapfoot .selected-agent { color: var(--ink); font: 13px var(--mono); }
+.mapfoot > span,
+.team h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.legend {
+  width: 9px;
+  height: 9px;
+  display: inline-block;
+}
+.ct {
+  border-radius: 50%;
+  background: #55d9c9;
+}
+.t {
+  background: #ffb56d;
+  transform: rotate(45deg);
+  width: 8px;
+  height: 8px;
+}
+.tick {
+  margin-left: auto;
+}
+.tick b {
+  color: var(--ink);
+}
+.control {
+  padding: 22px;
+}
+.control h2,
+.sectionhead h2 {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.control h2 svg,
+.sectionhead svg {
+  color: var(--accent);
+}
+.state {
+  margin: 20px 0 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.state i {
+  color: #95a2a6;
+}
+.state i.moving {
+  color: var(--accent);
+}
+.primary {
+  background: var(--accent);
+  color: #11231a;
+  border-color: var(--accent);
+  width: 100%;
+  height: 46px;
+}
+.primary:hover:not(:disabled) {
+  background: #c7f7d7;
+  color: #14291e;
+}
+.field {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+.speeds,
+.slots,
+.seedrow {
+  display: flex;
+  gap: 6px;
+}
+.speeds button,
+.slots button {
+  flex: 1;
+}
+.speeds button {
+  font-family: var(--mono);
+}
+.speeds button[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #263e35;
+}
+.scenario {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.slots button,
+.seedrow button {
+  font-size: 14px;
+}
+.metadata {
+  margin-top: 20px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  display: flex;
+  justify-content: space-between;
+}
+.metadata b {
+  font: 14px var(--mono);
+  color: var(--ink);
+}
+.sectionhead {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  padding: 18px 20px;
+}
+.team h3 {
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+.team h3 span {
+  font: 12px var(--mono);
+  color: var(--muted);
+  margin-left: auto;
+}
+.team button {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  justify-content: space-between;
+  padding: 7px 4px;
+  font: 14px var(--mono);
+}
+.team button span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.team button[aria-pressed="true"] {
+  color: var(--accent);
+  background: #253b35;
+}
+.agentinfo,
+.notice,
+.pair {
+  padding: 15px 20px;
+}
+.agentinfo {
+  border-top: 1px solid var(--line);
+}
+.agentinfo span {
+  display: block;
+  color: var(--muted);
+  font-size: 14px;
+}
+.journal ol {
+  list-style: none;
+  padding: 0 18px;
+  margin: 0;
+  max-height: 325px;
+  overflow: auto;
+}
+.journal li {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.journal time {
+  color: #b1c7c4;
+  font: 12px/1.8 var(--mono);
+}
+.journal p {
+  padding: 18px;
+  color: var(--muted);
+}
+.notice {
+  margin: 0 0 12px;
+  border-left: 3px solid var(--accent);
+  background: #22342d;
+}
+.pair {
+  display: grid;
+  gap: 12px;
+  max-width: 460px;
+}
+@media (max-width: 980px) {
+  .dashboard {
+    grid-template-columns: minmax(0, 1.7fr) minmax(265px, 1fr);
+  }
+  main {
+    width: 95%;
+  }
+  .mast {
+    padding-inline: 2.5%;
+  }
+  .control {
+    padding: 16px;
+  }
+  .maphead {
+    padding: 12px;
+  }
+  .intro {
+    margin-top: 24px;
+  }
+  .teams {
+    gap: 12px;
+    padding: 14px;
+  }
+  .slots button {
+    padding-inline: 6px;
+  }
+}
+@media (max-width: 730px) {
+  main {
+    width: auto;
+    margin: 0;
+    padding: 0 max(12px, env(safe-area-inset-left))
+      max(24px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-right));
+  }
+  .masttitle,
+  .mastline {
+    display: none;
+  }
+  .mast {
+    padding: 8px 16px;
+    min-height: 51px;
+  }
+  .identity {
+    font-size: 22px;
+  }
+  .intro {
+    margin: 20px 0 14px;
+    align-items: center;
+  }
+  .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    gap: 6px;
+  }
+  h1 {
+    font-size: clamp(25px, 6.7vw, 39px);
+  }
+  .clock span {
+    font-size: 9px;
+    letter-spacing: 0.4px;
+  }
+  .clock strong {
+    font-size: 18px;
+  }
+  .dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .dashboard > .panel {
+    width: 100%;
+  }
+  .mapname s {
+    display: none;
+  }
+  .mapfoot {
+    padding: 10px 12px;
+  }
+  .control {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .control h2 {
+    align-self: center;
+    font-size: 18px;
+  }
+  .state {
+    margin: 0;
+    justify-self: end;
+  }
+  .primary {
+    grid-column: 1/-1;
+  }
+  .control .field {
+    margin: 0;
+    border: 0;
+    padding: 0;
+  }
+  .control .field:has(.speeds) {
+    grid-column: 1/-1;
+  }
+  .control .scenario,
+  .control .field:has(.slots),
+  .control .metadata {
+    grid-column: 1/-1;
+  }
+  .control .metadata {
+    margin: 0;
+  }
+  .team button {
+    font-size: 13px;
+  }
+  .teams {
+    gap: 14px;
+  }
+  .sectionhead {
+    padding: 14px;
+  }
+  .journal ol {
+    max-height: 280px;
+  }
+  .view span {
+    font-size: 12px;
+  }
+  .brandmark {
+    width: 28px;
+    height: 22px;
+  }
+}
+@media (orientation: landscape) and (max-height: 550px) and (min-width: 731px) {
+  .intro {
+    margin: 12px 0;
+  }
+  .mast {
+    min-height: 42px;
+  }
+  .intro h1 {
+    font-size: 31px;
+  }
+  .dashboard {
+    gap: 10px;
+  }
+  .maphead {
+    padding: 8px 12px;
+  }
+  .control {
+    padding: 12px;
+  }
+  .state,
+  .field {
+    margin-top: 10px;
+  }
+}
+.column {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+}
+@media (max-width: 730px) {
+  .column {
+    display: contents;
+  }
+  .mapcard {
+    order: 1;
+  }
+  .control {
+    order: 2;
+  }
+  .roster {
+    order: 3;
+  }
+  .journal {
+    order: 4;
+  }
+  .column > .panel {
+    width: 100%;
+  }
+}
+@media (min-width: 731px) and (max-width: 1000px) and (orientation: portrait) {
+  .dashboard {
+    grid-template-columns: 1.3fr 1fr;
+  }
+  .column {
+    display: contents;
+  }
+  .mapcard,
+  .control {
+    grid-column: 1/-1;
+  }
+  .mapcard {
+    order: 1;
+  }
+  .control {
+    order: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 24px;
+  }
+  .control h2 {
+    align-self: center;
+  }
+  .control .state {
+    margin: 0;
+    justify-self: end;
+  }
+  .control .primary {
+    align-self: end;
+  }
+  .control .field,
+  .control .metadata {
+    margin: 0;
+  }
+  .control .scenario {
+    border: 0;
+    padding: 0;
+  }
+  .control .metadata {
+    grid-column: 1/-1;
+  }
+  .roster {
+    order: 3;
+  }
+  .journal {
+    order: 4;
+  }
+}
+@media (orientation: landscape) and (max-height: 550px) and (min-width: 650px) {
+  .mast {
+    min-height: 36px;
+    padding-block: 4px;
+  }
+  .identity {
+    font-size: 19px;
+  }
+  .brandmark {
+    height: 18px;
+  }
+  .intro {
+    margin: 8px 0;
+    align-items: center;
+  }
+  .intro h1 {
+    font-size: 24px;
+    margin: 0;
+  }
+  .intro .eyebrow {
+    display: none;
+  }
+  .clock {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .clock strong {
+    font-size: 17px;
+  }
+  .maphead {
+    padding: 5px 12px;
+  }
+  .maphead h2 {
+    font-size: 19px;
+  }
+  .maphead small {
+    font-size: 9px;
+  }
+  .mapname s {
+    height: 30px;
+    width: 30px;
+  }
+  .sim-radar-viewport {
+    height: clamp(160px, calc(100svh - 186px), 350px);
+  }
+  .mapfoot {
+    padding-block: 6px;
+  }
+}

@@ -1,0 +1,47 @@
+"""Run the same deterministic simulation without HTTP, SQLite or rendering."""
+
+import argparse
+import hashlib
+import json
+import platform
+import time
+import tracemalloc
+
+from . import engine
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--ticks", type=int, default=1200)
+    args = parser.parse_args()
+    if args.ticks < 0:
+        parser.error("--ticks must be non-negative")
+    tracemalloc.start()
+    started = time.perf_counter()
+    state = engine.initial(args.seed)
+    for _ in range(args.ticks):
+        engine.advance(state)
+    elapsed = time.perf_counter() - started
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    encoded = json.dumps(state, sort_keys=True, separators=(",", ":")).encode()
+    print(
+        json.dumps(
+            dict(
+                python=platform.python_version(),
+                machine=platform.machine(),
+                seed=args.seed,
+                ticks=args.ticks,
+                simulated_s=args.ticks * engine.TICK_SECONDS,
+                wall_s=round(elapsed, 4),
+                peak_python_bytes=peak,
+                sha256=hashlib.sha256(encoded).hexdigest(),
+            ),
+            indent=2,
+        )
+    )
+
+
+if __name__ == "__main__":
+    main()
