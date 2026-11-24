@@ -43,6 +43,7 @@ def test_complete_maps_reconcile_each_player_and_round(seed):
         "Свет",
         "Огонь",
         "HE",
+        "Ложная",
     }
     for a in w["agents"]:
         id = a["id"]

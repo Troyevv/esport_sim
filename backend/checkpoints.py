@@ -6,7 +6,7 @@ import json
 from .match_rules import role_orders
 from . import tactics
 
-VERSION = 3
+VERSION = 4
 
 
 class CheckpointError(ValueError):
@@ -80,7 +80,7 @@ def upgrade_match(db, world):
         # Legacy attackers already followed the direct route to their called site.
         plan = world["plans"].get("T") if player["team"] == "T" else None
         player.setdefault("approached", plan["site"] if plan else None)
-    world["checkpointVersion"] = VERSION
+    world["checkpointVersion"] = 2
 
 
 def validate_current(world):

@@ -5,6 +5,7 @@ const colors: Record<string, number> = {
   Дым: 0xafbbc1,
   Свет: 0xfff5c7,
   Огонь: 0xfe8547,
+  Ложная: 0xc8aaff,
   HE: 0xff5b51,
 };
 export function drawEvents(

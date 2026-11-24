@@ -412,3 +412,5 @@ th small {
 .tactic-results {padding-top:14px;border-bottom:1px solid var(--line)}
 .tactic-results small {color:var(--muted)}
 .tactic-results p {margin-top:6px}
+
+.role-ratings { display: block; }

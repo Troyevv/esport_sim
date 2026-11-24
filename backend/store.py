@@ -8,6 +8,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from . import checkpoints, engine, match, tactic_library
+from .match_rules import LEGACY_VERSION
 
 
 class Conflict(ValueError):
@@ -20,13 +21,16 @@ def validate_snapshot(state):
     supported = (
         (engine.VERSION, engine.MAP["version"], None),
         (2, match.MAP["version"], match.VERSION),
+        (2, match.MAP["version"], LEGACY_VERSION),
     )
     if state.get("version") != 1 or model not in supported:
         raise Conflict("Несовместимая версия снимка, ядра или геометрии")
     if world.get("version") == 2:
         version = world.get("checkpointVersion", 1)
-        if type(version) is not int or version not in (1, 2, checkpoints.VERSION):
+        if type(version) is not int or version not in (1, 2, 3, checkpoints.VERSION):
             raise Conflict(f"Неподдерживаемая версия сохранения BO1: {version}")
+        if (version == checkpoints.VERSION) != (world["rules"] == match.VERSION):
+            raise Conflict("Несовместимая пара версий правил и контрольной точки")
 
 
 class Store:
@@ -84,6 +88,7 @@ class Store:
             if world["version"] == 2 and world.get("checkpointVersion", 1) < checkpoints.VERSION:
                 if world.get("checkpointVersion", 1) == 1:
                     checkpoints.upgrade_match(self.db, world)
+                match.migrate_legacy(world)
                 world["checkpointVersion"] = checkpoints.VERSION
                 self.db.execute("""CREATE TABLE IF NOT EXISTS checkpoint_backup (
                     source TEXT NOT NULL, body TEXT NOT NULL, UNIQUE(source, body))""")
@@ -95,6 +100,7 @@ class Store:
                 )
             if world["version"] == 2:
                 checkpoints.validate_current(world)
+                match.validate_bindings(world)
             return state
         except (ValueError, TypeError, AttributeError, KeyError, IndexError) as exc:
             raise Conflict(f"Не удалось прочитать {label}: {exc}") from exc
