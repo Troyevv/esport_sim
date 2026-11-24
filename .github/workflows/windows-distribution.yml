@@ -48,6 +48,10 @@ jobs:
           path: dist/EsportSim-windows-x64.zip
           if-no-files-found: error
 
+      - name: Verify Windows source launch and shared EXE profile
+        shell: pwsh
+        run: ./tools/windows-smoke/source.ps1 -PackagedExe dist/EsportSim/EsportSim.exe
+
   clean-windows:
     name: ZIP on clean Windows Server Core
     needs: build

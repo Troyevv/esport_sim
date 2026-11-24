@@ -180,8 +180,8 @@ function App() {
                   </label>
                 </div>
                 <Radar
-                  map={world.map}
-                  agents={world.agents}
+                  frame={frame}
+                  connected={connection === "На связи"}
                   selected={agent?.id ?? null}
                   onSelect={setSelected}
                 />

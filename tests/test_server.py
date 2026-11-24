@@ -336,3 +336,31 @@ def test_incompatible_map_snapshot_cannot_replace_running_scenario(tmp_path):
         assert client.post("/api/command", json=command).status_code == 409
         assert client.get("/api/command/" + command["id"]).status_code == 404
         assert snapshot(client) == before
+
+
+def test_accelerated_projection_contains_only_observed_model_poses(tmp_path):
+    from backend import engine
+    from backend.store import Store
+    store = Store(tmp_path / "motion.sqlite")
+    try:
+        state = store.read()
+        state.update(speed=8, running=True)
+        store.write(state)
+        expected = []
+        for _ in range(8):
+            expected.append({view: {a["id"]: (a["x"], a["y"], a["heading"])
+                                    for a in engine.project(state["world"], view)["agents"]}
+                             for view in ("full", "T", "CT")})
+            engine.advance(state["world"])
+        store.tick()
+        for view in ("full", "T", "CT"):
+            world = store.snapshot(view)["world"]
+            ids = {a["id"] for a in world["agents"]}
+            tracks = world["motion"]["tracks"]
+            assert world["motion"]["startTick"] == 0
+            assert set(tracks) == ids.intersection(*(frame[view] for frame in expected))
+            for ident, poses in tracks.items():
+                assert poses == [frame[view][ident] for frame in expected]
+        assert "motion" not in store.read()["world"]
+    finally:
+        store.db.close()

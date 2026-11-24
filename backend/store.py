@@ -25,6 +25,7 @@ def validate_snapshot(state):
 
 class Store:
     def __init__(self, path: Path):
+        self.motion = None  # Transient render samples from the last committed batch.
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.db.executescript("""
             PRAGMA journal_mode=WAL;
@@ -83,15 +84,32 @@ class Store:
             state = self.read()
             if not state["running"]:
                 return False
+            world = state["world"]
+            start = world["tick"]
+            samples = []
             for _ in range(state["speed"]):
-                engine.advance(state["world"])
+                if state["speed"] > 1:
+                    samples.append(engine.motion_sample(world))
+                engine.advance(world)
             state["sequence"] += 1
             self.write(state)
+        self.motion = (state["context"], start, world["tick"], samples)
         return True
 
     def snapshot(self, view):
         state = self.read()
         state["world"] = engine.project(state["world"], view)
+        world = state["world"]
+        if self.motion and state["running"]:
+            context, start, end, samples = self.motion
+            if samples and context == state["context"] and end == world["tick"]:
+                # A side only receives tracks that were continuously observable.
+                tracks = {}
+                for agent in world["agents"]:
+                    ident = agent["id"]
+                    if all(view == "full" or view in sample[ident][1] for sample in samples):
+                        tracks[ident] = [sample[ident][0] for sample in samples]
+                world["motion"] = {"startTick": start, "tracks": tracks}
         return state
 
     def result(self, command_id):

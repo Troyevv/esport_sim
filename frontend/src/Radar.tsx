@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Application, Container, Graphics, Text } from "pixi.js";
+import { RadarPlayback } from "./playback";
+import type { Frame } from "./session";
 import "./radar.css";
 
 type Point = { x: number; y: number };
@@ -26,8 +28,8 @@ export interface Agent extends Point {
   status: string;
 }
 interface Props {
-  map: RadarMap;
-  agents: Agent[];
+  frame: Frame;
+  connected: boolean;
   selected: string | null;
   onSelect: (id: string) => void;
 }
@@ -131,6 +133,7 @@ function drawPlan(map: RadarMap) {
 }
 
 type RadarApi = {
+  destroy: () => void;
   update: (props: Props) => void;
   resize: () => void;
   reset: () => void;
@@ -139,149 +142,196 @@ type RadarApi = {
   selectAt: (at: Point) => void;
 };
 
+function marker(agent: Agent) {
+  const group = new Container({ label: agent.id });
+  const color = colors[agent.team];
+  const ring = new Graphics()
+    .circle(0, 0, 1.45)
+    .stroke({ color: 0xffffff, width: 0.22 });
+  const tip = new Graphics()
+    .poly([0.95, -0.53, 2.15, 0, 0.95, 0.53])
+    .fill(color);
+  const body = new Graphics();
+  if (agent.team === "T") body.roundRect(-1, -1, 2, 2, 0.34);
+  else body.circle(0, 0, 1);
+  body.fill(color).stroke({ color: 0x0f1a1d, width: 0.22 });
+  const text = label(
+    agent.id.match(/\d+$/)?.[0] ?? agent.name.slice(0, 1),
+    14,
+    0x142526,
+    "bold",
+  );
+  text.scale.set(1.52 / 14);
+  group.addChild(tip, ring, body, text);
+  return { group, tip, ring };
+}
+
 function setupScene(
   app: Application,
   host: HTMLDivElement,
   props: Props,
   zoomLabel: (n: number) => void,
 ) {
-  let current = props;
-  let zoom = 1;
-  let pan = { x: 0, y: 0 };
-  let fit = 1;
-  const world = new Container();
-  let plan = drawPlan(props.map);
-  const marks = new Graphics();
-  const names = new Container();
-  const textById = new Map<string, Text>();
+  let current = props,
+    zoom = 1,
+    fit = 1;
+  const pan = { x: 0, y: 0 };
+  const world = new Container({ label: "map" });
+  let plan = drawPlan(props.frame.world.map);
+  plan.cacheAsTexture({ resolution: 3, antialias: true });
+  const players = new Container({ label: "players" });
+  const markers = new Map<string, ReturnType<typeof marker>>();
+  const playback = new RadarPlayback();
   app.stage.addChild(world);
-  world.addChild(plan, marks, names);
-  function draw() {
+  world.addChild(plan, players);
+  let dirty = true;
+  let request = 0;
+  let lastFrame = -Infinity;
+  const period = 1000 / 60;
+
+  function present(now: number) {
+    request = 0;
+    if (!dirty && now - lastFrame < period - 0.8) {
+      schedule();
+      return;
+    }
+    // Retain the fractional remainder on high-refresh displays.
+    lastFrame = !dirty && Number.isFinite(lastFrame)
+      ? lastFrame +
+        Math.max(1, Math.floor((now - lastFrame + 0.8) / period)) * period
+      : now;
+    let changed = dirty;
+    for (const a of current.frame.world.agents) {
+      const m = markers.get(a.id)!;
+      const p = playback.sample(a.id, now);
+      if (
+        m.group.x !== p.x ||
+        m.group.y !== p.y ||
+        m.tip.rotation !== p.heading
+      ) {
+        m.group.position.set(p.x, p.y);
+        m.tip.rotation = p.heading;
+        changed = true;
+      }
+    }
+    if (changed) app.render();
+    dirty = false;
+    host.dataset.ready ||= "true";
+    if (current.connected && current.frame.running) schedule();
+  }
+  function schedule() {
+    if (!request) request = requestAnimationFrame(present);
+  }
+  function camera() {
     const scale = fit * zoom;
+    const map = current.frame.world.map;
     const { width, height } = app.screen;
-    const map = current.map;
-    const maxX = (scale * map.width) / 2;
-    const maxY = (scale * map.height) / 2;
-    pan.x = limit(pan.x, -maxX, maxX);
-    pan.y = limit(pan.y, -maxY, maxY);
+    pan.x = limit(pan.x, (-scale * map.width) / 2, (scale * map.width) / 2);
+    pan.y = limit(pan.y, (-scale * map.height) / 2, (scale * map.height) / 2);
     world.scale.set(scale);
     world.position.set(
       (width - scale * map.width) / 2 + pan.x,
       (height - scale * map.height) / 2 + pan.y,
     );
+    const radius = limit(4.5 * scale, 6.3, 13) / scale;
+    for (const m of markers.values()) m.group.scale.set(radius);
     host.dataset.zoom = zoom.toFixed(3);
     host.dataset.panX = pan.x.toFixed(2);
     host.dataset.panY = pan.y.toFixed(2);
-    marks.clear();
-    for (const t of textById.values()) t.visible = false;
-    const radius = limit(4.5 * scale, 6.3, 13) / scale;
-    for (const a of current.agents) {
-      const { x, y, heading, team } = a;
-      const color = colors[team];
-      const directionalPoint = (offset: number, length: number) => ({
-        x: x + Math.cos(heading + offset) * radius * length,
-        y: y + Math.sin(heading + offset) * radius * length,
-      });
-      const left = directionalPoint(-0.5, 1.1),
-        tip = directionalPoint(0, 2.15),
-        right = directionalPoint(0.5, 1.1);
-      marks.poly([left.x, left.y, tip.x, tip.y, right.x, right.y]).fill(color);
-      if (current.selected === a.id) {
-        marks
-          .circle(x, y, radius * 1.45)
-          .stroke({ color: 0xffffff, width: 1.3 / scale });
-      }
-      if (team === "T")
-        marks.roundRect(
-          x - radius,
-          y - radius,
-          radius * 2,
-          radius * 2,
-          radius * 0.34,
-        );
-      else marks.circle(x, y, radius);
-      marks.fill(color).stroke({ color: 0x0f1a1d, width: 1.2 / scale });
-      let t = textById.get(a.id);
-      if (!t) {
-        const index = a.id.match(/\d+$/)?.[0];
-        t = label(
-          index ? String(Number(index)) : a.name.slice(0, 1),
-          14,
-          0x142526,
-          "bold",
-        );
-        textById.set(a.id, t);
-        names.addChild(t);
-      }
-      t.scale.set((radius * 1.52) / 14);
-      t.position.set(x, y);
-      t.visible = true;
-    }
-    app.render();
-    host.dataset.ready = "true";
+    dirty = true;
+    schedule();
   }
   function resize() {
     const w = Math.max(1, host.clientWidth),
       h = Math.max(1, host.clientHeight);
     app.renderer.resize(w, h);
-    fit = Math.min(w / (current.map.width + 38), h / (current.map.height + 46));
-    draw();
+    const map = current.frame.world.map;
+    fit = Math.min(w / (map.width + 38), h / (map.height + 46));
+    camera();
   }
   const api: RadarApi = {
     update(next) {
-      const changed =
-        current.map.id !== next.map.id ||
-        current.map.version !== next.map.version;
+      const oldMap = current.frame.world.map,
+        map = next.frame.world.map;
+      const changed = oldMap.id !== map.id || oldMap.version !== map.version;
       current = next;
+      playback.push(next.frame, next.connected, performance.now());
+      for (const [id, m] of markers) {
+        if (!next.frame.world.agents.some((a) => a.id === id)) {
+          m.group.destroy({ children: true });
+          markers.delete(id);
+          dirty = true;
+        }
+      }
+      for (const a of next.frame.world.agents) {
+        let m = markers.get(a.id);
+        if (!m) {
+          m = marker(a);
+          markers.set(a.id, m);
+          players.addChild(m.group);
+          const scale = fit * zoom;
+          m.group.scale.set(limit(4.5 * scale, 6.3, 13) / scale);
+          dirty = true;
+        }
+        if (m.ring.visible !== (a.id === next.selected)) {
+          m.ring.visible = a.id === next.selected;
+          dirty = true;
+        }
+      }
       if (changed) {
         plan.destroy({ children: true });
-        plan = drawPlan(next.map);
+        plan = drawPlan(map);
+        plan.cacheAsTexture({ resolution: 3, antialias: true });
         world.addChildAt(plan, 0);
         api.reset();
         resize();
-      } else draw();
+      }
+      schedule();
     },
     resize,
+    destroy() {
+      cancelAnimationFrame(request);
+    },
     reset() {
       zoom = 1;
-      pan = { x: 0, y: 0 };
-      zoomLabel(1);
-      draw();
+      pan.x = pan.y = 0;
+      zoomLabel(zoom);
+      camera();
     },
     zoomBy(ratio, at) {
       const next = limit(zoom * ratio, 0.8, 4);
       if (next === zoom) return;
-      const originX = (at?.x ?? app.screen.width / 2) - app.screen.width / 2;
-      const originY = (at?.y ?? app.screen.height / 2) - app.screen.height / 2;
-      pan.x = originX - ((originX - pan.x) * next) / zoom;
-      pan.y = originY - ((originY - pan.y) * next) / zoom;
+      const x = (at?.x ?? app.screen.width / 2) - app.screen.width / 2;
+      const y = (at?.y ?? app.screen.height / 2) - app.screen.height / 2;
+      pan.x = x - ((x - pan.x) * next) / zoom;
+      pan.y = y - ((y - pan.y) * next) / zoom;
       zoom = next;
       zoomLabel(zoom);
-      draw();
+      camera();
     },
     panBy(dx, dy) {
       pan.x += dx;
       pan.y += dy;
-      draw();
+      camera();
     },
     selectAt(at) {
-      const scale = zoom * fit;
-      let target: Agent | undefined;
-      let nearest = Math.max(12, 5 * scale);
-      for (const agent of current.agents) {
-        const distance = Math.hypot(
-          at.x - world.x - agent.x * scale,
-          at.y - world.y - agent.y * scale,
+      let nearest = Math.max(12, 5 * world.scale.x),
+        target: string | undefined;
+      for (const [id, { group }] of markers) {
+        const d = Math.hypot(
+          at.x - world.x - group.x * world.scale.x,
+          at.y - world.y - group.y * world.scale.y,
         );
-        if (distance < nearest) {
-          nearest = distance;
-          target = agent;
+        if (d < nearest) {
+          nearest = d;
+          target = id;
         }
       }
-      if (target) current.onSelect(target.id);
+      if (target) current.onSelect(target);
     },
   };
-  api.resize();
+  api.update(props);
+  resize();
   return api;
 }
 
@@ -382,7 +432,12 @@ function bindNavigation(host: HTMLDivElement, api: RadarApi) {
   };
 }
 
-function CameraButton({ label, disabled, onActivate, children }: {
+function CameraButton({
+  label,
+  disabled,
+  onActivate,
+  children,
+}: {
   label: string;
   disabled: boolean;
   onActivate: () => void;
@@ -390,30 +445,47 @@ function CameraButton({ label, disabled, onActivate, children }: {
 }) {
   const start = useRef<Point | null>(null);
   return (
-    <button type="button" disabled={disabled} aria-label={label} onClick={onActivate}
-      onTouchStart={event => {
+    <button
+      type="button"
+      disabled={disabled}
+      aria-label={label}
+      onClick={onActivate}
+      onTouchStart={(event) => {
         const touch = event.touches[0];
-        start.current = event.touches.length === 1 ? {x: touch.clientX, y: touch.clientY} : null;
+        start.current =
+          event.touches.length === 1
+            ? { x: touch.clientX, y: touch.clientY }
+            : null;
       }}
-      onTouchMove={event => {
+      onTouchMove={(event) => {
         const point = start.current;
         const touch = event.touches[0];
-        if (point && Math.hypot(point.x - touch.clientX, point.y - touch.clientY) > 8) {
+        if (
+          point &&
+          Math.hypot(point.x - touch.clientX, point.y - touch.clientY) > 8
+        ) {
           start.current = null;
         }
       }}
-      onTouchCancel={() => { start.current = null; }}
-      onTouchEnd={event => {
+      onTouchCancel={() => {
+        start.current = null;
+      }}
+      onTouchEnd={(event) => {
         // Some browsers suppress their compatibility click immediately after a map drag.
         // Consume the touch's click here so a single tap always activates exactly once.
         event.preventDefault();
         const touch = event.changedTouches[0];
         const target = document.elementFromPoint(touch.clientX, touch.clientY);
-        const activate = start.current && !event.touches.length && event.currentTarget.contains(target);
+        const activate =
+          start.current &&
+          !event.touches.length &&
+          event.currentTarget.contains(target);
         start.current = null;
         if (!disabled && activate) onActivate();
       }}
-    >{children}</button>
+    >
+      {children}
+    </button>
   );
 }
 
@@ -438,8 +510,8 @@ export default function Radar(props: Props) {
     let remove: (() => void) | undefined;
     async function mount(element: HTMLDivElement) {
       await app.init({
-        preference: "webgl",
-        antialias: true,
+        preference: "canvas",
+        antialias: false,
         autoStart: false,
         backgroundAlpha: 0,
         autoDensity: true,
@@ -468,6 +540,7 @@ export default function Radar(props: Props) {
       stopped = true;
       observer?.disconnect();
       remove?.();
+      api.current?.destroy();
       api.current = null;
       if (initialized) app.destroy(true, { children: true });
     };
@@ -484,8 +557,8 @@ export default function Radar(props: Props) {
       />
       {error && (
         <div className="sim-radar-error" role="alert">
-          Браузеру не удалось отобразить карту. Проверьте доступность
-          графического ускорения.
+          Браузеру не удалось отобразить карту. Обновите страницу или откройте
+          её в современном браузере.
         </div>
       )}
       <div
