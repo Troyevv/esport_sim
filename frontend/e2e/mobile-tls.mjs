@@ -3,6 +3,7 @@ import { spawn, execFileSync } from 'node:child_process'
 import { createHash, X509Certificate } from 'node:crypto'
 import { once } from 'node:events'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import https from 'node:https'
 import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
@@ -18,6 +19,27 @@ async function listen(server, host) {
   return server.address().port
 }
 
+async function waitForEndpoint(origin, ca, child) {
+  const deadline = Date.now() + 15000
+  for (;;) {
+    try {
+      await new Promise((resolve, reject) => {
+        const request = https.get(origin + '/api/capabilities', {ca, agent: false}, response => {
+          response.resume()
+          if (response.statusCode === 200) resolve()
+          else reject(Error('Unexpected readiness response: ' + response.statusCode))
+        })
+        request.setTimeout(1500, () => request.destroy(Error('TLS readiness timeout')))
+        request.once('error', reject)
+      })
+      return
+    } catch (error) {
+      if (child.exitCode !== null || child.signalCode || Date.now() >= deadline) throw error
+      await delay(100)
+    }
+  }
+}
+
 async function check(mode) {
   const host = mode === 'lan' ? process.env.R0_TEST_LAN_IP || '127.0.0.1' : '127.0.0.1'
   const temp = await mkdtemp(path.join(os.tmpdir(), 'esports-mobile-'))
@@ -28,12 +50,11 @@ async function check(mode) {
     execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
       '-subj', '/CN=R0-mobile-test', '-addext', 'subjectAltName=IP:' + host,
       '-keyout', key, '-out', cert], {stdio: 'ignore'})
-    const pubkey = new X509Certificate(await readFile(cert)).publicKey.export({type: 'spki', format: 'der'})
+    const certificate = await readFile(cert)
+    const pubkey = new X509Certificate(certificate).publicKey.export({type: 'spki', format: 'der'})
     const pin = createHash('sha256').update(pubkey).digest('base64')
     const reservation = net.createServer()
     const backendPort = await listen(reservation, host)
-    reservation.close()
-    await once(reservation, 'close')
     let port = backendPort
     if (mode === 'remote') {
       // Forward opaque TLS records. The browser authenticates the home server end-to-end.
@@ -47,6 +68,8 @@ async function check(mode) {
       })
       port = await listen(relay, host)
     }
+    reservation.close()
+    await once(reservation, 'close')
     const origin = 'https://' + host + ':' + port
     child = spawn(process.env.PYTHON || 'python', ['-m', 'backend.run', '--mode', mode, '--host', host,
       '--port', String(backendPort), '--origin', origin, '--cert', cert, '--key', key, '--data', temp],
@@ -59,6 +82,9 @@ async function check(mode) {
       await delay(50)
     }
     const code = output.trim().split(/\s+/).at(-1)
+    // The CLI prints the invitation before Uvicorn opens the listening socket.
+    // Verify the actual TLS endpoint (including the relay) before browser navigation.
+    await waitForEndpoint(origin, certificate, child)
     browser = await chromium.launch({executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
       args: ['--no-proxy-server', '--ignore-certificate-errors-spki-list=' + pin,
         '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']})
