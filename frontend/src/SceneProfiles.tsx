@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { Avatar, Flag, Identity, type Visual } from "./SceneIdentity";
 import {
   roles,
+  mapNames,
   skillGroups,
   skillLabels,
   statuses,
@@ -19,6 +20,7 @@ export type ProfileLink = {
   id: string;
   name: string;
   detail?: string;
+  visual?: Visual;
 };
 export type Navigate = (group: Group, id: string) => void;
 export type ProfileSection = {
@@ -95,31 +97,11 @@ export function AttributeGrid({
     </div>
   );
 }
-function Portrait({ name, photo }: { name: string; photo?: PhotoRef }) {
-  const asset = resolvePortrait(photo);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    setFailed(false);
-  }, [photo]);
-  return (
-    <div className="pf-portrait">
-      {asset && !failed ? (
-        <img
-          alt={"Фотография · " + name}
-          src={asset.image}
-          referrerPolicy="no-referrer"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <span aria-hidden>{name.slice(0, 2).toUpperCase()}</span>
-      )}
-    </div>
-  );
-}
 export function ProfileHeading({
   name,
   subtitle,
   photo,
+  visual,
   type,
   context,
   rating,
@@ -127,17 +109,23 @@ export function ProfileHeading({
   name: string;
   subtitle?: string | null;
   photo?: PhotoRef;
+  visual?: Visual;
   type: string;
   context: string;
   rating?: number;
 }) {
-  const asset = resolvePortrait(photo);
+  const asset = visual?.player && !visual.head ? null : resolvePortrait(photo);
   return (
     <header className="pf-heading">
-      <Portrait name={name} photo={photo} />
+      <div className="pf-portrait">
+        <Avatar name={name} photo={photo} {...visual} />
+      </div>
       <div className="pf-identity">
         <small>{type}</small>
-        <h2>{name}</h2>
+        <div className="pf-title">
+          <h2>{name}</h2>
+          <Flag value={visual?.flag} />
+        </div>
         {subtitle && <strong>{subtitle}</strong>}
         <span>{context}</span>
       </div>
@@ -150,7 +138,12 @@ export function ProfileHeading({
       {asset && (
         <small className="pf-credit">
           <a href={asset.source} target="_blank" rel="noreferrer">
-            Фото · {asset.author}
+            {visual?.club
+              ? "Эмблема"
+              : visual?.player
+                ? "Слой внешности"
+                : "Фото"}{" "}
+            · {asset.author}
           </a>{" "}
           ·{" "}
           <a
@@ -183,7 +176,9 @@ export function ProfileLinks({
         <div className="pf-roster">
           {section.items.map((e) => (
             <button key={e.group + e.id} onClick={() => go(e.group, e.id)}>
-              <strong>{e.name}</strong>
+              <strong>
+                <Identity name={e.name} visual={e.visual} />
+              </strong>
               <small>{e.detail || "Открыть"} ↗</small>
             </button>
           ))}
@@ -201,7 +196,9 @@ export function Facts({ rows }: { rows: ProfileFact[] }) {
         <div key={r.name}>
           <dt>{r.name}</dt>
           <dd>
-            {r.name === "Сайт" && r.value.startsWith("https://") ? (
+            {r.name === "Национальность" || r.name === "Принадлежность" ? (
+              <Flag value={r.value === "Нет сведений" ? null : r.value} />
+            ) : r.name === "Сайт" && r.value.startsWith("https://") ? (
               <a href={r.value} rel="noreferrer" target="_blank">
                 {r.value.replace(/^https:\/\//, "")} ↗
               </a>
@@ -243,6 +240,8 @@ export function PlayerOverview({
   facts,
   ratings,
   statistics,
+  performance,
+  sample,
   maps,
   mastery,
   connections,
@@ -252,6 +251,8 @@ export function PlayerOverview({
   facts: ProfileFact[];
   ratings: Ratings | null;
   statistics?: Entity["statistics"];
+  performance?: Entity["performance"];
+  sample?: Entity["sample"];
   maps: Record<string, number>;
   mastery: Record<string, number>;
   connections: ProfileSection[];
@@ -274,6 +275,23 @@ export function PlayerOverview({
       </section>
       <section className="pf-section">
         <h3>Статистика выступлений</h3>
+        {performance && (
+          <p>
+            {performance.version} ·{" "}
+            <strong>{performance.rating.toFixed(2)}</strong> ·{" "}
+            {performance.maps} карт (
+            {performance.window === "last 12 months"
+              ? "за 12 месяцев"
+              : performance.window}
+            )
+          </p>
+        )}
+        {sample && (
+          <p>
+            {sample.from} — {sample.until} · {sample.maps} карт · победы в
+            сериях {sample.wins}/{sample.series}
+          </p>
+        )}
         {st ? (
           <>
             <p className="pf-caption">
@@ -289,15 +307,14 @@ export function PlayerOverview({
             />
           </>
         ) : (
-          <p className="pf-empty">В срезе нет индивидуальной статистики.</p>
+          !performance &&
+          !sample && (
+            <p className="pf-empty">В срезе нет индивидуальной статистики.</p>
+          )
         )}
       </section>
       <div className="pf-split">
-        <Familiarity
-          title="Знание карт"
-          values={maps}
-          names={{ depo: "Депо" }}
-        />
+        <Familiarity title="Знание карт" values={maps} names={mapNames} />
         <Familiarity title="Освоение ролей" values={mastery} names={roles} />
       </div>
       {connections.map((s) => (

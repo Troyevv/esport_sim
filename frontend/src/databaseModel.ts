@@ -1,4 +1,5 @@
-import type { PhotoRef } from "./portraits";
+import type { KitDesign, ClubKit } from "./GamePortrait";
+import { resolvePortrait, type PhotoAsset, type PhotoRef } from "./portraits";
 export const skillLabels: Record<string, string> = {
   aim: "AIM",
   reaction: "Реакция",
@@ -154,7 +155,41 @@ export const statuses: Record<string, string> = {
   modeled: "Модель",
   unknown: "Неизвестно",
 };
+export const mapNames: Record<string, string> = {
+  depo: "Депо",
+  ancient: "Ancient",
+  anubis: "Anubis",
+  cache: "Cache",
+  dust2: "Dust II",
+  inferno: "Inferno",
+  mirage: "Mirage",
+  nuke: "Nuke",
+  overpass: "Overpass",
+  train: "Train",
+  vertigo: "Vertigo",
+};
 export interface Entity {
+  appearance?: PhotoAsset | null;
+  kit?: KitDesign | null;
+  logo?: PhotoRef;
+  ageEstimate?: number | null;
+  performance?: {
+    rating: number;
+    maps: number;
+    version: string;
+    window: string;
+    role: string | null;
+  };
+  sample?: {
+    maps: number;
+    series: number;
+    wins: number;
+    rounds: number;
+    awpRounds: number;
+    utilityRounds: number;
+    from: string;
+    until: string;
+  };
   founded?: number | null;
   website?: string | null;
   preparation?: number;
@@ -272,4 +307,49 @@ export function evidence(
       reference: "Правка пользователя",
     }
   );
+}
+
+const memberships = new WeakMap<
+  Pack,
+  Map<string, { id: string | null; date: string }>
+>();
+function latestTeam(p: Pack, player: string) {
+  let index = memberships.get(p);
+  if (!index) {
+    index = new Map();
+    for (const roster of Object.values(p.rosters))
+      for (const member of roster.players || []) {
+        const previous = index.get(member);
+        const date = roster.date || "";
+        if (!previous || date > previous.date)
+          index.set(member, { id: roster.team || null, date });
+        else if (date === previous.date && previous.id !== roster.team)
+          index.set(member, { id: null, date });
+      }
+    memberships.set(p, index);
+  }
+  return p.players[player].contract === "free" ? null : index.get(player)?.id;
+}
+export function teamKit(p: Pack, id?: string | null): ClubKit | null {
+  if (!id || !p.teams[id]) return null;
+  const t = p.teams[id];
+  return {
+    id,
+    name: t.name,
+    design: t.kit,
+    badge: resolvePortrait(t.logo)?.image,
+  };
+}
+export function entityVisual(p: Pack, g: Group, id: string) {
+  const r = p[g][id];
+  const team = g === "rosters" && r.team ? p.teams[r.team] : r;
+  const club = g === "teams" || g === "organizations" || g === "rosters";
+  return {
+    club,
+    player: g === "players",
+    head: r.appearance?.image,
+    kit: g === "players" ? teamKit(p, latestTeam(p, id)) : null,
+    photo: club ? team.logo : r.photo,
+    flag: club ? team.nationality || team.region : r.nationality,
+  };
 }

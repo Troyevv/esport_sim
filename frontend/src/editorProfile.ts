@@ -1,5 +1,6 @@
 import {
   evidence,
+  entityVisual,
   regions,
   roles,
   type Group,
@@ -41,13 +42,23 @@ export function editorProfile(p: Pack, g: Group, id: string) {
       group,
       id: k,
       name: p[group][k].name,
+      visual: entityVisual(p, group, k),
       detail: detail?.(k),
     }));
   const sections: ProfileSection[] = [];
   function list(title: string, items: ProfileLink[], empty: string) {
     sections.push({ title, items, empty });
   }
-  const sessionTeams = links("teams", teamIds);
+  const sessionTeams = links(
+    "teams",
+    teamIds,
+    (id) =>
+      related
+        .filter(([, s]) => s.team === id)
+        .map(([, s]) => s.date || "")
+        .sort()
+        .reverse()[0] || "",
+  );
   const teamNames = sessionTeams.map((t) => t.name).join(" / ");
   const results = Object.entries(p.history).filter(([, h]) =>
     g === "players" ? h.players.includes(id) : teamIds.has(h.team),
@@ -67,6 +78,9 @@ export function editorProfile(p: Pack, g: Group, id: string) {
     fact(lbl, v, evidence(p, r, k, r[k]).status);
   let context = teamNames || "Команда неизвестна";
   if (g === "players") {
+    if (r.contract === "free") context = "Свободный агент";
+    else if (sessionTeams.length)
+      context = sessionTeams.map((t) => t.name + " · " + t.detail).join(" / ");
     let age;
     if (r.born) {
       const years =
@@ -76,7 +90,11 @@ export function editorProfile(p: Pack, g: Group, id: string) {
       age = String(years);
     }
     field("Настоящее имя", "realName", r.realName);
-    field("Возраст на дату среза", "born", age);
+    field(
+      "Возраст на дату среза",
+      r.born ? "born" : "ageEstimate",
+      age || r.ageEstimate?.toString(),
+    );
     field("Национальность", "nationality", r.nationality);
     field("Игровая роль", "role", roles[r.role || ""]);
     field(
@@ -85,6 +103,38 @@ export function editorProfile(p: Pack, g: Group, id: string) {
       r.contract === "free" ? "Свободный агент" : null,
     );
     field("Потенциал", "potential", r.potential?.toString());
+    if (r.performance) {
+      const v = r.performance;
+      field(
+        v.version,
+        "performance",
+        v.rating.toFixed(2) + " · " + v.maps + " карт",
+      );
+      field(
+        "Период рейтинга",
+        "performance",
+        v.window === "last 12 months" ? "Последние 12 месяцев" : v.window,
+      );
+      if (v.role) field("Роль в источнике", "performance", v.role);
+    }
+    if (r.sample) {
+      field(
+        "Период статистики",
+        "sample",
+        r.sample.from + " — " + r.sample.until,
+      );
+      field("Карты / серии", "sample", r.sample.maps + " / " + r.sample.series);
+      field(
+        "Победы в сериях",
+        "sample",
+        r.sample.wins + " из " + r.sample.series,
+      );
+      field(
+        "Раунды с AWP при старте",
+        "sample",
+        r.sample.awpRounds + " из " + r.sample.rounds,
+      );
+    }
     list(
       "Команды в срезе",
       sessionTeams,
@@ -110,7 +160,11 @@ export function editorProfile(p: Pack, g: Group, id: string) {
     );
   } else if (g === "teams") {
     context = regions[r.region || ""] || "Регион неизвестен";
-    field("Регион", "region", regions[r.region || ""]);
+    field(
+      "Принадлежность",
+      r.nationality ? "nationality" : "region",
+      r.nationality || r.region,
+    );
     field("Тир", "tier", r.tier?.toString());
     fact(
       "Результаты в срезе",
@@ -128,6 +182,7 @@ export function editorProfile(p: Pack, g: Group, id: string) {
     );
   } else if (g === "organizations") {
     context = "Клуб · Counter-Strike 2";
+    field("Принадлежность", "nationality", r.nationality);
     field("Год основания", "founded", r.founded?.toString());
     field("Сайт", "website", r.website);
     fact("Команды", String(teamIds.size));
@@ -138,6 +193,7 @@ export function editorProfile(p: Pack, g: Group, id: string) {
     );
     list("Команды организации", sessionTeams, "У организации пока нет команд.");
   } else if (g === "staff") {
+    field("Национальность", "nationality", r.nationality);
     field("Настоящее имя", "realName", r.realName);
     field("Подготовка штаба", "preparation", r.preparation?.toString());
     field("Должность", "role", r.role);
@@ -157,6 +213,7 @@ export function editorProfile(p: Pack, g: Group, id: string) {
         group: "rosters",
         id: k,
         name: s.name,
+        visual: entityVisual(p, "rosters", k),
         detail: s.date,
       })),
       "Заявок пока нет.",

@@ -1,5 +1,6 @@
+import { resolvePortrait } from "./portraits";
 import PortraitEditor from "./PortraitEditor";
-import { roles, type Entity } from "./databaseModel";
+import { roles, mapNames, type Entity } from "./databaseModel";
 
 export default function PlayerEditorFields({
   r,
@@ -30,6 +31,22 @@ export default function PlayerEditorFields({
           onChange={(e) => patch({ born: e.target.value || null })}
         />
       </label>
+      {!r.born && (
+        <label>
+          Игровая оценка возраста
+          <input
+            type="number"
+            min="14"
+            max="60"
+            value={r.ageEstimate ?? ""}
+            onChange={(e) =>
+              patch({
+                ageEstimate: e.target.value ? Number(e.target.value) : null,
+              })
+            }
+          />
+        </label>
+      )}
       <label>
         Национальность
         <input
@@ -38,27 +55,32 @@ export default function PlayerEditorFields({
           onChange={(e) => patch({ nationality: e.target.value || null })}
         />
       </label>
+      <PortraitEditor
+        layer
+        value={r.appearance}
+        change={(v) => patch({ appearance: resolvePortrait(v) })}
+      />
       <PortraitEditor value={r.photo} change={(photo) => patch({ photo })} />
       <details className="db-editor-extra">
         <summary>Знание карт и освоение ролей</summary>
         <div className="db-form">
-          <label>
-            Депо
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={r.mapKnowledge?.depo ?? ""}
-              onChange={(e) =>
-                patch({
-                  mapKnowledge:
-                    e.target.value === ""
-                      ? {}
-                      : { depo: Number(e.target.value) },
-                })
-              }
-            />
-          </label>
+          {Object.entries(mapNames).map(([key, name]) => (
+            <label key={key}>
+              {name}
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={r.mapKnowledge?.[key] ?? ""}
+                onChange={(e) => {
+                  const maps = { ...r.mapKnowledge };
+                  if (e.target.value === "") delete maps[key];
+                  else maps[key] = Number(e.target.value);
+                  patch({ mapKnowledge: maps });
+                }}
+              />
+            </label>
+          ))}
           {Object.entries(roles).map(([k, name]) => (
             <label key={k}>
               {name}

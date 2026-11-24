@@ -30,7 +30,11 @@ def test_atomic_import_refuses_invalid_packages(tmp_path, field, value):
     pack["players"][ident("p", "apEX")][field] = value
     with pytest.raises(ValueError), store.transaction():
         data.install(store.db, data.encode(data.envelope(pack)))
-    assert len(data.installed(store.db)) == 1
+    assert {r["id"] for r in data.installed(store.db)} == {
+        "austin-registration",
+        "scene-202611",
+    }
+    assert all(r["revision"] == 1 for r in data.installed(store.db))
     with pytest.raises(ValueError, match="Повтор"):
         data.install(store.db, '{"package":1,"package":2}')
 

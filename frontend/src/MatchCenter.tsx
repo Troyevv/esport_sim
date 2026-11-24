@@ -4,6 +4,7 @@ import Radar from "./Radar";
 import type { Frame, View } from "./session";
 import type { RadarPlayback } from "./playback";
 import "./match.css";
+import {Identity,type Visual} from "./SceneIdentity";
 import {RoleRatings} from "./SceneProfiles";
 
 type Side = "CT" | "T";
@@ -17,6 +18,7 @@ export interface MatchView {
   phase: string;
   clock: number;
   teams: string[];
+  teamVisuals?:(Visual|null)[];
   sides: Side[];
   score: number[];
   pregame: boolean;
@@ -36,6 +38,7 @@ export interface MatchView {
     id: string;
     name: string;
     club: number;
+    visual?:Visual;
     team: Side;
     role: string;
     k: number;
@@ -153,7 +156,7 @@ export default function MatchCenter({
             <span className="club-side">
               {m.sides[i]} · {i === 0 ? "Ваша команда" : "Соперник"}
             </span>
-            <strong>{club}</strong>
+            <strong>{m.teamVisuals?.[i]?<Identity name={club} visual={m.teamVisuals[i]!}/>:club}</strong>
             <b>{m.score[i]}</b>
           </div>
         ))}
@@ -232,7 +235,7 @@ export default function MatchCenter({
                 {m.teams.map((club, i) => (
                   <div key={club}>
                     <h3>
-                      {club} <small>{m.sides[i]}{i === 0 && m.teamRating != null && ` · OVR ${m.teamRating}`}</small>
+                      {m.teamVisuals?.[i]?<Identity name={club} visual={m.teamVisuals[i]!}/>:club} <small>{m.sides[i]}{i === 0 && m.teamRating != null && ` · OVR ${m.teamRating}`}</small>
                     </h3>
                     {m.stats
                       .filter((row) => row.club === i)
@@ -247,7 +250,7 @@ export default function MatchCenter({
                             onClick={() => select(row.id)}
                           >
                             <b>
-                              {row.name}
+                              {row.visual?<Identity name={row.name} visual={row.visual}/>:row.name}
                               <small>{row.role}</small>
                             </b>
                             <span>
@@ -315,7 +318,7 @@ export default function MatchCenter({
                     {m.stats.map((p) => (
                       <tr key={p.id}>
                         <th>
-                          {p.name}
+                          {p.visual?<Identity name={p.name} visual={p.visual}/>:p.name}
                           <small>{m.teams[p.club]}</small>
                         </th>
                         {[

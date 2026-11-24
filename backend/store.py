@@ -1,5 +1,6 @@
 """One authoritative scenario, its manual snapshot and durable command receipts."""
 
+import gzip
 import json
 import sqlite3
 from collections import deque
@@ -56,8 +57,18 @@ class Store:
         """)
         try:
             with self.transaction():
-                if not self.db.execute("SELECT 1 FROM data_pack WHERE id=? AND revision=1", ("austin-registration",)).fetchone():
+                if not self.db.execute(
+                    "SELECT 1 FROM data_pack WHERE id=? AND revision=1",
+                    ("austin-registration",),
+                ).fetchone():
                     database.install(self.db, database.STARTER.read_bytes())
+                if not self.db.execute(
+                    "SELECT 1 FROM data_pack WHERE id=? AND revision=1",
+                    ("scene-202611",),
+                ).fetchone():
+                    database.install(
+                        self.db, gzip.decompress(database.RELEASE.read_bytes())
+                    )
                 for table in ("active", "slot"):
                     row = self.db.execute(
                         f"SELECT body FROM {table} WHERE id=1"
@@ -88,7 +99,10 @@ class Store:
             state = json.loads(body)
             validate_snapshot(state)
             world = state["world"]
-            if world["version"] == 2 and world.get("checkpointVersion", 1) < checkpoints.VERSION:
+            if (
+                world["version"] == 2
+                and world.get("checkpointVersion", 1) < checkpoints.VERSION
+            ):
                 if world.get("checkpointVersion", 1) == 1:
                     checkpoints.upgrade_match(self.db, world)
                 match.migrate_legacy(world)
@@ -226,7 +240,9 @@ class Store:
                     if kind == "tactic-assign":
                         if state["world"]["version"] != 2:
                             raise ValueError("Сначала откройте матч BO1")
-                        match.assign(state["world"], tactic_library.resolve(self.db, value))
+                        match.assign(
+                            state["world"], tactic_library.resolve(self.db, value)
+                        )
                     else:
                         tactic_library.change(self.db, kind, value)
                         state["libraryRevision"] = state.get("libraryRevision", 0) + 1
@@ -273,16 +289,29 @@ class Store:
                 elif kind == "resume":
                     state["running"] = True
             elif kind == "database-match":
-                if not isinstance(value, dict) or set(value) != {"id", "revision", "rosters", "seed"}:
+                if not isinstance(value, dict) or set(value) != {
+                    "id",
+                    "revision",
+                    "rosters",
+                    "seed",
+                }:
                     raise ValueError("Укажите редакцию пакета, составы и seed")
                 seed = value["seed"]
-                database.require(type(seed) is int and 0 <= seed <= 2147483647, "Некорректный seed")
+                database.require(
+                    type(seed) is int and 0 <= seed <= 2147483647, "Некорректный seed"
+                )
                 database.valid_id(value["id"])
-                database.require(type(value["revision"]) is int, "Некорректная редакция")
+                database.require(
+                    type(value["revision"]) is int, "Некорректная редакция"
+                )
                 pack = database.get(self.db, value["id"], value["revision"])
                 domain = database.match_input(pack, value["rosters"])
-                state.update(world=match.initial(seed, domain, value["rosters"]), running=False,
-                             speed=1, context=str(uuid4()))
+                state.update(
+                    world=match.initial(seed, domain, value["rosters"]),
+                    running=False,
+                    speed=1,
+                    context=str(uuid4()),
+                )
             elif kind in ("reset", "match"):
                 if type(value) is not int or not 0 <= value <= 2147483647:
                     raise ValueError("Seed должен быть целым числом от 0 до 2147483647")

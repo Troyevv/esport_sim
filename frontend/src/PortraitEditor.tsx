@@ -8,8 +8,10 @@ import {
 export default function PortraitEditor({
   value,
   change,
+  layer = false,
 }: {
   value?: PhotoRef;
+  layer?: boolean;
   change: (v: PhotoRef) => void;
 }) {
   const p = resolvePortrait(value);
@@ -28,7 +30,16 @@ export default function PortraitEditor({
     });
   return (
     <details className="db-editor-extra">
-      <summary>Фотография и лицензия</summary>
+      <summary>
+        {layer ? "Слой головы и шеи" : "Исходное изображение и лицензия"}
+      </summary>
+      {layer && (
+        <p>
+          Прозрачный RGBA PNG 240×280 или 480×560. Для базового размера линия
+          глаз проходит около y=73, подбородка — y=135. Шея должна заходить под
+          воротник до y=182.
+        </p>
+      )}
       {!p ? (
         <button onClick={() => set({})}>Добавить фотографию</button>
       ) : (
@@ -37,7 +48,7 @@ export default function PortraitEditor({
             Изображение · JPEG или PNG
             <input
               type="file"
-              accept="image/jpeg,image/png"
+              accept={layer ? "image/png" : "image/jpeg,image/png"}
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;

@@ -4,6 +4,16 @@ test("Пакет, поиск, правка, перенос и BO1", async ({ pag
   const open = page.getByRole("button", { name: "База сцены", exact: true });
   if (info.project.use.hasTouch) await open.tap();
   else await open.click();
+  await expect(page.getByLabel("Пакет и редакция")).toHaveValue(
+    "scene-202611/1",
+  );
+  const catalog = page.getByLabel("Пакет и редакция");
+  await catalog.selectOption(
+    (await catalog
+      .locator('option[value^="austin-registration/"]')
+      .first()
+      .getAttribute("value")) as string,
+  );
   await page.getByLabel("Поиск", { exact: true }).fill("ZywOo");
   await page.getByRole("button", { name: /ZywOo/ }).first().click();
   await expect(
@@ -74,6 +84,13 @@ test("Пакет, поиск, правка, перенос и BO1", async ({ pag
 test("Профили организации, штаба и новая редакция", async ({ page }, info) => {
   await page.goto("/");
   await page.getByRole("button", { name: "База сцены", exact: true }).click();
+  const catalog = page.getByLabel("Пакет и редакция");
+  await catalog.selectOption(
+    (await catalog
+      .locator('option[value^="austin-registration/"]')
+      .first()
+      .getAttribute("value")) as string,
+  );
   const tabs = page.getByRole("navigation", { name: "Раздел базы" });
   await tabs.getByRole("button", { name: /Организации/ }).click();
   await page

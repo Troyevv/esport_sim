@@ -20,6 +20,27 @@ VERSIONS = dict(
     map=match.MAP["version"],
 )
 STARTER = Path(__file__).with_name("data") / "austin.json"
+RELEASE = STARTER.with_name("scene-202611.json.gz")
+MAPS = (
+    "depo",
+    "ancient",
+    "anubis",
+    "cache",
+    "dust2",
+    "inferno",
+    "mirage",
+    "nuke",
+    "overpass",
+    "train",
+    "vertigo",
+)
+OPTIONAL = {
+    "players": {"ageEstimate", "sample", "performance", "appearance"},
+    "staff": {"nationality", "photo"},
+    "teams": {"nationality", "logo", "kit"},
+    "organizations": {"nationality", "logo"},
+    "rosters": set(),
+}
 REGIONS = ("Europe", "Americas", "Asia")
 STATUSES = ("confirmed", "estimated", "modeled", "unknown")
 FIELDS = dict(
@@ -114,7 +135,15 @@ def validate_photo(photo):
     )
     label(photo["author"])
     require(
-        photo["license"] in ("CC0", "CC BY 2.0", "CC BY 4.0", "CC BY-SA 4.0"),
+        photo["license"]
+        in (
+            "CC0",
+            "PD-textlogo",
+            "CC BY 2.0",
+            "CC BY 3.0",
+            "CC BY 4.0",
+            "CC BY-SA 4.0",
+        ),
         "Неизвестная лицензия фотографии",
     )
     require(
@@ -202,12 +231,14 @@ def _validate(p):
             valid_id(ident)
             try:
                 require(
-                    set(r) == {"name", "origin", "fields", *FIELDS[group]},
+                    {"name", "origin", "fields", *FIELDS[group]} <= set(r)
+                    and set(r)
+                    <= {"name", "origin", "fields", *FIELDS[group], *OPTIONAL[group]},
                     "Некорректный набор полей",
                 )
                 label(r["name"])
                 reference(r["origin"], origins, "Источник")
-                allowed = {"name", *FIELDS[group]}
+                allowed = {"name", *FIELDS[group], *OPTIONAL[group]}
                 if group == "players":
                     allowed.update("skills." + s for s in skills.KEYS)
                 require(
@@ -216,7 +247,124 @@ def _validate(p):
                 )
                 for key in r["fields"].values():
                     reference(key, origins, "Источник поля")
+                if group != "players" and r.get("nationality") is not None:
+                    label(r["nationality"])
+                if group == "staff":
+                    validate_photo(r.get("photo"))
+                if group in ("teams", "organizations"):
+                    validate_photo(r.get("logo"))
+                if group == "teams" and r.get("kit") is not None:
+                    kit = r["kit"]
+                    require(
+                        isinstance(kit, dict)
+                        and set(kit) == {"primary", "accent", "pattern"},
+                        "Некорректная форма команды",
+                    )
+                    require(
+                        all(
+                            isinstance(kit[k], str)
+                            and re.fullmatch(r"#[0-9a-fA-F]{6}", kit[k])
+                            for k in ("primary", "accent")
+                        )
+                        and kit["pattern"] in ("plain", "sash", "panels", "chevron"),
+                        "Неизвестные цвета или рисунок формы",
+                    )
                 if group == "players":
+                    head = r.get("appearance")
+                    if head is not None:
+                        validate_photo(head)
+                        require(
+                            isinstance(head, dict)
+                            and head["image"].startswith("data:image/png;base64,"),
+                            "Слой внешности требует встроенный PNG",
+                        )
+                        raw = base64.b64decode(
+                            head["image"].split(",", 1)[1], validate=True
+                        )
+                        require(
+                            len(raw) > 33
+                            and raw[12:16] == b"IHDR"
+                            and (
+                                int.from_bytes(raw[16:20], "big"),
+                                int.from_bytes(raw[20:24], "big"),
+                            )
+                            in ((240, 280), (480, 560))
+                            and raw[25] == 6,
+                            "Для головы нужен RGBA PNG 240×280 или 480×560",
+                        )
+                    age = r.get("ageEstimate")
+                    if age is not None:
+                        require(
+                            type(age) is int and 14 <= age <= 60,
+                            "Игровой возраст вне диапазона",
+                        )
+                        require(
+                            origins[r["fields"].get("ageEstimate", r["origin"])][
+                                "status"
+                            ]
+                            in ("estimated", "modeled"),
+                            "Для игрового возраста нужна метка оценки",
+                        )
+                    perf = r.get("performance")
+                    if perf is not None:
+                        require(
+                            isinstance(perf, dict)
+                            and set(perf)
+                            == {"rating", "maps", "version", "window", "role"},
+                            "Неверные поля статистики рейтинга",
+                        )
+                        require(
+                            type(perf["rating"]) in (int, float)
+                            and 0 <= perf["rating"] <= 5
+                            and type(perf["maps"]) is int
+                            and perf["maps"] > 0,
+                            "Неверные рейтинг или число карт",
+                        )
+                        for field in ("window", "version"):
+                            label(perf[field])
+                        if perf["role"] is not None:
+                            label(perf["role"])
+                    sample = r.get("sample")
+                    if sample is not None:
+                        require(
+                            isinstance(sample, dict)
+                            and set(sample)
+                            == {
+                                "maps",
+                                "series",
+                                "wins",
+                                "rounds",
+                                "awpRounds",
+                                "utilityRounds",
+                                "from",
+                                "until",
+                            },
+                            "Неверная выборка выступлений",
+                        )
+                        require(
+                            all(
+                                type(sample[k]) is int and sample[k] >= 0
+                                for k in (
+                                    "maps",
+                                    "series",
+                                    "wins",
+                                    "rounds",
+                                    "awpRounds",
+                                    "utilityRounds",
+                                )
+                            )
+                            and 0
+                            <= sample["wins"]
+                            <= sample["series"]
+                            <= sample["maps"]
+                            and max(sample["awpRounds"], sample["utilityRounds"])
+                            <= sample["rounds"],
+                            "Неверное число карт или побед",
+                        )
+                        require(
+                            day(sample["from"]) <= day(sample["until"]) <= cutoff,
+                            "Неверные даты выборки",
+                        )
                     for field in ("realName", "nationality"):
                         if r[field] is not None:
                             label(r[field])
@@ -224,7 +372,7 @@ def _validate(p):
                         require(day(r["born"]) <= cutoff, "Дата рождения позже среза")
                     validate_photo(r["photo"])
                     for field, allowed_keys in (
-                        ("mapKnowledge", {"depo"}),
+                        ("mapKnowledge", set(MAPS)),
                         ("roleMastery", set(world.ROLE_NAMES)),
                     ):
                         require(
@@ -372,7 +520,7 @@ def _validate(p):
 
 def installed(db):
     rows = db.execute(
-        "SELECT id,title,revision FROM data_pack ORDER BY title,id,revision DESC"
+        "SELECT id,title,revision FROM data_pack ORDER BY (id='scene-202611') DESC,title,id,revision DESC"
     )
     return [dict(id=k, title=t, revision=r) for k, t, r in rows]
 
@@ -438,12 +586,12 @@ def edit(db, key, rev, group, ident, record, create):
             "origin": old.get("origin", source),
             "fields": dict(old.get("fields", {})),
         }
-        for field in {"name", *FIELDS[group]}:
+        for field in {"name", *FIELDS[group], *OPTIONAL[group]}:
             if field == "skills" and old:
                 for s in skills.KEYS:
                     if old[field][s] != row[field][s]:
                         row["fields"]["skills." + s] = source
-            elif old and row[field] != old[field]:
+            elif old and row.get(field) != old.get(field):
                 row["fields"][field] = source
         rows[ident] = row
     p["revision"] += 1
@@ -477,7 +625,16 @@ def match_input(p, roster_ids):
         require(len(r["players"]) == 5, "Для BO1 нужны пять игроков в каждом составе")
         org = t["organization"] or "@team-" + tid
         domain["organizations"][org] = dict(name=p["organizations"].get(org, t)["name"])
-        domain["teams"][tid] = dict(name=t["name"], organization=org)
+        media_root = f"/api/database/{p['id']}/{p['revision']}/media/"
+        domain["teams"][tid] = dict(
+            name=t["name"],
+            organization=org,
+            visual=dict(
+                club=True,
+                flag=t.get("nationality") or t["region"],
+                url=media_root + "teams/" + tid if t.get("logo") else None,
+            ),
+        )
         members = []
         for slot, pid in enumerate(r["players"]):
             require(pid not in domain["players"], "Один игрок заявлен за обе команды")
@@ -485,6 +642,19 @@ def match_input(p, roster_ids):
             role = player["role"] or world.SLOT_ROLES[slot]
             domain["players"][pid] = dict(
                 name=player["name"],
+                visual=dict(
+                    flag=player.get("nationality"),
+                    player=True,
+                    head=media_root + "appearance/" + pid
+                    if player.get("appearance")
+                    else None,
+                    kit=dict(
+                        id=tid,
+                        name=t["name"],
+                        design=t.get("kit"),
+                        badge=media_root + "teams/" + tid if t.get("logo") else None,
+                    ),
+                ),
                 skills=deepcopy(player["skills"]),
                 potential=player["potential"],
                 mapKnowledge=deepcopy(player["mapKnowledge"]),

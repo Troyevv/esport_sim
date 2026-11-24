@@ -18,6 +18,10 @@ import {
   type Ref,
 } from "./databaseModel";
 import "./database.css";
+import { KitEditor, KitPreview } from "./KitStudio";
+import { Identity } from "./SceneIdentity";
+import { entityVisual } from "./databaseModel";
+import PortraitEditor from "./PortraitEditor";
 import {
   AttributeGrid,
   PlayerOverview,
@@ -183,7 +187,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
             r.organization,
             String(r.tier),
           ].includes(filter)) &&
-        (name + " " + id + " " + (linked || ""))
+        (name + " " + (r.realName || "") + " " + id + " " + (linked || ""))
           .toLocaleLowerCase()
           .includes(query.trim().toLocaleLowerCase())
       );
@@ -393,8 +397,14 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
     preparation: "Подготовка штаба",
     realName: "Настоящее имя",
     born: "Дата рождения",
+    ageEstimate: "Игровой возраст",
+    sample: "Выборка карт и серий",
+    performance: "Рейтинг выступлений",
+    logo: "Эмблема",
     nationality: "Национальность",
-    photo: "Фотография",
+    photo: "Исходная фотография",
+    appearance: "Слой внешности",
+    kit: "Дизайн формы",
     roleMastery: "Освоение ролей",
     mapKnowledge: "Знание карт",
     statistics: "Индивидуальная статистика",
@@ -654,7 +664,9 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
                   aria-pressed={id === at.id}
                   onClick={() => move(g, id, true)}
                 >
-                  <strong>{name}</strong>
+                  <strong>
+                    <Identity name={name} visual={entityVisual(pack, g, id)} />
+                  </strong>
                   <small>{subtitle || "↗"}</small>
                 </button>
               );
@@ -699,7 +711,12 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
                 <ProfileHeading
                   name={r.name}
                   subtitle={r.realName}
-                  photo={r.photo}
+                  photo={
+                    g === "players"
+                      ? r.appearance
+                      : entityVisual(pack, g, at.id).photo
+                  }
+                  visual={entityVisual(pack, g, at.id)}
                   type={
                     {
                       players: "Профиль игрока",
@@ -711,6 +728,14 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
                   }
                   context={profile?.context || ""}
                   rating={g === "players" ? ratings?.overall : undefined}
+                />
+              )}
+              {!editing && g === "players" && (
+                <KitPreview
+                  key={refKey(pack) + at.id}
+                  pack={pack}
+                  id={at.id}
+                  selected={entityVisual(pack, g, at.id).kit?.id}
                 />
               )}
               <div className="db-actions">
@@ -832,8 +857,32 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
                           </label>
                         </>
                       )}
+                      {(g === "teams" ||
+                        g === "organizations" ||
+                        g === "staff") && (
+                        <>
+                          <label>
+                            {g === "staff"
+                              ? "Национальность"
+                              : "Страна или регион"}
+                            <input
+                              value={r.nationality || ""}
+                              onChange={(e) =>
+                                patch({ nationality: e.target.value || null })
+                              }
+                            />
+                          </label>
+                          <PortraitEditor
+                            value={g === "staff" ? r.photo : r.logo}
+                            change={(v) =>
+                              patch(g === "staff" ? { photo: v } : { logo: v })
+                            }
+                          />
+                        </>
+                      )}
                       {g === "teams" && (
                         <>
+                          <KitEditor team={r} id={at.id} patch={patch} />
                           <Select
                             label="Регион"
                             value={r.region || ""}
@@ -979,6 +1028,8 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
                         ratings={ratings}
                         ratingError={ratingError}
                         statistics={r.statistics}
+                        performance={r.performance}
+                        sample={r.sample}
                         maps={r.mapKnowledge || {}}
                         mastery={r.roleMastery || {}}
                         connections={profile.sections}

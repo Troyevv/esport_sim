@@ -1,0 +1,2756 @@
+[
+ {
+  "steamid": "76561198041683378",
+  "player_name": "NiKo",
+  "team_clan_name": "G2 Esports",
+  "map_count": "158",
+  "oap_overall": "24.424242424242426",
+  "pokt_overall": "19.197995459813217",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198012872053",
+  "player_name": "huNter",
+  "team_clan_name": "G2 Esports",
+  "map_count": "158",
+  "oap_overall": "15.847511027095148",
+  "pokt_overall": "22.538283837646972",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198074762801",
+  "player_name": "m0NESY",
+  "team_clan_name": "G2 Esports",
+  "map_count": "155",
+  "oap_overall": "20.873335397956023",
+  "pokt_overall": "21.056273859260866",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561197991272318",
+  "player_name": "ropz",
+  "team_clan_name": "FaZe Clan",
+  "map_count": "152",
+  "oap_overall": "17.847286108555657",
+  "pokt_overall": "19.642002632846733",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561197997351207",
+  "player_name": "rain",
+  "team_clan_name": "FaZe Clan",
+  "map_count": "152",
+  "oap_overall": "23.21640903686088",
+  "pokt_overall": "18.213102821053795",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198068422762",
+  "player_name": "frozen",
+  "team_clan_name": "FaZe Clan",
+  "map_count": "152",
+  "oap_overall": "21.059113300492612",
+  "pokt_overall": "21.523583971392693",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198201620490",
+  "player_name": "broky",
+  "team_clan_name": "FaZe Clan",
+  "map_count": "152",
+  "oap_overall": "14.313222079589217",
+  "pokt_overall": "22.93030712271627",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561197989430253",
+  "player_name": "karrigan",
+  "team_clan_name": "FaZe Clan",
+  "map_count": "152",
+  "oap_overall": "25.772889417360286",
+  "pokt_overall": "16.530338110074844",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198246607476",
+  "player_name": "b1t",
+  "team_clan_name": "Natus Vincere",
+  "map_count": "144",
+  "oap_overall": "21.95360993139497",
+  "pokt_overall": "17.66084013803224",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198013243326",
+  "player_name": "Aleksib",
+  "team_clan_name": "Natus Vincere",
+  "map_count": "144",
+  "oap_overall": "18.09616634178038",
+  "pokt_overall": "19.962556725375055",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198176878303",
+  "player_name": "jL",
+  "team_clan_name": "Natus Vincere",
+  "map_count": "144",
+  "oap_overall": "20.032467532467532",
+  "pokt_overall": "18.937765941495268",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561199063068840",
+  "player_name": "w0nderful",
+  "team_clan_name": "Natus Vincere",
+  "map_count": "144",
+  "oap_overall": "16.944074567243675",
+  "pokt_overall": "19.302664901449667",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198050250233",
+  "player_name": "iM",
+  "team_clan_name": "Natus Vincere",
+  "map_count": "144",
+  "oap_overall": "23.893229166666668",
+  "pokt_overall": "18.245129934221726",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198855375325",
+  "player_name": "Jimpphat",
+  "team_clan_name": "MOUZ",
+  "map_count": "140",
+  "oap_overall": "14.488243430152144",
+  "pokt_overall": "21.374188141843632",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198193174134",
+  "player_name": "xertioN",
+  "team_clan_name": "MOUZ",
+  "map_count": "140",
+  "oap_overall": "28.264408987300552",
+  "pokt_overall": "16.275997635763662",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198138828475",
+  "player_name": "Brollan",
+  "team_clan_name": "MOUZ",
+  "map_count": "140",
+  "oap_overall": "23.9607201309329",
+  "pokt_overall": "18.357341952627916",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198355739212",
+  "player_name": "torzsi",
+  "team_clan_name": "MOUZ",
+  "map_count": "140",
+  "oap_overall": "16.0530679933665",
+  "pokt_overall": "19.51700972470864",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198150673360",
+  "player_name": "siuhy",
+  "team_clan_name": "MOUZ",
+  "map_count": "140",
+  "oap_overall": "18.743768693918245",
+  "pokt_overall": "22.159117541037663",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198063336407",
+  "player_name": "Spinx",
+  "team_clan_name": "Vitality",
+  "map_count": "124",
+  "oap_overall": "18.8470066518847",
+  "pokt_overall": "21.56949839878218",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561197978835160",
+  "player_name": "flameZ",
+  "team_clan_name": "Vitality",
+  "map_count": "124",
+  "oap_overall": "26.080691642651296",
+  "pokt_overall": "19.838748599528042",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198113666193",
+  "player_name": "ZywOo",
+  "team_clan_name": "Vitality",
+  "map_count": "124",
+  "oap_overall": "21.270417422867514",
+  "pokt_overall": "18.541935648087556",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561197989744167",
+  "player_name": "apEX",
+  "team_clan_name": "Vitality",
+  "map_count": "124",
+  "oap_overall": "19.135802469135804",
+  "pokt_overall": "17.773051407187733",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198995880877",
+  "player_name": "zont1x",
+  "team_clan_name": "Team Spirit",
+  "map_count": "120",
+  "oap_overall": "19.98410806515693",
+  "pokt_overall": "17.654916771120618",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561199063238565",
+  "player_name": "magixx",
+  "team_clan_name": "Team Spirit",
+  "map_count": "120",
+  "oap_overall": "15.375302663438257",
+  "pokt_overall": "18.107571981632397",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198045898864",
+  "player_name": "chopper",
+  "team_clan_name": "Team Spirit",
+  "map_count": "120",
+  "oap_overall": "21.48893360160966",
+  "pokt_overall": "14.654606133562902",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198386265483",
+  "player_name": "donk",
+  "team_clan_name": "Team Spirit",
+  "map_count": "120",
+  "oap_overall": "28.58856457417033",
+  "pokt_overall": "21.477023530613742",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198081484775",
+  "player_name": "sh1ro",
+  "team_clan_name": "Team Spirit",
+  "map_count": "120",
+  "oap_overall": "15.19392243102759",
+  "pokt_overall": "22.770069631681245",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561197973140692",
+  "player_name": "mezii",
+  "team_clan_name": "Vitality",
+  "map_count": "114",
+  "oap_overall": "15.946166394779771",
+  "pokt_overall": "23.655864481424683",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198053126645",
+  "player_name": "NertZ",
+  "team_clan_name": "HEROIC",
+  "map_count": "113",
+  "oap_overall": "24.489795918367346",
+  "pokt_overall": "18.76706138688712",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198057282432",
+  "player_name": "kyxsan",
+  "team_clan_name": "HEROIC",
+  "map_count": "113",
+  "oap_overall": "17.336581404790905",
+  "pokt_overall": "20.428180179356257",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561197996678278",
+  "player_name": "TeSeS",
+  "team_clan_name": "HEROIC",
+  "map_count": "113",
+  "oap_overall": "23.0149133413946",
+  "pokt_overall": "18.542280283985665",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198160709585",
+  "player_name": "sjuush",
+  "team_clan_name": "HEROIC",
+  "map_count": "113",
+  "oap_overall": "19.032258064516128",
+  "pokt_overall": "16.824257953256406",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561197982141573",
+  "player_name": "Snax",
+  "team_clan_name": "G2 Esports",
+  "map_count": "100",
+  "oap_overall": "17.81580271766482",
+  "pokt_overall": "21.01561193155054",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198080703143",
+  "player_name": "malbsMd",
+  "team_clan_name": "G2 Esports",
+  "map_count": "98",
+  "oap_overall": "26.809785322016975",
+  "pokt_overall": "18.644284798258912",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198044045107",
+  "player_name": "electroNic",
+  "team_clan_name": "Cloud9",
+  "map_count": "98",
+  "oap_overall": "21.863117870722434",
+  "pokt_overall": "20.57116384128409",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198080114546",
+  "player_name": "fame",
+  "team_clan_name": "Virtus.Pro",
+  "map_count": "95",
+  "oap_overall": "20.26759167492567",
+  "pokt_overall": "22.822996001623366",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561197995817501",
+  "player_name": "FL1T",
+  "team_clan_name": "Virtus.Pro",
+  "map_count": "95",
+  "oap_overall": "25.652610441767067",
+  "pokt_overall": "18.68649917740455",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198036125584",
+  "player_name": "Jame",
+  "team_clan_name": "Virtus.Pro",
+  "map_count": "95",
+  "oap_overall": "15.165631469979296",
+  "pokt_overall": "19.343053625312574",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198222442504",
+  "player_name": "n0rb3r7",
+  "team_clan_name": "Virtus.Pro",
+  "map_count": "95",
+  "oap_overall": "20.674268715914724",
+  "pokt_overall": "17.52902557044715",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198001151695",
+  "player_name": "NAF-FLY",
+  "team_clan_name": "Team Liquid",
+  "map_count": "85",
+  "oap_overall": "14.675395526459356",
+  "pokt_overall": "20.03652454774341",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198016255205",
+  "player_name": "Twistzz",
+  "team_clan_name": "Team Liquid",
+  "map_count": "85",
+  "oap_overall": "19.23937360178971",
+  "pokt_overall": "20.267646262602366",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198134401925",
+  "player_name": "YEKINDAR",
+  "team_clan_name": "Team Liquid",
+  "map_count": "85",
+  "oap_overall": "30.604601391118244",
+  "pokt_overall": "14.471176002584196",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198118646644",
+  "player_name": "skullz",
+  "team_clan_name": "FURIA",
+  "map_count": "82",
+  "oap_overall": "16.406701328711726",
+  "pokt_overall": "22.505773920379323",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198838822582",
+  "player_name": "Mzinho",
+  "team_clan_name": "The Mongolz",
+  "map_count": "77",
+  "oap_overall": "18.4380504991192",
+  "pokt_overall": "19.220652213052812",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561199203563345",
+  "player_name": "910-",
+  "team_clan_name": "The Mongolz",
+  "map_count": "77",
+  "oap_overall": "18.318840579710145",
+  "pokt_overall": "21.943282933220605",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198959824088",
+  "player_name": "bLitz",
+  "team_clan_name": "The Mongolz",
+  "map_count": "77",
+  "oap_overall": "22.956521739130434",
+  "pokt_overall": "16.64411797992858",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198920720017",
+  "player_name": "Senzu",
+  "team_clan_name": "The Mongolz",
+  "map_count": "77",
+  "oap_overall": "21.466275659824046",
+  "pokt_overall": "18.539935007968037",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198966340160",
+  "player_name": "Techno4K",
+  "team_clan_name": "The Mongolz",
+  "map_count": "77",
+  "oap_overall": "19.246376811594203",
+  "pokt_overall": "18.90114603196632",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561197999825422",
+  "player_name": "nexa",
+  "team_clan_name": "G2 Esports",
+  "map_count": "75",
+  "oap_overall": "12.368421052631579",
+  "pokt_overall": "23.08207975462884",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198058500492",
+  "player_name": "KSCERATO",
+  "team_clan_name": "FURIA",
+  "map_count": "74",
+  "oap_overall": "19.65006729475101",
+  "pokt_overall": "20.025795145825242",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561197989423065",
+  "player_name": "Snappi",
+  "team_clan_name": "Team Falcons",
+  "map_count": "74",
+  "oap_overall": "20.036991368680642",
+  "pokt_overall": "16.823856155038655",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198165452027",
+  "player_name": "maden",
+  "team_clan_name": "Team Falcons",
+  "map_count": "74",
+  "oap_overall": "21.47820593809223",
+  "pokt_overall": "17.375888650809742",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198067763828",
+  "player_name": "chelo",
+  "team_clan_name": "FURIA",
+  "map_count": "74",
+  "oap_overall": "27.290448343079923",
+  "pokt_overall": "17.876907768357526",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561197960690195",
+  "player_name": "FalleN",
+  "team_clan_name": "FURIA",
+  "map_count": "74",
+  "oap_overall": "19.62313190383366",
+  "pokt_overall": "20.495488406414502",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561197983956651",
+  "player_name": "Magisk",
+  "team_clan_name": "Team Falcons",
+  "map_count": "74",
+  "oap_overall": "19.07730673316708",
+  "pokt_overall": "19.9108085639068",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198309839541",
+  "player_name": "SunPayus",
+  "team_clan_name": "Team Falcons",
+  "map_count": "74",
+  "oap_overall": "16.954377311960542",
+  "pokt_overall": "19.519134564951052",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198164970560",
+  "player_name": "yuurih",
+  "team_clan_name": "FURIA",
+  "map_count": "74",
+  "oap_overall": "15.956727518593643",
+  "pokt_overall": "23.472070108893504",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198799340122",
+  "player_name": "degster",
+  "team_clan_name": "HEROIC",
+  "map_count": "69",
+  "oap_overall": "15.937072503419973",
+  "pokt_overall": "20.156665769681997",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198191236195",
+  "player_name": "Grim",
+  "team_clan_name": "Complexity Gaming",
+  "map_count": "66",
+  "oap_overall": "18.43191196698762",
+  "pokt_overall": "20.32653474887689",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198306519263",
+  "player_name": "floppy",
+  "team_clan_name": "Complexity Gaming",
+  "map_count": "66",
+  "oap_overall": "17.40041928721174",
+  "pokt_overall": "20.786470681811174",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198060367310",
+  "player_name": "hallzerk",
+  "team_clan_name": "Complexity Gaming",
+  "map_count": "66",
+  "oap_overall": "17.134831460674157",
+  "pokt_overall": "22.91735178536683",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198066693739",
+  "player_name": "EliGE",
+  "team_clan_name": "Complexity Gaming",
+  "map_count": "66",
+  "oap_overall": "26.041666666666668",
+  "pokt_overall": "21.202742354602616",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198021715100",
+  "player_name": "JT",
+  "team_clan_name": "Complexity Gaming",
+  "map_count": "66",
+  "oap_overall": "22.029186935371786",
+  "pokt_overall": "22.918772288845663",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198044118796",
+  "player_name": "XANTARES",
+  "team_clan_name": "Eternal Fire",
+  "map_count": "64",
+  "oap_overall": "27.30496453900709",
+  "pokt_overall": "18.57111925968731",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198120557348",
+  "player_name": "jabbi",
+  "team_clan_name": "Astralis",
+  "map_count": "64",
+  "oap_overall": "21.076573161485975",
+  "pokt_overall": "19.65925518808015",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198052546265",
+  "player_name": "Calyx",
+  "team_clan_name": "Eternal Fire",
+  "map_count": "64",
+  "oap_overall": "13.452914798206278",
+  "pokt_overall": "21.042800953544646",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561197967432889",
+  "player_name": "MAJ3R",
+  "team_clan_name": "Eternal Fire",
+  "map_count": "64",
+  "oap_overall": "20.92020129403307",
+  "pokt_overall": "15.654457118051187",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561197987713664",
+  "player_name": "dev1ce",
+  "team_clan_name": "Astralis",
+  "map_count": "64",
+  "oap_overall": "18.293620292083013",
+  "pokt_overall": "17.511360855726945",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198022365638",
+  "player_name": "stavn",
+  "team_clan_name": "Astralis",
+  "map_count": "64",
+  "oap_overall": "16.551193225558123",
+  "pokt_overall": "21.319639713086428",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198812513923",
+  "player_name": "Wicadia",
+  "team_clan_name": "Eternal Fire",
+  "map_count": "64",
+  "oap_overall": "23.404255319148938",
+  "pokt_overall": "19.84460502022555",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198083485506",
+  "player_name": "woxic",
+  "team_clan_name": "Eternal Fire",
+  "map_count": "64",
+  "oap_overall": "16.192560175054705",
+  "pokt_overall": "19.592763504039898",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198005107817",
+  "player_name": "Staehr",
+  "team_clan_name": "Astralis",
+  "map_count": "64",
+  "oap_overall": "25.928733889310084",
+  "pokt_overall": "19.643253042160094",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561197998926770",
+  "player_name": "HooXi",
+  "team_clan_name": "G2 Esports",
+  "map_count": "60",
+  "oap_overall": "25.55205047318612",
+  "pokt_overall": "16.87466120404785",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198004854956",
+  "player_name": "Dupreeh",
+  "team_clan_name": "Team Falcons",
+  "map_count": "60",
+  "oap_overall": "23.036649214659686",
+  "pokt_overall": "18.035783754342404",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561197977105184",
+  "player_name": "jks",
+  "team_clan_name": "Team Liquid",
+  "map_count": "57",
+  "oap_overall": "15.357766143106458",
+  "pokt_overall": "20.9201806943664",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198283989223",
+  "player_name": "ultimate",
+  "team_clan_name": "Team Liquid",
+  "map_count": "57",
+  "oap_overall": "24.958677685950413",
+  "pokt_overall": "19.14903055881008",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198060483793",
+  "player_name": "br0",
+  "team_clan_name": "Monte",
+  "map_count": "54",
+  "oap_overall": "18.97196261682243",
+  "pokt_overall": "19.914703944353537",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198385657675",
+  "player_name": "kauez",
+  "team_clan_name": "paiN Gaming",
+  "map_count": "49",
+  "oap_overall": "21.16104868913858",
+  "pokt_overall": "18.535688305599077",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198350342505",
+  "player_name": "nqz",
+  "team_clan_name": "paiN Gaming",
+  "map_count": "49",
+  "oap_overall": "16.571428571428573",
+  "pokt_overall": "21.685707600247262",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198015308884",
+  "player_name": "biguzera",
+  "team_clan_name": "paiN Gaming",
+  "map_count": "49",
+  "oap_overall": "23.03370786516854",
+  "pokt_overall": "14.771093646506733",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198074017668",
+  "player_name": "lux",
+  "team_clan_name": "paiN Gaming",
+  "map_count": "49",
+  "oap_overall": "21.722846441947567",
+  "pokt_overall": "18.98767461589309",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198004115516",
+  "player_name": "cadiaN",
+  "team_clan_name": "Astralis",
+  "map_count": "45",
+  "oap_overall": "16.766467065868262",
+  "pokt_overall": "16.813297922872255",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198073117127",
+  "player_name": "nicoodoz",
+  "team_clan_name": "Heroic",
+  "map_count": "44",
+  "oap_overall": "18.83910386965377",
+  "pokt_overall": "18.939207405627258",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198377335846",
+  "player_name": "snow",
+  "team_clan_name": "paiN Gaming",
+  "map_count": "40",
+  "oap_overall": "15.610328638497652",
+  "pokt_overall": "24.705908093180255",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198262460262",
+  "player_name": "ewjerkz",
+  "team_clan_name": "SAW",
+  "map_count": "39",
+  "oap_overall": "29.191090269636575",
+  "pokt_overall": "19.977131981266627",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198065448360",
+  "player_name": "story",
+  "team_clan_name": "SAW",
+  "map_count": "39",
+  "oap_overall": "19.695193434935522",
+  "pokt_overall": "23.58886782904727",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561197997981170",
+  "player_name": "MUTiRiS",
+  "team_clan_name": "SAW",
+  "map_count": "39",
+  "oap_overall": "13.599062133645955",
+  "pokt_overall": "22.460193278694",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561197994395491",
+  "player_name": "roman",
+  "team_clan_name": "SAW",
+  "map_count": "39",
+  "oap_overall": "18.160095579450417",
+  "pokt_overall": "19.209937239683313",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561197973757802",
+  "player_name": "arrozdoce",
+  "team_clan_name": "SAW",
+  "map_count": "39",
+  "oap_overall": "19.460726846424386",
+  "pokt_overall": "17.208679184568325",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198010511021",
+  "player_name": "gla1ve",
+  "team_clan_name": "ENCE",
+  "map_count": "38",
+  "oap_overall": "20.208604954367665",
+  "pokt_overall": "18.855579379400893",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198061801241",
+  "player_name": "dexter",
+  "team_clan_name": "FlyQuest",
+  "map_count": "36",
+  "oap_overall": "29.506172839506174",
+  "pokt_overall": "15.866495063562487",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198072321716",
+  "player_name": "Liazz",
+  "team_clan_name": "FlyQuest",
+  "map_count": "36",
+  "oap_overall": "13.740458015267176",
+  "pokt_overall": "23.601070603134584",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561197987212623",
+  "player_name": "INS",
+  "team_clan_name": "FlyQuest",
+  "map_count": "36",
+  "oap_overall": "20.493827160493826",
+  "pokt_overall": "17.09540653916872",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198098346710",
+  "player_name": "aliStair",
+  "team_clan_name": "FlyQuest",
+  "map_count": "36",
+  "oap_overall": "17.272727272727273",
+  "pokt_overall": "17.74711059133717",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198199343350",
+  "player_name": "buda",
+  "team_clan_name": "9z Globant",
+  "map_count": "35",
+  "oap_overall": "16.90885072655218",
+  "pokt_overall": "19.441690377197567",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198216891576",
+  "player_name": "dgt",
+  "team_clan_name": "9z Globant",
+  "map_count": "35",
+  "oap_overall": "19.275549805950842",
+  "pokt_overall": "21.42939845284155",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198319723208",
+  "player_name": "HUASOPEEK",
+  "team_clan_name": "9z Globant",
+  "map_count": "35",
+  "oap_overall": "18.88745148771022",
+  "pokt_overall": "18.58688889089924",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198242950384",
+  "player_name": "max",
+  "team_clan_name": "9z Globant",
+  "map_count": "35",
+  "oap_overall": "25.485122897800775",
+  "pokt_overall": "15.566397990951117",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198370086461",
+  "player_name": "MartinezSa",
+  "team_clan_name": "9z Globant",
+  "map_count": "35",
+  "oap_overall": "19.922380336351875",
+  "pokt_overall": "18.83905016325827",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561197980122997",
+  "player_name": "syrsoN",
+  "team_clan_name": "BIG",
+  "map_count": "34",
+  "oap_overall": "16.988950276243095",
+  "pokt_overall": "22.04584738304794",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198170631091",
+  "player_name": "Krimbo",
+  "team_clan_name": "BIG",
+  "map_count": "34",
+  "oap_overall": "18.38905775075988",
+  "pokt_overall": "20.874876082730847",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198078771373",
+  "player_name": "JDC",
+  "team_clan_name": "BIG",
+  "map_count": "34",
+  "oap_overall": "22.375690607734807",
+  "pokt_overall": "20.476256919429257",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198052888143",
+  "player_name": "Vexite",
+  "team_clan_name": "FlyQuest",
+  "map_count": "34",
+  "oap_overall": "20.976253298153033",
+  "pokt_overall": "20.783003612790235",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561197961491680",
+  "player_name": "tabseN",
+  "team_clan_name": "BIG",
+  "map_count": "34",
+  "oap_overall": "19.533527696793",
+  "pokt_overall": "19.992453796633363",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198071910365",
+  "player_name": "isak",
+  "team_clan_name": "GamerLegion",
+  "map_count": "32",
+  "oap_overall": "18.567251461988302",
+  "pokt_overall": "18.96414423300524",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198168198200",
+  "player_name": "Ex3rcice",
+  "team_clan_name": "3DMAX",
+  "map_count": "30",
+  "oap_overall": "14.634146341463415",
+  "pokt_overall": "21.626857808095068",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198045739761",
+  "player_name": "Maka",
+  "team_clan_name": "3DMAX",
+  "map_count": "30",
+  "oap_overall": "19.817073170731707",
+  "pokt_overall": "21.39826721579756",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198179538505",
+  "player_name": "Graviti",
+  "team_clan_name": "3DMAX",
+  "map_count": "30",
+  "oap_overall": "21.951219512195124",
+  "pokt_overall": "22.015359724963382",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198031890115",
+  "player_name": "Lucky",
+  "team_clan_name": "3DMAX",
+  "map_count": "30",
+  "oap_overall": "18.196202531645568",
+  "pokt_overall": "19.315819169506945",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198061423730",
+  "player_name": "insani",
+  "team_clan_name": "MIBR",
+  "map_count": "30",
+  "oap_overall": "29.042904290429043",
+  "pokt_overall": "19.6845795303172",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561197985565685",
+  "player_name": "saffee",
+  "team_clan_name": "MIBR",
+  "map_count": "30",
+  "oap_overall": "17.16171617161716",
+  "pokt_overall": "22.466267785444437",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198388056582",
+  "player_name": "drop",
+  "team_clan_name": "MIBR",
+  "map_count": "30",
+  "oap_overall": "19.491525423728813",
+  "pokt_overall": "23.232958840486504",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198010496342",
+  "player_name": "exit",
+  "team_clan_name": "MIBR",
+  "map_count": "30",
+  "oap_overall": "18.198529411764707",
+  "pokt_overall": "22.42948557392738",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198047876970",
+  "player_name": "Djoko",
+  "team_clan_name": "3DMAX",
+  "map_count": "30",
+  "oap_overall": "25.609756097560975",
+  "pokt_overall": "23.28065339474289",
+  "role_overall": "Fill"
+ },
+ {
+  "steamid": "76561198294381090",
+  "player_name": "r1nkle",
+  "team_clan_name": "Ninjas in Pyjamas",
+  "map_count": "28",
+  "oap_overall": "23.387096774193548",
+  "pokt_overall": "20.691260715613513",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198260883606",
+  "player_name": "Goofy",
+  "team_clan_name": "ENCE",
+  "map_count": "27",
+  "oap_overall": "18.57707509881423",
+  "pokt_overall": "22.30660225758265",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198076696741",
+  "player_name": "Kylar",
+  "team_clan_name": "ENCE",
+  "map_count": "27",
+  "oap_overall": "23.371647509578544",
+  "pokt_overall": "17.345210706968295",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198190463461",
+  "player_name": "s1n",
+  "team_clan_name": "M80",
+  "map_count": "26",
+  "oap_overall": "17.01782820097245",
+  "pokt_overall": "23.647263296582633",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198334814829",
+  "player_name": "reck",
+  "team_clan_name": "M80",
+  "map_count": "26",
+  "oap_overall": "17.32418524871355",
+  "pokt_overall": "15.257089685763473",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198064353169",
+  "player_name": "slaxz-",
+  "team_clan_name": "M80",
+  "map_count": "26",
+  "oap_overall": "16.85575364667747",
+  "pokt_overall": "21.10358362426621",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198183003671",
+  "player_name": "Swisher",
+  "team_clan_name": "M80",
+  "map_count": "26",
+  "oap_overall": "18.31442463533225",
+  "pokt_overall": "23.535895690400178",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198040577200",
+  "player_name": "sdy",
+  "team_clan_name": "Monte",
+  "map_count": "25",
+  "oap_overall": "21.369294605809127",
+  "pokt_overall": "22.464534053362193",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198018027263",
+  "player_name": "HEN1",
+  "team_clan_name": "Imperial Esports",
+  "map_count": "25",
+  "oap_overall": "13.861386138613861",
+  "pokt_overall": "19.335769962766918",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198000984547",
+  "player_name": "alex",
+  "team_clan_name": "Ninjas in Pyjamas",
+  "map_count": "24",
+  "oap_overall": "16.760828625235405",
+  "pokt_overall": "25.436024117978825",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197996370184",
+  "player_name": "VINI",
+  "team_clan_name": "Imperial Esports",
+  "map_count": "24",
+  "oap_overall": "21.632653061224488",
+  "pokt_overall": "22.969916303458422",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198155754447",
+  "player_name": "volt",
+  "team_clan_name": "GamerLegion",
+  "map_count": "24",
+  "oap_overall": "17.782426778242677",
+  "pokt_overall": "23.04293042771659",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198800209567",
+  "player_name": "noway",
+  "team_clan_name": "Imperial Esports",
+  "map_count": "24",
+  "oap_overall": "21.001926782273603",
+  "pokt_overall": "18.581891775533393",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198307171910",
+  "player_name": "decenty",
+  "team_clan_name": "Imperial Esports",
+  "map_count": "24",
+  "oap_overall": "14.258188824662813",
+  "pokt_overall": "22.6828438811921",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561197983031494",
+  "player_name": "felps",
+  "team_clan_name": "Imperial Esports",
+  "map_count": "24",
+  "oap_overall": "27.360308285163775",
+  "pokt_overall": "21.048702349839882",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561199132217533",
+  "player_name": "maxster",
+  "team_clan_name": "Ninjas in Pyjamas",
+  "map_count": "24",
+  "oap_overall": "15.254237288135593",
+  "pokt_overall": "24.85172536489346",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198362964332",
+  "player_name": "xKacpersky",
+  "team_clan_name": "Ninjas In Pyjamas",
+  "map_count": "24",
+  "oap_overall": "26.238532110091743",
+  "pokt_overall": "16.83147822581032",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198126171426",
+  "player_name": "DemQQ",
+  "team_clan_name": "Monte",
+  "map_count": "23",
+  "oap_overall": "19.925512104283055",
+  "pokt_overall": "18.59216828535541",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198975452660",
+  "player_name": "Woro2k",
+  "team_clan_name": "Monte",
+  "map_count": "23",
+  "oap_overall": "20.76923076923077",
+  "pokt_overall": "17.27436985771472",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198296417934",
+  "player_name": "kRaSnaL",
+  "team_clan_name": "Monte",
+  "map_count": "23",
+  "oap_overall": "18.24953445065177",
+  "pokt_overall": "18.47010161476495",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198855876580",
+  "player_name": "brnz4n",
+  "team_clan_name": "MIBR",
+  "map_count": "21",
+  "oap_overall": "18.097447795823665",
+  "pokt_overall": "21.879530948556468",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198041416993",
+  "player_name": "dycha",
+  "team_clan_name": "ENCE",
+  "map_count": "20",
+  "oap_overall": "20.58823529411765",
+  "pokt_overall": "16.456818375423026",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198050922008",
+  "player_name": "hades",
+  "team_clan_name": "ENCE",
+  "map_count": "20",
+  "oap_overall": "18.591549295774648",
+  "pokt_overall": "18.404784390096506",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198128931118",
+  "player_name": "podi",
+  "team_clan_name": "ENCE",
+  "map_count": "18",
+  "oap_overall": "21.05263157894737",
+  "pokt_overall": "19.92618594220425",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198146207066",
+  "player_name": "Boombl4",
+  "team_clan_name": "Cloud9",
+  "map_count": "18",
+  "oap_overall": "21.48541114058355",
+  "pokt_overall": "15.44950186860001",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198121220486",
+  "player_name": "Perfecto",
+  "team_clan_name": "Cloud9",
+  "map_count": "18",
+  "oap_overall": "9.734513274336283",
+  "pokt_overall": "26.04620085246853",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198045433304",
+  "player_name": "Ax1Le",
+  "team_clan_name": "Cloud9",
+  "map_count": "18",
+  "oap_overall": "25.72944297082228",
+  "pokt_overall": "21.299218548437324",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198028292758",
+  "player_name": "Hobbit",
+  "team_clan_name": "Cloud9",
+  "map_count": "18",
+  "oap_overall": "18.83289124668435",
+  "pokt_overall": "25.05049233384079",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198098071693",
+  "player_name": "sl3nd",
+  "team_clan_name": "GamerLegion",
+  "map_count": "18",
+  "oap_overall": "14.971751412429379",
+  "pokt_overall": "20.943616840675663",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198178801031",
+  "player_name": "prosus",
+  "team_clan_name": "BIG",
+  "map_count": "17",
+  "oap_overall": "25.555555555555557",
+  "pokt_overall": "24.389489132996",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198172837021",
+  "player_name": "rigoN",
+  "team_clan_name": "BIG",
+  "map_count": "17",
+  "oap_overall": "24.45054945054945",
+  "pokt_overall": "16.00018241562359",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561199046478501",
+  "player_name": "MATYS",
+  "team_clan_name": "Fnatic",
+  "map_count": "16",
+  "oap_overall": "23.514851485148515",
+  "pokt_overall": "20.20587589221107",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198013295375",
+  "player_name": "bodyy",
+  "team_clan_name": "Fnatic",
+  "map_count": "16",
+  "oap_overall": "23.019801980198018",
+  "pokt_overall": "14.036919145211225",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198031651584",
+  "player_name": "KRIMZ",
+  "team_clan_name": "Fnatic",
+  "map_count": "16",
+  "oap_overall": "16.831683168316832",
+  "pokt_overall": "21.105743082301036",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198035581101",
+  "player_name": "afro",
+  "team_clan_name": "Fnatic",
+  "map_count": "16",
+  "oap_overall": "21.287128712871286",
+  "pokt_overall": "16.79770649598338",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198059614402",
+  "player_name": "zorte",
+  "team_clan_name": "BetBoom Team",
+  "map_count": "15",
+  "oap_overall": "18.902439024390244",
+  "pokt_overall": "16.924358722171718",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198034172415",
+  "player_name": "REZ",
+  "team_clan_name": "Ninjas in Pyjamas",
+  "map_count": "15",
+  "oap_overall": "22.781065088757398",
+  "pokt_overall": "19.29022293732477",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198000827804",
+  "player_name": "mir",
+  "team_clan_name": "Virtus.Pro",
+  "map_count": "15",
+  "oap_overall": "12.218649517684888",
+  "pokt_overall": "24.86874889650317",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197999004010",
+  "player_name": "Stewie2K",
+  "team_clan_name": "G2 Esports",
+  "map_count": "15",
+  "oap_overall": "26.19047619047619",
+  "pokt_overall": "19.177034158651804",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198059714128",
+  "player_name": "nafany",
+  "team_clan_name": "BetBoom Team",
+  "map_count": "15",
+  "oap_overall": "33.23170731707317",
+  "pokt_overall": "9.896381188408109",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198157151718",
+  "player_name": "KaiR0N-",
+  "team_clan_name": "BetBoom Team",
+  "map_count": "15",
+  "oap_overall": "14.939024390243903",
+  "pokt_overall": "23.614879026558782",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198372023214",
+  "player_name": "Magnojez",
+  "team_clan_name": "BetBoom Team",
+  "map_count": "15",
+  "oap_overall": "21.341463414634145",
+  "pokt_overall": "22.900843624103082",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198167785069",
+  "player_name": "s1ren",
+  "team_clan_name": "BetBoom Team",
+  "map_count": "15",
+  "oap_overall": "13.448275862068966",
+  "pokt_overall": "21.82312013866892",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561197975129851",
+  "player_name": "Sonic",
+  "team_clan_name": "Wildcard",
+  "map_count": "14",
+  "oap_overall": "23.134328358208954",
+  "pokt_overall": "21.40363281320728",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198139039223",
+  "player_name": "BOROS",
+  "team_clan_name": "Team Falcons",
+  "map_count": "14",
+  "oap_overall": "21.75438596491228",
+  "pokt_overall": "21.522981809789844",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197981849043",
+  "player_name": "stanislaw",
+  "team_clan_name": "Wildcard",
+  "map_count": "14",
+  "oap_overall": "18.43971631205674",
+  "pokt_overall": "24.646264885626586",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198046799594",
+  "player_name": "BluePho3nix",
+  "team_clan_name": "Ninjas In Pyjamas",
+  "map_count": "13",
+  "oap_overall": "16.60649819494585",
+  "pokt_overall": "23.142937617937616",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198178209109",
+  "player_name": "xfl0ud",
+  "team_clan_name": "Sangal 1XBET",
+  "map_count": "13",
+  "oap_overall": "28.125",
+  "pokt_overall": "13.613342131724485",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198168401372",
+  "player_name": "Ryu",
+  "team_clan_name": "Monte",
+  "map_count": "13",
+  "oap_overall": "16.867469879518072",
+  "pokt_overall": "19.354469158686022",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198344226986",
+  "player_name": "Gizmy",
+  "team_clan_name": "Monte",
+  "map_count": "13",
+  "oap_overall": "24.698795180722893",
+  "pokt_overall": "21.545981078915446",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198110806694",
+  "player_name": "SaMey",
+  "team_clan_name": "Sangal 1XBET",
+  "map_count": "13",
+  "oap_overall": "18.248175182481752",
+  "pokt_overall": "20.55192926286676",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198104626893",
+  "player_name": "LNZ",
+  "team_clan_name": "Sangal 1XBET",
+  "map_count": "13",
+  "oap_overall": "18.40277777777778",
+  "pokt_overall": "20.680412444585507",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198410750263",
+  "player_name": "jottAAA",
+  "team_clan_name": "Sangal 1XBET",
+  "map_count": "13",
+  "oap_overall": "17.94871794871795",
+  "pokt_overall": "17.551040256542976",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561199137143905",
+  "player_name": "yxngstxr",
+  "team_clan_name": "Sangal 1XBET",
+  "map_count": "13",
+  "oap_overall": "18.75",
+  "pokt_overall": "23.46605362230362",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198039986599",
+  "player_name": "coldzera",
+  "team_clan_name": "RED Canids",
+  "map_count": "12",
+  "oap_overall": "18.055555555555557",
+  "pokt_overall": "12.73174801835628",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198014259134",
+  "player_name": "FL4MUS",
+  "team_clan_name": "GamerLegion",
+  "map_count": "12",
+  "oap_overall": "24.137931034482758",
+  "pokt_overall": "14.92230655178593",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198218265253",
+  "player_name": "venomzera",
+  "team_clan_name": "RED Canids",
+  "map_count": "12",
+  "oap_overall": "24.25531914893617",
+  "pokt_overall": "20.307012900880235",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198800631215",
+  "player_name": "zdr",
+  "team_clan_name": "TYLOO",
+  "map_count": "12",
+  "oap_overall": "18.3206106870229",
+  "pokt_overall": "20.71070993946865",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198130490651",
+  "player_name": "nython",
+  "team_clan_name": "RED Canids",
+  "map_count": "12",
+  "oap_overall": "20.361990950226243",
+  "pokt_overall": "19.283241581113924",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198002051785",
+  "player_name": "advent",
+  "team_clan_name": "TYLOO",
+  "map_count": "12",
+  "oap_overall": "16.793893129770993",
+  "pokt_overall": "26.19295462806913",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197976393269",
+  "player_name": "Kaze",
+  "team_clan_name": "TYLOO",
+  "map_count": "12",
+  "oap_overall": "15.702479338842975",
+  "pokt_overall": "21.517179845687348",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198120491311",
+  "player_name": "dav1deuS",
+  "team_clan_name": "RED Canids",
+  "map_count": "12",
+  "oap_overall": "26.382978723404257",
+  "pokt_overall": "19.43624696816186",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198108796479",
+  "player_name": "Mercury",
+  "team_clan_name": "TYLOO",
+  "map_count": "12",
+  "oap_overall": "26.717557251908396",
+  "pokt_overall": "19.49670553031479",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198364937038",
+  "player_name": "JamYoung",
+  "team_clan_name": "TYLOO",
+  "map_count": "12",
+  "oap_overall": "23.282442748091604",
+  "pokt_overall": "17.4719457467915",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198218879055",
+  "player_name": "aNdu",
+  "team_clan_name": "GamerLegion",
+  "map_count": "11",
+  "oap_overall": "33.1858407079646",
+  "pokt_overall": "18.882092833420266",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198043769572",
+  "player_name": "arT",
+  "team_clan_name": "FURIA",
+  "map_count": "11",
+  "oap_overall": "29.613733905579398",
+  "pokt_overall": "13.120731012079554",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198408199043",
+  "player_name": "phzy",
+  "team_clan_name": "Wildcard",
+  "map_count": "11",
+  "oap_overall": "18.220338983050848",
+  "pokt_overall": "16.78968960059898",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198971718392",
+  "player_name": "Neityu",
+  "team_clan_name": "ENCE",
+  "map_count": "11",
+  "oap_overall": "20.408163265306122",
+  "pokt_overall": "18.234235548856134",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198337484196",
+  "player_name": "Lake",
+  "team_clan_name": "M80",
+  "map_count": "11",
+  "oap_overall": "29.93421052631579",
+  "pokt_overall": "22.120083346268732",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198342718168",
+  "player_name": "susp",
+  "team_clan_name": "Wildcard",
+  "map_count": "11",
+  "oap_overall": "23.502304147465438",
+  "pokt_overall": "23.218058916079983",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198184153575",
+  "player_name": "JBa",
+  "team_clan_name": "Wildcard",
+  "map_count": "11",
+  "oap_overall": "16.10169491525424",
+  "pokt_overall": "26.302430526304953",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198365118288",
+  "player_name": "try",
+  "team_clan_name": "Imperial Sportsbet",
+  "map_count": "11",
+  "oap_overall": "19.27710843373494",
+  "pokt_overall": "17.338242364663838",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198107240040",
+  "player_name": "westmelon",
+  "team_clan_name": "Lynn Vision Gaming",
+  "map_count": "11",
+  "oap_overall": "28.278688524590162",
+  "pokt_overall": "15.581389511138264",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198137783463",
+  "player_name": "z4kr",
+  "team_clan_name": "Lynn Vision Gaming",
+  "map_count": "11",
+  "oap_overall": "18.22222222222222",
+  "pokt_overall": "22.768511456131996",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198816731401",
+  "player_name": "EmiliaQAQ",
+  "team_clan_name": "Lynn Vision Gaming",
+  "map_count": "11",
+  "oap_overall": "25.81967213114754",
+  "pokt_overall": "23.71948580723894",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198056206009",
+  "player_name": "Aaron",
+  "team_clan_name": "PERA Esports",
+  "map_count": "10",
+  "oap_overall": "23.72093023255814",
+  "pokt_overall": "20.8933143919464",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197972242917",
+  "player_name": "JACKZ",
+  "team_clan_name": "Vitality",
+  "map_count": "10",
+  "oap_overall": "16.113744075829384",
+  "pokt_overall": "18.796319392478033",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198161245944",
+  "player_name": "Ciocardău",
+  "team_clan_name": "PERA Esports",
+  "map_count": "10",
+  "oap_overall": "18.6046511627907",
+  "pokt_overall": "27.223236369953195",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198238366860",
+  "player_name": "dgl",
+  "team_clan_name": "PERA Esports",
+  "map_count": "10",
+  "oap_overall": "19.53488372093023",
+  "pokt_overall": "19.555707554339563",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198033533067",
+  "player_name": "Porya",
+  "team_clan_name": "PERA Esports",
+  "map_count": "10",
+  "oap_overall": "19.069767441860463",
+  "pokt_overall": "20.843890911210373",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198110839613",
+  "player_name": "bibu",
+  "team_clan_name": "PERA Esports",
+  "map_count": "10",
+  "oap_overall": "19.069767441860463",
+  "pokt_overall": "17.979445618980503",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198365697700",
+  "player_name": "shalfey",
+  "team_clan_name": "FORZE",
+  "map_count": "9",
+  "oap_overall": "24.257425742574256",
+  "pokt_overall": "17.298022504113764",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198028458803",
+  "player_name": "blameF",
+  "team_clan_name": "Fnatic",
+  "map_count": "9",
+  "oap_overall": "14.102564102564102",
+  "pokt_overall": "24.695936779270113",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198119088041",
+  "player_name": "SELLTER",
+  "team_clan_name": "FORZE",
+  "map_count": "9",
+  "oap_overall": "21.782178217821784",
+  "pokt_overall": "21.916518574934415",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198061763596",
+  "player_name": "n1ssim",
+  "team_clan_name": "paiN Gaming",
+  "map_count": "9",
+  "oap_overall": "24.537037037037038",
+  "pokt_overall": "18.20714436455177",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198872013168",
+  "player_name": "tN1R",
+  "team_clan_name": "FORZE",
+  "map_count": "9",
+  "oap_overall": "16.129032258064516",
+  "pokt_overall": "22.80609617795039",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561197962148507",
+  "player_name": "NickelBack",
+  "team_clan_name": "FORZE",
+  "map_count": "9",
+  "oap_overall": "20.297029702970296",
+  "pokt_overall": "20.887553041018386",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198157388473",
+  "player_name": "Lucaozy",
+  "team_clan_name": "MIBR",
+  "map_count": "9",
+  "oap_overall": "18.857142857142858",
+  "pokt_overall": "23.818524332810046",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198171689321",
+  "player_name": "smooya",
+  "team_clan_name": "FORZE",
+  "map_count": "9",
+  "oap_overall": "18.316831683168317",
+  "pokt_overall": "19.815865958272536",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561199096031141",
+  "player_name": "kye",
+  "team_clan_name": "FURIA",
+  "map_count": "9",
+  "oap_overall": "19.12568306010929",
+  "pokt_overall": "22.942783670845383",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198252742076",
+  "player_name": "kisserek",
+  "team_clan_name": "Rebels Gaming",
+  "map_count": "8",
+  "oap_overall": "24.2603550295858",
+  "pokt_overall": "18.791540284752955",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198019990506",
+  "player_name": "Patti",
+  "team_clan_name": "ECSTATIC",
+  "map_count": "8",
+  "oap_overall": "20.0",
+  "pokt_overall": "30.223966509680796",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198883522068",
+  "player_name": "olimp",
+  "team_clan_name": "Rebels Gaming",
+  "map_count": "8",
+  "oap_overall": "28.994082840236686",
+  "pokt_overall": "16.726941697355898",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198070876270",
+  "player_name": "Nodios",
+  "team_clan_name": "ECSTATIC",
+  "map_count": "8",
+  "oap_overall": "17.142857142857142",
+  "pokt_overall": "20.576167691957167",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198102263776",
+  "player_name": "salazar",
+  "team_clan_name": "ECSTATIC",
+  "map_count": "8",
+  "oap_overall": "11.688311688311689",
+  "pokt_overall": "19.443762959729344",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198201462870",
+  "player_name": "casey",
+  "team_clan_name": "Rebels Gaming",
+  "map_count": "8",
+  "oap_overall": "14.18918918918919",
+  "pokt_overall": "22.272865201859283",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198412400644",
+  "player_name": "Flayy-",
+  "team_clan_name": "Rebels Gaming",
+  "map_count": "8",
+  "oap_overall": "21.301775147928993",
+  "pokt_overall": "27.712853385930305",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198030545997",
+  "player_name": "Queenix",
+  "team_clan_name": "ECSTATIC",
+  "map_count": "8",
+  "oap_overall": "17.142857142857142",
+  "pokt_overall": "21.026307026307023",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198047198945",
+  "player_name": "kraghen",
+  "team_clan_name": "ECSTATIC",
+  "map_count": "8",
+  "oap_overall": "34.857142857142854",
+  "pokt_overall": "20.29718643310167",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198273089705",
+  "player_name": "sliimey",
+  "team_clan_name": "Rooster",
+  "map_count": "7",
+  "oap_overall": "13.28125",
+  "pokt_overall": "24.42234798694129",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198316706174",
+  "player_name": "Tauson",
+  "team_clan_name": "GamerLegion",
+  "map_count": "7",
+  "oap_overall": "22.972972972972972",
+  "pokt_overall": "20.94460531960532",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198121512116",
+  "player_name": "kabal",
+  "team_clan_name": "ATOX",
+  "map_count": "7",
+  "oap_overall": "23.880597014925375",
+  "pokt_overall": "26.809701492537314",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198120157641",
+  "player_name": "dobu",
+  "team_clan_name": "ATOX",
+  "map_count": "7",
+  "oap_overall": "17.91044776119403",
+  "pokt_overall": "19.969497749348495",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561199149812353",
+  "player_name": "esenthial",
+  "team_clan_name": "B8",
+  "map_count": "7",
+  "oap_overall": "18.0",
+  "pokt_overall": "29.414588461647284",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198305036904",
+  "player_name": "npl",
+  "team_clan_name": "B8",
+  "map_count": "7",
+  "oap_overall": "18.666666666666668",
+  "pokt_overall": "17.352980352980353",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198304115519",
+  "player_name": "alex666",
+  "team_clan_name": "B8",
+  "map_count": "7",
+  "oap_overall": "27.333333333333332",
+  "pokt_overall": "26.80019819150254",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561199543652487",
+  "player_name": "afufu",
+  "team_clan_name": "Lynn Vision Gaming",
+  "map_count": "7",
+  "oap_overall": "14.556962025316455",
+  "pokt_overall": "27.474347909474492",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198359519930",
+  "player_name": "headtr1ck",
+  "team_clan_name": "B8",
+  "map_count": "7",
+  "oap_overall": "7.333333333333333",
+  "pokt_overall": "14.45145789882632",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198276087202",
+  "player_name": "ANNIHILATION",
+  "team_clan_name": "ATOX",
+  "map_count": "7",
+  "oap_overall": "16.10169491525424",
+  "pokt_overall": "27.158170188020936",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198163780030",
+  "player_name": "TjP",
+  "team_clan_name": "Rooster",
+  "map_count": "7",
+  "oap_overall": "25.874125874125873",
+  "pokt_overall": "34.07592407592407",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198144926364",
+  "player_name": "kyuubii",
+  "team_clan_name": "Fnatic",
+  "map_count": "7",
+  "oap_overall": "17.058823529411764",
+  "pokt_overall": "19.815596168537343",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198028656944",
+  "player_name": "asap",
+  "team_clan_name": "Rooster",
+  "map_count": "7",
+  "oap_overall": "23.776223776223777",
+  "pokt_overall": "14.345376845376844",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198267298363",
+  "player_name": "dangeR",
+  "team_clan_name": "Rooster",
+  "map_count": "7",
+  "oap_overall": "15.384615384615385",
+  "pokt_overall": "27.925335534031184",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198016194159",
+  "player_name": "STYKO",
+  "team_clan_name": "Apeks",
+  "map_count": "7",
+  "oap_overall": "23.417721518987342",
+  "pokt_overall": "8.762306610407876",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561199009468655",
+  "player_name": "ztr",
+  "team_clan_name": "GamerLegion",
+  "map_count": "7",
+  "oap_overall": "18.91891891891892",
+  "pokt_overall": "24.095016282516283",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198136488014",
+  "player_name": "cptkurtka023",
+  "team_clan_name": "B8",
+  "map_count": "7",
+  "oap_overall": "29.333333333333332",
+  "pokt_overall": "13.251851851851852",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198135998371",
+  "player_name": "yami",
+  "team_clan_name": "ATOX",
+  "map_count": "7",
+  "oap_overall": "20.149253731343283",
+  "pokt_overall": "18.94194357978379",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198402229798",
+  "player_name": "Flying",
+  "team_clan_name": "Lynn Vision Gaming",
+  "map_count": "7",
+  "oap_overall": "15.107913669064748",
+  "pokt_overall": "31.71485687308472",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198158971650",
+  "player_name": "chelleos",
+  "team_clan_name": "Rooster",
+  "map_count": "7",
+  "oap_overall": "23.776223776223777",
+  "pokt_overall": "19.668051246998612",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198874507220",
+  "player_name": "MiQ",
+  "team_clan_name": "ATOX",
+  "map_count": "7",
+  "oap_overall": "24.62686567164179",
+  "pokt_overall": "26.728004909466023",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198154095163",
+  "player_name": "drg",
+  "team_clan_name": "YNG Sharks",
+  "map_count": "6",
+  "oap_overall": "25.53191489361702",
+  "pokt_overall": "22.90590751667097",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197962710908",
+  "player_name": "jani",
+  "team_clan_name": "JANO",
+  "map_count": "6",
+  "oap_overall": "24.46043165467626",
+  "pokt_overall": "23.817465389333755",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198453919902",
+  "player_name": "togs",
+  "team_clan_name": "YNG Sharks",
+  "map_count": "6",
+  "oap_overall": "7.801418439716312",
+  "pokt_overall": "27.22798084500212",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198098536184",
+  "player_name": "Juho",
+  "team_clan_name": "JANO",
+  "map_count": "6",
+  "oap_overall": "21.58273381294964",
+  "pokt_overall": "21.245179107550083",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197961610974",
+  "player_name": "allu",
+  "team_clan_name": "JANO",
+  "map_count": "6",
+  "oap_overall": "14.851485148514852",
+  "pokt_overall": "28.175594862455903",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198098344244",
+  "player_name": "Keoz",
+  "team_clan_name": "GamerLegion",
+  "map_count": "6",
+  "oap_overall": "29.166666666666668",
+  "pokt_overall": "11.820540935672515",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198029235071",
+  "player_name": "Cryptic",
+  "team_clan_name": "BOSS",
+  "map_count": "6",
+  "oap_overall": "26.515151515151516",
+  "pokt_overall": "20.81550802139037",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198336814871",
+  "player_name": "freshie",
+  "team_clan_name": "BOSS",
+  "map_count": "6",
+  "oap_overall": "13.636363636363637",
+  "pokt_overall": "30.281242879927092",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198272723319",
+  "player_name": "FaNg",
+  "team_clan_name": "BOSS",
+  "map_count": "6",
+  "oap_overall": "21.96969696969697",
+  "pokt_overall": "14.632280598189688",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198095896540",
+  "player_name": "doc",
+  "team_clan_name": "YNG Sharks",
+  "map_count": "6",
+  "oap_overall": "31.20567375886525",
+  "pokt_overall": "27.904117159436307",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198137348442",
+  "player_name": "supLex",
+  "team_clan_name": "YNG Sharks",
+  "map_count": "6",
+  "oap_overall": "14.893617021276595",
+  "pokt_overall": "18.762549507230357",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198307734468",
+  "player_name": "rdnzao",
+  "team_clan_name": "YNG Sharks",
+  "map_count": "6",
+  "oap_overall": "20.56737588652482",
+  "pokt_overall": "23.98202270542696",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561197984266377",
+  "player_name": "PwnAlone",
+  "team_clan_name": "BOSS",
+  "map_count": "6",
+  "oap_overall": "16.666666666666668",
+  "pokt_overall": "26.135265700483092",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198065606574",
+  "player_name": "HENU",
+  "team_clan_name": "JANO",
+  "map_count": "6",
+  "oap_overall": "20.14388489208633",
+  "pokt_overall": "14.879723550352262",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198013172503",
+  "player_name": "sx",
+  "team_clan_name": "JANO",
+  "map_count": "6",
+  "oap_overall": "23.02158273381295",
+  "pokt_overall": "13.491185073918887",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198162408395",
+  "player_name": "d4rty",
+  "team_clan_name": "BOSS",
+  "map_count": "6",
+  "oap_overall": "21.21212121212121",
+  "pokt_overall": "22.57641348550439",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198002942763",
+  "player_name": "acoR",
+  "team_clan_name": "GamerLegion",
+  "map_count": "6",
+  "oap_overall": "13.333333333333334",
+  "pokt_overall": "21.85690943043884",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198380323585",
+  "player_name": "sNx",
+  "team_clan_name": "Rebels Gaming",
+  "map_count": "5",
+  "oap_overall": "15.662650602409638",
+  "pokt_overall": "10.9739539306847",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198417348056",
+  "player_name": "dav1g",
+  "team_clan_name": "Movistar KOI",
+  "map_count": "5",
+  "oap_overall": "23.333333333333332",
+  "pokt_overall": "16.258309591642924",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198839305865",
+  "player_name": "Xant3r",
+  "team_clan_name": "Nemiga Gaming",
+  "map_count": "5",
+  "oap_overall": "19.587628865979383",
+  "pokt_overall": "22.832133451602477",
+  "role_overall": "Flex"
+ },
+ {
+  "steamid": "76561198889240025",
+  "player_name": "riskyb0b",
+  "team_clan_name": "Nemiga Gaming",
+  "map_count": "5",
+  "oap_overall": "20.652173913043477",
+  "pokt_overall": "31.13778319181207",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198837117408",
+  "player_name": "1eeR",
+  "team_clan_name": "Nemiga Gaming",
+  "map_count": "5",
+  "oap_overall": "23.008849557522122",
+  "pokt_overall": "19.08984307983923",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198951467648",
+  "player_name": "khaN",
+  "team_clan_name": "Nemiga Gaming",
+  "map_count": "5",
+  "oap_overall": "20.353982300884955",
+  "pokt_overall": "21.111011086626853",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198248953762",
+  "player_name": "Buzz",
+  "team_clan_name": "OG",
+  "map_count": "5",
+  "oap_overall": "17.92452830188679",
+  "pokt_overall": "31.163176446195315",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198012987839",
+  "player_name": "JUST",
+  "team_clan_name": "Movistar KOI",
+  "map_count": "5",
+  "oap_overall": "23.333333333333332",
+  "pokt_overall": "26.58418923124805",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198068506849",
+  "player_name": "pz",
+  "team_clan_name": "Bad News Kangaroos",
+  "map_count": "5",
+  "oap_overall": "20.652173913043477",
+  "pokt_overall": "16.848645812840186",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198067762481",
+  "player_name": "ADDICT",
+  "team_clan_name": "Bad News Kangaroos",
+  "map_count": "5",
+  "oap_overall": "19.565217391304348",
+  "pokt_overall": "17.540702051571618",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198048350311",
+  "player_name": "damyo",
+  "team_clan_name": "Bad News Kangaroos",
+  "map_count": "5",
+  "oap_overall": "19.565217391304348",
+  "pokt_overall": "24.45981554677207",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198047402862",
+  "player_name": "stadodo",
+  "team_clan_name": "Movistar KOI",
+  "map_count": "5",
+  "oap_overall": "15.789473684210526",
+  "pokt_overall": "19.430199430199426",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198182168605",
+  "player_name": "M1key",
+  "team_clan_name": "OG",
+  "map_count": "5",
+  "oap_overall": "19.81132075471698",
+  "pokt_overall": "20.818624027412504",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198024347602",
+  "player_name": "hazr",
+  "team_clan_name": "Bad News Kangaroos",
+  "map_count": "5",
+  "oap_overall": "23.91304347826087",
+  "pokt_overall": "39.734299516908216",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198086803740",
+  "player_name": "BRACE",
+  "team_clan_name": "Bad News Kangaroos",
+  "map_count": "5",
+  "oap_overall": "18.9873417721519",
+  "pokt_overall": "17.261904761904763",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198252434500",
+  "player_name": "F1KU",
+  "team_clan_name": "OG",
+  "map_count": "5",
+  "oap_overall": "23.58490566037736",
+  "pokt_overall": "13.270528337121013",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197998197366",
+  "player_name": "mopoz",
+  "team_clan_name": "Movistar KOI",
+  "map_count": "5",
+  "oap_overall": "22.22222222222222",
+  "pokt_overall": "9.896384479717813",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198292598811",
+  "player_name": "Chr1zN",
+  "team_clan_name": "OG",
+  "map_count": "5",
+  "oap_overall": "20.754716981132077",
+  "pokt_overall": "22.731084429197637",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197968389863",
+  "player_name": "adamS",
+  "team_clan_name": "Movistar KOI",
+  "map_count": "5",
+  "oap_overall": "17.77777777777778",
+  "pokt_overall": "42.44942421413009",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198350221098",
+  "player_name": "MoDo",
+  "team_clan_name": "OG",
+  "map_count": "5",
+  "oap_overall": "16.981132075471695",
+  "pokt_overall": "16.951298177713273",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198070459137",
+  "player_name": "Kwezz",
+  "team_clan_name": "Sashi Esport",
+  "map_count": "4",
+  "oap_overall": "20.43010752688172",
+  "pokt_overall": "22.885555304910145",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198002708642",
+  "player_name": "jkaem",
+  "team_clan_name": "Apeks",
+  "map_count": "4",
+  "oap_overall": "26.666666666666668",
+  "pokt_overall": "14.694240944240942",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198880299543",
+  "player_name": "Starry",
+  "team_clan_name": "Lynn Vision Gaming",
+  "map_count": "4",
+  "oap_overall": "19.767441860465116",
+  "pokt_overall": "35.21317829457364",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197991000831",
+  "player_name": "iceberg",
+  "team_clan_name": "Sashi Esport",
+  "map_count": "4",
+  "oap_overall": "24.731182795698924",
+  "pokt_overall": "17.295536005213425",
+  "role_overall": "IGL"
+ },
+ {
+  "steamid": "76561198360407641",
+  "player_name": "Jee",
+  "team_clan_name": "Lynn Vision Gaming",
+  "map_count": "4",
+  "oap_overall": "11.627906976744185",
+  "pokt_overall": "33.35499316005472",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198146202997",
+  "player_name": "Lack1",
+  "team_clan_name": "Aurora",
+  "map_count": "4",
+  "oap_overall": "31.70731707317073",
+  "pokt_overall": "26.184668989547035",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198135415618",
+  "player_name": "MisteM ",
+  "team_clan_name": "NIP",
+  "map_count": "4",
+  "oap_overall": "19.626168224299064",
+  "pokt_overall": "19.12690605017216",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198350362302",
+  "player_name": "r3salt",
+  "team_clan_name": "Aurora",
+  "map_count": "4",
+  "oap_overall": "20.73170731707317",
+  "pokt_overall": "27.85087719298246",
+  "role_overall": "Lurker"
+ },
+ {
+  "steamid": "76561198153651861",
+  "player_name": "nawwk",
+  "team_clan_name": "Apeks",
+  "map_count": "4",
+  "oap_overall": "10.447761194029852",
+  "pokt_overall": "35.02599524658348",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198154904607",
+  "player_name": "Norwi",
+  "team_clan_name": "Aurora",
+  "map_count": "4",
+  "oap_overall": "19.51219512195122",
+  "pokt_overall": "17.686622320768663",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198188347379",
+  "player_name": "MistR",
+  "team_clan_name": "Sashi Esport",
+  "map_count": "4",
+  "oap_overall": "16.129032258064512",
+  "pokt_overall": "30.766473669699472",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198190930470",
+  "player_name": "Cabbi",
+  "team_clan_name": "Sashi Esport",
+  "map_count": "4",
+  "oap_overall": "23.655913978494624",
+  "pokt_overall": "22.88258933420224",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198192927541",
+  "player_name": "sense",
+  "team_clan_name": "Apeks",
+  "map_count": "4",
+  "oap_overall": "22.22222222222222",
+  "pokt_overall": "10.104463437796772",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198400646282",
+  "player_name": "KENSI",
+  "team_clan_name": "Aurora",
+  "map_count": "4",
+  "oap_overall": "19.51219512195122",
+  "pokt_overall": "19.588414634146343",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198263656468",
+  "player_name": "CacaNito",
+  "team_clan_name": "Apeks",
+  "map_count": "4",
+  "oap_overall": "17.77777777777778",
+  "pokt_overall": "16.325036075036078",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198287546191",
+  "player_name": "deko",
+  "team_clan_name": "Aurora",
+  "map_count": "4",
+  "oap_overall": "8.536585365853659",
+  "pokt_overall": "23.149336756525457",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198308827247",
+  "player_name": "jocab",
+  "team_clan_name": "NIP",
+  "map_count": "4",
+  "oap_overall": "20.560747663551403",
+  "pokt_overall": "30.34198102917179",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198110563159",
+  "player_name": "pudeHAT69",
+  "team_clan_name": "Sashi Esport",
+  "map_count": "4",
+  "oap_overall": "19.444444444444443",
+  "pokt_overall": "22.15821812596006",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197960499780",
+  "player_name": "TaZ",
+  "team_clan_name": "G2 Esports",
+  "map_count": "3",
+  "oap_overall": "17.24137931034483",
+  "pokt_overall": "23.563218390804597",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198153580037",
+  "player_name": "SLIGHT",
+  "team_clan_name": "Wildcard Gaming",
+  "map_count": "3",
+  "oap_overall": "15.217391304347826",
+  "pokt_overall": "18.840579710144926",
+  "role_overall": "AWPer"
+ },
+ {
+  "steamid": "76561198020474058",
+  "player_name": "motm",
+  "team_clan_name": "Wildcard Gaming",
+  "map_count": "3",
+  "oap_overall": "43.47826086956522",
+  "pokt_overall": "15.217391304347826",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197986829261",
+  "player_name": "innocent",
+  "team_clan_name": "Rebels",
+  "map_count": "3",
+  "oap_overall": "19.565217391304348",
+  "pokt_overall": "21.92141192141192",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197980944787",
+  "player_name": "hAdji",
+  "team_clan_name": "Monte",
+  "map_count": "3",
+  "oap_overall": "23.529411764705884",
+  "pokt_overall": "19.70548914753067",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561197971316261",
+  "player_name": "horvy",
+  "team_clan_name": "Wildcard Gaming",
+  "map_count": "3",
+  "oap_overall": "19.565217391304348",
+  "pokt_overall": "20.0",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198317806758",
+  "player_name": "18yM",
+  "team_clan_name": "Steel Helmet",
+  "map_count": "2",
+  "oap_overall": "27.272727272727273",
+  "pokt_overall": "17.229437229437227",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198185843605",
+  "player_name": "xiaosaGe",
+  "team_clan_name": "Steel Helmet",
+  "map_count": "2",
+  "oap_overall": "18.181818181818183",
+  "pokt_overall": "20.95959595959596",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198148008942",
+  "player_name": "AE",
+  "team_clan_name": "Steel Helmet",
+  "map_count": "2",
+  "oap_overall": "18.181818181818183",
+  "pokt_overall": "12.878787878787879",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198130248345",
+  "player_name": "DD",
+  "team_clan_name": "Steel Helmet",
+  "map_count": "2",
+  "oap_overall": "21.21212121212121",
+  "pokt_overall": "20.77922077922078",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198069301890",
+  "player_name": "captainMo",
+  "team_clan_name": "Steel Helmet",
+  "map_count": "2",
+  "oap_overall": "18.181818181818183",
+  "pokt_overall": "8.08080808080808",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561199772680703",
+  "player_name": "Vexite",
+  "team_clan_name": "FlyQuest",
+  "map_count": "2",
+  "oap_overall": "9.615384615384615",
+  "pokt_overall": "29.487179487179485",
+  "role_overall": "Spacetaker"
+ },
+ {
+  "steamid": "76561198422389693",
+  "player_name": "m1N1",
+  "team_clan_name": "JiJieHao",
+  "map_count": "1",
+  "oap_overall": "23.809523809523807",
+  "pokt_overall": "54.54545454545454",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198260959350",
+  "player_name": "dennyslaw",
+  "team_clan_name": "JiJieHao",
+  "map_count": "1",
+  "oap_overall": "14.285714285714286",
+  "pokt_overall": "33.33333333333333",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561199024583803",
+  "player_name": "0SAMAS",
+  "team_clan_name": "JiJieHao",
+  "map_count": "1",
+  "oap_overall": "33.33333333333333",
+  "pokt_overall": "19.230769230769234",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198037812456",
+  "player_name": "ISSAA",
+  "team_clan_name": "JiJieHao",
+  "map_count": "1",
+  "oap_overall": "14.285714285714286",
+  "pokt_overall": "43.75",
+  "role_overall": ""
+ },
+ {
+  "steamid": "76561198019880552",
+  "player_name": "Kjaerbye",
+  "team_clan_name": "JiJieHao",
+  "map_count": "1",
+  "oap_overall": "14.285714285714286",
+  "pokt_overall": "14.285714285714286",
+  "role_overall": ""
+ }
+]

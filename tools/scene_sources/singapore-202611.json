@@ -1,0 +1,1176 @@
+[
+ {
+  "name": "MOUZ",
+  "players": [
+   [
+    "PR",
+    "Oldřich Nový",
+    false
+   ],
+   [
+    "Spinx",
+    "Lotan Giladi",
+    false
+   ],
+   [
+    "torzsi",
+    "Ádám Torzsás",
+    false
+   ],
+   [
+    "xelex",
+    "Adrian Vincze",
+    false
+   ],
+   [
+    "xertioN",
+    "Dorian Berman",
+    false
+   ]
+  ],
+  "coach": [
+   "sycrone",
+   "Dennis Nielsen"
+  ],
+  "sub": [
+   "Nikodeon",
+   "Nikolai Sørensen"
+  ]
+ },
+ {
+  "name": "Team Vitality",
+  "players": [
+   [
+    "flameZ",
+    "Shahar Shushan",
+    false
+   ],
+   [
+    "jL",
+    "Justinas Lekavicius",
+    true
+   ],
+   [
+    "mezii",
+    "William Merriman",
+    false
+   ],
+   [
+    "ropz",
+    "Robin Kool",
+    false
+   ],
+   [
+    "ZywOo",
+    "Mathieu Herbaut",
+    false
+   ]
+  ],
+  "coach": [
+   "XTQZZZ",
+   "Rémy Quoniam"
+  ],
+  "sub": [
+   "apEX",
+   "Dan Madesclaire"
+  ]
+ },
+ {
+  "name": "Aurora Gaming",
+  "players": [
+   [
+    "Jimpphat",
+    "Jimi Salo",
+    false
+   ],
+   [
+    "kyxsan",
+    "Damjan Stoilkovski",
+    false
+   ],
+   [
+    "Wicadia",
+    "Ali Haydar Yalçın",
+    false
+   ],
+   [
+    "woxic",
+    "Özgür Eker",
+    false
+   ],
+   [
+    "XANTARES",
+    "Ismailcan Dörtkardeş",
+    false
+   ]
+  ],
+  "coach": [
+   "ash",
+   "Ashley Battye"
+  ],
+  "sub": null
+ },
+ {
+  "name": "Team Spirit",
+  "players": [
+   [
+    "donk",
+    "Danil Kryshkovets",
+    false
+   ],
+   [
+    "magixx",
+    "Boris Vorobiev",
+    false
+   ],
+   [
+    "sh1ro",
+    "Dmitry Sokolov",
+    false
+   ],
+   [
+    "tN1R",
+    "Andrey Tatarinovich",
+    false
+   ],
+   [
+    "zont1x",
+    "Myroslav Plakhotia",
+    false
+   ]
+  ],
+  "coach": [
+   "hally",
+   "Sergey Shavaev"
+  ],
+  "sub": [
+   "S0tF1k",
+   "Dmitry Forostyanko"
+  ]
+ },
+ {
+  "name": "BB Team",
+  "players": [
+   [
+    "Boombl4",
+    "Kirill Mikhailov",
+    false
+   ],
+   [
+    "d1Ledez",
+    "Daniil Kustov",
+    false
+   ],
+   [
+    "Magnojez",
+    "Kirill Rodnov",
+    false
+   ],
+   [
+    "S1ren",
+    "Pavel Ogloblin",
+    false
+   ],
+   [
+    "zorte",
+    "Aleksandr Zagodyrenko",
+    false
+   ]
+  ],
+  "coach": [
+   "Fierce",
+   "Artem Ivanov"
+  ],
+  "sub": [
+   "dmrr",
+   "Damir Abulkasimov"
+  ]
+ },
+ {
+  "name": "Team Falcons",
+  "players": [
+   [
+    "karrigan",
+    "Finn Andersen",
+    false
+   ],
+   [
+    "kyousuke",
+    "Maksim Lukin",
+    false
+   ],
+   [
+    "m0NESY",
+    "Ilya Osipov",
+    false
+   ],
+   [
+    "NiKo",
+    "Nikola Kovač",
+    false
+   ],
+   [
+    "TeSeS",
+    "René Madsen",
+    false
+   ]
+  ],
+  "coach": [
+   "zonic",
+   "Danny Sørensen"
+  ],
+  "sub": [
+   "NucleonZ",
+   "Matej Trajkoski"
+  ]
+ },
+ {
+  "name": "FURIA Esports",
+  "players": [
+   [
+    "FalleN",
+    "Gabriel Toledo",
+    false
+   ],
+   [
+    "KSCERATO",
+    "Kaike Cerato",
+    false
+   ],
+   [
+    "molodoy",
+    "Danil Golubenko",
+    false
+   ],
+   [
+    "YEKINDAR",
+    "Mareks Gaļinskis",
+    false
+   ],
+   [
+    "yuurih",
+    "Yuri Santos",
+    false
+   ]
+  ],
+  "coach": [
+   "sidde",
+   "Sid Macedo"
+  ],
+  "sub": null
+ },
+ {
+  "name": "Legacy",
+  "players": [
+   [
+    "arT",
+    "Andrei Piovezan",
+    false
+   ],
+   [
+    "dumau",
+    "Eduardo Wolkmer",
+    false
+   ],
+   [
+    "latto",
+    "Bruno Rebelatto",
+    false
+   ],
+   [
+    "n1ssim",
+    "Vinicius Pereira",
+    true
+   ],
+   [
+    "try",
+    "Santino Rigal",
+    false
+   ]
+  ],
+  "coach": [
+   "adrrr",
+   "Alan Riveros"
+  ],
+  "sub": [
+   "ksloks",
+   "Italo Meinberg"
+  ]
+ },
+ {
+  "name": "FUT Esports",
+  "players": [
+   [
+    "cmtry",
+    "Nikita Samolotov",
+    true
+   ],
+   [
+    "dem0n",
+    "Dmytro Myroshnychenko",
+    false
+   ],
+   [
+    "dziugss",
+    "Džiugas Steponavičius",
+    false
+   ],
+   [
+    "Krabeni",
+    "Aulon Fazlija",
+    false
+   ],
+   [
+    "xfl0ud",
+    "Yasin Koç",
+    false
+   ]
+  ],
+  "coach": [
+   "coolio",
+   "András Fercsák"
+  ],
+  "sub": [
+   "SunPayus",
+   "Álvaro García"
+  ]
+ },
+ {
+  "name": "Nemiga Gaming",
+  "players": [
+   [
+    "KaiR0N-",
+    "Aleksandr Anashkin",
+    false
+   ],
+   [
+    "khaN",
+    "Beksultan Ospan",
+    false
+   ],
+   [
+    "robo",
+    "Nikita Dushin",
+    false
+   ],
+   [
+    "syph0",
+    "Daniel Ageyev",
+    false
+   ],
+   [
+    "Xant3r",
+    "Kirill Kononov",
+    false
+   ]
+  ],
+  "coach": [
+   "boX",
+   "Anton Burko"
+  ],
+  "sub": null
+ },
+ {
+  "name": "G2 Esports",
+  "players": [
+   [
+    "HeavyGod",
+    "Nikita Martynenko",
+    false
+   ],
+   [
+    "huNter-",
+    "Nemanja Kovač",
+    false
+   ],
+   [
+    "MATYS",
+    "Matúš Šimko",
+    false
+   ],
+   [
+    "NertZ",
+    "Guy Iluz",
+    false
+   ],
+   [
+    "r1nkle",
+    "Artem Moroz",
+    false
+   ]
+  ],
+  "coach": [
+   "sAw",
+   "Eetu Saha"
+  ],
+  "sub": [
+   "tAk",
+   "Vilius Keserauskas"
+  ]
+ },
+ {
+  "name": "THE ONE",
+  "players": [
+   [
+    "ArtFr0st",
+    "Artem Kharitonov",
+    false
+   ],
+   [
+    "Ax1Le",
+    "Sergey Rykhtorov",
+    false
+   ],
+   [
+    "BELCHONOKK",
+    "Andrey Yasinskiy",
+    false
+   ],
+   [
+    "fame",
+    "Petr Bolyshev",
+    false
+   ],
+   [
+    "nafany",
+    "Vladislav Gorshkov",
+    false
+   ]
+  ],
+  "coach": [
+   "groove",
+   "Konstantin Pikiner"
+  ],
+  "sub": [
+   "xe edo",
+   ""
+  ]
+ },
+ {
+  "name": "Natus Vincere",
+  "players": [
+   [
+    "Aleksib",
+    "Aleksi Virolainen",
+    false
+   ],
+   [
+    "b1t",
+    "Valeriy Vakhovskiy",
+    false
+   ],
+   [
+    "iM",
+    "Mihai Ivan",
+    false
+   ],
+   [
+    "makazze",
+    "Drin Shaqiri",
+    false
+   ],
+   [
+    "w0nderful",
+    "Ihor Zhdanov",
+    false
+   ]
+  ],
+  "coach": [
+   "B1ad3",
+   "Andrey Gorodenskiy"
+  ],
+  "sub": [
+   "FAZERY",
+   "David Procházka"
+  ]
+ },
+ {
+  "name": "Astralis",
+  "players": [
+   [
+    "jabbi",
+    "Jakob Nygaard",
+    true
+   ],
+   [
+    "phzy",
+    "Love Smidebrant",
+    false
+   ],
+   [
+    "ryu",
+    "Gytis Glušauskas",
+    false
+   ],
+   [
+    "siuhy",
+    "Kamil Szkaradek",
+    false
+   ],
+   [
+    "Staehr",
+    "Victor Staehr",
+    false
+   ]
+  ],
+  "coach": [
+   "NEO",
+   "Filip Kubski"
+  ],
+  "sub": [
+   "Anlelele",
+   "Anton Huynh"
+  ]
+ },
+ {
+  "name": "MIBR",
+  "players": [
+   [
+    "insani",
+    "Felipe Yuji",
+    false
+   ],
+   [
+    "LNZ",
+    "Linus Holtäng",
+    false
+   ],
+   [
+    "nqz",
+    "Lucas Soares",
+    false
+   ],
+   [
+    "tomaszin",
+    "Tomas Corna",
+    false
+   ],
+   [
+    "venomzera",
+    "Carlos Eduardo",
+    false
+   ]
+  ],
+  "coach": [
+   "LETN1",
+   "Nestor Tanić"
+  ],
+  "sub": null
+ },
+ {
+  "name": "The MongolZ",
+  "players": [
+   [
+    "910",
+    "Usukhbayar Banzragch",
+    false
+   ],
+   [
+    "bLitz",
+    "Garidmagnai Byambasuren",
+    false
+   ],
+   [
+    "cobrazera",
+    "Anarbileg Uuganbayar",
+    false
+   ],
+   [
+    "nin9",
+    "Yesuntumur Gantulga",
+    false
+   ],
+   [
+    "Techno4K",
+    "Sodbayar Munkhbold",
+    false
+   ]
+  ],
+  "coach": [
+   "maaRaa",
+   "Erdenedalai Bayanbat"
+  ],
+  "sub": null
+ },
+ {
+  "name": "Ninjas in Pyjamas",
+  "players": [
+   [
+    "adamb",
+    "Adam Ångström",
+    false
+   ],
+   [
+    "Krimbo",
+    "Karim Moussa",
+    false
+   ],
+   [
+    "sjuush",
+    "Rasmus Beck",
+    false
+   ],
+   [
+    "stavn",
+    "Martin Lund",
+    false
+   ],
+   [
+    "xKacpersky",
+    "Kacper Gabara",
+    false
+   ]
+  ],
+  "coach": [
+   "Xizt",
+   "Richard Landström"
+  ],
+  "sub": null
+ },
+ {
+  "name": "PVISION",
+  "players": [
+   [
+    "FL1T",
+    "Evgenii Lebedev",
+    false
+   ],
+   [
+    "HObbit",
+    "Abay Khassenov",
+    false
+   ],
+   [
+    "Jame",
+    "Dzhami Ali",
+    false
+   ],
+   [
+    "xiELO",
+    "Vladislav Lysov",
+    false
+   ],
+   [
+    "zweih",
+    "Ivan Gogin",
+    false
+   ]
+  ],
+  "coach": [
+   "dastan",
+   "Dastan Akbayev"
+  ],
+  "sub": [
+   "slaxejezzz",
+   "Vyacheslav Vinokurov"
+  ]
+ },
+ {
+  "name": "HEROIC",
+  "players": [
+   [
+    "Brollan",
+    "Ludvig Brolin",
+    false
+   ],
+   [
+    "Chr1zN",
+    "Christoffer Storgaard",
+    false
+   ],
+   [
+    "MartinezSa",
+    "Antonio Martinez",
+    false
+   ],
+   [
+    "nilo",
+    "Linus Bergman",
+    false
+   ],
+   [
+    "susp",
+    "Tim Ångström",
+    false
+   ]
+  ],
+  "coach": [
+   "Snappi",
+   "Marco Pfeiffer"
+  ],
+  "sub": null
+ },
+ {
+  "name": "FaZe Clan",
+  "players": [
+   [
+    "frozen",
+    "David Čerňanský",
+    false
+   ],
+   [
+    "JBOEN",
+    "Jason Boe Nielsen",
+    false
+   ],
+   [
+    "jcobbb",
+    "Jakub Pietruszewski",
+    false
+   ],
+   [
+    "Neityu",
+    "Ryan Aubry",
+    false
+   ],
+   [
+    "Twistzz",
+    "Russel Van Dulken",
+    false
+   ]
+  ],
+  "coach": [
+   "enkay J",
+   "Niclas Krumhorn"
+  ],
+  "sub": [
+   "GruBy",
+   "Dominik Swiderski"
+  ]
+ },
+ {
+  "name": "Eternal Fire",
+  "players": [
+   [
+    "jottAAA",
+    "Samet Köklü",
+    false
+   ],
+   [
+    "Kvem",
+    "Vladyslav Korol",
+    false
+   ],
+   [
+    "MisteM",
+    "Gareth Ries",
+    false
+   ],
+   [
+    "regali",
+    "Iulian Harjău",
+    false
+   ],
+   [
+    "soulfly",
+    "Caner Kesici",
+    false
+   ]
+  ],
+  "coach": [
+   "Fabre",
+   "Sezgin Kalaycı"
+  ],
+  "sub": [
+   "Hydro2K",
+   "Emirhan Deniz"
+  ]
+ },
+ {
+  "name": "100 Thieves",
+  "players": [
+   [
+    "device",
+    "Nicolai Reedtz",
+    false
+   ],
+   [
+    "Gizmy",
+    "Jack von Spreckelsen",
+    false
+   ],
+   [
+    "poiii",
+    "Alex Nyholm Sundgren",
+    false
+   ],
+   [
+    "rain",
+    "Håvard Nygaard",
+    false
+   ],
+   [
+    "sirah",
+    "William Kjærsgaard",
+    false
+   ]
+  ],
+  "coach": [
+   "gla1ve",
+   "Lukas Rossander"
+  ],
+  "sub": null
+ },
+ {
+  "name": "Team Liquid",
+  "players": [
+   [
+    "EliGE",
+    "Jonathan Jablonowski",
+    false
+   ],
+   [
+    "Jorko",
+    "Georgi Mitev",
+    false
+   ],
+   [
+    "JT",
+    "Johnny Theodosiou",
+    false
+   ],
+   [
+    "malbsMd",
+    "Mario Samayoa",
+    false
+   ],
+   [
+    "NAF-FLY",
+    "Keith Markovic",
+    false
+   ]
+  ],
+  "coach": [
+   "flashie",
+   "Viktor Tamás Bea"
+  ],
+  "sub": null
+ },
+ {
+  "name": "9z Team",
+  "players": [
+   [
+    "dgt",
+    "Franco Garcia",
+    false
+   ],
+   [
+    "HUASOPEEK",
+    "Matias Ibañez Hernandez",
+    false
+   ],
+   [
+    "luchov",
+    "Luciano Herrera",
+    false
+   ],
+   [
+    "max",
+    "Maximiliano Gonzalez",
+    false
+   ],
+   [
+    "meyern",
+    "Ignacio Meyer",
+    true
+   ]
+  ],
+  "coach": [
+   "BIT",
+   "Bruno Fukuda Lima"
+  ],
+  "sub": [
+   "history",
+   "Allan Lawrenz"
+  ]
+ },
+ {
+  "name": "M80",
+  "players": [
+   [
+    "JBa",
+    "Josh Barutt",
+    false
+   ],
+   [
+    "Lake",
+    "Mason Sanderson",
+    false
+   ],
+   [
+    "s1n",
+    "Elias Stein",
+    false
+   ],
+   [
+    "slaxz-",
+    "Fritz Dietrich",
+    false
+   ],
+   [
+    "Swisher",
+    "Michael Schmid",
+    false
+   ]
+  ],
+  "coach": [
+   "dephh",
+   "Rory Jackson"
+  ],
+  "sub": [
+   "M0nstr",
+   "Jack Vopat"
+  ]
+ },
+ {
+  "name": "DENDELE",
+  "players": [
+   [
+    "doc",
+    "Danilo Barros",
+    false
+   ],
+   [
+    "gafolo",
+    "Victor Andrade",
+    false
+   ],
+   [
+    "koala",
+    "João Pfeffer",
+    false
+   ],
+   [
+    "maxxkor",
+    "Máximo Cortina",
+    false
+   ],
+   [
+    "rdnzao",
+    "Daniel Monteiro",
+    false
+   ]
+  ],
+  "coach": [
+   "coachi",
+   "Hélder Sancho"
+  ],
+  "sub": [
+   "D10S",
+   "Cristiano Marques Sá Carvalho"
+  ]
+ },
+ {
+  "name": "Imperial Esports",
+  "players": [
+   [
+    "chelo",
+    "Marcelo Cespedes",
+    false
+   ],
+   [
+    "decenty",
+    "Lucas Bacelar",
+    false
+   ],
+   [
+    "noway",
+    "Kaiky Santos",
+    false
+   ],
+   [
+    "saadzin",
+    "Guilherme Pacheco",
+    false
+   ],
+   [
+    "VINI",
+    "Vinicius Figueiredo",
+    false
+   ]
+  ],
+  "coach": [
+   "tacitus",
+   "Marcos Castilho"
+  ],
+  "sub": null
+ },
+ {
+  "name": "Wildcard",
+  "players": [
+   [
+    "Cxzi",
+    "Marcos Castilho",
+    false
+   ],
+   [
+    "fr3nd",
+    "Sebastian Kuśmierz",
+    false
+   ],
+   [
+    "HexT",
+    "Jadan Postma",
+    false
+   ],
+   [
+    "nEMANHA",
+    "Nemanja Đukić",
+    false
+   ],
+   [
+    "reck",
+    "Ethan Serrano",
+    false
+   ]
+  ],
+  "coach": [
+   "splawik",
+   "Łukasz Jahns"
+  ],
+  "sub": null
+ },
+ {
+  "name": "GOSH",
+  "players": [
+   [
+    "asap",
+    "Tyson Paterson",
+    false
+   ],
+   [
+    "Magisk",
+    "Emil Reif",
+    false
+   ],
+   [
+    "mzinho",
+    "Ayush Batbold",
+    false
+   ],
+   [
+    "s1mple",
+    "Oleksandr Kostyliev",
+    false
+   ],
+   [
+    "Senzu",
+    "Azbayar Munkhbold",
+    false
+   ]
+  ],
+  "coach": [
+   "TaZ",
+   "Wiktor Wojtas"
+  ],
+  "sub": [
+   "BnTeT",
+   "Hansel Ferdinand"
+  ]
+ },
+ {
+  "name": "FlyQuest",
+  "players": [
+   [
+    "aliStair",
+    "Alistair Johnston",
+    false
+   ],
+   [
+    "INS",
+    "Joshua Potter",
+    false
+   ],
+   [
+    "jks",
+    "Justin Savage",
+    false
+   ],
+   [
+    "nettik",
+    "Corey Browne",
+    false
+   ],
+   [
+    "Vexite",
+    "Declan Portelli",
+    false
+   ]
+  ],
+  "coach": [
+   "AZR",
+   "Aaron Ward"
+  ],
+  "sub": null
+ },
+ {
+  "name": "Chinggis Warriors",
+  "players": [
+   [
+    "cool4st",
+    "Sodbileg Batbaatar",
+    false
+   ],
+   [
+    "fury5k",
+    "Davaasuren Ganbaatar",
+    false
+   ],
+   [
+    "ROUX",
+    "Undrakhbayar Zolbayar",
+    false
+   ],
+   [
+    "sk0R",
+    "Tengis Batjargal",
+    false
+   ],
+   [
+    "tikuak",
+    "Zolbayar Chimedtseren",
+    false
+   ]
+  ],
+  "coach": [
+   "Redka",
+   "Munkh-ochir Myagmarsuren"
+  ],
+  "sub": null
+ },
+ {
+  "name": "Lynn Vision",
+  "players": [
+   [
+    "C4LLM3SU3",
+    "Qihao Su",
+    false
+   ],
+   [
+    "EmiliaQAQ",
+    "Junjie Tang",
+    false
+   ],
+   [
+    "Starry",
+    "Lizhi Ye",
+    false
+   ],
+   [
+    "Westmelon",
+    "Zhe Niu",
+    false
+   ],
+   [
+    "z4KR",
+    "Sike Zhang",
+    false
+   ]
+  ],
+  "coach": [
+   "GUM",
+   "Yifei Dai"
+  ],
+  "sub": null
+ }
+]

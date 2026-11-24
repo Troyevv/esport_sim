@@ -1,6 +1,8 @@
 """Authenticated editor context; package content never travels on the game stream."""
 
 from uuid import uuid4
+import base64
+from fastapi.responses import Response, RedirectResponse
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -31,6 +33,37 @@ def editor_router(app):
             r: data.skills.role_rating(p["skills"], r) for r in data.world.ROLE_NAMES
         }
         return dict(roles=values, overall=round(sum(values.values()) / len(values)))
+
+    @router.get("/{key}/{revision}/media/{group}/{ident}")
+    async def media(key: str, revision: int, group: str, ident: str):
+        if group not in ("teams", "players", "organizations", "staff", "appearance"):
+            raise HTTPException(404)
+        try:
+            record = data.get(app.state.store.db, key, revision)[
+                "players" if group == "appearance" else group
+            ][ident]
+            asset = (
+                record.get("appearance")
+                if group == "appearance"
+                else record.get("logo") or record.get("photo")
+            )
+            if asset == "zywoo-chicago-2019":
+                return RedirectResponse(
+                    "https://commons.wikimedia.org/wiki/Special:FilePath/IEM_Chicago_Final_Edits-9731_ZywOo_%2848353577846%29_%28cropped%29.jpg?width=250"
+                )
+            if not asset:
+                raise HTTPException(404)
+            image = asset["image"]
+            if image.startswith("https://"):
+                return RedirectResponse(image)
+            header, payload = image.split(",", 1)
+            return Response(
+                base64.b64decode(payload),
+                media_type=header[5:].split(";")[0],
+                headers={"Cache-Control": "private, max-age=86400"},
+            )
+        except (KeyError, ValueError):
+            raise HTTPException(404)
 
     @router.post("/import")
     async def upload(request: Request):

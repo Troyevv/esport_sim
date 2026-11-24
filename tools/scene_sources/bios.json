@@ -1,0 +1,500 @@
+{
+ "players": {
+  "Aleksib": {
+   "nationality": "FI",
+   "realName": "Aleksi Virolainen",
+   "source": "https://en.wikipedia.org/wiki/Natus_Vincere"
+  },
+  "Brollan": {
+   "nationality": "SE",
+   "realName": "Ludvig Brolin",
+   "source": "https://en.wikipedia.org/wiki/Heroic_(esports)"
+  },
+  "Chr1zN": {
+   "nationality": "DK",
+   "realName": "Christoffer Storgaard",
+   "source": "https://en.wikipedia.org/wiki/Heroic_(esports)"
+  },
+  "EliGE": {
+   "nationality": "US",
+   "realName": "Jonathan Jablonowski",
+   "source": "https://en.wikipedia.org/wiki/Team_Liquid"
+  },
+  "FalleN": {
+   "nationality": "BR",
+   "realName": "Gabriel Toledo",
+   "source": "https://en.wikipedia.org/wiki/Furia_Esports"
+  },
+  "Gizmy": {
+   "nationality": "GB",
+   "realName": "Jack von Spreckelsen",
+   "source": "https://en.wikipedia.org/wiki/100_Thieves"
+  },
+  "Grim": {
+   "nationality": "US",
+   "realName": "Michael Wince",
+   "source": "https://en.wikipedia.org/wiki/NRG_Esports"
+  },
+  "HooXi": {
+   "nationality": "DK",
+   "realName": "Rasmus Nielsen",
+   "source": "https://en.wikipedia.org/wiki/Astralis"
+  },
+  "INS": {
+   "nationality": "AU",
+   "realName": "Joshua Potter",
+   "source": "https://en.wikipedia.org/wiki/FlyQuest"
+  },
+  "JBOEN": {
+   "nationality": "DK",
+   "realName": "Jason Boe Nielsen",
+   "source": "https://en.wikipedia.org/wiki/FaZe_Clan"
+  },
+  "JT": {
+   "nationality": "ZA",
+   "realName": "Ioannis 'Johnny' Theodosiou",
+   "source": "https://en.wikipedia.org/wiki/Team_Liquid"
+  },
+  "Jorko": {
+   "nationality": "BG",
+   "realName": "Georgi Mitev",
+   "source": "https://en.wikipedia.org/wiki/Team_Liquid"
+  },
+  "KSCERATO": {
+   "nationality": "BR",
+   "realName": "Kaike Cerato",
+   "source": "https://en.wikipedia.org/wiki/Furia_Esports"
+  },
+  "Krimbo": {
+   "nationality": "DE",
+   "realName": "Karim Moussa",
+   "source": "https://en.wikipedia.org/wiki/Ninjas_in_Pyjamas"
+  },
+  "MartinezSa": {
+   "nationality": "ES",
+   "realName": "Antonio Martinez",
+   "source": "https://en.wikipedia.org/wiki/Heroic_(esports)"
+  },
+  "Neityu": {
+   "nationality": "FR",
+   "realName": "Ryan Aubry",
+   "source": "https://en.wikipedia.org/wiki/FaZe_Clan"
+  },
+  "NiKo": {
+   "nationality": "BA",
+   "realName": "Nikola Kovač",
+   "source": "https://en.wikipedia.org/wiki/Team_Falcons"
+  },
+  "PR": {
+   "nationality": "CZ",
+   "realName": "Oldřich Nový",
+   "source": "https://en.wikipedia.org/wiki/GamerLegion"
+  },
+  "REZ": {
+   "nationality": "SE",
+   "realName": "Fredrik Sterner",
+   "source": "https://en.wikipedia.org/wiki/GamerLegion"
+  },
+  "Snax": {
+   "nationality": "PL",
+   "realName": "Janusz Pogorzelski",
+   "source": "https://en.wikipedia.org/wiki/GamerLegion"
+  },
+  "Sonic": {
+   "nationality": "ZA",
+   "realName": "Aran Groesbeek",
+   "source": "https://en.wikipedia.org/wiki/NRG_Esports"
+  },
+  "Spinx": {
+   "nationality": "IL",
+   "realName": "Lotan Giladi",
+   "source": "https://en.wikipedia.org/wiki/Mouz"
+  },
+  "Staehr": {
+   "nationality": "DK",
+   "realName": "Victor Staehr",
+   "source": "https://en.wikipedia.org/wiki/Astralis"
+  },
+  "TN1R": {
+   "nationality": "BY",
+   "realName": "Andrey Tatarinovich",
+   "source": "https://en.wikipedia.org/wiki/Team_Spirit_(esports)"
+  },
+  "Tauson": {
+   "nationality": "DK",
+   "realName": "Sebastian Tauson Lindelof",
+   "source": "https://en.wikipedia.org/wiki/GamerLegion"
+  },
+  "TeSeS": {
+   "nationality": "DK",
+   "realName": "René Madsen",
+   "source": "https://en.wikipedia.org/wiki/Team_Falcons"
+  },
+  "Twistzz": {
+   "nationality": "CA",
+   "realName": "Russel Van Dulken",
+   "source": "https://en.wikipedia.org/wiki/FaZe_Clan"
+  },
+  "VINI": {
+   "nationality": "BR",
+   "realName": "Vinicius Figueiredo",
+   "source": "https://en.wikipedia.org/wiki/Imperial_Esports"
+  },
+  "Vexite": {
+   "nationality": "AU",
+   "realName": "Declan Portelli",
+   "source": "https://en.wikipedia.org/wiki/FlyQuest"
+  },
+  "YEKINDAR": {
+   "nationality": "LV",
+   "realName": "Mareks Gaļinskis",
+   "source": "https://en.wikipedia.org/wiki/Furia_Esports"
+  },
+  "ZywOo": {
+   "nationality": "FR",
+   "realName": "Mathieu Herbaut",
+   "source": "https://en.wikipedia.org/wiki/Team_Vitality"
+  },
+  "adamb": {
+   "nationality": "SE",
+   "realName": "Adam Ångström",
+   "source": "https://en.wikipedia.org/wiki/OG_(esports)"
+  },
+  "apEX": {
+   "nationality": "FR",
+   "realName": "Dan Madesclaire",
+   "source": "https://en.wikipedia.org/wiki/Team_Vitality"
+  },
+  "arrozdoce": {
+   "nationality": "PT",
+   "realName": "Rafael Wing",
+   "source": "https://en.wikipedia.org/wiki/OG_(esports)"
+  },
+  "b1t": {
+   "nationality": "UA",
+   "realName": "Valeriy Vakhovskiy",
+   "source": "https://en.wikipedia.org/wiki/Natus_Vincere"
+  },
+  "biguzera": {
+   "nationality": "BR",
+   "realName": "Rodrigo Bittencourt",
+   "source": "https://en.wikipedia.org/wiki/PaiN_Gaming"
+  },
+  "bodyy": {
+   "nationality": "FR",
+   "realName": "Alexandre Pianaro",
+   "source": "https://en.wikipedia.org/wiki/OG_(esports)"
+  },
+  "br0": {
+   "nationality": "DK",
+   "realName": "Alexander Bro",
+   "source": "https://en.wikipedia.org/wiki/NRG_Esports"
+  },
+  "broky": {
+   "nationality": "LV",
+   "realName": "Helvijs Saukants",
+   "source": "https://en.wikipedia.org/wiki/FaZe_Clan"
+  },
+  "cadiaN": {
+   "nationality": "DK",
+   "realName": "Casper Møller",
+   "source": "https://en.wikipedia.org/wiki/OG_(esports)"
+  },
+  "cairne": {
+   "nationality": "UA",
+   "realName": "Artem Mushynskyi",
+   "source": "https://en.wikipedia.org/wiki/Fnatic"
+  },
+  "chelo": {
+   "nationality": "BR",
+   "realName": "Marcelo Cespedes",
+   "source": "https://en.wikipedia.org/wiki/Imperial_Esports"
+  },
+  "decenty": {
+   "nationality": "BR",
+   "realName": "Lucas Bacelar",
+   "source": "https://en.wikipedia.org/wiki/Imperial_Esports"
+  },
+  "donk": {
+   "nationality": "RU",
+   "realName": "Danil Kryshkovets",
+   "source": "https://en.wikipedia.org/wiki/Team_Spirit_(esports)"
+  },
+  "fear": {
+   "nationality": "UA",
+   "realName": "Rodion Smyk",
+   "source": "https://en.wikipedia.org/wiki/Fnatic"
+  },
+  "flameZ": {
+   "nationality": "IL",
+   "realName": "Shahar Shushan",
+   "source": "https://en.wikipedia.org/wiki/Team_Vitality"
+  },
+  "frozen": {
+   "nationality": "SK",
+   "realName": "David Čerňanský",
+   "source": "https://en.wikipedia.org/wiki/FaZe_Clan"
+  },
+  "hypex": {
+   "nationality": "PL",
+   "realName": "Milan Polowiec",
+   "source": "https://en.wikipedia.org/wiki/GamerLegion"
+  },
+  "iM": {
+   "nationality": "RO",
+   "realName": "Mihai Ivan",
+   "source": "https://en.wikipedia.org/wiki/Natus_Vincere"
+  },
+  "jabbi": {
+   "nationality": "DK",
+   "realName": "Jakob Nygaard",
+   "source": "https://en.wikipedia.org/wiki/Astralis"
+  },
+  "jackasmo": {
+   "nationality": "UA",
+   "realName": "Mykyta Skyba",
+   "source": "https://en.wikipedia.org/wiki/Fnatic"
+  },
+  "jambo": {
+   "nationality": "UA",
+   "realName": "Dmytro Semera",
+   "source": "https://en.wikipedia.org/wiki/Fnatic"
+  },
+  "jcobbb": {
+   "nationality": "PL",
+   "realName": "Jakub Pietruszewski",
+   "source": "https://en.wikipedia.org/wiki/FaZe_Clan"
+  },
+  "jks": {
+   "nationality": "AU",
+   "realName": "Justin Savage",
+   "source": "https://en.wikipedia.org/wiki/FlyQuest"
+  },
+  "karrigan": {
+   "nationality": "DK",
+   "realName": "Finn Andersen",
+   "source": "https://en.wikipedia.org/wiki/Team_Falcons"
+  },
+  "kyousuke": {
+   "nationality": "RU",
+   "realName": "Maxim Lukin",
+   "source": "https://en.wikipedia.org/wiki/Team_Falcons"
+  },
+  "levi": {
+   "nationality": "BR",
+   "realName": "Guilherme Gustavo",
+   "source": "https://en.wikipedia.org/wiki/Imperial_Esports"
+  },
+  "m0NESY": {
+   "nationality": "RU",
+   "realName": "Ilya Osipov",
+   "source": "https://en.wikipedia.org/wiki/Team_Falcons"
+  },
+  "magixx": {
+   "nationality": "RU",
+   "realName": "Boris Vorobyev",
+   "source": "https://en.wikipedia.org/wiki/Team_Spirit_(esports)"
+  },
+  "makazze": {
+   "nationality": "XK",
+   "realName": "Drin Shaqiri",
+   "source": "https://en.wikipedia.org/wiki/Natus_Vincere"
+  },
+  "malbsMd": {
+   "nationality": "GT",
+   "realName": "Mario Samayoa",
+   "source": "https://en.wikipedia.org/wiki/Team_Liquid"
+  },
+  "mazay": {
+   "nationality": "UA",
+   "realName": "Volodymyr Iorhachov",
+   "source": "https://en.wikipedia.org/wiki/Fnatic"
+  },
+  "mezii": {
+   "nationality": "GB",
+   "realName": "William Merriman",
+   "source": "https://en.wikipedia.org/wiki/Team_Vitality"
+  },
+  "molodoy": {
+   "nationality": "KZ",
+   "realName": "Danil Golubenko",
+   "source": "https://en.wikipedia.org/wiki/Furia_Esports"
+  },
+  "nettik": {
+   "nationality": "NZ",
+   "realName": "Corey Browne",
+   "source": "https://en.wikipedia.org/wiki/FlyQuest"
+  },
+  "nilo": {
+   "nationality": "SE",
+   "realName": "Linus Bergman",
+   "source": "https://en.wikipedia.org/wiki/Heroic_(esports)"
+  },
+  "nitr0": {
+   "nationality": "US",
+   "realName": "Nicholas Cannella",
+   "source": "https://en.wikipedia.org/wiki/NRG_Esports"
+  },
+  "noway": {
+   "nationality": "BR",
+   "realName": "Kaiky Santos",
+   "source": "https://en.wikipedia.org/wiki/Imperial_Esports"
+  },
+  "oSee": {
+   "nationality": "US",
+   "realName": "Josh Ohm",
+   "source": "https://en.wikipedia.org/wiki/NRG_Esports"
+  },
+  "phzy": {
+   "nationality": "SE",
+   "realName": "Love Smidebrant",
+   "source": "https://en.wikipedia.org/wiki/Astralis"
+  },
+  "piriajr": {
+   "nationality": "BR",
+   "realName": "Guilherme Barbosa",
+   "source": "https://en.wikipedia.org/wiki/PaiN_Gaming"
+  },
+  "poiii": {
+   "nationality": "SE",
+   "realName": "Alex Sundgren",
+   "source": "https://en.wikipedia.org/wiki/100_Thieves"
+  },
+  "rain": {
+   "nationality": "NO",
+   "realName": "Håvard Nygaard",
+   "source": "https://en.wikipedia.org/wiki/100_Thieves"
+  },
+  "ropz": {
+   "nationality": "EE",
+   "realName": "Robin Kool",
+   "source": "https://en.wikipedia.org/wiki/Team_Vitality"
+  },
+  "ryu": {
+   "nationality": "LT",
+   "realName": "Gytis Glušauskas",
+   "source": "https://en.wikipedia.org/wiki/Astralis"
+  },
+  "saffee": {
+   "nationality": "BR",
+   "realName": "Rafael Costa",
+   "source": "https://en.wikipedia.org/wiki/PaiN_Gaming"
+  },
+  "sh1ro": {
+   "nationality": "RU",
+   "realName": "Dmitry Sokolov",
+   "source": "https://en.wikipedia.org/wiki/Team_Spirit_(esports)"
+  },
+  "sirah": {
+   "nationality": "DK",
+   "realName": "William Kjærsgaard",
+   "source": "https://en.wikipedia.org/wiki/100_Thieves"
+  },
+  "siuhy": {
+   "nationality": "PL",
+   "realName": "Kamil Szkaradek",
+   "source": "https://en.wikipedia.org/wiki/Astralis"
+  },
+  "sjuush": {
+   "nationality": "DK",
+   "realName": "Rasmus Beck",
+   "source": "https://en.wikipedia.org/wiki/Ninjas_in_Pyjamas"
+  },
+  "snow": {
+   "nationality": "BR",
+   "realName": "João Vinicius",
+   "source": "https://en.wikipedia.org/wiki/PaiN_Gaming"
+  },
+  "spooke": {
+   "nationality": "SE",
+   "realName": "Olle Grundström",
+   "source": "https://en.wikipedia.org/wiki/OG_(esports)"
+  },
+  "stavn": {
+   "nationality": "DK",
+   "realName": "Martin Lund",
+   "source": "https://en.wikipedia.org/wiki/Ninjas_in_Pyjamas"
+  },
+  "story": {
+   "nationality": "PT",
+   "realName": "João Vieira",
+   "source": "https://en.wikipedia.org/wiki/FlyQuest"
+  },
+  "susp": {
+   "nationality": "SE",
+   "realName": "Tim Ångström",
+   "source": "https://en.wikipedia.org/wiki/Heroic_(esports)"
+  },
+  "torzsi": {
+   "nationality": "HU",
+   "realName": "Ádám Torzsás",
+   "source": "https://en.wikipedia.org/wiki/Mouz"
+  },
+  "w0nderful": {
+   "nationality": "UA",
+   "realName": "Ihor Zhdanov",
+   "source": "https://en.wikipedia.org/wiki/Natus_Vincere"
+  },
+  "xKacpersky": {
+   "nationality": "PL",
+   "realName": "Kacper Gabara",
+   "source": "https://en.wikipedia.org/wiki/Ninjas_in_Pyjamas"
+  },
+  "xelex": {
+   "nationality": "HU",
+   "realName": "Adrian Vincze",
+   "source": "https://en.wikipedia.org/wiki/Mouz"
+  },
+  "xertioN": {
+   "nationality": "IL",
+   "realName": "Dorian Berman",
+   "source": "https://en.wikipedia.org/wiki/Mouz"
+  },
+  "xfl0ud": {
+   "nationality": "TR",
+   "realName": "Yasin Koç",
+   "source": "https://en.wikipedia.org/wiki/Heroic_(esports)"
+  },
+  "yuurih": {
+   "nationality": "BR",
+   "realName": "Yuri Santos",
+   "source": "https://en.wikipedia.org/wiki/Furia_Esports"
+  },
+  "yxngstxr": {
+   "nationality": "SE",
+   "realName": "Simon Boije",
+   "source": "https://en.wikipedia.org/wiki/Heroic_(esports)"
+  },
+  "zont1x": {
+   "nationality": "UA",
+   "realName": "Myroslav Plakhotia",
+   "source": "https://en.wikipedia.org/wiki/Team_Spirit_(esports)"
+  }
+ },
+ "staff": {
+  "NEO": {
+   "nationality": "PL",
+   "source": "https://en.wikipedia.org/wiki/Filip_Kubski"
+  },
+  "TaZ": {
+   "nationality": "PL",
+   "source": "https://en.wikipedia.org/wiki/TaZ"
+  },
+  "Xizt": {
+   "nationality": "SE",
+   "source": "https://en.wikipedia.org/wiki/Richard_Landstr%C3%B6m"
+  },
+  "gla1ve": {
+   "nationality": "DK",
+   "source": "https://en.wikipedia.org/wiki/Gla1ve"
+  },
+  "sycrone": {
+   "nationality": "DK",
+   "source": "https://www.hltv.org/news/44121/sycrone-and-xyp9x-renew-deals-at-mouz"
+  },
+  "zonic": {
+   "nationality": "DK",
+   "source": "https://liquipedia.net/counterstrike/Team_Falcons"
+  }
+ }
+}
