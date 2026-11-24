@@ -156,7 +156,8 @@ def test_overtime_sides_money_and_timeout_budget():
     assert w["score"] == [19, 15] and w["phase"] == "finished"
 
 
-def test_engine_and_store_replay_share_all_events_after_midround_load(tmp_path):
+@pytest.mark.parametrize("speed", [8, 128])
+def test_engine_and_store_replay_share_all_events_after_midround_load(tmp_path, speed):
     store = Store(tmp_path / "match.sqlite")
 
     def command(kind, value=None):
@@ -181,7 +182,7 @@ def test_engine_and_store_replay_share_all_events_after_midround_load(tmp_path):
         for _ in range(10):
             store.tick()
         command("load")
-        command("speed", 128)
+        command("speed", speed)
         while store.read()["running"]:
             store.tick()
         server = store.read()["world"]
@@ -280,3 +281,25 @@ def test_side_view_removes_hidden_gear_and_intermediate_motion():
     assert all("cash" not in a and "hp" not in a and not a["knowledge"] for a in rivals)
     assert set(view["match"]["plans"]) == {"CT"}
     assert all(e["team"] in (None, "CT") for e in view["events"])
+
+
+def test_timeout_comments_reference_author_experience_and_survive_boundary():
+    w = match.initial(42)
+    until(w, lambda: w["round"] == 1 and w["phase"] == "result")
+    match.command(w, "timeout")
+    until(w, lambda: w["phase"] == "timeout")
+    events = {e["id"]: e for e in ledger(w)}
+    assert w["feedback"]
+    for feedback in w["feedback"]:
+        author = next(p for p in w["agents"] if p["name"] == feedback["player"])
+        source = events[feedback["id"]]
+        assert source["round"] == feedback["round"] and author["club"] == 0
+        assert (
+            source["target" if source["kind"] == "kill" else "player"] == author["id"]
+        )
+    saved = json.loads(json.dumps(w))
+    for checkpoint in [w, saved]:
+        match.command(checkpoint, "call", "Выход B")
+        match.command(checkpoint, "resume")
+        until(checkpoint, lambda: checkpoint["phase"] == "finished")
+    assert json.dumps(w, sort_keys=True) == json.dumps(saved, sort_keys=True)
