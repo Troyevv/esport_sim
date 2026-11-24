@@ -48,7 +48,7 @@ function Launch-Archive([string]$Exe) {
     }
     $instance = Read-Instance
     Write-Output "Ready on loopback port $($instance.port), pid=$($instance.pid)" | Out-Host
-    Wait-Check 'fresh URL delivered by Windows ShellExecute' { @(Urls).Count -eq ($previous + 1) }
+    Wait-Check 'fresh browser URL handoff from packaged EXE' { @(Urls).Count -eq ($previous + 1) }
     $origin = "http://127.0.0.1:$($instance.port)"
     if ((@(Urls)[-1]).TrimEnd('/') -ne $origin) { throw 'Opened URL differs from running server.' }
     $index = Invoke-WebRequest -UseBasicParsing -Uri "$origin/" -TimeoutSec 8
@@ -99,22 +99,58 @@ function Test-Lan([string]$Origin) {
         $fingerprint = (Get-FileHash $authority -Algorithm SHA256).Hash
         if ($fingerprint -ne $settings.fingerprint.Replace(':', '')) { throw 'Authority fingerprint mismatch' }
 
-        # Limit trust to this curl process. Never modify the runner's root store.
-        $pem = Join-Path $testRoot 'home.pem'
-        $null = certutil -encode $authority $pem
-        if ($LASTEXITCODE) { throw 'Could not encode public CA' }
-        $opts = @('--silent', '--noproxy', '*', '--max-time', '8')
-        $null = & curl.exe @opts "$lan/api/capabilities"
-        if ($LASTEXITCODE -ne 60) { throw "Expected untrusted certificate before explicit trust, curl exit $LASTEXITCODE" }
-        $trusted = $opts + @('--cacert', $pem)
-        $code = & curl.exe @trusted -o NUL -w '%{http_code}' "$lan/api/state"
-        if ($LASTEXITCODE -or $code -ne '401') { throw "Protected LAN state: HTTP $code, curl exit $LASTEXITCODE" }
-        $cookie = Join-Path $testRoot 'device.cookies'
-        $pair = @{code=$invite.code; name='Windows smoke test'} | ConvertTo-Json -Compress
-        $code = $pair | & curl.exe @trusted -o NUL -w '%{http_code}' -c $cookie -H "Origin: $lan" -H 'Content-Type: application/json' --data-binary '@-' "$lan/api/pair"
-        if ($LASTEXITCODE -or $code -ne '200') { throw "Pair: HTTP $code, curl exit $LASTEXITCODE" }
-        $paired = & curl.exe @trusted --fail -b $cookie "$lan/api/state" | ConvertFrom-Json
-        if ($LASTEXITCODE -or $paired.context -ne (Invoke-RestMethod "$Origin/api/state").context) { throw 'Paired device has different world.' }
+        Add-Type -AssemblyName System.Net.Http
+        $certificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new($authority)
+        $store = [Security.Cryptography.X509Certificates.X509Store]::new('Root', 'LocalMachine')
+        $store.Open('ReadWrite')
+        $probeHandler = [Net.Http.HttpClientHandler]::new()
+        $probeHandler.UseProxy = $false
+        $probe = [Net.Http.HttpClient]::new($probeHandler)
+        $trustedClient = $null
+        $imported = $false
+        try {
+            $untrusted = $false
+            try {
+                $null = $probe.GetAsync("$lan/api/capabilities").GetAwaiter().GetResult()
+            } catch {
+                $cause = $_.Exception
+                while ($null -ne $cause) {
+                    if (($cause -is [Net.WebException] -and $cause.Status -eq 'TrustFailure') -or
+                        $cause -is [Security.Authentication.AuthenticationException]) { $untrusted = $true }
+                    $cause = $cause.InnerException
+                }
+                if (-not $untrusted) { throw }
+            }
+            if (-not $untrusted) { throw 'Fresh authority was trusted before explicit import.' }
+            # This is a disposable GitHub-hosted Windows VM. Exercise normal Windows
+            # trust exactly as a client would, then remove only our new certificate.
+            $store.Add($certificate)
+            $imported = $true
+            $handler = [Net.Http.HttpClientHandler]::new()
+            $handler.UseProxy = $false
+            $trustedClient = [Net.Http.HttpClient]::new($handler)
+            $trustedClient.DefaultRequestHeaders.Add('Origin', $lan)
+            $access = $trustedClient.GetAsync("$lan/api/state").GetAwaiter().GetResult()
+            if ([int]$access.StatusCode -ne 401) { throw "Unexpected unpaired response: $($access.StatusCode)" }
+            $json = @{code=$invite.code; name='Windows smoke test'} | ConvertTo-Json -Compress
+            $content = [Net.Http.StringContent]::new($json, [Text.Encoding]::UTF8, 'application/json')
+            $paired = $trustedClient.PostAsync("$lan/api/pair", $content).GetAwaiter().GetResult()
+            if ([int]$paired.StatusCode -ne 200) { throw "Pair failed: $($paired.StatusCode)" }
+            $state = $trustedClient.GetStringAsync("$lan/api/state").GetAwaiter().GetResult() | ConvertFrom-Json
+            if ($state.context -ne (Invoke-RestMethod "$Origin/api/state").context) { throw 'Paired device has different world.' }
+        } catch {
+            $reason = $_.Exception
+            while ($null -ne $reason) {
+                Write-Warning ("TLS diagnostic: {0}: {1}" -f $reason.GetType().Name, $reason.Message)
+                $reason = $reason.InnerException
+            }
+            throw
+        } finally {
+            if ($trustedClient) { $trustedClient.Dispose() }
+            $probe.Dispose()
+            if ($imported) { $store.Remove($certificate) }
+            $store.Close()
+        }
     } finally {
         $settings = Invoke-RestMethod "$Origin/api/host/lan" -Method Post -Headers $headers -ContentType 'application/json' -Body '{"enabled":false}'
         if ($settings.enabled) { throw 'LAN failed to shut down.' }
@@ -158,13 +194,22 @@ if ($DesktopBrowser) {
 $handler = Join-Path $PSScriptRoot 'open-url.ps1'
 $psExe = Join-Path $PSHOME 'powershell.exe'
 if (!(Test-Path $psExe)) { $psExe = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" }
-$openCommand = '"{0}" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{1}" "%1"' -f $psExe,$handler
+$fixture = Join-Path $testRoot 'http-association.json'
+@{urls=$env:ESPORT_SMOKE_URLS; target=$env:ESPORT_SMOKE_TARGET; browser=$env:ESPORT_SMOKE_BROWSER; profiles=$env:ESPORT_SMOKE_PROFILE} |
+    ConvertTo-Json -Compress | Set-Content -LiteralPath $fixture
+$openCommand = '"{0}" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{1}" -Fixture "{2}" -Url "%1"' -f $psExe,$handler,$fixture
 $choice = Get-ItemPropertyValue 'HKCU:\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice' -Name ProgId -ErrorAction SilentlyContinue
-$hives = @([Microsoft.Win32.Registry]::CurrentUser)
-if ($CleanCore) { $hives += [Microsoft.Win32.Registry]::LocalMachine }
-foreach ($hive in $hives) {
+if ($CleanCore) {
+    # Stock Server Core has no desktop URL broker. Register a lightweight URL
+    # recipient with the same App Paths contract as a locally installed browser.
+    $probeExe = Join-Path $testRoot 'BrowserProbe.exe'
+    Add-Type -Path (Join-Path $PSScriptRoot 'BrowserProbe.cs') -OutputAssembly $probeExe -OutputType ConsoleApplication
+    $appPaths = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Software\Microsoft\Windows\CurrentVersion\App Paths\msedge.exe')
+    $appPaths.SetValue('', $probeExe)
+    $appPaths.Dispose()
+} else {
     foreach ($class in @('http', $choice) | Where-Object { $_ } | Select-Object -Unique) {
-        $key = $hive.CreateSubKey("Software\Classes\$class")
+        $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Software\Classes\$class")
         $key.SetValue('URL Protocol','')
         $key.CreateSubKey('shell').SetValue('', 'open')
         $open = $key.CreateSubKey('shell\open\command')
@@ -177,13 +222,6 @@ foreach ($hive in $hives) {
 
 $instancePath = Join-Path $env:LOCALAPPDATA 'EsportSim\instance.json'
 if (Test-Path $instancePath) { throw 'Existing launcher state found in fresh Windows environment.' }
-if ($CleanCore) {
-    # Probe the disposable HTTP registration before attributing renderer failures to the launcher.
-    $probe = [Diagnostics.ProcessStartInfo]::new('http://127.0.0.1:9/')
-    $probe.UseShellExecute = $true
-    $null = [Diagnostics.Process]::Start($probe)
-    Wait-Check 'stock Windows ShellExecute test handler' { @(Urls).Count -eq 1 }
-}
 $install = Join-Path $testRoot 'first install'
 Expand-Archive -LiteralPath $Archive -DestinationPath $install
 $exe = Join-Path $install 'EsportSim\EsportSim.exe'
