@@ -9,6 +9,7 @@ import logging
 import os
 import secrets
 import socket
+import subprocess
 import sys
 import time
 from contextlib import contextmanager
@@ -76,6 +77,33 @@ def ready(port, nonce):
         return False
     finally:
         client.close()
+
+
+def open_browser(url):
+    """Use the user's HTTP association, or an installed browser if it is broken."""
+    import winreg
+
+    try:
+        os.startfile(url)
+        return
+    except OSError as error:
+        logging.warning("Windows не смогла открыть ссылку через браузер по умолчанию: %s", error)
+
+    app_paths = r"Software\Microsoft\Windows\CurrentVersion\App Paths"
+    for name in ("msedge.exe", "chrome.exe", "firefox.exe"):
+        for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+            try:
+                with winreg.OpenKey(hive, app_paths + "\\" + name) as key:
+                    value, kind = winreg.QueryValueEx(key, None)
+                if kind not in (winreg.REG_SZ, winreg.REG_EXPAND_SZ):
+                    continue
+                executable = Path(os.path.expandvars(value).strip('"'))
+                if executable.is_absolute() and executable.is_file():
+                    subprocess.Popen([str(executable), url], close_fds=True)
+                    return
+            except OSError:
+                continue
+    raise RuntimeError("Выберите установленный браузер по умолчанию в настройках Windows и откройте EsportSim снова.")
 
 
 def open_existing(descriptor, open_url):
@@ -192,7 +220,7 @@ def main():
             if getattr(sys, "frozen", False)
             else Path(__file__).resolve().parents[1]
         )
-        launch(data, os.startfile, directory / "runtime-data" / "scenario.sqlite")
+        launch(data, open_browser, directory / "runtime-data" / "scenario.sqlite")
     except (Exception, SystemExit) as err:
         logging.exception("Ошибка запуска EsportSim")
         ctypes.windll.user32.MessageBoxW(
