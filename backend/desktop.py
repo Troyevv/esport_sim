@@ -66,7 +66,8 @@ async def serve(data, descriptor, listener, open_url):
                 return JSONResponse({"detail": "Запрос недоступен"}, status_code=403)
             return PlainTextResponse(nonce, headers={"Cache-Control": "no-store"})
         expected = request.headers.get("x-esportsim-instance")
-        if expected is not None and not secrets.compare_digest(expected, nonce):
+        if (request.url.path == "/api/host/shutdown" and expected is not None
+                and not secrets.compare_digest(expected.encode(), nonce.encode())):
             return JSONResponse({"detail": "Экземпляр сервера изменился"}, status_code=409)
         return await call_next(request)
 

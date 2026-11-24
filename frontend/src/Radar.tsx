@@ -196,10 +196,11 @@ function setupScene(
       return;
     }
     // Retain the fractional remainder on high-refresh displays.
-    lastFrame = !dirty && Number.isFinite(lastFrame)
-      ? lastFrame +
-        Math.max(1, Math.floor((now - lastFrame + 0.8) / period)) * period
-      : now;
+    lastFrame =
+      !dirty && Number.isFinite(lastFrame)
+        ? lastFrame +
+          Math.max(1, Math.floor((now - lastFrame + 0.8) / period)) * period
+        : now;
     let changed = dirty;
     for (const a of current.frame.world.agents) {
       const m = markers.get(a.id)!;

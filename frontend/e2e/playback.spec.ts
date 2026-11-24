@@ -3,7 +3,12 @@ import { RadarPlayback } from "../src/playback";
 import type { Frame } from "../src/session";
 
 // A screencast adds per-frame encoding work to the measurement.
-test.use({ trace: "off" });
+test.use({
+  trace: "off",
+  deviceScaleFactor: async ({ hasTouch }, use) => {
+    await use(hasTouch ? 2 : 1);
+  },
+});
 
 const point = (x: number, y = 15, heading = 0) => ({
   id: "T1",
@@ -160,6 +165,7 @@ test("радар показывает промежуточные положен�
     const quantile = (v: number[], q: number) =>
       Number(v[Math.floor((v.length - 1) * q)].toFixed(2));
     return {
+      pixelRatio: devicePixelRatio,
       frames: f.length,
       fps: ((f.length - 1) * 1000) / (f.at(-1)!.at - f[0].at),
       intervalMedianMs: quantile(intervals, 0.5),
@@ -187,4 +193,69 @@ test("радар показывает промежуточные положен�
     "true",
   );
   await control("Пауза").click();
+});
+
+test("нажатие выбирает отображаемого игрока при расхождении с последним снимком", async ({
+  page,
+  hasTouch,
+}) => {
+  let stream: import("@playwright/test").WebSocketRoute | undefined;
+  const first = frame(0, point(51), { speed: 8 });
+  first.world.agents.push({
+    ...point(35),
+    id: "CT1",
+    team: "CT",
+    name: "Atlas",
+  });
+  await page.addInitScript(() => {
+    Object.assign(window, {
+      __PIXI_APP_INIT__: (app: unknown) =>
+        Object.assign(window, { testPixi: app }),
+    });
+  });
+  await page.routeWebSocket("**/api/stream**", (route) => {
+    stream = route;
+    route.send(JSON.stringify(first));
+  });
+  // Hold presentation time while delivering two authoritative batches.
+  await page.clock.install({ time: new Date("2026-01-01T12:00:00Z") });
+  await page.clock.pauseAt(new Date("2026-01-01T12:00:01Z"));
+  await page.goto("/");
+  await expect.poll(() => Boolean(stream)).toBe(true);
+  await page.clock.runFor(32);
+  const radar = page.getByTestId("radar");
+  await radar.scrollIntoViewIfNeeded();
+  await page.clock.runFor(100);
+  const last = frame(8, point(35), { speed: 8 });
+  last.world.agents.push({
+    ...point(51),
+    id: "CT1",
+    team: "CT",
+    name: "Atlas",
+  });
+  last.world.motion = {
+    startTick: 0,
+    tracks: {
+      T1: Array.from({ length: 8 }, (_, i) => [51 - 2 * i, 15, Math.PI]),
+      CT1: Array.from({ length: 8 }, (_, i) => [35 + 2 * i, 15, 0]),
+    },
+  };
+  stream!.send(JSON.stringify(last));
+  await expect(page.getByTestId("tick")).toHaveText("8");
+  await page.clock.runFor(16);
+  const hit = await page.evaluate(() => {
+    const app = (window as any).testPixi;
+    const marker = app.stage.getChildByLabel("CT1", true);
+    const rect = app.canvas.getBoundingClientRect(),
+      at = marker.getGlobalPosition();
+    return { x: at.x + rect.x, y: at.y + rect.y, worldX: marker.x };
+  });
+  // Latest packet has T1 here. The drawn CT1 is still crossing from the left.
+  expect(hit.worldX).toBeLessThan(42);
+  if (hasTouch) await page.touchscreen.tap(hit.x, hit.y);
+  else await page.mouse.click(hit.x, hit.y);
+  await expect(page.getByRole("button", { name: /Atlas/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
 });

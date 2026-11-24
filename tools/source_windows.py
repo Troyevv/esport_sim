@@ -1,6 +1,7 @@
 """Double-click source launcher. Preparation uses only the standard library."""
 import hashlib
 import http.client
+import importlib.metadata
 import json
 import os
 from pathlib import Path
@@ -49,6 +50,24 @@ def run(description, args, cwd=ROOT):
         raise RuntimeError(description + " — ошибка. Подробности указаны выше.") from err
 
 
+def installed_python(requirements):
+    # Inspect the target venv from the bootstrap interpreter. Unrelated developer
+    # packages do not invalidate the runtime lock.
+    locked = {line.split("==", 1)[0] for line in requirements.read_text().splitlines() if "==" in line}
+    packages = importlib.metadata.distributions(path=[VENV / "Lib/site-packages"])
+    versions = sorted((d.metadata["Name"].lower(), d.version) for d in packages
+                      if d.metadata["Name"].lower() in locked)
+    return hashlib.sha256(json.dumps(versions).encode()).hexdigest()
+
+
+def installed_frontend(modules):
+    try:
+        lock = json.loads((modules / ".package-lock.json").read_text(encoding="utf-8"))
+        return all((FRONT / package).is_dir() for package in lock["packages"])
+    except (FileNotFoundError, KeyError, ValueError):
+        return False
+
+
 def prepare():
     node = shutil.which("node.exe")
     npm = shutil.which("npm.cmd")
@@ -66,15 +85,15 @@ def prepare():
     requirements = ROOT / "requirements.txt"
     deps = fingerprint([requirements], ROOT, pyversion)
     py_stamp = VENV / ".esportsim-dependencies"
-    if read_stamp(py_stamp) != deps or not (VENV / "Lib/site-packages/fastapi").is_dir():
+    if read_stamp(py_stamp) != deps + installed_python(requirements) or not (VENV / "Lib/site-packages/fastapi").is_dir():
         run("Установка зависимостей Python", [py, "-m", "pip", "install", "-r", requirements])
-        stamp(py_stamp, deps)
+        stamp(py_stamp, deps + installed_python(requirements))
 
     manifest = [FRONT / "package.json", FRONT / "package-lock.json"]
     js_deps = fingerprint(manifest, FRONT, version)
     modules = FRONT / "node_modules"
     js_stamp = modules / ".esportsim-dependencies"
-    if read_stamp(js_stamp) != js_deps or not all((modules / ".bin" / f"{tool}.cmd").exists() for tool in ("tsc","vite")):
+    if read_stamp(js_stamp) != js_deps or not installed_frontend(modules) or not all((modules / ".bin" / f"{tool}.cmd").exists() for tool in ("tsc","vite")):
         run("Установка зависимостей интерфейса", [npm, "ci", "--include=dev"], FRONT)
         stamp(js_stamp, js_deps)
     inputs = [*manifest, FRONT / "index.html", *FRONT.glob("tsconfig*.json"), *FRONT.glob("vite.config.*"),
@@ -107,8 +126,12 @@ def stop(descriptor):
     finally:
         client.close()
     deadline = time.monotonic() + 20
-    while descriptor.exists():
-        if json.loads(descriptor.read_text(encoding="utf-8"))["nonce"] != nonce:
+    while True:
+        try:
+            current = json.loads(descriptor.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            break
+        if current["nonce"] != nonce:
             break
         if time.monotonic() >= deadline:
             raise RuntimeError("Сервер не подтвердил завершение. Проверьте журнал запуска в профиле EsportSim.")
