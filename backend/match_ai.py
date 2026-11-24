@@ -3,7 +3,7 @@
 from functools import lru_cache
 from math import atan2, hypot, pi, sin
 
-from . import engine
+from . import engine, tactic_execution
 from .match_events import damage, emit
 from .match_rules import MAP, POSITIONS, RULES, UTILITY, WEAPONS, role_orders
 
@@ -151,7 +151,23 @@ def path_between(start, goal):
     return tuple(tuple(p) for p in engine.route(start, goal))
 
 
-def walk(a, goal, pace, hazards):
+@lru_cache(maxsize=128)
+def fire_detour(start, goal, sources):
+    blocked = {
+        cell
+        for cell in engine._FLOOR
+        if any(
+            hypot(engine._center(cell)[0] - x, engine._center(cell)[1] - y) < radius
+            for x, y, radius in sources
+        )
+    }
+    try:
+        return engine.route(start, goal, blocked)
+    except ValueError:
+        return []
+
+
+def walk(a, goal, pace, hazards, *, allow_detour=False):
     cell = engine._cell(a["x"], a["y"])
     dest = engine._cell(*goal)
     # Replan at cell centres; preserve the current edge when redirected mid-step.
@@ -174,8 +190,21 @@ def walk(a, goal, pace, hazards):
         distance(at((x, y)), f) < f["radius"] and distance(a, f) >= f["radius"]
         for f in hazards
     ):
-        a["status"] = "Пережидает огонь за укрытием"
-        return False
+        detour = (
+            fire_detour(
+                cell, dest, tuple((f["x"], f["y"], f["radius"]) for f in hazards)
+            )
+            if allow_detour
+            else []
+        )
+        if not detour:
+            a["status"] = "Пережидает огонь за укрытием"
+            return False
+        centre = engine._center(cell)
+        # Return to this cell centre before taking a different edge mid-stride.
+        a["path"] = ([centre] if centre != (a["x"], a["y"]) else []) + list(detour)
+        x, y = a["path"][0]
+        a["status"] = "Обходит огонь"
     dx, dy = x - a["x"], y - a["y"]
     a["heading"] = atan2(dy, dx)
     a["x"] += max(-pace, min(pace, dx))
@@ -225,6 +254,27 @@ def act(w, a, allies, bomb, visible_fire):
     a["target"] = None
     if w["action"] and w["action"]["player"] == a["id"]:
         return ("objective", None)
+    board = plan.get("board")
+    if board and not plan["rotated"]:
+        recover = side == "T" and bomb and not bomb["carrier"] and not bomb["site"]
+        rescuer = (
+            recover and min(alive, key=lambda p: (distance(p, bomb), p["id"])) is a
+        )
+        reinforce = side == "CT" and (
+            w["phase"] == "planted" or (plan["reinforce"] and slot in (1, 4))
+        )
+        # The surviving support slot rejoins the acting captain after a casualty.
+        regroup = len(alive) < 5 and a is alive[-1] and distance(a, alive[0]) > 34
+        if not rescuer and not reinforce and regroup:
+            a["status"] = "К капитану после потери союзника"
+            moved = walk(a, (alive[0]["x"], alive[0]["y"]), 2, visible_fire)
+            return ("move" if moved else "hold", None)
+        if not rescuer and not reinforce:
+            intent = tactic_execution.execute(
+                a, board["slots"][slot], now, bomb, visible_fire, walk
+            )
+            if intent:
+                return intent
     if w["phase"] == "planted":
         if side == "CT":
             site = (
@@ -355,7 +405,8 @@ def shoot(w, a, sight, b):
 
 
 def throw(w, a, target):
-    name = a["utility"].pop(0)
+    name = target.get("utility") or a["utility"][0]
+    a["utility"].remove(name)
     now = w["tick"]
     radius, duration = UTILITY[name]
     flight = max(3, round(distance(a, target) / 7))

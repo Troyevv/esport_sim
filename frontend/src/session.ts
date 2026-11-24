@@ -5,6 +5,7 @@ import type { Agent, RadarMap } from "./Radar";
 
 export type View = "full" | "CT" | "T";
 export interface Frame {
+  libraryRevision?: number;
   sequence: number;
   revision: number;
   context: string;
@@ -28,7 +29,7 @@ type Intent = {
   context: string;
   revision: number;
   kind: string;
-  value?: number|string;
+  value?: number|string|object;
 };
 const base = new URL(import.meta.env.VITE_SERVER_URL || location.origin);
 export const serverURL = (path: string) => new URL(path, base);
@@ -82,6 +83,7 @@ export function useSession(view: View) {
           )[intent.kind] || "",
         );
     } else throw new Error("Сервер отклонил подключение");
+    return result.ok;
   }
 
   useEffect(() => {
@@ -163,9 +165,9 @@ export function useSession(view: View) {
     };
   }, [view, generation]);
 
-  async function act(kind: string, value?: number|string) {
+  async function act(kind: string, value?: number|string|object) {
     const seen = current.current;
-    if (!seen || locked.current) return;
+    if (!seen || locked.current) return false;
     locked.current = true;
     setBusy(true);
     setNotice("");
@@ -178,7 +180,7 @@ export function useSession(view: View) {
         value,
       };
       sessionStorage.setItem(storageKey, JSON.stringify(intent));
-      await settle(intent, false);
+      const accepted = await settle(intent, false);
       // Read immediately as well as subscribing, so the next action uses the committed revision.
       const response = await request("/api/state?view=" + view);
       if (!response.ok) throw new Error();
@@ -191,10 +193,12 @@ export function useSession(view: View) {
         current.current = snapshot;
         setFrame(snapshot);
       }
+      return accepted;
     } catch {
       setConnection("Переподключение");
       setNotice("Сверяем результат команды с сервером");
       resync();
+      return false;
     } finally {
       locked.current = false;
       setBusy(false);
@@ -211,5 +215,5 @@ export function useSession(view: View) {
       setNotice("Домашний сервер недоступен");
     }
   }
-  return { frame, playback, connection, loadError, resync, notice, busy, act, pair };
+  return { frame, playback, connection, loadError, resync, notice, clearNotice: () => setNotice(""), busy, act, pair };
 }

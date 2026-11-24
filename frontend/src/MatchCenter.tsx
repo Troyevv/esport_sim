@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { PlanRef } from "./tactics";
 import Radar from "./Radar";
 import type { Frame, View } from "./session";
 import type { RadarPlayback } from "./playback";
@@ -14,7 +15,11 @@ export interface MatchView {
   teams: string[];
   sides: Side[];
   score: number[];
+  pregame: boolean;
+  nextBuy: string | null;
+  prepared: PlanRef[];
   history: {
+    tactic?: PlanRef;
     round: number;
     winner: number;
     side: Side;
@@ -59,7 +64,7 @@ export interface MatchView {
     weapon: string;
     head: boolean;
   }[];
-  plans: Partial<Record<Side, { site: string; style: string; buy: string }>>;
+  plans: Partial<Record<Side, { site: string; style: string; buy: string; tactic?: PlanRef }>>;
   remaining: number;
   timeoutLimit: number;
   pending: boolean;
@@ -85,13 +90,15 @@ type Props = {
   playback: RadarPlayback;
   connected: boolean;
   enabled: boolean;
-  act: (name: string, value?: number | string) => Promise<void>;
+  act: (name: string, value?: number | string) => Promise<boolean>;
+  openBoard: () => void;
   setView: (v: View) => void;
 };
 
 export default function MatchCenter({
   frame,
   playback,
+  openBoard,
   connected,
   enabled,
   act,
@@ -108,6 +115,17 @@ export default function MatchCenter({
   const finished = m.phase === "finished",
     timeout = m.phase === "timeout";
   const rounds = m.history.length;
+  const played = new Map<string, {plan: PlanRef; rounds: number; wins: number}>();
+  if (tab === "Раунды") {
+    for (const row of m.history) {
+      if (!row.tactic) continue;
+      const key = row.tactic.id + "/" + row.tactic.revision;
+      const entry = played.get(key) || {plan: row.tactic, rounds: 0, wins: 0};
+      entry.rounds++;
+      if (row.winner === 0) entry.wins++;
+      played.set(key, entry);
+    }
+  }
   return (
     <article className="match-center">
       <header className="match-title">
@@ -117,6 +135,7 @@ export default function MatchCenter({
             Депо <small>/ BO1</small>
           </h1>
         </div>
+        <button onClick={openBoard}>Редактор тактик</button>
         <span className="match-format">
           Выставочный матч
           <br />
@@ -312,6 +331,13 @@ export default function MatchCenter({
                 </table>
               </div>
             )}
+            {tab === "Раунды" && played.size > 0 && <section className="inventory tactic-results">
+              <h3>Тактики против «{m.teams[1]}»</h3>
+              <small>{world.map.name} · {m.stats.filter(p=>p.club===0).map(p=>p.name).join(", ")}</small>
+              {[...played.values()].map(({plan, rounds, wins})=><p key={plan.id+plan.revision}>
+                <b>{plan.name}</b> · в{plan.revision} · {plan.side} · {plan.buy} · выиграно {wins} из {rounds}
+              </p>)}
+            </section>}
             {tab === "Раунды" && (
               <div className="round-list">
                 {!rounds && <p>История появится после первого раунда.</p>}
@@ -327,6 +353,7 @@ export default function MatchCenter({
                       </span>
                       <span>
                         {r.reason}
+                        {r.tactic && <small className="round-economy">{r.tactic.name} · в{r.tactic.revision} · {r.tactic.side} · {r.tactic.buy}</small>}
                         <small className="round-economy">
                           {clock(r.duration)} ·{" "}
                           {Object.entries(r.economy)
@@ -376,6 +403,8 @@ export default function MatchCenter({
             <p>
               Север · осталось тайм-аутов <b>{m.remaining} / {m.timeoutLimit}</b>
             </p>
+            {m.pregame && m.prepared.map(p=><p key={p.side+p.buy}>{p.side} · {p.buy} · {p.name} · в{p.revision}</p>)}
+            {(timeout || m.pregame) && <button onClick={openBoard}>Выбрать тактику</button>}
             {!timeout ? (
               <button
                 disabled={
@@ -433,7 +462,7 @@ export default function MatchCenter({
             )}
             {Object.entries(m.plans).map(([side, p]) => (
               <p className="plan-line" key={side}>
-                <b>{side} · IGL</b> {p.style} · {p.site} · {p.buy}
+                <b>{side} · IGL</b> {p.tactic ? p.tactic.name+" · в"+p.tactic.revision : p.style} · {p.site} · {p.buy}
               </p>
             ))}
           </section>

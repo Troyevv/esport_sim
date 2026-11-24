@@ -59,7 +59,7 @@ function label(
 }
 
 // All structural outlines come from the authoritative collision rectangles.
-function drawPlan(map: RadarMap) {
+export function drawPlan(map: RadarMap) {
   const plan = new Container();
   const lines = new Graphics();
   plan.addChild(lines);
@@ -444,7 +444,7 @@ function bindNavigation(host: HTMLDivElement, api: RadarApi) {
   };
 }
 
-function CameraButton({
+export function CameraButton({
   label,
   disabled,
   onActivate,

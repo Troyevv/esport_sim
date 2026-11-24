@@ -41,7 +41,7 @@ def rounds(db, world):
     )
 
 
-@pytest.mark.parametrize("commit", ["67e384f", "761cc70"])
+@pytest.mark.parametrize("commit", ["67e384f", "761cc70", "1a51f40"])
 def test_upgrade_active_and_manual_and_finish_match(tmp_path, commit):
     path = restore(tmp_path, commit)
     db = sqlite3.connect(path)
@@ -57,7 +57,7 @@ def test_upgrade_active_and_manual_and_finish_match(tmp_path, commit):
         old, world = before.pop("world"), after.pop("world")
         assert before == after
         assert world["checkpointVersion"] == checkpoints.VERSION
-        for key in old.keys() - {"history", "logs", "events", "agents", "plans"}:
+        for key in old.keys() - {"history", "logs", "events", "agents", "plans", "checkpointVersion"}:
             assert world[key] == old[key]
         for player, prior in zip(world["agents"], old["agents"], strict=True):
             assert all(player[k] == value for k, value in prior.items())
