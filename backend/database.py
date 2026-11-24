@@ -1,5 +1,6 @@
 """Versioned pre-match source packages. Match checkpoints contain only the selected ten."""
 
+import base64
 import hashlib
 import json
 import re
@@ -103,6 +104,48 @@ def reference(value, rows, field):
     )
 
 
+def validate_photo(photo):
+    if photo in (None, "zywoo-chicago-2019"):
+        return
+    require(
+        isinstance(photo, dict)
+        and set(photo) == {"image", "author", "source", "license", "changes"},
+        "Некорректная карточка фотографии",
+    )
+    label(photo["author"])
+    require(
+        photo["license"] in ("CC0", "CC BY 2.0", "CC BY 4.0", "CC BY-SA 4.0"),
+        "Неизвестная лицензия фотографии",
+    )
+    require(
+        isinstance(photo["changes"], str) and len(photo["changes"]) <= 240,
+        "Некорректное описание изменений фото",
+    )
+    require(
+        isinstance(photo["source"], str)
+        and re.fullmatch(r"https://[A-Za-z0-9.-]+(?:/[^\s]*)?", photo["source"]),
+        "Нужна HTTPS-ссылка на источник фото",
+    )
+    image = photo["image"]
+    if isinstance(image, str) and re.fullmatch(r"https://[A-Za-z0-9.-]+/[^\s]+", image):
+        return
+    require(
+        isinstance(image, str) and len(image) <= 1400000,
+        "Фотография больше 1 МиБ или не указана",
+    )
+    header, _, payload = image.partition(",")
+    signatures = {
+        "data:image/jpeg;base64": b"\xff\xd8\xff",
+        "data:image/png;base64": b"\x89PNG\r\n\x1a\n",
+    }
+    require(header in signatures, "Загрузите фотографию JPEG или PNG")
+    raw = base64.b64decode(payload, validate=True)
+    require(
+        len(raw) <= 1024 * 1024 and raw.startswith(signatures[header]),
+        "Неверный размер или формат фотографии",
+    )
+
+
 def validate(pack):
     try:
         _validate(pack)
@@ -179,10 +222,7 @@ def _validate(p):
                             label(r[field])
                     if r["born"] is not None:
                         require(day(r["born"]) <= cutoff, "Дата рождения позже среза")
-                    require(
-                        r["photo"] in (None, "zywoo-chicago-2019"),
-                        "Неизвестная лицензия портрета",
-                    )
+                    validate_photo(r["photo"])
                     for field, allowed_keys in (
                         ("mapKnowledge", {"depo"}),
                         ("roleMastery", set(world.ROLE_NAMES)),
@@ -339,9 +379,11 @@ def installed(db):
 
 def put(db, p):
     validate(p)
+    body = encode(p)
+    require(len(body.encode()) + 100 <= 24 * 1024 * 1024, "Пакет больше 24 МиБ")
     db.execute(
         "INSERT INTO data_pack VALUES(?,?,?,?)",
-        (p["id"], p["revision"], p["title"], encode(p)),
+        (p["id"], p["revision"], p["title"], body),
     )
 
 

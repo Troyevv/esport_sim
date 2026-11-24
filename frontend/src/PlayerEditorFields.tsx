@@ -1,3 +1,4 @@
+import PortraitEditor from "./PortraitEditor";
 import { roles, type Entity } from "./databaseModel";
 
 export default function PlayerEditorFields({
@@ -37,18 +38,7 @@ export default function PlayerEditorFields({
           onChange={(e) => patch({ nationality: e.target.value || null })}
         />
       </label>
-      <label>
-        Портрет
-        <select
-          value={r.photo || ""}
-          onChange={(e) => patch({ photo: e.target.value || null })}
-        >
-          <option value="">Без фотографии</option>
-          <option value="zywoo-chicago-2019">
-            ZywOo · Чикаго 2019 · CC BY 2.0
-          </option>
-        </select>
-      </label>
+      <PortraitEditor value={r.photo} change={(photo) => patch({ photo })} />
       <details className="db-editor-extra">
         <summary>Знание карт и освоение ролей</summary>
         <div className="db-form">

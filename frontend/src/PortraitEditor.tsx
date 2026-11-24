@@ -1,0 +1,111 @@
+import { useState } from "react";
+import {
+  photoLicenses,
+  resolvePortrait,
+  type PhotoRef,
+  type PhotoAsset,
+} from "./portraits";
+export default function PortraitEditor({
+  value,
+  change,
+}: {
+  value?: PhotoRef;
+  change: (v: PhotoRef) => void;
+}) {
+  const p = resolvePortrait(value);
+  const [error, setError] = useState("");
+  const set = (v: Partial<PhotoAsset>) =>
+    change({
+      ...{
+        image: "",
+        author: "",
+        source: "",
+        license: "CC BY 4.0",
+        changes: "",
+      },
+      ...p,
+      ...v,
+    });
+  return (
+    <details className="db-editor-extra">
+      <summary>Фотография и лицензия</summary>
+      {!p ? (
+        <button onClick={() => set({})}>Добавить фотографию</button>
+      ) : (
+        <div className="db-form">
+          <label>
+            Изображение · JPEG или PNG
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (
+                  file.size > 1024 * 1024 ||
+                  !["image/jpeg", "image/png"].includes(file.type)
+                ) {
+                  setError("Выберите JPEG или PNG размером до 1 МиБ");
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onerror = () =>
+                  setError("Не удалось прочитать изображение");
+                reader.onload = () => {
+                  setError("");
+                  set({ image: String(reader.result) });
+                };
+                reader.readAsDataURL(file);
+              }}
+            />
+          </label>
+          <label>
+            Автор фотографии
+            <input
+              value={p.author}
+              onChange={(e) => set({ author: e.target.value })}
+            />
+          </label>
+          <label>
+            Страница источника
+            <input
+              type="url"
+              placeholder="https://"
+              value={p.source}
+              onChange={(e) => set({ source: e.target.value })}
+            />
+          </label>
+          <label>
+            Лицензия
+            <select
+              value={p.license}
+              onChange={(e) => set({ license: e.target.value })}
+            >
+              {Object.keys(photoLicenses).map((k) => (
+                <option key={k}>{k}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Изменения изображения
+            <input
+              value={p.changes}
+              placeholder="Например, кадрирование"
+              onChange={(e) => set({ changes: e.target.value })}
+            />
+          </label>
+          {p.image && (
+            <img
+              src={p.image}
+              alt="Портрет в пакете"
+              referrerPolicy="no-referrer"
+              width="64"
+            />
+          )}
+          <button onClick={() => change(null)}>Убрать фотографию</button>
+          {error && <p role="alert">{error}</p>}
+        </div>
+      )}
+    </details>
+  );
+}

@@ -1,3 +1,4 @@
+import type { PhotoRef } from "./portraits";
 export const skillLabels: Record<string, string> = {
   aim: "AIM",
   reaction: "Реакция",
@@ -160,7 +161,7 @@ export interface Entity {
   realName?: string | null;
   born?: string | null;
   nationality?: string | null;
-  photo?: string | null;
+  photo?: PhotoRef;
   mapKnowledge?: Record<string, number>;
   roleMastery?: Record<string, number>;
   statistics?: {

@@ -160,3 +160,28 @@ def test_familiarity_and_staff_follow_selected_revision():
     assert domain["players"][pid]["mapKnowledge"] == {"depo": 17}
     assert domain["players"][pid]["roleMastery"]["awper"] == 91
     assert domain["staff"][coach]["preparation"] == 82
+
+
+def test_embedded_credited_portrait_survives_export(tmp_path):
+    import base64
+
+    p = starter()
+    png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lccAAAAASUVORK5CYII="
+    image = dict(
+        image="data:image/png;base64," + png,
+        author="Test fixture",
+        source="https://example.org/photo",
+        license="CC0",
+        changes="",
+    )
+    player = next(iter(p["players"].values()))
+    player["photo"] = image
+    player["fields"]["photo"] = "model"
+    p["id"] = "test-portrait"
+    store = Store(tmp_path / "photo.sqlite")
+    with store.transaction():
+        data.install(store.db, data.encode(data.envelope(p)))
+    assert data.get(store.db, p["id"], 1) == p
+    image["image"] = "data:image/png;base64," + base64.b64encode(b"not a png").decode()
+    with pytest.raises(ValueError, match="формат фотографии"):
+        data.validate(p)

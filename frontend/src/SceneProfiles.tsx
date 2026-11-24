@@ -8,6 +8,7 @@ import {
   type Group,
 } from "./databaseModel";
 import "./profiles.css";
+import { resolvePortrait, photoLicenses, type PhotoRef } from "./portraits";
 
 // Read-only projections. Callers supply disclosed values or observation ranges.
 // No component in this module fetches an editor record or accepts a world/package.
@@ -94,21 +95,18 @@ export function AttributeGrid({
     </div>
   );
 }
-const photoPage =
-  "https://commons.wikimedia.org/wiki/File:IEM_Chicago_Final_Edits-9731_ZywOo_(48353577846)_(cropped).jpg";
-const photoUrl =
-  "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/IEM_Chicago_Final_Edits-9731_ZywOo_%2848353577846%29_%28cropped%29.jpg/250px-IEM_Chicago_Final_Edits-9731_ZywOo_%2848353577846%29_%28cropped%29.jpg";
-function Portrait({ name, photo }: { name: string; photo?: string | null }) {
+function Portrait({ name, photo }: { name: string; photo?: PhotoRef }) {
+  const asset = resolvePortrait(photo);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     setFailed(false);
   }, [photo]);
   return (
     <div className="pf-portrait">
-      {photo && !failed ? (
+      {asset && !failed ? (
         <img
-          alt={name + " · IEM Chicago, 2019"}
-          src={photoUrl}
+          alt={"Фотография · " + name}
+          src={asset.image}
           referrerPolicy="no-referrer"
           onError={() => setFailed(true)}
         />
@@ -128,11 +126,12 @@ export function ProfileHeading({
 }: {
   name: string;
   subtitle?: string | null;
-  photo?: string | null;
+  photo?: PhotoRef;
   type: string;
   context: string;
   rating?: number;
 }) {
+  const asset = resolvePortrait(photo);
   return (
     <header className="pf-heading">
       <Portrait name={name} photo={photo} />
@@ -148,20 +147,20 @@ export function ProfileHeading({
           <small>OVR</small>
         </div>
       )}
-      {photo && (
+      {asset && (
         <small className="pf-credit">
-          <a href={photoPage} target="_blank" rel="noreferrer">
-            Фото · Esports Kingdom
+          <a href={asset.source} target="_blank" rel="noreferrer">
+            Фото · {asset.author}
           </a>{" "}
           ·{" "}
           <a
-            href="https://creativecommons.org/licenses/by/2.0/"
+            href={photoLicenses[asset.license]}
             target="_blank"
             rel="noreferrer"
           >
-            CC BY 2.0
+            {asset.license}
           </a>{" "}
-          · кадрирование
+          {asset.changes && " · " + asset.changes}
         </small>
       )}
     </header>
