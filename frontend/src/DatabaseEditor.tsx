@@ -257,6 +257,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
       );
   }
   async function load(ref?: Ref, select?: Destination) {
+    setQuery("");
     const list = (await request("")) as (Ref & { title: string })[];
     const target = ref || list[0];
     const { package: p, portraits } = (await request("/" + refKey(target))) as {
@@ -270,7 +271,6 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
     setCreate(false);
     setPage(0);
     setFilter("");
-    setQuery("");
     setAt(
       select && p[select.group][select.id]
         ? select
@@ -686,6 +686,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
               return (
                 <button
                   key={id}
+                  disabled={busy}
                   aria-pressed={id === at.id}
                   onClick={() => move(g, id, true)}
                 >

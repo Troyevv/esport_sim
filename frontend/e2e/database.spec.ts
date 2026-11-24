@@ -8,13 +8,29 @@ test("Пакет, поиск, правка, перенос и BO1", async ({ pag
     "scene-20261124/1",
   );
   const catalog = page.getByLabel("Пакет и редакция");
-  await catalog.selectOption(
-    (await catalog
-      .locator('option[value^="austin-registration/"]')
-      .first()
-      .getAttribute("value")) as string,
+  const target = (await catalog
+    .locator('option[value^="austin-registration/"]')
+    .first()
+    .getAttribute("value"))!;
+  // Enter the search while the requested revision is still in flight.
+  let release!: () => void;
+  const pending = new Promise<void>((done) => {
+    release = done;
+  });
+  await page.route(
+    "**/api/database/" + target,
+    async (route) => {
+      await pending;
+      await route.continue();
+    },
+    { times: 1 },
   );
-  await page.getByLabel("Поиск", { exact: true }).fill("ZywOo");
+  await catalog.selectOption(target);
+  const search = page.getByLabel("Поиск", { exact: true });
+  await search.fill("ZywOo");
+  release();
+  await expect(catalog).toHaveValue(target);
+  await expect(search).toHaveValue("ZywOo");
   await page.getByRole("button", { name: /ZywOo/ }).first().click();
   await expect(
     page.getByText("Mathieu Herbaut", { exact: true }).first(),
