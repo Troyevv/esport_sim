@@ -2,6 +2,8 @@
 
 import html
 import json
+import math
+from email.utils import parsedate_to_datetime
 import re
 import time
 import unicodedata
@@ -42,6 +44,10 @@ class Unavailable(RuntimeError):
         self.delay = delay
 
 
+class PartialSearch(Exception):
+    """A provider failed while other publishers completed their search."""
+
+
 def plain(text):
     return " ".join(html.unescape(re.sub(r"<[^>]*>", " ", str(text))).split())
 
@@ -73,24 +79,50 @@ def matches(person, description):
 
 
 def allowed_url(url, hosts):
-    u = urlsplit(url)
+    try:
+        u = urlsplit(url)
+        port = u.port
+    except (TypeError, ValueError):
+        return False
     return (
         u.scheme == "https"
         and u.hostname in hosts
-        and u.port in (None, 443)
+        and port in (None, 443)
         and not u.username
         and not u.password
     )
+
+
+_backoff = {}
+
+
+def retry_delay(hint, default):
+    if hint.isdigit():
+        return max(1, int(hint))
+    try:
+        return max(1, math.ceil(parsedate_to_datetime(hint).timestamp() - time.time()))
+    except (TypeError, ValueError, OverflowError):
+        return default
+
+
+def check_host(url):
+    host = urlsplit(url).hostname
+    until, message = _backoff.get(host, (0, ""))
+    if until > time.monotonic():
+        raise Unavailable(message, math.ceil(until - time.monotonic()))
 
 
 def fetch(url, hosts, limit):
     if not allowed_url(url, hosts):
         raise ValueError("Неразрешённый адрес источника")
 
+    check_host(url)
+
     class Redirect(HTTPRedirectHandler):
         def redirect_request(self, req, fp, code, msg, headers, newurl):
             if not allowed_url(newurl, hosts):
                 raise ValueError("Переадресация за пределы источника")
+            check_host(newurl)
             return super().redirect_request(req, fp, code, msg, headers, newurl)
 
     try:
@@ -101,12 +133,19 @@ def fetch(url, hosts, limit):
     except HTTPError as exc:
         if exc.code in (404, 410):
             return b""
-        hint = exc.headers.get("Retry-After", "")
-        raise Unavailable(
-            f"Источник вернул HTTP {exc.code}", int(hint) if hint.isdigit() else 60
-        ) from exc
+        host = urlsplit(exc.geturl()).hostname
+        message = f"{host} вернул HTTP {exc.code}"
+        delay = retry_delay(
+            exc.headers.get("Retry-After", ""), 3600 if exc.code in (401, 403) else 60
+        )
+        if exc.code in (401, 403, 429, 503) or exc.headers.get("Retry-After"):
+            _backoff[host] = time.monotonic() + delay, message
+        raise Unavailable(message, delay) from exc
     except (OSError, URLError) as exc:
-        raise Unavailable("Источник временно недоступен") from exc
+        host = urlsplit(url).hostname
+        message = f"{host} временно недоступен"
+        _backoff[host] = time.monotonic() + 30, message
+        raise Unavailable(message) from exc
     if len(data) > limit:
         raise ValueError("Файл превышает лимит загрузки")
     return data
@@ -341,10 +380,13 @@ def discover(person, read=fetch, pause=time.sleep):
     import os
 
     providers = [
-        lambda: team_press_candidates(person, read, pause),
-        lambda: wikidata_candidates(person, read),
         lambda: commons_search(person, read, pause),
+        lambda: public_flickr(person, read),
     ]
+    if person.get("realName"):
+        providers.append(lambda: wikidata_candidates(person, read))
+    if normalized(person.get("team", "")) in ("vitality", "team vitality"):
+        providers.append(lambda: team_press_candidates(person, read, pause))
     if key := os.environ.get("ESPORTSIM_FLICKR_API_KEY"):
         providers.append(lambda: flickr_candidates(person, read, pause, key))
     failures = []
@@ -359,8 +401,10 @@ def discover(person, read=fetch, pause=time.sleep):
             failures.append(e)
     # The caller can retry incomplete searches. A temporary denial is never a
     # permanent declaration that a player does not have an eligible portrait.
-    if failures:
+    if failures and len(failures) == len(providers):
         raise failures[0]
+    if failures:
+        raise PartialSearch("Часть источников недоступна: " + str(failures[0]))
 
 
 class LinkedData(HTMLParser):
@@ -453,4 +497,67 @@ def team_press_candidates(person, read, pause):
             assetKey=url,
             title=label,
             hosts=sorted(hosts),
+        )
+
+
+def public_flickr(person, read):
+    """Flickr's public tagged Atom feed. Require a license on the individual entry."""
+    from xml.etree import ElementTree
+
+    atom = "{http://www.w3.org/2005/Atom}"
+    query = urlencode(
+        dict(tags=person["name"] + ",headshot", tagmode="all", format="atom")
+    )
+    raw = read(
+        "https://www.flickr.com/services/feeds/photos_public.gne?" + query,
+        {"www.flickr.com"},
+        1_000_000,
+    )
+    if not raw:
+        return
+    if b"<!DOCTYPE" in raw.upper():
+        raise ValueError("Неожиданный формат ленты")
+    try:
+        feed = ElementTree.fromstring(raw)
+    except ElementTree.ParseError as e:
+        raise Unavailable("Лента Flickr временно недоступна") from e
+    for entry in feed.findall(atom + "entry"):
+        links = {
+            link.get("rel", "alternate"): link.get("href", "")
+            for link in entry.findall(atom + "link")
+        }
+        license = LICENSES.get(
+            links.get("license", "").replace("http://", "https://").rstrip("/") + "/"
+        )
+        source = links.get("alternate", "")
+        url = links.get("enclosure", "")
+        detail = " ".join(
+            [
+                entry.findtext(atom + "title", ""),
+                plain(entry.findtext(atom + "content", "")),
+                *[c.get("term", "") for c in entry.findall(atom + "category")],
+            ]
+        )
+        author = plain(entry.findtext(atom + "author/" + atom + "name", ""))
+        if (
+            not license
+            or not matches(person, detail)
+            or not STUDIO.search(detail)
+            or UNSUITABLE.search(detail)
+        ):
+            continue
+        if (
+            not 0 < len(author) <= 240
+            or not allowed_url(source, {"www.flickr.com"})
+            or not allowed_url(url, {"live.staticflickr.com"})
+        ):
+            continue
+        yield dict(
+            image=url,
+            source=source,
+            author=author,
+            license=license,
+            assetKey=url,
+            title=detail[:240],
+            hosts=["live.staticflickr.com"],
         )

@@ -9,7 +9,7 @@ from uuid import uuid4
 from threading import Event, Lock, Thread
 
 from .portrait_processing import PortraitProcessor, Unsuitable, VERSION
-from .portrait_sources import discover, fetch, Unavailable
+from .portrait_sources import discover, fetch, Unavailable, PartialSearch
 
 
 def identity(pid, player):
@@ -305,6 +305,12 @@ class PortraitLibrary:
                                     "UPDATE task SET state='skipped',message=? WHERE seq=?",
                                     (reason, seq),
                                 )
+                    except PartialSearch as exc:
+                        if active():
+                            db.execute(
+                                "UPDATE task SET state='skipped', message=? WHERE seq=?",
+                                (str(exc), seq),
+                            )
                     except InterruptedError:
                         continue
                     except Unavailable as exc:

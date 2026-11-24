@@ -155,17 +155,22 @@ def launch(data, open_url, legacy_source=None):
 
 def main():
     if sys.argv[1:2] == ["--prepare-head"]:
-        from backend.portrait_processing import PortraitProcessor
-
         if len(sys.argv) != 4:
             return 2
-        processor = PortraitProcessor()
+        output = Path(sys.argv[3])
         try:
-            Path(sys.argv[3]).write_bytes(
-                processor.render(Path(sys.argv[2]).read_bytes())
-            )
-        finally:
-            processor.close()
+            from backend.portrait_processing import PortraitProcessor
+
+            processor = PortraitProcessor()
+            try:
+                output.write_bytes(processor.render(Path(sys.argv[2]).read_bytes()))
+            finally:
+                processor.close()
+        except Exception:
+            import traceback
+
+            Path(str(output) + ".error.txt").write_text(traceback.format_exc(), encoding="utf-8")
+            return 1
         return 0
     try:
         data = windows_data_dir()

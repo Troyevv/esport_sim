@@ -1,6 +1,6 @@
 """Cut a reviewed head contour from one authorized source and normalize it for a kit.
 
-Contributor tool, Pillow==13.0.0. Coordinates are measured on a preview of
+Contributor tool using the project Pillow dependency. Coordinates are measured on a preview of
 referenceWidth pixels. The two eye centres set scale and roll. The traced outline
 includes ears, hair and exposed neck, stopping inside the source collar.
 """

@@ -137,3 +137,68 @@ def test_failed_job_can_try_again_and_misses_are_not_free_agents(tmp_path):
     wait(lib)
     assert lib.status()["counts"] == {"skipped": 3} and not lib.index(p["players"])
     lib.close()
+
+
+def test_public_flickr_verifies_license_on_each_entry():
+    from backend.portrait_sources import public_flickr
+
+    p = dict(name="Alias", realName="Demo Athlete", team="Demo Club")
+    xml = b"""<feed xmlns="http://www.w3.org/2005/Atom"><entry>
+    <title>Demo Athlete (Alias), CS2 official roster portrait</title>
+    <author><name>Studio</name></author>
+    <link rel="license" href="https://creativecommons.org/licenses/by/4.0/"/>
+    <link rel="alternate" href="https://www.flickr.com/photos/test/1/"/>
+    <link rel="enclosure" href="https://live.staticflickr.com/test.jpg"/>
+    </entry></feed>"""
+    assert len(list(public_flickr(p, lambda *_: xml))) == 1
+    assert not list(public_flickr(p, lambda *_: xml.replace(b"by/4.0", b"by-nc/4.0")))
+    assert not list(
+        public_flickr(p, lambda *_: xml.replace(b'rel="license"', b'rel="related"'))
+    )
+
+
+def test_pause_and_retry_do_not_publish_stale_work(tmp_path):
+    started = Event()
+    release = Event()
+
+    def search(_):
+        started.set()
+        release.wait(5)
+        return []
+
+    pack = starter()
+    lib = PortraitLibrary(tmp_path / "library.sqlite", search)
+    lib.start(pack, "pilot")
+    assert started.wait(5)
+    with pytest.raises(ValueError, match="уже"):
+        lib.start(pack, "all")
+    assert lib.pause()["state"] == "paused"
+    lib.start(pack, "retry")
+    release.set()
+    wait(lib)
+    assert lib.status()["counts"] == {"skipped": 3}
+    lib.close()
+
+
+def test_rate_limit_applies_to_later_players_on_same_host(monkeypatch):
+    from email.message import Message
+    from urllib.error import HTTPError
+    from backend import portrait_sources as sources
+
+    host = "commons.wikimedia.org"
+    calls = []
+
+    class Opener:
+        def open(self, request, timeout):
+            calls.append(request.full_url)
+            headers = Message()
+            headers["Retry-After"] = "90"
+            raise HTTPError(request.full_url, 429, "Rate limit", headers, None)
+
+    monkeypatch.setattr(sources, "_backoff", {})
+    monkeypatch.setattr(sources, "build_opener", lambda *_: Opener())
+    for path in ("/one", "/two"):
+        with pytest.raises(sources.Unavailable, match="429") as exc:
+            sources.fetch("https://" + host + path, {host}, 1000)
+        assert 89 <= exc.value.delay <= 90
+    assert len(calls) == 1
