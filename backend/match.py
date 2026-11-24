@@ -2,7 +2,7 @@
 
 from math import atan2
 
-from . import engine
+from . import checkpoints, engine
 from . import match_ai as ai
 from .match_events import damage, emit, money
 from .match_rules import (
@@ -22,6 +22,7 @@ def initial(seed):
     w = engine.initial(seed)
     w.update(
         version=2,
+        checkpointVersion=checkpoints.VERSION,
         map_version=MAP["version"],
         rules=VERSION,
         round=0,
@@ -280,7 +281,6 @@ def command(w, kind, value=None):
 
 
 def finish_round(w, side, reason):
-    buys = [e for e in w["events"] if e["kind"] == "buy"]
     winner = next(a["club"] for a in w["agents"] if a["team"] == side)
     event = emit(
         w,
@@ -328,9 +328,7 @@ def finish_round(w, side, reason):
             reason=reason,
             score=list(w["score"]),
             duration=w["tick"] - w["roundStart"],
-            economy={
-                s: sum(e["price"] for e in buys if e["team"] == s) for s in ("T", "CT")
-            },
+            economy=checkpoints.purchases(w["events"]),
         )
     )
     w["streak"][winner] = 0

@@ -90,6 +90,8 @@ async def serve(data, descriptor, listener, open_url):
         while not server.started or not await asyncio.to_thread(ready, port, nonce):
             if task.done():
                 await task
+                if getattr(app.state, "load_error", None):
+                    raise RuntimeError(app.state.load_error)
                 raise RuntimeError("Сервер завершил работу во время запуска.")
             if time.monotonic() >= deadline:
                 raise RuntimeError("Сервер не запустился в течение 30 секунд.")

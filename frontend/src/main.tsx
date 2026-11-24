@@ -71,7 +71,7 @@ function App() {
     const platform = navigator.userAgent.match(/iPhone|iPad|Android/i)?.[0];
     return platform || "Мой браузер";
   });
-  const { frame, playback, connection, busy, notice, act, pair } = useSession(view);
+  const { frame, playback, connection, loadError, resync, busy, notice, act, pair } = useSession(view);
   useEffect(() => {
     if (connection === "На связи") setCode("");
   }, [connection]);
@@ -142,7 +142,13 @@ function App() {
             <button>Подключить</button>
           </form>
         )}
-        {!world && connection !== "Требуется код" && (
+        {loadError && (
+          <section className="panel">
+            <p role="alert">{loadError}</p>
+            <button onClick={resync}>Повторить подключение</button>
+          </section>
+        )}
+        {!world && !loadError && connection !== "Требуется код" && (
           <p role="status">Получаем состояние домашнего сервера…</p>
         )}
         {notice && (

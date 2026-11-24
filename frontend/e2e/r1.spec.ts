@@ -134,3 +134,20 @@ test(
     }
   },
 );
+
+test("ошибка чтения сохранения останавливает повторы и допускает ручное подключение", async ({ page }) => {
+  let attempts = 0;
+  await page.route("**/api/state?view=*", route => {
+    attempts++;
+    return route.fulfill({ status: 500, body: "Internal Server Error" });
+  });
+  await page.goto("/");
+  await expect(page.getByRole("alert")).toContainText("HTTP 500");
+  await expect(page.getByTestId("connection")).toHaveText("Ошибка загрузки");
+  const failedAttempts = attempts;
+  await page.waitForTimeout(1000);
+  expect(attempts).toBe(failedAttempts);
+  await page.unroute("**/api/state?view=*");
+  await page.getByRole("button", { name: "Повторить подключение" }).click();
+  await expect(page.getByTestId("connection")).toHaveText("На связи");
+});

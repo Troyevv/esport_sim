@@ -59,7 +59,11 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app):
         with own_clock(db_path):
-            store = Store(db_path)
+            try:
+                store = Store(db_path)
+            except Conflict as exc:
+                app.state.load_error = str(exc)
+                raise
             app.state.store = store
             if pairing_code:
                 with store.transaction():

@@ -1,6 +1,5 @@
 """One authoritative scenario, its manual snapshot and durable command receipts."""
 
-import hashlib
 import json
 import sqlite3
 from collections import deque
@@ -8,7 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
 
-from . import engine, match
+from . import checkpoints, engine, match
 
 
 class Conflict(ValueError):
@@ -24,6 +23,10 @@ def validate_snapshot(state):
     )
     if state.get("version") != 1 or model not in supported:
         raise Conflict("Несовместимая версия снимка, ядра или геометрии")
+    if world.get("version") == 2:
+        version = world.get("checkpointVersion", 1)
+        if type(version) is not int or version not in (1, checkpoints.VERSION):
+            raise Conflict(f"Неподдерживаемая версия сохранения BO1: {version}")
 
 
 class Store:
@@ -42,26 +45,53 @@ class Store:
                 BEGIN DELETE FROM device_info WHERE digest=OLD.digest; END;
             CREATE TABLE IF NOT EXISTS invitation (digest TEXT PRIMARY KEY, expires INTEGER NOT NULL);
         """)
-        existing = self.db.execute("SELECT body FROM active WHERE id=1").fetchone()
-        if existing:
-            try:
-                validate_snapshot(json.loads(existing[0]))
-            except (ValueError, TypeError, AttributeError):
-                self.db.close()
-                raise
-        else:
-            self.write(
-                dict(
-                    version=1,
-                    context=str(uuid4()),
-                    revision=0,
-                    sequence=0,
-                    running=False,
-                    speed=1,
-                    world=engine.initial(42),
-                    hasSave=False,
+        try:
+            with self.transaction():
+                for table in ("active", "slot"):
+                    row = self.db.execute(
+                        f"SELECT body FROM {table} WHERE id=1"
+                    ).fetchone()
+                    if row:
+                        self.restore_checkpoint(table, row[0])
+                    elif table == "active":
+                        self.write(
+                            dict(
+                                version=1,
+                                context=str(uuid4()),
+                                revision=0,
+                                sequence=0,
+                                running=False,
+                                speed=1,
+                                world=engine.initial(42),
+                                hasSave=False,
+                            )
+                        )
+        except BaseException:
+            self.db.close()
+            raise
+
+    def restore_checkpoint(self, table, body):
+        """Caller owns the transaction. Keep original JSON and immutable log blocks."""
+        label = "активный сценарий" if table == "active" else "ручное сохранение"
+        try:
+            state = json.loads(body)
+            validate_snapshot(state)
+            world = state["world"]
+            if world["version"] == 2 and world.get("checkpointVersion", 1) == 1:
+                checkpoints.upgrade_match(self.db, world)
+                self.db.execute("""CREATE TABLE IF NOT EXISTS checkpoint_backup (
+                    source TEXT NOT NULL, body TEXT NOT NULL, UNIQUE(source, body))""")
+                self.db.execute(
+                    "INSERT OR IGNORE INTO checkpoint_backup VALUES(?,?)", (table, body)
                 )
-            )
+                self.db.execute(
+                    f"UPDATE {table} SET body=? WHERE id=1", (json.dumps(state),)
+                )
+            if world["version"] == 2:
+                checkpoints.validate_current(world)
+            return state
+        except (ValueError, TypeError, AttributeError, KeyError, IndexError) as exc:
+            raise Conflict(f"Не удалось прочитать {label}: {exc}") from exc
 
     @contextmanager
     def transaction(self):
@@ -84,12 +114,9 @@ class Store:
         world = state["world"]
         if world.get("archive"):
             for events in world["archive"]:
-                body = json.dumps(events, ensure_ascii=False, separators=(",", ":"))
-                digest = hashlib.sha256(body.encode()).hexdigest()
-                self.db.execute(
-                    "INSERT OR IGNORE INTO round_log VALUES(?,?)", (digest, body)
+                world.setdefault("logs", []).append(
+                    checkpoints.put_round(self.db, events)
                 )
-                world.setdefault("logs", []).append(digest)
             world["archive"] = []
         self.db.execute(
             "INSERT OR REPLACE INTO active VALUES(1,?)", (json.dumps(state),)
@@ -206,8 +233,7 @@ class Store:
                 row = self.db.execute("SELECT body FROM slot").fetchone()
                 if not row:
                     raise Conflict("Нет сохранения")
-                saved = json.loads(row[0])
-                validate_snapshot(saved)
+                saved = self.restore_checkpoint("slot", row[0])
                 state.update(saved)
                 state["context"] = str(uuid4())
             elif kind in ("timeout", "call", "resume"):

@@ -49,6 +49,7 @@ export function useSession(view: View) {
   const [frame, setFrame] = useState<Frame | null>(null);
   const [connection, setConnection] = useState("Подключение");
   const [notice, setNotice] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [generation, setGeneration] = useState(0);
   const current = useRef<Frame | null>(null);
@@ -93,6 +94,7 @@ export function useSession(view: View) {
     current.current = null;
     setConnection("Подключение");
     setFrame(null);
+    setLoadError("");
     const retry = () => {
       if (!active) return;
       if (current.current) playback.push(current.current, false, performance.now());
@@ -107,6 +109,13 @@ export function useSession(view: View) {
         if (!active) return;
         if (response.status === 401) {
           setConnection("Требуется код");
+          return;
+        }
+        if (response.status === 500 || response.status === 403) {
+          setConnection("Ошибка загрузки");
+          setLoadError(response.status === 500
+            ? "Сервер не смог прочитать состояние (HTTP 500). На домашнем ПК проверьте launcher.log в папке %LOCALAPPDATA%\\EsportSim."
+            : "Сервер отклонил этот адрес (HTTP 403). Откройте игру по адресу, выданному домашним сервером.");
           return;
         }
         if (!response.ok) throw new Error();
@@ -202,5 +211,5 @@ export function useSession(view: View) {
       setNotice("Домашний сервер недоступен");
     }
   }
-  return { frame, playback, connection, notice, busy, act, pair };
+  return { frame, playback, connection, loadError, resync, notice, busy, act, pair };
 }
