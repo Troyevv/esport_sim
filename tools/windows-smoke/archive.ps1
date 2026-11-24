@@ -220,6 +220,12 @@ Wait-Check 'secondary launcher exit' { @(Get-Process -Name EsportSim -ErrorActio
 $origin = "http://127.0.0.1:$($first.port)"
 if ($DesktopBrowser) { Test-Lan $origin }
 if (!(Test-Path (Join-Path $install 'EsportSim\TACTICS.md'))) { throw 'Tactics guide missing from archive.' }
+$scene = (Invoke-RestMethod "$origin/api/database/austin-registration/1").package
+if ($scene.players.PSObject.Properties.Name.Count -ne 61) { throw 'Offline player database missing from Windows distribution.' }
+$lineups = @($scene.rosters.PSObject.Properties | Where-Object { $_.Value.name -in @('Vitality','Falcons') } | ForEach-Object { $_.Name })
+Command $origin 'database-match' @{id=$scene.id;revision=1;seed=42;rosters=$lineups}
+$realMatch = (Invoke-RestMethod "$origin/api/state").world.match
+if ($realMatch.source.id -ne $scene.id -or 'Vitality' -notin $realMatch.teams) { throw 'Packaged real BO1 did not load.' }
 $library = Invoke-RestMethod "$origin/api/tactics"
 $plan = $library.plans | Where-Object { $_.id -eq 'std-T-0' }
 if ($plan.slots.Count -ne 5) { throw 'Packaged board has no five-slot plan.' }

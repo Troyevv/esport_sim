@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import TacticEditor from "./TacticEditor";
+import DatabaseEditor from "./DatabaseEditor";
 import MatchCenter from "./MatchCenter";
 import Radar from "./Radar";
 import HostSettings from "./HostSettings";
@@ -64,6 +65,7 @@ function takePairingCode() {
 }
 
 function App() {
+  const [database, showDatabase] = useState(false);
   const [board, showBoard] = useState(false);
   const [view, setView] = useState<View>("full");
   const [selected, setSelected] = useState<string | null>(null);
@@ -107,7 +109,9 @@ function App() {
         <HostSettings connected={connection === "На связи"}/>
       </header>
       <main>
-        {!board && !world?.match && <div className="intro">
+        {world && !database && !board && <button className="database-entry" onClick={()=>showDatabase(true)}>База сцены</button>}
+        {database && world && <DatabaseEditor onClose={()=>showDatabase(false)} enabled={enabled} start={value=>act("database-match",value)}/>}
+        {!database && !board && !world?.match && <div className="intro">
           <div>
             <div className="eyebrow">
               <i /> СТЕНД СИМУЛЯЦИИ <span>/ R0</span>
@@ -158,9 +162,9 @@ function App() {
             {notice}
           </p>
         )}
-        {board && frame && <TacticEditor frame={frame} enabled={enabled} act={act} commandNotice={notice} clearNotice={clearNotice} onClose={()=>{clearNotice();showBoard(false);}}/>}
-        {!board && world?.match && frame && <MatchCenter openBoard={()=>showBoard(true)} key={frame.context} frame={frame} playback={playback} connected={connection==="На связи"} enabled={enabled} act={act} setView={setView}/>}
-        {!board && world && !world.match && frame && (
+        {!database && board && frame && <TacticEditor frame={frame} enabled={enabled} act={act} commandNotice={notice} clearNotice={clearNotice} onClose={()=>{clearNotice();showBoard(false);}}/>}
+        {!database && !board && world?.match && frame && <MatchCenter openBoard={()=>showBoard(true)} key={frame.context} frame={frame} playback={playback} connected={connection==="На связи"} enabled={enabled} act={act} setView={setView}/>}
+        {!database && !board && world && !world.match && frame && (
           <div className="dashboard">
             <div className="column">
               <section className="panel mapcard">

@@ -57,6 +57,8 @@ def main():
             str(ROOT),
             "--add-data",
             f"{frontend}:frontend/dist",
+            "--add-data",
+            f"{ROOT / 'backend' / 'data'}:backend/data",
             "--collect-submodules",
             "uvicorn",
             str(ROOT / "backend" / "desktop.py"),
@@ -73,6 +75,7 @@ def main():
     shutil.copyfile(ROOT / "LICENSE", output / "LICENSE")
     shutil.copyfile(ROOT / "docs" / "TACTICS.md", output / "TACTICS.md")
     shutil.copyfile(ROOT / "docs" / "WORLD_R31.md", output / "WORLD_R31.md")
+    shutil.copyfile(ROOT / "docs" / "DATABASE_R32.md", output / "DATABASE_R32.md")
     screenshots = output / "screenshots"
     screenshots.mkdir(exist_ok=True)
     for source in (ROOT / "docs" / "screenshots").glob("r2-*.png"):

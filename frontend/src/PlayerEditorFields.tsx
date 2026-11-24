@@ -1,0 +1,168 @@
+import { roles, type Entity } from "./databaseModel";
+
+export default function PlayerEditorFields({
+  r,
+  patch,
+  asOf,
+}: {
+  r: Entity;
+  patch: (v: Partial<Entity>) => void;
+  asOf: string;
+}) {
+  const st = r.statistics;
+  return (
+    <>
+      <label>
+        Настоящее имя
+        <input
+          value={r.realName || ""}
+          maxLength={240}
+          onChange={(e) => patch({ realName: e.target.value || null })}
+        />
+      </label>
+      <label>
+        Дата рождения
+        <input
+          type="date"
+          max={asOf}
+          value={r.born || ""}
+          onChange={(e) => patch({ born: e.target.value || null })}
+        />
+      </label>
+      <label>
+        Национальность
+        <input
+          value={r.nationality || ""}
+          maxLength={240}
+          onChange={(e) => patch({ nationality: e.target.value || null })}
+        />
+      </label>
+      <label>
+        Портрет
+        <select
+          value={r.photo || ""}
+          onChange={(e) => patch({ photo: e.target.value || null })}
+        >
+          <option value="">Без фотографии</option>
+          <option value="zywoo-chicago-2019">
+            ZywOo · Чикаго 2019 · CC BY 2.0
+          </option>
+        </select>
+      </label>
+      <details className="db-editor-extra">
+        <summary>Знание карт и освоение ролей</summary>
+        <div className="db-form">
+          <label>
+            Депо
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={r.mapKnowledge?.depo ?? ""}
+              onChange={(e) =>
+                patch({
+                  mapKnowledge:
+                    e.target.value === ""
+                      ? {}
+                      : { depo: Number(e.target.value) },
+                })
+              }
+            />
+          </label>
+          {Object.entries(roles).map(([k, name]) => (
+            <label key={k}>
+              {name}
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={r.roleMastery?.[k] ?? ""}
+                onChange={(e) => {
+                  const mastery = { ...r.roleMastery };
+                  if (e.target.value === "") delete mastery[k];
+                  else mastery[k] = Number(e.target.value);
+                  patch({ roleMastery: mastery });
+                }}
+              />
+            </label>
+          ))}
+        </div>
+      </details>
+      <details className="db-editor-extra">
+        <summary>Индивидуальная статистика</summary>
+        {st ? (
+          <div className="db-form">
+            <label>
+              Событие
+              <input
+                value={st.event}
+                onChange={(e) =>
+                  patch({ statistics: { ...st, event: e.target.value } })
+                }
+              />
+            </label>
+            <label>
+              Противник
+              <input
+                value={st.opponent}
+                onChange={(e) =>
+                  patch({ statistics: { ...st, opponent: e.target.value } })
+                }
+              />
+            </label>
+            <label>
+              Дата встречи
+              <input
+                type="date"
+                value={st.date}
+                max={asOf}
+                onChange={(e) =>
+                  patch({ statistics: { ...st, date: e.target.value } })
+                }
+              />
+            </label>
+            {(["maps", "kills", "deaths", "assists", "adr"] as const).map(
+              (k, i) => (
+                <label key={k}>
+                  {["Карт", "Убийств", "Смертей", "Ассистов", "ADR"][i]}
+                  <input
+                    type="number"
+                    min={k === "maps" ? 1 : 0}
+                    value={st[k]}
+                    onChange={(e) =>
+                      patch({
+                        statistics: { ...st, [k]: Number(e.target.value) },
+                      })
+                    }
+                  />
+                </label>
+              ),
+            )}
+            <button onClick={() => patch({ statistics: null })}>
+              Удалить наблюдение
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() =>
+              patch({
+                statistics: {
+                  event: "",
+                  date: asOf,
+                  maps: 1,
+                  kills: 0,
+                  deaths: 0,
+                  assists: 0,
+                  adr: 0,
+                  opponent: "",
+                },
+              })
+            }
+          >
+            Добавить наблюдение
+          </button>
+        )}
+      </details>
+    </>
+  );
+}

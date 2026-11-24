@@ -17,6 +17,7 @@ from . import tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
+from .database_api import editor_router
 from .home_settings import home_router
 from .lan import LanAccess
 
@@ -29,7 +30,7 @@ class Command(BaseModel):
     id: UUID
     revision: StrictInt
     context: str
-    kind: Literal["start", "pause", "speed", "reset", "save", "load", "match", "timeout", "call", "resume", "tactic-save", "tactic-delete", "tactic-assign"]
+    kind: Literal["start", "pause", "speed", "reset", "save", "load", "match", "timeout", "call", "resume", "tactic-save", "tactic-delete", "tactic-assign", "database-match"]
     value: StrictInt | Literal["Капитану", "Выход A", "Выход B", "Ускориться", "Экономить"] | dict | None = None
 
 
@@ -212,6 +213,8 @@ def create_app(
             max_age=2592000,
         )
         return response
+
+    app.include_router(editor_router(app))
 
     @app.get("/api/tactics")
     async def library():

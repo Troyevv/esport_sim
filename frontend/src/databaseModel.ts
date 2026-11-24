@@ -1,0 +1,274 @@
+export const skillLabels: Record<string, string> = {
+  aim: "AIM",
+  reaction: "Реакция",
+  flick: "Flick",
+  tracking: "Tracking",
+  recoil: "Контроль отдачи",
+  first_shot: "Первый выстрел",
+  burst_control: "Контроль очередей",
+  target_switch: "Перевод между целями",
+  movement: "Передвижение",
+  counter_strafe: "Контрстрейф",
+  peeking: "Пики",
+  pistols: "Пистолеты",
+  rifles: "Штурмовые винтовки",
+  sniper_rifles: "Снайперские винтовки",
+  smgs: "ПП",
+  shotguns: "Дробовики",
+  machine_guns: "Пулемёты",
+  flashes: "Флешки",
+  smokes: "Дымы",
+  he: "HE",
+  incendiaries: "Зажигательные",
+  decoys: "Ложные",
+  positioning: "Позиционирование",
+  game_reading: "Чтение игры",
+  decisions: "Решения",
+  timing: "Тайминги",
+  map_control: "Контроль карты",
+  entry: "Энтри",
+  lurking: "Люркинг",
+  clutch: "Клатчи",
+  retakes: "Ретейки",
+  postplant: "Постплант",
+  adaptability: "Адаптивность",
+  discipline: "Игровая дисциплина",
+  communication: "Коммуникация",
+  coordination: "Координация",
+  leadership: "Лидерство",
+  calling: "Коллы",
+  trades: "Размены",
+  support: "Поддержка",
+  synchronization: "Синхронизация",
+  execution: "Исполнение тактик",
+  consistency: "Стабильность",
+  concentration: "Концентрация",
+  stress_resistance: "Стрессоустойчивость",
+  composure: "Самообладание",
+  confidence: "Уверенность",
+  patience: "Терпение",
+  aggression: "Агрессивность",
+  risk: "Склонность к риску",
+  endurance: "Выносливость",
+  fatigue_resistance: "Устойчивость к усталости",
+  recovery: "Восстановление",
+  motivation: "Мотивация",
+  professionalism: "Профессионализм",
+  learning: "Обучаемость",
+  ambition: "Амбициозность",
+  loyalty: "Лояльность",
+};
+export const skillGroups: Record<string, string[]> = {
+  Механика: [
+    "aim",
+    "reaction",
+    "flick",
+    "tracking",
+    "recoil",
+    "first_shot",
+    "burst_control",
+    "target_switch",
+    "movement",
+    "counter_strafe",
+    "peeking",
+  ],
+  "Оружие и гранаты": [
+    "pistols",
+    "rifles",
+    "sniper_rifles",
+    "smgs",
+    "shotguns",
+    "machine_guns",
+    "flashes",
+    "smokes",
+    "he",
+    "incendiaries",
+    "decoys",
+  ],
+  Тактика: [
+    "positioning",
+    "game_reading",
+    "decisions",
+    "timing",
+    "map_control",
+    "entry",
+    "lurking",
+    "clutch",
+    "retakes",
+    "postplant",
+    "adaptability",
+    "discipline",
+  ],
+  "Командная игра": [
+    "communication",
+    "coordination",
+    "leadership",
+    "calling",
+    "trades",
+    "support",
+    "synchronization",
+    "execution",
+  ],
+  "Психология и развитие": [
+    "consistency",
+    "concentration",
+    "stress_resistance",
+    "composure",
+    "confidence",
+    "patience",
+    "aggression",
+    "risk",
+    "motivation",
+    "professionalism",
+    "ambition",
+    "loyalty",
+    "learning",
+  ],
+  Физические: ["endurance", "fatigue_resistance", "recovery"],
+};
+export const groups = {
+  players: "Игроки",
+  teams: "Команды",
+  rosters: "Составы",
+  staff: "Персонал",
+  organizations: "Организации",
+};
+export type Group = keyof typeof groups;
+export const roles: Record<string, string> = {
+  rifler: "Рифлер",
+  entry: "Энтри",
+  lurker: "Люркер",
+  awper: "Снайпер",
+  support: "Поддержка",
+  igl: "Капитан",
+};
+export const regions: Record<string, string> = {
+  Europe: "Европа",
+  Americas: "Америка",
+  Asia: "Азия",
+};
+export const statuses: Record<string, string> = {
+  confirmed: "Подтверждено",
+  estimated: "Расчёт",
+  modeled: "Модель",
+  unknown: "Неизвестно",
+};
+export interface Entity {
+  founded?: number | null;
+  website?: string | null;
+  preparation?: number;
+  realName?: string | null;
+  born?: string | null;
+  nationality?: string | null;
+  photo?: string | null;
+  mapKnowledge?: Record<string, number>;
+  roleMastery?: Record<string, number>;
+  statistics?: {
+    event: string;
+    date: string;
+    opponent: string;
+    maps: number;
+    kills: number;
+    deaths: number;
+    assists: number;
+    adr: number;
+  } | null;
+  name: string;
+  origin: string;
+  fields: Record<string, string>;
+  role?: string | null;
+  skills?: Record<string, number>;
+  potential?: number | null;
+  contract?: string | null;
+  region?: string | null;
+  tier?: number | null;
+  organization?: string | null;
+  team?: string | null;
+  players?: string[];
+  captain?: string | null;
+  date?: string;
+}
+export type Origin = { date: string; status: string; reference: string };
+export type Result = {
+  team: string;
+  opponent: string;
+  event: string | null;
+  outcome: string;
+  date: string;
+  origin: string;
+  players: string[];
+};
+export type Pack = Record<Group, Record<string, Entity>> & {
+  id: string;
+  revision: number;
+  title: string;
+  asOf: string;
+  origins: Record<string, Origin>;
+  history: Record<string, Result>;
+};
+export type Ref = { id: string; revision: number };
+export const groupKeys = Object.keys(groups) as Group[];
+export const refKey = (r: Ref) => r.id + "/" + r.revision;
+export function emptyEntity(g: Group, p: Pack): Entity {
+  const base = { name: "", origin: "", fields: {} };
+  switch (g) {
+    case "players":
+      return {
+        ...base,
+        role: null,
+        contract: null,
+        potential: null,
+        realName: null,
+        born: null,
+        nationality: null,
+        photo: null,
+        statistics: null,
+        mapKnowledge: { depo: 65 },
+        roleMastery: Object.fromEntries(Object.keys(roles).map((k) => [k, 65])),
+        skills: Object.fromEntries(
+          Object.keys(skillLabels).map((k) => [k, 65]),
+        ),
+      };
+    case "teams":
+      return { ...base, organization: null, region: null, tier: null };
+    case "rosters":
+      return {
+        ...base,
+        team: Object.keys(p.teams)[0] || null,
+        players: [],
+        date: p.asOf,
+        captain: null,
+      };
+    case "staff":
+      return {
+        ...base,
+        team: null,
+        role: "Тренер",
+        realName: null,
+        preparation: 65,
+      };
+    default:
+      return { ...base, founded: null, website: null };
+  }
+}
+export function evidence(
+  p: Pack,
+  r: Entity,
+  field: string,
+  value: unknown,
+): Origin {
+  const key = r.fields[field] ?? r.fields[field.split(".")[0]] ?? r.origin;
+  if (value == null)
+    return {
+      status: "unknown",
+      date: p.asOf,
+      reference: "В пакете нет подтверждённых сведений",
+    };
+  return (
+    p.origins[key] || {
+      status: "modeled",
+      date: p.asOf,
+      reference: "Правка пользователя",
+    }
+  );
+}

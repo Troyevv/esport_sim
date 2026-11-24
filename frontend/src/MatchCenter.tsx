@@ -4,11 +4,13 @@ import Radar from "./Radar";
 import type { Frame, View } from "./session";
 import type { RadarPlayback } from "./playback";
 import "./match.css";
+import {RoleRatings} from "./SceneProfiles";
 
 type Side = "CT" | "T";
 type Point = { x: number; y: number };
 export interface MatchView {
   rules: string;
+  source?: {id:string; revision:number};
   roleRatings: Record<string, Record<string, number>>;
   teamRating: number | null;
   round: number;
@@ -74,10 +76,7 @@ export interface MatchView {
   calls: string[];
   feedback: { player: string; id: number; round: number; text: string }[];
 }
-const roles: Record<string, string> = {
-  rifler: "Рифлер", entry: "Энтри", lurker: "Люркер",
-  support: "Поддержка", awper: "Снайпер", igl: "Капитан",
-};
+
 const phases: Record<string, string> = {
   freeze: "Подготовка",
   live: "В игре",
@@ -142,10 +141,10 @@ export default function MatchCenter({
           </h1>
         </div>
         <button onClick={openBoard}>Редактор тактик</button>
-        <span className="match-format">
+        <span className={"match-format"+(m.source && m.source.id!=="depo-exhibition"?" sourced":"")}>
           Выставочный матч
           <br />
-          Тестовые составы
+          {m.source && m.source.id !== "depo-exhibition" ? "Составы из базы · ред. " + m.source.revision : "Тестовые составы"}
         </span>
       </header>
       <section className="scoreboard" aria-label="Счёт матча">
@@ -274,10 +273,7 @@ export default function MatchCenter({
               <p className="inventory">
                 <b>{selectedAgent.name}</b> · {selectedAgent.status}
                 {m.roleRatings[selectedAgent.id] && (
-                  <span className="role-ratings">
-                    Рейтинги ролей · {Object.entries(m.roleRatings[selectedAgent.id])
-                      .map(([role, value]) => `${roles[role]} ${value}`).join(" · ")}
-                  </span>
+                  <RoleRatings values={m.roleRatings[selectedAgent.id]} compact/>
                 )}
                 {selectedAgent.hp !== undefined && (
                   <>
@@ -413,7 +409,7 @@ export default function MatchCenter({
           <section className="panel coaching">
             <h2>Скамейка тренера</h2>
             <p>
-              Север · осталось тайм-аутов <b>{m.remaining} / {m.timeoutLimit}</b>
+              {m.teams[0]} · осталось тайм-аутов <b>{m.remaining} / {m.timeoutLimit}</b>
             </p>
             {m.pregame && m.prepared.map(p=><p key={p.side+p.buy}>{p.side} · {p.buy} · {p.name} · в{p.revision}</p>)}
             {(timeout || m.pregame) && <button onClick={openBoard}>Выбрать тактику</button>}

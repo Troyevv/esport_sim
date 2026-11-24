@@ -917,6 +917,7 @@ def project(w, view="full"):
         events=journal[-48:],
         match=dict(
             rules=w["rules"],
+            source=w["domain"]["source"],
             roleRatings=ratings,
             teamRating=world.team_rating(w["domain"], w["rosterIds"][0], MAP["id"])
             if coach_view

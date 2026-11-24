@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
 
-from . import checkpoints, engine, match, tactic_library
+from . import database, checkpoints, engine, match, tactic_library
 from .match_rules import LEGACY_VERSION
 
 
@@ -42,6 +42,7 @@ class Store:
             CREATE TABLE IF NOT EXISTS active (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS round_log (digest TEXT PRIMARY KEY, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS slot (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS data_pack (id TEXT, revision INTEGER, title TEXT NOT NULL, body TEXT NOT NULL, PRIMARY KEY(id,revision));
             CREATE TABLE IF NOT EXISTS tactic (id TEXT NOT NULL, revision INTEGER NOT NULL, body TEXT,
                 PRIMARY KEY(id, revision));
             CREATE TABLE IF NOT EXISTS tactic_mastery (id TEXT, revision INTEGER, familiarity INTEGER NOT NULL,
@@ -55,6 +56,8 @@ class Store:
         """)
         try:
             with self.transaction():
+                if not self.db.execute("SELECT 1 FROM data_pack WHERE id=? AND revision=1", ("austin-registration",)).fetchone():
+                    database.install(self.db, database.STARTER.read_bytes())
                 for table in ("active", "slot"):
                     row = self.db.execute(
                         f"SELECT body FROM {table} WHERE id=1"
@@ -269,6 +272,17 @@ class Store:
                     state["running"] = False
                 elif kind == "resume":
                     state["running"] = True
+            elif kind == "database-match":
+                if not isinstance(value, dict) or set(value) != {"id", "revision", "rosters", "seed"}:
+                    raise ValueError("Укажите редакцию пакета, составы и seed")
+                seed = value["seed"]
+                database.require(type(seed) is int and 0 <= seed <= 2147483647, "Некорректный seed")
+                database.valid_id(value["id"])
+                database.require(type(value["revision"]) is int, "Некорректная редакция")
+                pack = database.get(self.db, value["id"], value["revision"])
+                domain = database.match_input(pack, value["rosters"])
+                state.update(world=match.initial(seed, domain, value["rosters"]), running=False,
+                             speed=1, context=str(uuid4()))
             elif kind in ("reset", "match"):
                 if type(value) is not int or not 0 <= value <= 2147483647:
                     raise ValueError("Seed должен быть целым числом от 0 до 2147483647")
