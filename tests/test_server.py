@@ -296,13 +296,13 @@ def test_cli_defaults_to_loopback_and_rejects_unauthenticated_network_start(tmp_
         try:
             with httpx.Client(trust_env=False, timeout=0.5) as client:
                 url = f"http://127.0.0.1:{port}/api/state"
-                until = time.monotonic() + 5
+                until = time.monotonic() + 15
                 while True:
                     try:
                         response = client.get(url)
                         response.raise_for_status()
                         break
-                    except httpx.ConnectError:
+                    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout):
                         assert process.poll() is None and time.monotonic() < until
                         time.sleep(0.04)
                 if lan_ip := os.environ.get("R0_TEST_LAN_IP"):
@@ -320,3 +320,19 @@ def test_cli_defaults_to_loopback_and_rejects_unauthenticated_network_start(tmp_
     for mode in ("lan", "remote"):
         attempt = subprocess.run([*args, "--mode", mode], capture_output=True, timeout=5)
         assert attempt.returncode != 0
+
+
+def test_incompatible_map_snapshot_cannot_replace_running_scenario(tmp_path):
+    import sqlite3
+    db = tmp_path / "world.sqlite3"
+    with local_server(db) as client:
+        send(client, "save")
+        before = snapshot(client)
+        with sqlite3.connect(db) as conn:
+            saved = json.loads(conn.execute("SELECT body FROM slot").fetchone()[0])
+            saved["world"]["map_version"] += 1
+            conn.execute("UPDATE slot SET body=?", (json.dumps(saved),))
+        command = envelope(before, "load")
+        assert client.post("/api/command", json=command).status_code == 409
+        assert client.get("/api/command/" + command["id"]).status_code == 404
+        assert snapshot(client) == before

@@ -1,5 +1,4 @@
 import asyncio
-import hashlib
 import ipaddress
 import secrets
 from contextlib import asynccontextmanager, suppress
@@ -14,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, StrictInt
 
 from .engine import TICK_SECONDS
-from .host import own_clock, issue_code
+from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
 
 View = Literal["full", "T", "CT"]
@@ -32,10 +31,6 @@ class Command(BaseModel):
 
 class Pair(BaseModel):
     code: str
-
-
-def digest(token):
-    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def create_app(db_path: Path, mode="local", origins=(), pairing_code=None):

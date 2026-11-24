@@ -13,6 +13,16 @@ class Conflict(ValueError):
     pass
 
 
+def validate_snapshot(state):
+    world = state.get("world", {})
+    if (state.get("version"), world.get("version"), world.get("map_version")) != (
+        1,
+        engine.VERSION,
+        engine.MAP["version"],
+    ):
+        raise Conflict("Несовместимая версия снимка, ядра или геометрии")
+
+
 class Store:
     def __init__(self, path: Path):
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
@@ -24,7 +34,14 @@ class Store:
             CREATE TABLE IF NOT EXISTS device (digest TEXT PRIMARY KEY);
             CREATE TABLE IF NOT EXISTS invitation (digest TEXT PRIMARY KEY, expires INTEGER NOT NULL);
         """)
-        if not self.db.execute("SELECT 1 FROM active").fetchone():
+        existing = self.db.execute("SELECT body FROM active WHERE id=1").fetchone()
+        if existing:
+            try:
+                validate_snapshot(json.loads(existing[0]))
+            except (ValueError, TypeError, AttributeError):
+                self.db.close()
+                raise
+        else:
             self.write(
                 dict(
                     version=1,
@@ -118,8 +135,7 @@ class Store:
                 if not row:
                     raise Conflict("Нет сохранения")
                 saved = json.loads(row[0])
-                if saved["version"] != state["version"]:
-                    raise Conflict("Версия снимка несовместима")
+                validate_snapshot(saved)
                 state.update(saved)
                 state["context"] = str(uuid4())
             elif kind == "reset":

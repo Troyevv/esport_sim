@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Application, Container, Graphics, Text } from "pixi.js";
 import "./radar.css";
 
@@ -153,11 +153,9 @@ function setupScene(
   let plan = drawPlan(props.map);
   const marks = new Graphics();
   const names = new Container();
-  const caption = label("", 13, 0xe7eeeb, "bold");
-  caption.style.stroke = { color: 0x142528, width: 4 };
   const textById = new Map<string, Text>();
   app.stage.addChild(world);
-  world.addChild(plan, marks, names, caption);
+  world.addChild(plan, marks, names);
   function draw() {
     const scale = fit * zoom;
     const { width, height } = app.screen;
@@ -175,7 +173,6 @@ function setupScene(
     host.dataset.panX = pan.x.toFixed(2);
     host.dataset.panY = pan.y.toFixed(2);
     marks.clear();
-    caption.visible = false;
     for (const t of textById.values()) t.visible = false;
     const radius = limit(4.5 * scale, 6.3, 13) / scale;
     for (const a of current.agents) {
@@ -193,10 +190,6 @@ function setupScene(
         marks
           .circle(x, y, radius * 1.45)
           .stroke({ color: 0xffffff, width: 1.3 / scale });
-        caption.visible = true;
-        caption.text = a.name;
-        caption.scale.set(1 / scale);
-        caption.position.set(x, y - radius * 1.5 - 9 / scale);
       }
       if (team === "T")
         marks.roundRect(
@@ -389,6 +382,41 @@ function bindNavigation(host: HTMLDivElement, api: RadarApi) {
   };
 }
 
+function CameraButton({ label, disabled, onActivate, children }: {
+  label: string;
+  disabled: boolean;
+  onActivate: () => void;
+  children: ReactNode;
+}) {
+  const start = useRef<Point | null>(null);
+  return (
+    <button type="button" disabled={disabled} aria-label={label} onClick={onActivate}
+      onTouchStart={event => {
+        const touch = event.touches[0];
+        start.current = event.touches.length === 1 ? {x: touch.clientX, y: touch.clientY} : null;
+      }}
+      onTouchMove={event => {
+        const point = start.current;
+        const touch = event.touches[0];
+        if (point && Math.hypot(point.x - touch.clientX, point.y - touch.clientY) > 8) {
+          start.current = null;
+        }
+      }}
+      onTouchCancel={() => { start.current = null; }}
+      onTouchEnd={event => {
+        // Some browsers suppress their compatibility click immediately after a map drag.
+        // Consume the touch's click here so a single tap always activates exactly once.
+        event.preventDefault();
+        const touch = event.changedTouches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        const activate = start.current && !event.touches.length && event.currentTarget.contains(target);
+        start.current = null;
+        if (!disabled && activate) onActivate();
+      }}
+    >{children}</button>
+  );
+}
+
 export default function Radar(props: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const api = useRef<RadarApi | null>(null);
@@ -465,28 +493,25 @@ export default function Radar(props: Props) {
         role="group"
         aria-label="Управление картой"
       >
-        <button
-          type="button"
+        <CameraButton
           disabled={!ready || zoom <= 0.8}
-          aria-label="Уменьшить карту"
-          onClick={() => api.current?.zoomBy(0.8)}
+          label="Уменьшить карту"
+          onActivate={() => api.current?.zoomBy(0.8)}
         >
           −
-        </button>
+        </CameraButton>
         <output aria-label="Масштаб карты">{Math.round(zoom * 100)}%</output>
-        <button
-          type="button"
+        <CameraButton
           disabled={!ready || zoom >= 4}
-          aria-label="Увеличить карту"
-          onClick={() => api.current?.zoomBy(1.25)}
+          label="Увеличить карту"
+          onActivate={() => api.current?.zoomBy(1.25)}
         >
           +
-        </button>
-        <button
-          type="button"
+        </CameraButton>
+        <CameraButton
           disabled={!ready}
-          aria-label="Центрировать карту"
-          onClick={() => api.current?.reset()}
+          label="Центрировать карту"
+          onActivate={() => api.current?.reset()}
         >
           <svg
             viewBox="0 0 24 24"
@@ -501,7 +526,7 @@ export default function Radar(props: Props) {
             <path d="M12 2v5m0 10v5M2 12h5m10 0h5" />
             <circle cx="12" cy="12" r="1" />
           </svg>
-        </button>
+        </CameraButton>
       </div>
     </div>
   );

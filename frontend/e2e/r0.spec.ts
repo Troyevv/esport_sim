@@ -105,6 +105,12 @@ test('управление стендом, общий снимок, жесты �
   await expect(radar).toHaveAttribute('data-zoom', '1.000');
   await expect(radar).toHaveAttribute('data-pan-x', '0.00');
   await expect(radar).toHaveAttribute('data-pan-y', '0.00');
+  if (touch) {
+    await activate(button(page, 'Увеличить карту'), true);
+    await expect(radar).toHaveAttribute('data-zoom', '1.250');
+    await activate(button(page, 'Уменьшить карту'), true);
+    await expect(radar).toHaveAttribute('data-zoom', '1.000');
+  }
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect.poll(() => page.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth

@@ -264,12 +264,14 @@ h2 {
 }
 .mapfoot {
   justify-content: flex-start;
-  gap: 18px;
+  flex-wrap: wrap;
+  gap: 6px 14px;
   padding: 12px 18px;
   border-top: 1px solid var(--line);
   font-size: 13px;
   color: var(--muted);
 }
+.mapfoot .selected-agent { color: var(--ink); font: 13px var(--mono); }
 .mapfoot > span,
 .team h3 {
   display: flex;

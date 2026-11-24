@@ -174,6 +174,9 @@ function App() {
                     <i className="legend t" />
                     Атака
                   </span>
+                  {agent && <span className="selected-agent" aria-label={`Выбран ${agent.id} ${agent.name}`}>
+                    {agent.id} · {agent.name}
+                  </span>}
                   <span className="tick">
                     ТИК <b data-testid="tick">{world.tick}</b>
                   </span>

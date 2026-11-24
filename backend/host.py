@@ -1,5 +1,6 @@
 """OS ownership of the simulation clock; administrative commands use SQLite."""
 
+import hashlib
 import os
 from contextlib import contextmanager
 from pathlib import Path
@@ -31,8 +32,10 @@ def own_clock(db_path: Path):
         yield
 
 
-def issue_code(db, code):
-    from .server import digest
+def digest(token):
+    return hashlib.sha256(token.encode()).hexdigest()
 
+
+def issue_code(db, code):
     db.execute("DELETE FROM invitation")
     db.execute("INSERT INTO invitation VALUES(?, unixepoch()+600)", (digest(code),))
