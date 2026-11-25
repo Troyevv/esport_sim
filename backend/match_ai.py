@@ -504,9 +504,12 @@ def act(w, a, allies, bomb, visible_fire):
         )
         pair = w["chemistry"].get(world.pair_key(a["playerId"], partner["playerId"]), 0)
         if distance(a, partner) > 75 - s["support"] * 0.45 - pair * 0.15:
-            a["status"] = "К капитану после потери союзника"
-            moved = travel(a, point(partner), 2, visible_fire)
-            return ("move" if moved else "hold", None)
+            target = cs2_play.rendezvous(w["space"],a,partner,now) if w.get("space") else point(partner)
+            if target is not None:
+                a["status"] = "К капитану после потери союзника"
+                moved = travel(a, target, 2, visible_fire)
+                if moved or not w.get("space") or not a.get("blockedTicks"):
+                    return ("move" if moved else "hold", None)
     if (
         board
         and w["phase"] != "planted"

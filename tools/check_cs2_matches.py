@@ -42,6 +42,7 @@ def play(name, seed, pair, pack, replay, adjustment=0):
     stalls = set()
     blocked_areas = Counter()
     blocked_tasks = Counter()
+    longest_block_sample = 0
     examples = []
     team_sides = {}
     outcomes = []
@@ -73,6 +74,9 @@ def play(name, seed, pair, pack, replay, adjustment=0):
                     saves.add((game["round"], a["id"]))
                 if a["status"] == "Идёт на ретейк":
                     retakes.add(game["round"])
+                longest_block_sample = max(
+                    longest_block_sample, a.get("blockedTicks", 0)
+                )
                 if a.get("blockedTicks", 0) >= 20:
                     episode = (game["round"], a["id"])
                     if episode not in stalls:
@@ -169,6 +173,7 @@ def play(name, seed, pair, pack, replay, adjustment=0):
         blockedAreas=blocked_areas.most_common(8),
         blockedTasks=blocked_tasks,
         blockedExamples=examples,
+        longestObservedBlock=longest_block_sample,
     )
     return results, frames, outcomes
 

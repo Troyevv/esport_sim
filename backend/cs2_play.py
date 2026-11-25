@@ -130,6 +130,38 @@ def assign_backup(space, plan, squad, site, pressure):
     plan.pop("backup", None)
 
 
+def rendezvous(space, actor, mate, now):
+    # Rendezvous on a walkable surface within trading distance. The
+    # teammate's exact feet can be between NAV surfaces on a ladder.
+    pos, target = xyz(actor), xyz(mate)
+    current = actor.get("rendezvous")
+    if (
+        current
+        and current["mate"] == mate["id"]
+        and now < current["review"]
+        and dist(current["location"], target) < 14
+        and not actor.get("blockedTicks")
+    ):
+        return current["point"]
+    sectors = space.nearby_areas(target, 23)
+    spots = [
+        space.centers[i]
+        for i in sectors
+        if space.hit(space.centers[i], target, 1, 64) is None
+    ]
+    spots.sort(
+        key=lambda q: (not 6 <= dist(q, target) <= 20, dist(pos, q) + dist(q, target))
+    )
+    goal = space._reachable(pos, [*spots, target])
+    actor["rendezvous"] = dict(
+        mate=mate["id"],
+        review=now + 18,
+        location=list(target),
+        point=list(goal) if goal is not None else None,
+    )
+    return goal
+
+
 def seek_cover(space, actor, contact, allies, skills, now, fire, travel):
     """Break sight or finish reloading using only this player's last contact."""
     if contact and (
@@ -397,8 +429,23 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             a["status"] = "Прикрывает разминирование" if other else "Идёт на ретейк"
         else:
             site = bomb["site"]
-            if order["site"] != site:
-                goal = space.site_points[site]
+            cover = a.get("plantCover")
+            if cover is None or a.get("blockedTicks", 0) >= 5:
+                choices = [p for _, p in space.holds[site]]
+                reserved = [
+                    p["plantCover"]
+                    for p in allies
+                    if p is not a and p.get("plantCover")
+                ]
+                choices.sort(
+                    key=lambda q: (any(dist(q, r) < 5 for r in reserved), dist(q, pos))
+                )
+                if order["site"] == site:
+                    choices.insert(0, order["hold"])
+                choices.extend(space.centers[i] for i in space.plants[site])
+                cover = space._reachable(pos, choices)
+                a["plantCover"] = list(cover) if cover is not None else list(pos)
+            goal = a["plantCover"]
             a["status"] = "Прикрывает C4"
     elif side == "T":
         if (
@@ -484,7 +531,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                 # Check an angle from a nearby walkable surface. Radio and
                 # sound do not give the observer a path to a live enemy.
                 key = [latest["id"], latest["tick"]]
-                if a.get("checkContact") != key:
+                if a.get("checkContact") != key or a.get("blockedTicks", 0) >= 5:
                     near = space.nearby_areas(contact, 24)
                     positions = sorted(
                         (space.centers[i] for i in near),

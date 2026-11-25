@@ -285,3 +285,18 @@ def test_only_corridor_reopens_after_fire_without_a_navigation_failure():
     assert actor["blockedTicks"] == 0 and actor["status"].startswith("Пережидает")
     assert Map.walk(space, actor, (12, 0, 0), 12, [])
     assert actor["x"] == 12 and actor["navArea"] == 3
+
+
+def test_support_rejoins_near_a_teammate_between_levels():
+    from types import SimpleNamespace
+    from backend.cs2_play import rendezvous
+
+    teammate = dict(id="captain", x=24, y=0, z=4)
+    support = dict(x=0, y=0, z=0)
+    floor = (16, 0, 0)
+    space = SimpleNamespace(
+        centers={5:floor},nearby_areas=lambda *_:[5],hit=lambda *_:None,
+        _reachable=lambda origin,points: next((p for p in points if p == floor),None),
+    )
+    assert rendezvous(space,support,teammate,100) == floor
+    assert rendezvous(space,support,teammate,101) == list(floor)
