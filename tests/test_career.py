@@ -224,5 +224,10 @@ def test_career_scene_contains_public_links_without_private_ratings(tmp_path):
         active = store.careers.detail(state)["active"]
         assert all(skills.HIDDEN.isdisjoint(p["skills"]) for p in active["roster"])
         assert 0 <= active["teamRating"] <= 100
+        # A prior registration does not give a free agent a current team or kit.
+        pid = result["teams"][own]["members"][0]
+        pack["players"][pid]["contract"] = "free"
+        free_agent = directory(pack, {}, store.portraits)["players"][pid]
+        assert free_agent["teams"] == [] and "kit" not in free_agent["visual"]
     finally:
         store.db.close()

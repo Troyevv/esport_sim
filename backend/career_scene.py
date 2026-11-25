@@ -38,6 +38,11 @@ def directory(pack, badges, portraits):
     for pid, row in pack["players"].items():
         p = identity("players", pid, row)
         clubs = membership.get(pid, [])
+        if row["contract"] == "free":
+            clubs = []
+        elif clubs:
+            latest = max(teams[club]["rosterDate"] for club in clubs)
+            clubs = [club for club in clubs if teams[club]["rosterDate"] == latest]
         tid = clubs[0] if len(clubs) == 1 else None
         p["visual"].update(player=True, head=media + "appearance/" + pid if row.get("appearance")
                            else heads.get(pid, {}).get("image"))
