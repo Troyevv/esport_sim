@@ -27,12 +27,27 @@ def parse(path, rounds):
         raise ValueError("No utility detonations in professional demo")
     ends = [r["end_tick"] for r in rounds]
     players = parser.parse_ticks(["health","team_num"], ticks=ends)
+    # A round has one snapshot per phase, taken from the recorded server tick.
+    sample = {}
+    for r in rounds:
+        start, end = r["freeze_end_tick"], r["end_tick"]
+        sample[r["round_num"]] = {sec:start+64*sec for sec in (0,10,25,45,70) if start+64*sec < end}
+    ticks = sorted({t for group in sample.values() for t in group.values()})
+    radar = parser.parse_ticks(["X","Y","Z","health","team_num","current_equip_value"], ticks=ticks)
+    grouped = dict(tuple(radar.groupby("tick")))
     result = []
     for row in rounds:
         start,end=row["freeze_end_tick"],row["end_tick"]
         counter=Counter(kind for tick, kind in throws if start <= tick <= end)
         alive = players[(players.tick == end) & (players.health > 0) & (players.team_num == 3)]
-        result.append(dict(round=row["round_num"],winner=row["winner_side"],reason=row["end_reason"],
+        positions = {}
+        for sec,tick in sample[row["round_num"]].items():
+            frame = grouped.get(tick)
+            if frame is not None:
+                live = frame[(frame.health > 0) & (frame.team_num.isin([2,3]))]
+                positions[sec] = [[int(p.team_num),str(p.steamid),round(p.X),round(p.Y),round(p.Z),
+                                   int(p.current_equip_value or 0)] for p in live.itertuples()]
+        result.append(dict(radar=positions,round=row["round_num"],winner=row["winner_side"],reason=row["end_reason"],
                            plant=row["bomb_planted"],duration=(end-start)/64,
                            grenades=dict(counter),survivingCT=len(alive)))
     return result
