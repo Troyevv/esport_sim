@@ -26,9 +26,13 @@ def alpha_at_joint(image, scale, dx, dy):
 
 
 def check(archive):
-    fits = json.loads((ROOT / "frontend/src/portraitFit.json").read_text())
-    public = json.loads((ROOT / "frontend/src/kitArt.json").read_text())
-    private = json.loads((ROOT / "backend/data/team-kits.json").read_text())
+    fits = json.loads(
+        (ROOT / "frontend/src/portraitFit.json").read_text(encoding="utf-8")
+    )
+    public = json.loads((ROOT / "frontend/src/kitArt.json").read_text(encoding="utf-8"))
+    private = json.loads(
+        (ROOT / "backend/data/team-kits.json").read_text(encoding="utf-8")
+    )
     heads = []
     outfits = []
     with ZipFile(archive) as files:

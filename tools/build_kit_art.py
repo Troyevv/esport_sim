@@ -308,7 +308,9 @@ def build():
     from tools.november_scene import build as scene
 
     teams = scene()["teams"]
-    specs = json.loads((ROOT / "tools/scene_sources/kit-designs.json").read_text())
+    specs = json.loads(
+        (ROOT / "tools/scene_sources/kit-designs.json").read_text(encoding="utf-8")
+    )
     out = PUBLIC / "kits"
     out.mkdir(exist_ok=True)
     catalog = {}
@@ -326,7 +328,8 @@ def build():
             "source": spec.get("source"),
         }
     (ROOT / "frontend/src/kitArt.json").write_text(
-        json.dumps(catalog, ensure_ascii=False, sort_keys=True, indent=1) + "\n"
+        json.dumps(catalog, ensure_ascii=False, sort_keys=True, indent=1) + "\n",
+        encoding="utf-8",
     )
 
 

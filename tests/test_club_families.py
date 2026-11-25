@@ -64,12 +64,12 @@ def test_every_stock_team_has_a_registered_local_garment():
     from PIL import Image
 
     root = Path(__file__).resolve().parents[1]
-    kits = json.loads((root / "frontend/src/kitArt.json").read_text())
+    kits = json.loads((root / "frontend/src/kitArt.json").read_text(encoding="utf-8"))
     teams = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"][
         "teams"
     ]
     rows = csv.DictReader(
-        (root / "docs/TEAM_KIT_COVERAGE.csv").read_text().splitlines()
+        (root / "docs/TEAM_KIT_COVERAGE.csv").read_text(encoding="utf-8").splitlines()
     )
     assert {row["team_id"] for row in rows} == kits.keys() == teams.keys()
     for tid, item in kits.items():

@@ -551,10 +551,13 @@ def _validate(p):
 
 def migrate_club_links(db):
     """Append an enriched revision to existing November editing branches, preserving old revisions."""
-    release = get(db, RELEASE_ID, 1)
     branches = db.execute(
-        "SELECT id,max(revision) FROM data_pack WHERE id<>? GROUP BY id", (RELEASE_ID,)
+        "SELECT id,max(revision) FROM data_pack WHERE id NOT IN (?,?) GROUP BY id",
+        (RELEASE_ID, "austin-registration"),
     ).fetchall()
+    if not branches:
+        return
+    release = get(db, RELEASE_ID, 1)
     for key, rev in branches:
         pack = get(db, key, rev)
         if (
