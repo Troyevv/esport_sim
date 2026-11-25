@@ -1,12 +1,37 @@
 import { useState } from "react";
 import { resolvePortrait } from "./portraits";
-import { GamePortrait, kitDesign } from "./GamePortrait";
+import { GamePortrait, kitDesign, artwork } from "./GamePortrait";
 import {
   playerAppearance,
   teamKit,
   type Entity,
   type Pack,
 } from "./databaseModel";
+
+import { useGarment } from "./wardrobe";
+
+function KitCredit({ kit }: { kit: ReturnType<typeof teamKit> }) {
+  const art = artwork(kit);
+  const personal = useGarment(art ? kit?.id : undefined);
+  if (!kit) return <small>Нейтральная одежда</small>;
+  if (personal)
+    return (
+      <small>
+        <a href={personal.source} target="_blank" rel="noreferrer">
+          Клубная форма · архив от {personal.observed}
+        </a>
+      </small>
+    );
+  return art?.source ? (
+    <small>
+      <a href={art.source} target="_blank" rel="noreferrer">
+        Реконструкция по референсу
+      </a>
+    </small>
+  ) : (
+    <small>Игровой дизайн</small>
+  );
+}
 
 export function KitPreview({
   pack,
@@ -92,6 +117,7 @@ export function KitPreview({
                       ))}
                     </select>
                   </label>
+                  <KitCredit kit={kit} />
                 </article>
               );
             })}
@@ -116,10 +142,7 @@ export function KitPreview({
                 ))}
               </select>
             </label>
-            <p>
-              Игровой дизайн. Примерка сохраняет внешность игрока и действует
-              только в этом окне.
-            </p>
+            <KitCredit kit={teamKit(pack, current)} />
           </div>
         </div>
       )}

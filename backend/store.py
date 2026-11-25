@@ -75,6 +75,7 @@ class Store:
                     database.install(
                         self.db, gzip.decompress(database.RELEASE.read_bytes())
                     )
+                    database.migrate_club_links(self.db)
                 for table in ("active", "slot"):
                     row = self.db.execute(
                         f"SELECT body FROM {table} WHERE id=1"

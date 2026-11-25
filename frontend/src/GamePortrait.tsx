@@ -1,5 +1,18 @@
 import { useId, useRef, useEffect, useState } from "react";
 
+import calibrations from "./portraitFit.json";
+import drawings from "./kitArt.json";
+import { type GarmentRig, useGarment } from "./wardrobe";
+
+const fittings: Record<string, number[]> = calibrations;
+const catalogue: Record<
+  string,
+  { name: string; source: string | null; badgeX: number; rig?: GarmentRig }
+> = drawings;
+export function artwork(kit?: ClubKit | null) {
+  return kit && !kit.design ? catalogue[kit.id] : undefined;
+}
+
 export type KitDesign = {
   primary: string;
   accent: string;
@@ -81,6 +94,35 @@ export function GamePortrait({
     /^\/api\/portraits\/image\/[0-9a-f]{64}\?nativeWidth=(\d+)$/,
   );
   const naturalWidth = measured ? Number(measured[1]) : undefined;
+  const digest = head?.match(/\/portraits\/image\/([0-9a-f]{64})/)?.[1];
+  const fit = digest ? fittings[digest] : undefined;
+  const art = artwork(kit);
+  const personal = useGarment(art ? kit?.id : undefined);
+  const [failedCloth, setFailedCloth] = useState("");
+  const pattern =
+    art && kit ? "/portraits/kits/" + kit.id + ".webp" : undefined;
+  const localImage = personal && "/api/portraits/image/" + personal.sha256;
+  const photographed =
+    localImage && localImage !== failedCloth ? personal : undefined;
+  const textile = photographed ? localImage : pattern;
+  const stockRig: GarmentRig = {
+    width: 660,
+    height: 440,
+    collar: [330, 103],
+    span: 615.4,
+    seat: [120, 157],
+  };
+  const rig = photographed?.rig || art?.rig || stockRig;
+  const scale = 246 / rig.span;
+  const clothTransform = `translate(${rig.seat[0]} ${rig.seat[1]}) scale(${scale}) translate(${-rig.collar[0]} ${-rig.collar[1]})`;
+  const box = {
+    width: rig.width,
+    height: rig.height,
+    transform: clothTransform,
+  };
+  const headTransform = fit
+    ? `translate(${fit[1]} ${fit[2]}) scale(${fit[0]})`
+    : undefined;
   const portrait = useRef<SVGSVGElement>(null);
   const spirit = kit?.badgeLicense === "Условия Team Spirit";
   const [largePatch, setLargePatch] = useState(false);
@@ -97,9 +139,10 @@ export function GamePortrait({
     observer.observe(svg);
     return () => observer.disconnect();
   }, [spirit]);
+  const badgeX = art?.badgeX || 162;
   const patch = spirit
-    ? { x: 144, y: 187, width: 40, height: 40 }
-    : { x: 150, y: 192, width: 24, height: 24 };
+    ? { x: badgeX - 20, y: 180, width: 40, height: 40 }
+    : { x: badgeX - 12, y: 187, width: 24, height: 24 };
   const surface = kit && badgeSurface(kit.name, kit.badgeLicense);
   const paths = {
     plain: "",
@@ -108,15 +151,8 @@ export function GamePortrait({
     chevron: "M-6 160l63 5 63 45 63-45 63-5v13l-60 7-66 48-66-48-60-7z",
   };
   const href = (s: string) => "url(#" + id + s + ")";
-  const cloth = (
-    <image
-      href="/portraits/jersey.webp"
-      x="-16"
-      y="124"
-      width="272"
-      height="181.333"
-    />
-  );
+  const surfaceImage = textile || "/portraits/jersey.webp";
+  const cloth = <image href="/portraits/jersey.webp" {...box} />;
   // A channel transfer keeps the highlights, seams and folds of the jersey in
   // both colour regions, including nearly black or white fabrics.
   const tint = (suffix: string, hex: string) => (
@@ -153,6 +189,53 @@ export function GamePortrait({
       data-team={kit?.id || ""}
     >
       <defs>
+        <filter id={id + "edge"} x="-4%" y="-4%" width="108%" height="108%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation=".42" result="edge" />
+          <feComposite in="SourceGraphic" in2="edge" operator="in" />
+        </filter>
+        <linearGradient id={id + "light"} x1="0" x2="1" y1="0" y2=".15">
+          <stop
+            stopColor="#0d1014"
+            stopOpacity={Math.max(0, -(fit?.[3] || 0)) * 0.4}
+          />
+          <stop offset=".53" stopColor="#0d1014" stopOpacity="0" />
+          <stop
+            offset="1"
+            stopColor="#0d1014"
+            stopOpacity={Math.max(0, fit?.[3] || 0) * 0.4}
+          />
+        </linearGradient>
+        <mask id={id + "fabric"} style={{ maskType: "alpha" }}>
+          <image href={surfaceImage} {...box} />
+        </mask>
+        {fit && head && (
+          <mask
+            id={id + "neck"}
+            maskUnits="userSpaceOnUse"
+            x="65"
+            y="124"
+            width="110"
+            height="60"
+            style={{ maskType: "alpha" }}
+          >
+            <image
+              href={head}
+              width="240"
+              height="280"
+              transform={headTransform}
+            />
+          </mask>
+        )}
+        <filter
+          id={id + "contact"}
+          x="-15%"
+          y="-15%"
+          width="130%"
+          height="130%"
+        >
+          <feGaussianBlur in="SourceAlpha" stdDeviation="1.6" />
+          <feOffset dx={-(fit?.[3] || 0)} dy="-1.1" />
+        </filter>
         {tint("cloth", design.primary)}
         {tint("trim", design.accent)}
         <clipPath id={id + "panel"}>
@@ -173,6 +256,8 @@ export function GamePortrait({
         <image
           data-layer="appearance"
           href={head}
+          transform={headTransform}
+          filter={fit ? href("edge") : undefined}
           width="240"
           height="280"
           onError={() => setBadHead(head)}
@@ -184,22 +269,52 @@ export function GamePortrait({
           d="M88 140c7-1 9-9 9-18-8-7-13-20-16-30-5-2-7-10-6-17 0-3 2-5 4-5-3-29 9-54 40-55 29-1 45 18 43 54 4-1 6 2 6 7 0 9-2 15-7 17-3 14-9 23-16 30 0 10 2 15 10 18l5 15-6 28H85l-6-29z"
         />
       )}
+      {fit && (
+        <g mask={href("neck")} opacity=".34">
+          <g filter={href("contact")}>
+            <image href={surfaceImage} {...box} />
+          </g>
+        </g>
+      )}
       <g data-layer="kit">
-        <g filter={href("cloth")}>{cloth}</g>
-        {design.pattern !== "plain" && (
-          <g clipPath={href("panel")}>
-            <g filter={href("trim")}>{cloth}</g>
-          </g>
+        {textile && textile !== failedCloth ? (
+          <image
+            data-layer="garment"
+            href={textile}
+            {...box}
+            onError={() => setFailedCloth(textile)}
+          />
+        ) : (
+          <g filter={href("cloth")}>{cloth}</g>
         )}
-        {kit?.badge && badBadge !== kit.badge && (!spirit || largePatch) && (
-          <g>
-            {surface && <rect {...patch} fill={surface} rx={spirit ? 0 : 4} />}
-            <image
-              href={kit.badge}
-              {...patch}
-              onError={() => setBadBadge(kit.badge!)}
-            />
-          </g>
+        {(!textile || textile === failedCloth) &&
+          design.pattern !== "plain" && (
+            <g clipPath={href("panel")}>
+              <g filter={href("trim")}>{cloth}</g>
+            </g>
+          )}
+        {!photographed &&
+          kit?.badge &&
+          badBadge !== kit.badge &&
+          (!spirit || largePatch) && (
+            <g>
+              {surface && (
+                <rect {...patch} fill={surface} rx={spirit ? 0 : 4} />
+              )}
+              <image
+                href={kit.badge}
+                {...patch}
+                onError={() => setBadBadge(kit.badge!)}
+              />
+            </g>
+          )}
+        {fit && (
+          <rect
+            width="240"
+            height="280"
+            fill={href("light")}
+            mask={href("fabric")}
+          />
         )}
       </g>
     </svg>

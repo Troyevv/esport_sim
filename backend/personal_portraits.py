@@ -23,6 +23,21 @@ def catalog():
     return json.loads(CATALOG.read_text(encoding="utf-8"))["portraits"]
 
 
+@lru_cache(maxsize=1)
+def kits():
+    return json.loads(CATALOG.with_name("team-kits.json").read_text(encoding="utf-8"))
+
+
+def installed_kits(library):
+    with closing(library.connection()) as db:
+        present = {row[0] for row in db.execute("SELECT digest FROM asset")}
+    return {
+        tid: {k: e[k] for k in ("sha256", "rig", "observed", "source")}
+        for tid, e in kits().items()
+        if e["sha256"] in present
+    }
+
+
 def install(library, pack, content):
     if len(content) > MAX_PACK:
         raise ValueError("Личный пакет превышает 96 МиБ")
@@ -32,21 +47,45 @@ def install(library, pack, content):
         if pid in pack["players"]
         and entry["name"].casefold() == pack["players"][pid]["name"].casefold()
     }
+    approved_kits = {
+        "kits/" + e["sha256"] + ".png": e["sha256"]
+        for tid, e in kits().items()
+        if tid in pack.get("teams", {})
+    }
     with closing(library.connection()) as db:
         db.execute("BEGIN IMMEDIATE")
         if db.execute("SELECT 1 FROM job WHERE state='running'").fetchone():
             raise ValueError("Сначала приостановите поиск студийных портретов")
         seen = set()
+        cloth = set()
         try:
             with ZipFile(BytesIO(content)) as archive:
                 members = archive.infolist()
                 if (
                     not members
-                    or len(members) > len(known) + len(RETIRED_LAYERS)
+                    or len(members)
+                    > len(known) + len(RETIRED_LAYERS) + len(approved_kits)
                     or sum(m.file_size for m in members) > MAX_PACK
                 ):
                     raise ValueError("Пакет не соответствует выбранной базе игроков")
                 for member in members:
+                    if member.filename in approved_kits:
+                        digest = approved_kits[member.filename]
+                        if (
+                            digest in cloth
+                            or not 0 < member.file_size <= 2 * 1024 * 1024
+                        ):
+                            raise ValueError(
+                                "Повторный или некорректный комплект формы"
+                            )
+                        raw = archive.read(member)
+                        if sha256(raw).hexdigest() != digest:
+                            raise ValueError("Повреждён комплект формы")
+                        db.execute(
+                            "INSERT OR IGNORE INTO asset VALUES(?,?)", (digest, raw)
+                        )
+                        cloth.add(digest)
+                        continue
                     digest = member.filename.removesuffix(".png")
                     if (
                         (digest not in known and digest not in RETIRED_LAYERS)
@@ -101,4 +140,7 @@ def install(library, pack, content):
         except (BadZipFile, OSError, RuntimeError) as exc:
             raise ValueError("Личный пакет повреждён") from exc
         db.commit()
-    return {"installed": len(seen - RETIRED_LAYERS)}
+    return {
+        "installed": len(seen - RETIRED_LAYERS),
+        **({"kits": len(cloth)} if cloth else {}),
+    }

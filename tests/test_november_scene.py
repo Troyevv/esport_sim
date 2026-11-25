@@ -101,9 +101,20 @@ def test_every_release_club_has_a_local_distinct_badge(release):
             status = pack["origins"][row["fields"]["logo"]]["status"]
             assert status == ("modeled" if info["kind"] == "game" else "confirmed")
             assert marks.setdefault(row["name"], checksum) == checksum
-    assert len(marks) == len(pack["teams"])
-    modeled = [sha for name, sha in marks.items() if club_art.catalog()[name]["kind"] == "game"]
+    assert set(marks) == {
+        r["name"] for g in ("teams", "organizations") for r in pack[g].values()
+    }
+    modeled = [
+        sha for name, sha in marks.items() if club_art.catalog()[name]["kind"] == "game"
+    ]
     assert len(set(modeled)) == len(modeled)
-    assert set(modeled).isdisjoint(sha for name, sha in marks.items() if club_art.catalog()[name]["kind"] == "original")
+    assert set(modeled).isdisjoint(
+        sha
+        for name, sha in marks.items()
+        if club_art.catalog()[name]["kind"] == "original"
+    )
     assert set(marks.values()) == {p.stem for p in club_art.ROOT.glob("*.png")}
-    assert all(r["decision"] and r.get("checked") is not None for r in club_art.catalog().values())
+    assert all(
+        r["decision"] and r.get("checked") is not None
+        for r in club_art.catalog().values()
+    )

@@ -128,6 +128,13 @@ export const skillGroups: Record<string, string[]> = {
   ],
   Физические: ["endurance", "fatigue_resistance", "recovery"],
 };
+export const teamTypes: Record<string, string> = {
+  main: "Основная",
+  academy: "Академическая",
+  reserve: "Резервная",
+  other: "Другая",
+  unknown: "Тип не подтверждён",
+};
 export const groups = {
   players: "Игроки",
   teams: "Команды",
@@ -219,6 +226,9 @@ export interface Entity {
   region?: string | null;
   tier?: number | null;
   organization?: string | null;
+  teamType?: string;
+  formerOrganization?: string | null;
+  affiliationEnded?: string | null;
   team?: string | null;
   players?: string[];
   captain?: string | null;
@@ -266,7 +276,13 @@ export function emptyEntity(g: Group, p: Pack): Entity {
         ),
       };
     case "teams":
-      return { ...base, organization: null, region: null, tier: null };
+      return {
+        ...base,
+        organization: null,
+        teamType: "unknown",
+        region: null,
+        tier: null,
+      };
     case "rosters":
       return {
         ...base,

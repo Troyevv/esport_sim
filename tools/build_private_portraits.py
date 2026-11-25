@@ -11,11 +11,12 @@ from zipfile import ZIP_STORED, ZipFile, ZipInfo
 
 from PIL import Image
 
-from backend.personal_portraits import catalog
+from backend.personal_portraits import catalog, kits
+from tools.prepare_team_kit import garment
 from backend.portrait_processing import PortraitProcessor
 
 
-def build(roots, output):
+def build(roots, output, with_kits=False):
     processor = PortraitProcessor()
     try:
         with tempfile.NamedTemporaryFile(dir=output.parent, delete=False) as temp:
@@ -45,6 +46,26 @@ def build(roots, output):
                     archive.writestr(
                         ZipInfo(sha + ".png", (2026, 11, 25, 0, 0, 0)), rendered
                     )
+                if with_kits:
+                    for _, entry in sorted(kits().items()):
+                        _, owner, repo, _, _, relative = urlsplit(
+                            entry["source"]
+                        ).path.split("/", 5)
+                        raw = (roots / owner / repo / unquote(relative)).read_bytes()
+                        if hashlib.sha256(raw).hexdigest() != entry["originalSha256"]:
+                            raise ValueError(
+                                "Изменился исходный снимок формы " + entry["team"]
+                            )
+                        rendered, rig = garment(raw, processor)
+                        digest = hashlib.sha256(rendered).hexdigest()
+                        if digest != entry["sha256"] or rig != entry["rig"]:
+                            raise ValueError(
+                                "Изменился крой или воротник " + entry["team"]
+                            )
+                        archive.writestr(
+                            ZipInfo("kits/" + digest + ".png", (2026, 11, 25, 0, 0, 0)),
+                            rendered,
+                        )
             os.replace(tmp, output)
         finally:
             tmp.unlink(missing_ok=True)
@@ -58,5 +79,10 @@ if __name__ == "__main__":
         "roots", type=Path, help="Directory of owner/repository checkouts"
     )
     parser.add_argument("output", type=Path)
+    parser.add_argument(
+        "--with-kits",
+        action="store_true",
+        help="Включить проверенные фотографические комплекты формы",
+    )
     args = parser.parse_args()
-    build(args.roots, args.output)
+    build(args.roots, args.output, args.with_kits)

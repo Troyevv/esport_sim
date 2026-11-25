@@ -7,6 +7,7 @@ import {
   groupKeys,
   refKey,
   regions,
+  teamTypes,
   roles,
   skillGroups,
   skillLabels,
@@ -963,6 +964,40 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
                               patch({ tier: v ? Number(v) : null })
                             }
                           />
+                          <Select
+                            label="Тип команды"
+                            value={r.teamType || ""}
+                            options={Object.entries(teamTypes)}
+                            onChange={(v) =>
+                              patch({ teamType: v || "unknown" })
+                            }
+                          />
+                          <Select
+                            label="Прежняя организация"
+                            value={r.formerOrganization || ""}
+                            options={orgs}
+                            onChange={(v) =>
+                              patch({
+                                formerOrganization: v || null,
+                                affiliationEnded: v ? r.affiliationEnded : null,
+                              })
+                            }
+                          />
+                          {r.formerOrganization && (
+                            <label>
+                              Дата окончания связи
+                              <input
+                                type="date"
+                                value={r.affiliationEnded || ""}
+                                max={pack.asOf}
+                                onChange={(e) =>
+                                  patch({
+                                    affiliationEnded: e.target.value || null,
+                                  })
+                                }
+                              />
+                            </label>
+                          )}
                           <Select
                             label="Организация"
                             value={r.organization || ""}

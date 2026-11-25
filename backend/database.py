@@ -20,7 +20,8 @@ VERSIONS = dict(
     map=match.MAP["version"],
 )
 STARTER = Path(__file__).with_name("data") / "austin.json"
-RELEASE_ID = "scene-20261125-art2"
+RELEASE_ID = "scene-20261125-clubs"
+TEAM_TYPES = {"main", "academy", "reserve", "other", "unknown"}
 RELEASE = STARTER.with_name("scene-202611.json.gz")
 MAPS = (
     "depo",
@@ -38,7 +39,14 @@ MAPS = (
 OPTIONAL = {
     "players": {"ageEstimate", "sample", "performance", "appearance"},
     "staff": {"nationality", "photo"},
-    "teams": {"nationality", "logo", "kit"},
+    "teams": {
+        "nationality",
+        "logo",
+        "kit",
+        "teamType",
+        "formerOrganization",
+        "affiliationEnded",
+    },
     "organizations": {"nationality", "logo"},
     "rosters": set(),
 }
@@ -454,6 +462,22 @@ def _validate(p):
                         and 1 <= r["tier"] <= 3,
                         "Тир должен быть 1–3",
                     )
+                    require(
+                        r.get("teamType", "unknown") in TEAM_TYPES,
+                        "Неизвестный тип команды",
+                    )
+                    former = r.get("formerOrganization")
+                    ended = r.get("affiliationEnded")
+                    require(
+                        not ended or former,
+                        "Укажите прежнюю организацию и дату окончания связи",
+                    )
+                    if former:
+                        reference(former, p["organizations"], "Прежняя организация")
+                    if ended:
+                        require(
+                            day(ended) <= cutoff, "Связь завершена после даты среза"
+                        )
                     if r["organization"] is not None:
                         reference(r["organization"], p["organizations"], "Организация")
                 if group == "organizations":
@@ -523,6 +547,67 @@ def _validate(p):
         )
         for player in h["players"]:
             reference(player, p["players"], "Игрок в истории")
+
+
+def migrate_club_links(db):
+    """Append an enriched revision to existing November editing branches, preserving old revisions."""
+    release = get(db, RELEASE_ID, 1)
+    branches = db.execute(
+        "SELECT id,max(revision) FROM data_pack WHERE id<>? GROUP BY id", (RELEASE_ID,)
+    ).fetchall()
+    for key, rev in branches:
+        pack = get(db, key, rev)
+        if (
+            pack["asOf"] != release["asOf"]
+            or not pack["teams"].keys() & release["teams"].keys()
+        ):
+            continue
+        changed = False
+        by_name = {
+            r["name"].casefold(): oid for oid, r in pack["organizations"].items()
+        }
+        for tid, t in pack["teams"].items():
+            src = release["teams"].get(tid)
+            if not src or t.get("teamType") or t["name"] != src["name"]:
+                continue
+            changed = True
+            for field in (
+                "teamType",
+                "organization",
+                "formerOrganization",
+                "affiliationEnded",
+            ):
+                if field not in src or t.get(field) is not None or field in t["fields"]:
+                    continue
+                value = src[field]
+                if field in ("organization", "formerOrganization") and value:
+                    org = release["organizations"][value]
+                    target = by_name.get(org["name"].casefold(), value)
+                    if (
+                        target in pack["organizations"]
+                        and pack["organizations"][target]["name"].casefold()
+                        != org["name"].casefold()
+                    ):
+                        continue
+                    if target not in pack["organizations"]:
+                        pack["organizations"][target] = deepcopy(org)
+                        by_name[org["name"].casefold()] = target
+                        for ref in (org["origin"], *org["fields"].values()):
+                            pack["origins"].setdefault(ref, release["origins"][ref])
+                    value = target
+                t[field] = value
+                ref = src["fields"].get(field)
+                if ref:
+                    t["fields"][field] = ref
+                    pack["origins"].setdefault(ref, release["origins"][ref])
+        if changed:
+            pack["revision"] = rev + 1
+            put(db, pack)
+
+
+def shares_organization(pack, first_team, second_team):
+    owner = pack["teams"][first_team]["organization"]
+    return bool(owner and owner == pack["teams"][second_team]["organization"])
 
 
 def installed(db):
@@ -652,6 +737,7 @@ def match_input(p, roster_ids, personal_badges=None):
         domain["teams"][tid] = dict(
             name=t["name"],
             organization=org,
+            teamType=t.get("teamType", "unknown"),
             visual=dict(
                 club=True,
                 badgeLicense=badge_meta.get("license"),

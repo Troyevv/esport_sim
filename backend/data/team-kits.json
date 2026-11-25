@@ -1,0 +1,821 @@
+{
+  "t-16329ae4fdda2ea09fc8": {
+    "nick": "xureba",
+    "observed": "2026-07-26",
+    "originalSha256": "2888721e7ed9d33de18866224a90137d1b3a8636a847c25e0d2e476e7e4e6195",
+    "rig": {
+      "collar": [
+        203.0,
+        192
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 233.0,
+      "width": 400
+    },
+    "sha256": "d410a1048b72ae0cb54d4de8bd8cd13c360fbf74b440dd1bbb9a09376d3b7bfd",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/xureba.png",
+    "team": "Keyd Stars"
+  },
+  "t-18f9c362a116454843cd": {
+    "nick": "Henu",
+    "observed": "2026-07-26",
+    "originalSha256": "db46b3cefe0f6ab1a70fad9c1d53bf6d66aa068ba936df461b837851df737097",
+    "rig": {
+      "collar": [
+        203.5,
+        183
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 238.0,
+      "width": 400
+    },
+    "sha256": "21dfe40d89e36a3bae51d71a8841c5d40bcc9913e2719fad7e0b0bc449d9a159",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/HENU.png",
+    "team": "ENCE"
+  },
+  "t-219f0a012e4cb66d8049": {
+    "nick": "NickyB",
+    "observed": "2026-07-26",
+    "originalSha256": "f05cfdd74cedf8ec030cd0cc18f2975a2aca79bbdece959872a45e4ec46befca",
+    "rig": {
+      "collar": [
+        200.5,
+        176
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 224.3,
+      "width": 400
+    },
+    "sha256": "a49705e15ded3116abfbef8483bef17e05133611ec7c66f7032e9d090f11d0c2",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/NickyB.png",
+    "team": "Tricked"
+  },
+  "t-27fe146f2258e3e45323": {
+    "nick": "s1n",
+    "observed": "2026-07-26",
+    "originalSha256": "88623a8ecd86d84f5b9f63a23572fcaa673379ab88cd37cfd75d1951208e3899",
+    "rig": {
+      "collar": [
+        204.0,
+        178
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 248.3,
+      "width": 400
+    },
+    "sha256": "8ebe2cd817225825d9bee04aa11abeaf45b23d60a8f3c74bf40fd88450c95647",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/s1n.png",
+    "team": "M80"
+  },
+  "t-28d9011de666ae31b9cc": {
+    "nick": "Rkzinho",
+    "observed": "2026-07-26",
+    "originalSha256": "2b0b87ddc4b6638bec998d6fa9ce9297839acee5f81e175f11294fffb8ba8786",
+    "rig": {
+      "collar": [
+        203.0,
+        177
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 238.0,
+      "width": 400
+    },
+    "sha256": "b774b82753b5ff75b3bd6d26ee06acbd5407f2a25016541e0220a54a2958168e",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/Rkzinho.png",
+    "team": "paiN Gaming"
+  },
+  "t-2a21fe6d592a19b7de89": {
+    "nick": "JDC",
+    "observed": "2026-07-26",
+    "originalSha256": "a7c3a985db857ea984a31113610cda60d1936c4583040e695133d9e2558954d3",
+    "rig": {
+      "collar": [
+        203.0,
+        162
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 258.3,
+      "width": 400
+    },
+    "sha256": "c47412215b0b74e7e4d5fdc045f07bf5f14fe92df3cbeb113757fcb9bccabcc8",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/JDC.png",
+    "team": "BIG"
+  },
+  "t-2d77a796d0318087e1b6": {
+    "nick": "insani",
+    "observed": "2026-07-26",
+    "originalSha256": "26fc37adab46ceee5496103ab96821088da0b5a06231b80ae761f4fb8106adec",
+    "rig": {
+      "collar": [
+        203.5,
+        174
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 223.0,
+      "width": 400
+    },
+    "sha256": "d86e930b777069e3e6921bd30cab347666c74451f063161932e4ed4669a05be6",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/insani.png",
+    "team": "MIBR"
+  },
+  "t-2fc1b348049341df90c6": {
+    "nick": "stormzyn",
+    "observed": "2026-07-26",
+    "originalSha256": "1e2a183009fa450e16107474494801033ef115a9ec67431bcad26c3b2a4a30d2",
+    "rig": {
+      "collar": [
+        204.25,
+        177
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 242.3,
+      "width": 400
+    },
+    "sha256": "1fc3411c24146d791283e6f0bab8b5026901bf52fd334e38bc998c957feda203",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/stormzyn.png",
+    "team": "MIBR Academy"
+  },
+  "t-328f3d6488fcc16cd6d9": {
+    "nick": "Zyphon",
+    "observed": "2026-07-26",
+    "originalSha256": "c760ebd03bc49be410a92872e18bc3e8d5cec973ec8b0a7644b9976881b159a1",
+    "rig": {
+      "collar": [
+        196.5,
+        173
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 229.0,
+      "width": 400
+    },
+    "sha256": "ecb99e308fe2e6c8e75b3a817c2db91ff198b235655c7046fda7387d16a42ac3",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/Zyphon.png",
+    "team": "Sashi"
+  },
+  "t-3c22c335030af99efc2d": {
+    "nick": "mazay",
+    "observed": "2026-07-26",
+    "originalSha256": "6f330ea603f0405c33cdb69a7fce9c9053464ec3650a62e1fc246933553b86af",
+    "rig": {
+      "collar": [
+        214.5,
+        262
+      ],
+      "height": 587,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 323.4,
+      "width": 425
+    },
+    "sha256": "2c82a9aeacd5f7ba401b6cd3d38db88c660e84d130012d9a4ce2fedce7241b55",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/mazay.png",
+    "team": "Fnatic"
+  },
+  "t-45d7d6f6eba7e740114d": {
+    "nick": "Jame",
+    "observed": "2026-07-26",
+    "originalSha256": "7341940dc3e6e80c5fd4b74a47673d05301ffce2478ba56dc434a398f5753568",
+    "rig": {
+      "collar": [
+        201.5,
+        172
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 262.3,
+      "width": 400
+    },
+    "sha256": "ed1c77d64fc732fa01712e0a27e28aa63c5064f9d048b7ea690dde212afc54f0",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/Jame.png",
+    "team": "PARIVISION"
+  },
+  "t-49ee926287713f1ed87c": {
+    "nick": "joeski",
+    "observed": "2026-07-26",
+    "originalSha256": "98528daf51acea0a4d4b8d76ce21f95246e422d26ccea2168da220d692febe1b",
+    "rig": {
+      "collar": [
+        204.0,
+        168
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 275.0,
+      "width": 400
+    },
+    "sha256": "97e74612320244a02560eb29584c6c4bb0f7d37588d5602456067e8097c3380e",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/joeski.png",
+    "team": "Young Ninjas"
+  },
+  "t-4ba9b53b509ddd30355e": {
+    "nick": "INS",
+    "observed": "2026-07-26",
+    "originalSha256": "64baae0784c41a437ca4aeed673cf885bac6a9c9835a987a8ac08e01d80ec2e9",
+    "rig": {
+      "collar": [
+        199.0,
+        178
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 263.3,
+      "width": 400
+    },
+    "sha256": "e46522e91aece93eecf33e7eb9751c170acf8f3e1fdc17054047057c3137aef1",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/INS.png",
+    "team": "FlyQuest"
+  },
+  "t-4f1405c1c40de2e0a294": {
+    "nick": "kaiori",
+    "observed": "2026-07-26",
+    "originalSha256": "123bd49ad97f591162b4e155ed2d525632b4b27aaea14c48208d24abbc5bf601",
+    "rig": {
+      "collar": [
+        202.0,
+        173
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 294.0,
+      "width": 400
+    },
+    "sha256": "6e0bcebe036e2a7d6e61620d294458cf06bb9ed836483ddae95215c60f70269e",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/kaiori.png",
+    "team": "QUAZAR"
+  },
+  "t-53881bd56ea822c6b0e0": {
+    "nick": "abr",
+    "observed": "2026-07-26",
+    "originalSha256": "79e975097e9ac6d7c53c511681355795fd8c63316fe287efd1612cbcc965318a",
+    "rig": {
+      "collar": [
+        210.0,
+        170
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 270.0,
+      "width": 400
+    },
+    "sha256": "f67aa0540b3ee481f59296c1e1f4a874e1862e23405684e614a3a60571c00100",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/abr.png",
+    "team": "GameHunters"
+  },
+  "t-5918e544af9a5152b827": {
+    "nick": "s1mple",
+    "observed": "2026-07-26",
+    "originalSha256": "bb1ff4f0e0db1abd1e2776e55edd30b7448be8758f6553d2bebd3f04beefff89",
+    "rig": {
+      "collar": [
+        199.0,
+        165
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 251.3,
+      "width": 400
+    },
+    "sha256": "ae49170961b88ad0ba005053511b88c12f969ba1c122e12ffd444986f38a04a7",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/s1mple.png",
+    "team": "BC.Game Esports"
+  },
+  "t-5b141a9e490f34259fb9": {
+    "nick": "Chr1zN",
+    "observed": "2026-07-26",
+    "originalSha256": "18f77c14957b5d79c90c8da70551790a04a8ed88b28991158ba4927753c4949a",
+    "rig": {
+      "collar": [
+        199.0,
+        186
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 262.0,
+      "width": 400
+    },
+    "sha256": "87395dc2258e2a17d3541e4dac86e4747f8a6f53c4ea735361f47553ed95926a",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/chr1zn.png",
+    "team": "HEROIC"
+  },
+  "t-60fdc5c308e4875a1f67": {
+    "nick": "XANTARES",
+    "observed": "2026-07-26",
+    "originalSha256": "d8eaa72b15a466aa671b73a05627898dd294874244108d2c7b391085df73f014",
+    "rig": {
+      "collar": [
+        199.0,
+        160
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 268.0,
+      "width": 400
+    },
+    "sha256": "7ba7d979341c8b389ff20bec5e1a564ec01acae86b915f249c26026cd8756f54",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/XANTARES.png",
+    "team": "Aurora Gaming"
+  },
+  "t-61f903344ff1922c934e": {
+    "nick": "buda",
+    "observed": "2026-07-26",
+    "originalSha256": "7df7f17d40fa9b630ac5b99f2c217a46d52449e653a7e6df8f5100cdc4f6d5f3",
+    "rig": {
+      "collar": [
+        204.25,
+        165
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 235.0,
+      "width": 400
+    },
+    "sha256": "99f5464a110889f4a0af12b54df544f265b3aa89a74c3c304284a23cb2c1f55c",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/buda.png",
+    "team": "BESTIA"
+  },
+  "t-6377d0fc1413dc31753e": {
+    "nick": "KSCERATO",
+    "observed": "2026-07-26",
+    "originalSha256": "f1ebadafda7da85ad52c465a3b0867e4e23a92e22c4530e43e643250d3e925e5",
+    "rig": {
+      "collar": [
+        196.75,
+        188
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 273.0,
+      "width": 400
+    },
+    "sha256": "328884a5edd150fda6ed5883abf7d4e3094506717a704308b1c8db68bad3f19d",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/KSCERATO.png",
+    "team": "FURIA Esports"
+  },
+  "t-6665c17b8ac819803434": {
+    "nick": "R4DYX",
+    "observed": "2026-07-26",
+    "originalSha256": "237dc676d4196018e683d06b456aba9bd3868602db282a95258ec6f6d22f3066",
+    "rig": {
+      "collar": [
+        207.0,
+        197
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 234.3,
+      "width": 400
+    },
+    "sha256": "4b428bf29b80eb18f72761ec931c3c2883e7e187ababbcd2cb36912efc558ee2",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/R4DYX.png",
+    "team": "Sangal Esports"
+  },
+  "t-686f34552cee3bc3c46d": {
+    "nick": "donk",
+    "observed": "2026-07-26",
+    "originalSha256": "9540e632b513bbde3aa266a796c7b485e1a71fa861a9ad04ff9658627ba1c088",
+    "rig": {
+      "collar": [
+        200.0,
+        162
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 236.0,
+      "width": 400
+    },
+    "sha256": "251ecd9cfa3eece7f143d2a064a9a0ded9f2654175c98fc65ffce4b0c5e5c479",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/donk.png",
+    "team": "Team Spirit"
+  },
+  "t-6986dc19c3f9cf497aa5": {
+    "nick": "Dawy",
+    "observed": "2026-07-26",
+    "originalSha256": "8b1ca5ec0eff760309bdf93e293f41f0d4db3985840cd6177ab4d7fdfde8c97c",
+    "rig": {
+      "collar": [
+        201.5,
+        160
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 199.0,
+      "width": 400
+    },
+    "sha256": "2cc08c1bf6da577b41eb45881b7b12b1d4d086ea2a8e87f55edc0844203df105",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/Dawy.png",
+    "team": "IC Esports"
+  },
+  "t-927a416d29f1e78e5765": {
+    "nick": "KRIMZ",
+    "observed": "2026-07-26",
+    "originalSha256": "4b991024fb973e4104c97d900cc2a65f49adb667a316aa7b19fc94eed702647a",
+    "rig": {
+      "collar": [
+        244.0,
+        208
+      ],
+      "height": 511,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 316.0,
+      "width": 488
+    },
+    "sha256": "958a96bddc66e0958b71fc2915e0987d331a9d3a2e920ba45a3ef4facdddc39f",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/KRIMZ.png",
+    "team": "EYEBALLERS"
+  },
+  "t-92ee93de02ea87db5302": {
+    "nick": "esenthial",
+    "observed": "2026-07-26",
+    "originalSha256": "9abb2facaae46e9658b8b89d12875f368471fa3aa0777a2b36f313d44a7d70a9",
+    "rig": {
+      "collar": [
+        199.5,
+        174
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 252.0,
+      "width": 400
+    },
+    "sha256": "63df0bf8c7585f6305de34dfd1cda81410cd78df81d9cf6bcfa5251fdf3d7823",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/esenthial.png",
+    "team": "B8"
+  },
+  "t-a6debb8decdccf4848c7": {
+    "nick": "Gizmy",
+    "observed": "2026-07-26",
+    "originalSha256": "7bc9b101faea453537fcf87340c231ec1190bc9b368938b0fbcee1df9035e46c",
+    "rig": {
+      "collar": [
+        203.5,
+        154
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 283.0,
+      "width": 400
+    },
+    "sha256": "9785276d306f6c4fd78ec5ef755efa16ae190dd6069a06485d369720c263962a",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/gizmy.png",
+    "team": "100 Thieves"
+  },
+  "t-b2e403caa5045230cc82": {
+    "nick": "mizu",
+    "observed": "2026-07-26",
+    "originalSha256": "9533f7080fb98d7b257f422dc93cc6da4e55116ad049c9a1d1a68a08604d1248",
+    "rig": {
+      "collar": [
+        200.5,
+        163
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 277.3,
+      "width": 400
+    },
+    "sha256": "7e41063b67d63c559dce3664f257b51686e90ce0734391e51a9f383f95f5b593",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/mizu.png",
+    "team": "HOTU"
+  },
+  "t-b91dff98ff9b959126e9": {
+    "nick": "ropz",
+    "observed": "2026-07-26",
+    "originalSha256": "e1343ebfc4744d6ffd0bf2d85c10d000fa86d238f90d7f084e5d57f95077d61b",
+    "rig": {
+      "collar": [
+        200.0,
+        179
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 222.0,
+      "width": 400
+    },
+    "sha256": "8a707f81792a53bfc1db211e8735d8946255919169e0612e7c68065579f81ec0",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/ropz.png",
+    "team": "Team Vitality"
+  },
+  "t-be6167e40906d38e9663": {
+    "nick": "tex1y",
+    "observed": "2026-07-26",
+    "originalSha256": "9bb202e68cc85026c5aaab13071b510ae162058cce1dc4cae9d1187731e45eb0",
+    "rig": {
+      "collar": [
+        204.0,
+        183
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 264.3,
+      "width": 400
+    },
+    "sha256": "fab2648c19c5b891273d02715c918df8d360627e11da49fdef34e23eb43cf5f8",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/tex1y.png",
+    "team": "Team Nemesis"
+  },
+  "t-c30630c8f93e7a5765f8": {
+    "nick": "clax",
+    "observed": "2026-07-26",
+    "originalSha256": "ba2c4bf3dfca185f2bf9dc39cd0e5f3d86da86caf7a06316afe99ea16a14f885",
+    "rig": {
+      "collar": [
+        247.0,
+        215
+      ],
+      "height": 510,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 322.0,
+      "width": 489
+    },
+    "sha256": "b1f1aa4cd168664de4a0ebcb7e25da29f719b37d1bcd85e7a30f5f4cd84ec678",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/clax.png",
+    "team": "K27"
+  },
+  "t-cd4e4cff96070aebcca5": {
+    "nick": "910",
+    "observed": "2026-07-26",
+    "originalSha256": "8ac53e0ff192235f02d1b0240f213a256a0784ec7cf86cf530f2bc88c024537f",
+    "rig": {
+      "collar": [
+        196.0,
+        181
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 277.0,
+      "width": 400
+    },
+    "sha256": "4678bcbc32c76f0993655eebd5aeca0b8c3f20145f08f326d4bc991e40abb5c8",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/910.png",
+    "team": "The MongolZ"
+  },
+  "t-d2e1af19fbf84db11da2": {
+    "nick": "Kiryasoo",
+    "observed": "2026-07-26",
+    "originalSha256": "c349af2eacd5c081a8bfa134b46505b2e874634c0db159a332907c7e741e74a2",
+    "rig": {
+      "collar": [
+        179.5,
+        213
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 298.0,
+      "width": 351
+    },
+    "sha256": "b8086c019638b76c5126470da2b9ca1b5a09b1880034f9d796d3d89e7373a105",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/Kiryasoo.png",
+    "team": "Team Spirit Academy"
+  },
+  "t-e09b05d3d741eea321ea": {
+    "nick": "ultimate",
+    "observed": "2026-07-26",
+    "originalSha256": "fc65c20b4388067f518f09002faf3f94718aad3674fae32764189294612ddcd4",
+    "rig": {
+      "collar": [
+        138.5,
+        191
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 266.9,
+      "width": 279
+    },
+    "sha256": "3cbc5c93017bd670bafbaac53ef4973fcc8a3ac2259d11eb5caa9b455a5cea2d",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/ultimate.png",
+    "team": "Team Liquid"
+  },
+  "t-e1f3f91a6747a1236202": {
+    "nick": "Due1yant",
+    "observed": "2026-07-26",
+    "originalSha256": "58171431de0d80bec7b9f619de6048561145602bf2129b86db92773cab96aba5",
+    "rig": {
+      "collar": [
+        199.5,
+        168
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 292.3,
+      "width": 400
+    },
+    "sha256": "c248c964f936c8e896fa6e5bc805843e6a79ccee7c51f92f3ce190850e97ee5c",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/Due1yant.png",
+    "team": "DONSTU"
+  },
+  "t-e26bb17d0276876f5d60": {
+    "nick": "ADRON",
+    "observed": "2026-07-26",
+    "originalSha256": "64854e6a97b6c8890c8eb6e86271010df9fcad3a1671529a1fede365a37592dd",
+    "rig": {
+      "collar": [
+        202.25,
+        179
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 232.0,
+      "width": 400
+    },
+    "sha256": "9e7428ca381d215703689ca51c56d30b743665b2755d53cf65f3dd8418f1f382",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/ADRON.png",
+    "team": "HYPERSPIRIT"
+  },
+  "t-e2dc13ee2937512f50cc": {
+    "nick": "bodyy",
+    "observed": "2026-07-26",
+    "originalSha256": "5cba4657fd4a29f9680a76f341e3f611efac3f7e24e3df99f187b9f83ecf0dc3",
+    "rig": {
+      "collar": [
+        202.5,
+        173
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 264.3,
+      "width": 400
+    },
+    "sha256": "2a49ba12d969fe9c91aaf269340bf2888752361817dbcefdf0862a576e4fb2a5",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/bodyy.png",
+    "team": "OG"
+  },
+  "t-e56b1834fdc9a53d7610": {
+    "nick": "MoDo",
+    "observed": "2026-07-26",
+    "originalSha256": "3560d155743a27d74f66be2b2f508442d4651aab6c89cc4f132e8193e14f37bf",
+    "rig": {
+      "collar": [
+        198.0,
+        178
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 243.0,
+      "width": 400
+    },
+    "sha256": "852ad5db964fd8a45fe231cacb1df45f99bd1cc091ca033916c80de1a14f7f04",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/MoDo.png",
+    "team": "SINNERS Esports"
+  },
+  "t-ee828843d9d91ac42693": {
+    "nick": "decenty",
+    "observed": "2026-07-26",
+    "originalSha256": "b7acd1d55849010b4d0d8cbc5fba11fcd2fde7068b97717078ee30877bbfe4e7",
+    "rig": {
+      "collar": [
+        208.0,
+        180
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 265.0,
+      "width": 400
+    },
+    "sha256": "52604f777e586c51b0b58eb3b939472c67dc60c321782df20c4b57b83314f5e2",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/decenty.png",
+    "team": "Imperial Esports"
+  },
+  "t-ffe7aff1d57ce72003a4": {
+    "nick": "kumaO",
+    "observed": "2026-07-26",
+    "originalSha256": "6bc73789ae099dbc1c117a9d2e05b278530640705351fc8e2383a032171c747c",
+    "rig": {
+      "collar": [
+        204.5,
+        206
+      ],
+      "height": 417,
+      "seat": [
+        120,
+        158.5
+      ],
+      "span": 284.3,
+      "width": 400
+    },
+    "sha256": "9957d65bd15264ffebe6c4217e7e675bf4fc92d4395e375dc73ddfefa9efd58e",
+    "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/kumao.png",
+    "team": "Rune Eaters"
+  }
+}

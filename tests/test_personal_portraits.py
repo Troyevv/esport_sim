@@ -94,3 +94,30 @@ def test_release_portrait_catalog_is_metadata_only():
         not (personal_portraits.CATALOG.parent / (v["sha256"] + ".png")).exists()
         for v in catalog.values()
     )
+
+
+def test_private_garment_rollback_and_offline_registration(tmp_path, monkeypatch):
+    raw = (
+        Path(__file__).parents[1] / "frontend/e2e/fixtures/portraits/model-a.png"
+    ).read_bytes()
+    digest = sha256(raw).hexdigest()
+    rig = dict(width=480, height=560, collar=[240, 310], span=490, seat=[120, 157])
+    item = dict(
+        sha256=digest, rig=rig, observed="2026-07-26", source="https://example.org/kit"
+    )
+    monkeypatch.setattr(personal_portraits, "kits", lambda: {"team-1": item})
+    library = PortraitLibrary(tmp_path / "portraits.sqlite")
+    name = "kits/" + digest + ".png"
+    pack = {"teams": {"team-1": {}}, "players": {}}
+    with pytest.raises(ValueError):
+        personal_portraits.install(
+            library, pack, archive((name, raw), ("bad.png", b"bad"))
+        )
+    assert not personal_portraits.installed_kits(library)
+    assert personal_portraits.install(library, pack, archive((name, raw))) == {
+        "installed": 0,
+        "kits": 1,
+    }
+    assert personal_portraits.installed_kits(library)["team-1"]["rig"] == rig
+    assert library.image(digest) == raw
+    library.close()

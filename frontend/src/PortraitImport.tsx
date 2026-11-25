@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { serverURL } from "./session";
+import { refreshWardrobe } from "./wardrobe";
 import { refKey, type Pack } from "./databaseModel";
 type Status = {
   state: string;
@@ -77,6 +78,7 @@ export function PortraitImport({
     };
   }, [open, pack.id, pack.revision]);
   const [installed, setInstalled] = useState<number | null>(null);
+  const [kitCount, setKitCount] = useState(0);
   async function installFile(file: File) {
     setError("");
     setInstalled(null);
@@ -94,6 +96,8 @@ export function PortraitImport({
       if (!response.ok)
         throw Error(result.detail || "Не удалось установить личные портреты");
       await onRefresh();
+      await refreshWardrobe();
+      setKitCount(result.kits || 0);
       setInstalled(result.installed);
     } catch (e) {
       setError(String(e));
@@ -146,6 +150,9 @@ export function PortraitImport({
             }}
           />
         </label>
+        {kitCount > 0 && (
+          <p role="status">Подключено комплектов формы: {kitCount}</p>
+        )}
         {installed !== null && (
           <p role="status">Подключено студийных портретов: {installed}</p>
         )}

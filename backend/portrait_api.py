@@ -55,6 +55,10 @@ def portrait_router(app):
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
 
+    @routes.get("/kit-index")
+    async def kit_index():
+        return personal_portraits.installed_kits(app.state.store.portraits)
+
     @routes.get("/image/{digest}")
     async def image(digest: str):
         data = app.state.store.portraits.image(digest) if len(digest) == 64 else None

@@ -222,9 +222,9 @@ if ($DesktopBrowser) { Test-Lan $origin }
 if (!(Test-Path (Join-Path $install 'EsportSim\TACTICS.md'))) { throw 'Tactics guide missing from archive.' }
 $personal = Invoke-RestMethod "$origin/api/database/personal-badges/status"
 if ($personal.mode -ne 'off' -or $personal.available -lt 167 -or $personal.ready -ne 0) { throw 'Packaged private logo catalog is missing or contains private files.' }
-$portraits = Invoke-RestMethod "$origin/api/portraits/scene-20261125-art2/1/index"
+$portraits = Invoke-RestMethod "$origin/api/portraits/scene-20261125-clubs/1/index"
 if ($portraits.PSObject.Properties.Name.Count -gt 0) { throw 'Fresh Windows profile unexpectedly contains private portrait art.' }
-$scene = (Invoke-RestMethod "$origin/api/database/scene-20261125-art2/1").package
+$scene = (Invoke-RestMethod "$origin/api/database/scene-20261125-clubs/1").package
 if ($scene.players.PSObject.Properties.Name.Count -lt 1500) { throw 'Offline player database missing from Windows distribution.' }
 $lineups = @($scene.rosters.PSObject.Properties | Where-Object { $_.Value.name -in @('Team Vitality','Team Falcons') } | ForEach-Object { $_.Name })
 Command $origin 'database-match' @{id=$scene.id;revision=1;seed=42;rosters=$lineups}

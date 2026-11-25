@@ -2,6 +2,7 @@ import {
   evidence,
   entityVisual,
   regions,
+  teamTypes,
   roles,
   type Group,
   type Pack,
@@ -165,6 +166,7 @@ export function editorProfile(p: Pack, g: Group, id: string) {
       r.nationality ? "nationality" : "region",
       r.nationality || r.region,
     );
+    field("Тип команды", "teamType", teamTypes[r.teamType || "unknown"]);
     field("Тир", "tier", r.tier?.toString());
     fact(
       "Результаты в срезе",
@@ -180,6 +182,30 @@ export function editorProfile(p: Pack, g: Group, id: string) {
       links("organizations", r.organization ? [r.organization] : []),
       "Принадлежность организации не установлена.",
     );
+    if (r.organization)
+      list(
+        "Другие команды организации",
+        links(
+          "teams",
+          teams
+            .filter(
+              ([key, t]) => key !== id && t.organization === r.organization,
+            )
+            .map(([key]) => key),
+          (k) => teamTypes[p.teams[k].teamType || "unknown"],
+        ),
+        "Других команд в срезе нет.",
+      );
+    if (r.formerOrganization)
+      list(
+        "Прежняя организация",
+        links("organizations", [r.formerOrganization], () =>
+          r.affiliationEnded
+            ? "До " + r.affiliationEnded
+            : "Дата окончания неизвестна",
+        ),
+        "",
+      );
   } else if (g === "organizations") {
     context = "Клуб · Counter-Strike 2";
     field("Принадлежность", "nationality", r.nationality);
@@ -191,7 +217,32 @@ export function editorProfile(p: Pack, g: Group, id: string) {
       "Сотрудники",
       String(staff.filter(([, s]) => teamIds.has(s.team!)).length),
     );
-    list("Команды организации", sessionTeams, "У организации пока нет команд.");
+    list(
+      "Команды организации",
+      links(
+        "teams",
+        teamIds,
+        (k) => teamTypes[p.teams[k].teamType || "unknown"],
+      ),
+      "У организации пока нет команд.",
+    );
+    const former = teams
+      .filter(([, t]) => t.formerOrganization === id)
+      .map(([key]) => key);
+    if (former.length)
+      list(
+        "Прежние команды",
+        links(
+          "teams",
+          former,
+          (k) =>
+            teamTypes[p.teams[k].teamType || "unknown"] +
+            (p.teams[k].affiliationEnded
+              ? " · до " + p.teams[k].affiliationEnded
+              : " · дата окончания неизвестна"),
+        ),
+        "",
+      );
   } else if (g === "staff") {
     field("Национальность", "nationality", r.nationality);
     field("Настоящее имя", "realName", r.realName);

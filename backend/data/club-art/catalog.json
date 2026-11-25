@@ -1118,6 +1118,17 @@
     "sha256": "49be5166acc88b4421d14ff9d36de395aa0bc0c72db82f5c0e81fd8faaf9f0b2",
     "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
   },
+  "FORZE Esports": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/FORZE_Esports",
+      "https://www.championat.com/cybersport/news-4955295-rossijskij-klub-forze-esports-predstavil-novyj-logotip-i-ajdentiku.html",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FORZE.png"
+    ],
+    "decision": "Игровая эмблема организации. Права на распространение оригинального знака FORZE в общей поставке не установлены.",
+    "kind": "game",
+    "sha256": "fd94fc9bfe563f39e2029f9d1e8477383687f4416f830a5b88cd41b1098d007f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
   "FORZE Reload": {
     "checked": [
       "https://liquipedia.net/counterstrike/FORZE_Reload",

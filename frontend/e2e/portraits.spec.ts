@@ -9,7 +9,7 @@ test("Ноябрьский срез, доступный флаг и клубна
   await page.goto("/");
   await page.getByRole("button", { name: "База сцены", exact: true }).click();
   await expect(page.getByLabel("Пакет и редакция")).toHaveValue(
-    "scene-20261125-art2/1",
+    "scene-20261125-clubs/1",
   );
   await page.getByLabel("Поиск", { exact: true }).fill("ZywOo");
   await page.locator(".db-list").getByRole("button", { name: /ZywOo/ }).click();
@@ -88,7 +88,7 @@ test("Одна внешность в двух командах и у свобо�
     await (await page.request.get("/api/database/austin-registration/1")).json()
   ).package;
   const seasonal = (
-    await (await page.request.get("/api/database/scene-20261125-art2/1")).json()
+    await (await page.request.get("/api/database/scene-20261125-clubs/1")).json()
   ).package;
   for (const [k, team] of Object.entries(seasonal.teams) as [string, any][]) {
     if (team.name === "Astralis")

@@ -490,6 +490,7 @@ def build():
             team = p["teams"][roster["team"]]
             team["nationality"] = countries[0]
             team["fields"]["nationality"] = "competition"
+    attach_affiliations(p)
     attach_images(p)
     return db.validate(p)
 
@@ -545,6 +546,42 @@ def enrich_bios(p, lookup):
                 if field != "source" and val:
                     r[field] = val
                     r["fields"][field] = key
+
+
+def attach_affiliations(p):
+    teams = {t["name"]: t for t in p["teams"].values()}
+    orgs = {o["name"]: oid for oid, o in p["organizations"].items()}
+    p["origins"]["lineup-type"] = origin(
+        "estimated", ART_DATE, "Тип единственной публичной пятёрки в исходном срезе"
+    )
+    for t in teams.values():
+        t["teamType"] = (
+            "other" if t["name"].lower().startswith(("ex-", "ex ")) else "main"
+        )
+        t["fields"]["teamType"] = "lineup-type"
+        if t["organization"]:
+            t["fields"]["teamType"] = t["fields"]["organization"]
+    for name, owner, kind, ended, url in read("affiliations.json"):
+        t = teams[name]
+        source = ident("affiliation", name)
+        p["origins"][source] = origin("confirmed", ART_DATE, url)
+        if owner not in orgs:
+            oid = ident("org", owner)
+            orgs[owner] = oid
+            p["organizations"][oid] = row(owner, source, founded=None, website=None)
+            primary = teams.get(owner)
+            if primary:
+                primary.update(organization=oid, teamType="main")
+                primary["fields"].update(organization=source, teamType=source)
+        values = {"teamType": kind}
+        if ended is not None:
+            values.update(
+                formerOrganization=orgs[owner], affiliationEnded=ended or None
+            )
+        else:
+            values["organization"] = orgs[owner]
+        t.update(values)
+        t["fields"].update(dict.fromkeys(values, source))
 
 
 def attach_images(p):

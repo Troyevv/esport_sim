@@ -507,6 +507,9 @@
     border-bottom-width: 1px;
     border-left-width: 3px;
   }
+  .kit-card > small {
+    grid-column: 1 / -1;
+  }
   .kit-card .game-portrait {
     height: 6.6rem;
   }
@@ -538,4 +541,22 @@
   overflow-y: auto;
   padding-inline-start: 1.5rem;
   overflow-wrap: anywhere;
+}
+
+.kit-card > .game-portrait {
+  display: block;
+  margin-inline: auto;
+}
+.kit-card > small,
+.kit-preview small {
+  display: block;
+  margin: 0.35rem 0.4rem;
+  line-height: 1.4;
+  color: var(--muted, #aebfbc);
+}
+
+.kit-card small a,
+.kit-preview small a {
+  color: #a3cdc3;
+  text-underline-offset: 0.18em;
 }

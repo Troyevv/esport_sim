@@ -1,0 +1,1134 @@
+{
+  "1win": {
+    "accent": "#cfcfc6",
+    "badgeX": 160,
+    "base": "#25272a",
+    "chest": "",
+    "source": "https://www.championat.com/cybersport/news-5757018-anonsirovan-sostav-1win-team-po-counter-strike-2.html",
+    "style": "raglan"
+  },
+  "3DMAX": {
+    "accent": "#aa2830",
+    "badgeX": 160,
+    "base": "#232428",
+    "chest": "",
+    "source": "https://skinrave.gg/en/blog/envy-returns-to-cs2",
+    "style": "raglanline"
+  },
+  "8Sins": {
+    "accent": "#a13948",
+    "badgeX": 160,
+    "base": "#252127",
+    "chest": "",
+    "source": "https://www.hltv.org/team/13024/8sins",
+    "style": "shoulders"
+  },
+  "9INE": {
+    "accent": "#c6c4be",
+    "badgeX": 160,
+    "base": "#232323",
+    "chest": "",
+    "source": "https://www.hltv.org/team/10278/9ine",
+    "style": "washed"
+  },
+  "9z Team": {
+    "accent": "#785997",
+    "badgeX": 160,
+    "base": "#202024",
+    "chest": "",
+    "source": "https://bo3.gg/teams/9z",
+    "style": "brush"
+  },
+  "ALGO": {
+    "accent": "#b8c1bc",
+    "badgeX": 160,
+    "base": "#202323",
+    "chest": "",
+    "source": "https://rdy.gg/en/cs2/teams/18613",
+    "style": "gold"
+  },
+  "ALKA": {
+    "accent": "#abbdac",
+    "badgeX": 160,
+    "base": "#253e34",
+    "chest": "",
+    "source": "https://profilerr.net/cs-go/team/alka/",
+    "style": "piping"
+  },
+  "ARCRED": {
+    "accent": "#ddd8d4",
+    "badgeX": 160,
+    "base": "#a63339",
+    "chest": "ARCRED",
+    "source": "https://it-park.uz/index.php/en/itpark/news/adrenaline-open-cyber-cup-powered-by-it-park-tournament-s-winners-announced-1",
+    "style": "raglanline"
+  },
+  "AaB": {
+    "accent": "#a23039",
+    "badgeX": 160,
+    "base": "#242326",
+    "chest": "",
+    "source": "https://www.hltv.org/team/9621/aab",
+    "style": "piping"
+  },
+  "Aether": {
+    "accent": "#d5d4d2",
+    "badgeX": 160,
+    "base": "#25252a",
+    "chest": "",
+    "source": "https://x.com/TeamAetherX",
+    "style": "raglan"
+  },
+  "Alliance": {
+    "accent": "#d7c940",
+    "badgeX": 160,
+    "base": "#347452",
+    "chest": "Alliance",
+    "source": "https://shop.thealliance.gg/collections/best-sellers",
+    "style": "gradient"
+  },
+  "Astralis": {
+    "accent": "#271e23",
+    "badgeX": 92,
+    "base": "#881c25",
+    "chest": "Stake",
+    "marks": [
+      [
+        "Bazoom",
+        100,
+        327,
+        12
+      ]
+    ],
+    "source": "https://www.astralis.gg/products/astralis-2026-official-player-jersey",
+    "style": "map"
+  },
+  "Aurora Gaming": {
+    "accent": "#359185",
+    "badgeX": 160,
+    "base": "#173b37",
+    "chest": "Polymarket",
+    "source": "https://shop.auroragg.com/aurora-gaming-26-pro-jersey/",
+    "style": "gradient"
+  },
+  "B8": {
+    "accent": "#b4262b",
+    "badgeX": 160,
+    "base": "#19191c",
+    "chest": "betking",
+    "source": "https://betking.com.ua/collaboration/b8esports/",
+    "style": "raglanline"
+  },
+  "BASEMENT BOYS": {
+    "accent": "#717a70",
+    "badgeX": 160,
+    "base": "#202323",
+    "chest": "",
+    "source": "https://www.tbboys.com/",
+    "style": "jacquard"
+  },
+  "BBL Esports": {
+    "accent": "#b69859",
+    "badgeX": 160,
+    "base": "#483458",
+    "chest": "",
+    "source": "https://x.com/Oidemirel",
+    "style": "gold"
+  },
+  "BC.Game Esports": {
+    "accent": "#65b36d",
+    "badgeX": 160,
+    "base": "#171f1a",
+    "chest": "BC.GAME",
+    "source": "https://csdb.gg/pro-players/",
+    "style": "raglanline"
+  },
+  "BESTIA Academy": {
+    "accent": "#34475a",
+    "badgeX": 160,
+    "base": "#192437",
+    "chest": "Stake",
+    "source": "https://draft5.gg/equipe/3496-BESTIA-Academy",
+    "style": "stripes"
+  },
+  "BIG": {
+    "accent": "#26748a",
+    "badgeX": 160,
+    "base": "#1c242b",
+    "chest": "",
+    "source": "https://community.skin.club/en/news/cs2-winter-rostermania-all-2025-2026-roster-changes",
+    "style": "camo"
+  },
+  "BIG Academy": {
+    "accent": "#4481b1",
+    "badgeX": 160,
+    "base": "#222c36",
+    "chest": "GoBIG",
+    "source": "https://www.hltv.org/team/10254/big-academy",
+    "style": "camo"
+  },
+  "BORING PLAYERS": {
+    "accent": "#e4e2e5",
+    "badgeX": 160,
+    "base": "#9c92bb",
+    "chest": "",
+    "source": "https://csgo.5eplay.com/article/250829i3r0vu",
+    "style": "raglanline"
+  },
+  "BRUTE": {
+    "accent": "#515259",
+    "badgeX": 160,
+    "base": "#212125",
+    "chest": "XPG",
+    "source": "https://cool.iprima.cz/cool-esport/daxen-nepripoustim-si-ze-ext-nemuzeme-porazit",
+    "style": "shoulders"
+  },
+  "BetBoom": {
+    "accent": "#ba353e",
+    "badgeX": 160,
+    "base": "#e2e2df",
+    "chest": "BetBoom",
+    "source": "https://egamersworld.com/counterstrike/match/Xi2OW1wsT/fnatic-vs-betboom-team-b3WVxdYFc",
+    "style": "raglanline"
+  },
+  "BetBoom Team": {
+    "accent": "#ba353e",
+    "badgeX": 160,
+    "base": "#e2e2df",
+    "chest": "BetBoom",
+    "source": "https://egamersworld.com/counterstrike/match/Xi2OW1wsT/fnatic-vs-betboom-team-b3WVxdYFc",
+    "style": "raglanline"
+  },
+  "Betclic Apogee Esports": {
+    "accent": "#a02c35",
+    "badgeX": 160,
+    "base": "#eee9df",
+    "chest": "Betclic",
+    "marks": [
+      [
+        "ZERO",
+        246,
+        356,
+        12
+      ]
+    ],
+    "source": "https://www.betclicapogee.gg/loja/p/teste-rys46",
+    "style": "jacquard"
+  },
+  "CYBERSHOKE Esports": {
+    "accent": "#99b0d1",
+    "badgeX": 160,
+    "base": "#344d8d",
+    "chest": "BetBoom",
+    "source": "https://csgo.5eplay.com/article/250331wrdbtj",
+    "style": "shoulders"
+  },
+  "Change The Game": {
+    "accent": "#c6c6c1",
+    "badgeX": 160,
+    "base": "#202123",
+    "chest": "",
+    "source": "https://egamersworld.com/counterstrike/match/y09iBr7jq/change-the-game-vs-chinggis-warriors-644xHX9Gb",
+    "style": "raglan"
+  },
+  "Chicken Coop": {
+    "accent": "#b23339",
+    "badgeX": 160,
+    "base": "#222124",
+    "chest": "",
+    "source": "https://chickencoop.gg/the-coop/cs2-team/",
+    "style": "stripes"
+  },
+  "Chinggis Warriors": {
+    "accent": "#a84143",
+    "badgeX": 160,
+    "base": "#222326",
+    "chest": "CHINGGIS WARRIORS",
+    "source": "https://www.hltv.org/team/12646/chinggis-warriors",
+    "style": "raglanline"
+  },
+  "Crashers": {
+    "accent": "#24232b",
+    "badgeX": 160,
+    "base": "#8f2936",
+    "chest": "",
+    "source": "https://www.dust2.com.br/noticias/63331/crashers-volta-a-ativa",
+    "style": "brush"
+  },
+  "DEPO": {
+    "accent": "#d5b544",
+    "badgeX": 160,
+    "base": "#242521",
+    "chest": "",
+    "source": "https://www.hltv.org/player/22635/wetfy",
+    "style": "shoulders"
+  },
+  "EC BANGA": {
+    "accent": "#36363a",
+    "badgeX": 160,
+    "base": "#c47736",
+    "chest": "",
+    "source": "https://www.hltv.org/team/12568/ec-banga",
+    "style": "piping"
+  },
+  "ECSTATIC": {
+    "accent": "#cf733b",
+    "badgeX": 160,
+    "base": "#17191a",
+    "chest": "Gamban",
+    "source": "https://esportsinsider.com/2025/09/ecstatic-gamban-partnership-against-gambling",
+    "style": "raglanline"
+  },
+  "ENCE": {
+    "accent": "#d3833f",
+    "badgeX": 120,
+    "base": "#656269",
+    "chest": "",
+    "source": "https://draft5.gg/partida/41318-ENCE-vs-Nuclear-TigeRES-IEM-Rio-2026%3A-Global-Open-Qualifier",
+    "style": "jacquard"
+  },
+  "ENCE Academy": {
+    "accent": "#ca813b",
+    "badgeX": 120,
+    "base": "#67646b",
+    "chest": "",
+    "source": "https://ence.gg/pages/cs-academy-team",
+    "style": "jacquard"
+  },
+  "ENVY": {
+    "accent": "#2164a0",
+    "badgeX": 160,
+    "base": "#191c21",
+    "chest": "ENVY",
+    "marks": [
+      [
+        "LAMZU",
+        326,
+        351,
+        12
+      ]
+    ],
+    "source": "https://envy.gg/pages/2026-shop",
+    "style": "piping"
+  },
+  "ESC": {
+    "accent": "#62626a",
+    "badgeX": 160,
+    "base": "#262628",
+    "chest": "",
+    "source": "https://www.hltv.org/player/22703/moonwalk",
+    "style": "piping"
+  },
+  "Entropy": {
+    "accent": "#ad9469",
+    "badgeX": 160,
+    "base": "#28292c",
+    "chest": "",
+    "source": "https://sectorsixapparel.gg/products/entropy-jersey",
+    "style": "gold"
+  },
+  "Eternal Fire": {
+    "accent": "#b7995c",
+    "badgeX": 160,
+    "base": "#e7e5e1",
+    "chest": "",
+    "source": "https://www.thegamingwear.com/eternal-fire-2025-jersey-cs2-turkish-esports",
+    "style": "camo"
+  },
+  "FAVBET": {
+    "accent": "#e6a438",
+    "badgeX": 160,
+    "base": "#212126",
+    "chest": "FAVBET TEAM",
+    "source": "https://steamify.io/configs/guthriee",
+    "style": "brush"
+  },
+  "FOKUS": {
+    "accent": "#a8a9a6",
+    "badgeX": 160,
+    "base": "#e7e7e3",
+    "chest": "full fokus",
+    "source": "https://www.fokusclan.gg/products/fokus-clan-fullfokus-trikot",
+    "style": "jacquard"
+  },
+  "FORZE Reload": {
+    "accent": "#a3353f",
+    "badgeX": 160,
+    "base": "#282026",
+    "chest": "",
+    "source": "https://rdy.gg/en/cs2/teams/14173",
+    "style": "shoulders"
+  },
+  "FURIA Esports": {
+    "accent": "#b3a48b",
+    "badgeX": 160,
+    "base": "#171719",
+    "chest": "POKERSTARS",
+    "source": "https://shop.furia.gg/products/camiseta-oficial-furia-adidas-preta",
+    "style": "triple"
+  },
+  "FUT Esports": {
+    "accent": "#ad3741",
+    "badgeX": 160,
+    "base": "#211f21",
+    "chest": "FUT",
+    "source": "https://futesports.store/products/iem-cologne-major-2026-fut-jersey-limited-edition",
+    "style": "chestband"
+  },
+  "FaZe Clan": {
+    "accent": "#9f2631",
+    "badgeX": 160,
+    "base": "#191b20",
+    "chest": "ROLLBIT",
+    "source": "https://esportsinsider.com/2025/11/faze-clan-2026-esports-jersey-reveal",
+    "style": "camo"
+  },
+  "Fake do Biru": {
+    "accent": "#9d8aae",
+    "badgeX": 160,
+    "base": "#57386e",
+    "chest": "GAME",
+    "source": "https://profilerr.net/th/cs-go/team/fake-do-biru/",
+    "style": "jacquard"
+  },
+  "Falcons Force": {
+    "accent": "#567e68",
+    "badgeX": 160,
+    "base": "#e4e6df",
+    "chest": "",
+    "source": "https://bo3.gg/news/the-falcons-introduced-their-academy-roster-led-by-natosaphix",
+    "style": "gradient"
+  },
+  "Famalicão": {
+    "accent": "#e0bb47",
+    "badgeX": 160,
+    "base": "#e5e6e1",
+    "chest": "",
+    "source": "https://www.hltv.org/team/13364/famalico",
+    "style": "doubleband"
+  },
+  "Fisher College": {
+    "accent": "#1d2d46",
+    "badgeX": 160,
+    "base": "#e9e7dd",
+    "chest": "",
+    "source": "https://x.com/i/trending/2040297349453418958",
+    "style": "raglan"
+  },
+  "Fluxo": {
+    "accent": "#a03b3c",
+    "badgeX": 160,
+    "base": "#242123",
+    "chest": "Lottu",
+    "source": "https://esportsradar.gg/fluxo-secures-lottu-and-surf-telecom-as-new-commercial-partners/",
+    "style": "raglanline"
+  },
+  "FlyQuest": {
+    "accent": "#141a1c",
+    "badgeX": 160,
+    "base": "#276758",
+    "chest": "FLYQUEST",
+    "source": "https://flyquest.gg/",
+    "style": "piping"
+  },
+  "Fnatic": {
+    "accent": "#e4792f",
+    "badgeX": 160,
+    "base": "#181a1d",
+    "chest": "FNATIC",
+    "source": "https://fnatic.com/products/2026-fnatic-pro-jersey",
+    "style": "wing"
+  },
+  "G2 Esports": {
+    "accent": "#17171c",
+    "badgeX": 160,
+    "base": "#a01a27",
+    "chest": "",
+    "marks": [
+      [
+        "Red Bull",
+        84,
+        321,
+        13
+      ],
+      [
+        "Logitech G",
+        369,
+        326,
+        12
+      ]
+    ],
+    "source": "https://g2esports.com/products/g2-esports-jersey-2026",
+    "style": "raglan"
+  },
+  "Gaimin Gladiators": {
+    "accent": "#c9c7be",
+    "badgeX": 160,
+    "base": "#232426",
+    "chest": "",
+    "source": "https://shop.gaimingladiators.gg/products/2025-cyberarmour-professional-jersey",
+    "style": "wing"
+  },
+  "Galorys": {
+    "accent": "#765290",
+    "badgeX": 160,
+    "base": "#241e30",
+    "chest": "",
+    "source": "https://www.dust2.com.br/noticias/58998/dono-da-galorys-e-denunciado-pelo-mp-e-tem-ligacao-com-trabalho-analogo-a-escravidao",
+    "style": "jacquard"
+  },
+  "GamerLegion": {
+    "accent": "#648ca5",
+    "badgeX": 160,
+    "base": "#161d24",
+    "chest": "",
+    "source": "https://www.gamerlegion.gg/",
+    "style": "wing"
+  },
+  "GenOne": {
+    "accent": "#e0ded8",
+    "badgeX": 160,
+    "base": "#222426",
+    "chest": "GENONE",
+    "source": "https://www.hltv.org/team/11609/genone",
+    "style": "washed"
+  },
+  "Gentle Mates": {
+    "accent": "#262428",
+    "badgeX": 160,
+    "base": "#d3a7b0",
+    "chest": "M8",
+    "source": "https://www.gentlemates.com/shop/product/official-jersey-2026",
+    "style": "jacquard"
+  },
+  "Ground Zero": {
+    "accent": "#8aab42",
+    "badgeX": 160,
+    "base": "#232924",
+    "chest": "",
+    "source": "https://www.hltv.org/team/8536/ground-zero",
+    "style": "wing"
+  },
+  "HAVU": {
+    "accent": "#bfaf91",
+    "badgeX": 160,
+    "base": "#285254",
+    "chest": "",
+    "source": "https://www.hltv.org/player/11283/ottoNd",
+    "style": "piping"
+  },
+  "HEROIC": {
+    "accent": "#95293a",
+    "badgeX": 120,
+    "base": "#dedbd4",
+    "chest": "",
+    "marks": [],
+    "source": "https://heroic.gg/shop/heroic-2025-2026-jersey",
+    "style": "raglanline"
+  },
+  "HEROIC Academy": {
+    "accent": "#8c2637",
+    "badgeX": 120,
+    "base": "#dcdad4",
+    "chest": "",
+    "source": "https://heroic.gg/shop/heroic-2025-2026-jersey",
+    "style": "raglanline"
+  },
+  "HYPERSPIRIT": {
+    "accent": "#414c48",
+    "badgeX": 160,
+    "base": "#e7e7e3",
+    "chest": "HYPERSPIRIT",
+    "source": "https://draft5.gg/partida/42947-ECSTATIC-vs-HYPERSPIRIT-BC.Game-Masters-Championship",
+    "style": "pinstripe"
+  },
+  "Imperial Esports": {
+    "accent": "#568959",
+    "badgeX": 160,
+    "base": "#19241d",
+    "chest": "Gamdom",
+    "source": "https://imperialesports.gg/equipe/counter-strike-2/",
+    "style": "raglanline"
+  },
+  "Inner Circle Academy": {
+    "accent": "#25272a",
+    "badgeX": 160,
+    "base": "#922b31",
+    "chest": "",
+    "source": "https://draft5.gg/equipe/4225-Inner-Circle-Academy",
+    "style": "camo"
+  },
+  "Johnny Speeds": {
+    "accent": "#20242a",
+    "badgeX": 160,
+    "base": "#263a58",
+    "chest": "",
+    "source": "https://egamersworld.com/counterstrike/match/jd57i55tO/johnny-speeds-vs-magic-6skf3Y8jd",
+    "style": "raglan"
+  },
+  "Just Swing": {
+    "accent": "#79599c",
+    "badgeX": 160,
+    "base": "#e6e3e8",
+    "chest": "",
+    "source": "https://www.hltv.org/team/13053/just-swing",
+    "style": "stripes"
+  },
+  "Keyd Stars": {
+    "accent": "#8f69b9",
+    "badgeX": 160,
+    "base": "#423155",
+    "chest": "EstrelaBet",
+    "source": "https://www.hltv.org/team/6033/keyd-stars",
+    "style": "shoulders"
+  },
+  "LAG": {
+    "accent": "#d1ae45",
+    "badgeX": 160,
+    "base": "#202120",
+    "chest": "",
+    "source": "https://www.hltv.org/team/11955/lag",
+    "style": "shoulders"
+  },
+  "LP": {
+    "accent": "#79ad42",
+    "badgeX": 160,
+    "base": "#19251f",
+    "chest": "",
+    "source": "https://rdy.gg/en/cs2/teams/21140",
+    "style": "raglanline"
+  },
+  "Lazer Cats": {
+    "accent": "#bc5c95",
+    "badgeX": 160,
+    "base": "#483865",
+    "chest": "GG Bank",
+    "source": "https://draft5.gg/partida/28645-LEON-vs-Lazer-Cats-Thunderpick-World-Championship-2024%3A-European-Series-1",
+    "style": "gradient"
+  },
+  "Legacy": {
+    "accent": "#1c1c20",
+    "badgeX": 160,
+    "base": "#dfb548",
+    "chest": "LEGACY",
+    "source": "https://www.fallenstore.com.br/uniforme-legacy-2026-amarela",
+    "style": "raglan"
+  },
+  "Luminosity Gaming": {
+    "accent": "#728ea7",
+    "badgeX": 160,
+    "base": "#202329",
+    "chest": "Luminosity",
+    "source": "https://shop.lumi.gg/",
+    "style": "raglanline"
+  },
+  "Lynn Vision Gaming": {
+    "accent": "#bfbec0",
+    "badgeX": 160,
+    "base": "#222427",
+    "chest": "LYNN VISION",
+    "source": "https://www.hltv.org/major/team/8840/Lynn%20Vision",
+    "style": "jacquard"
+  },
+  "M80": {
+    "accent": "#99c22e",
+    "badgeX": 160,
+    "base": "#22242b",
+    "chest": "M80",
+    "source": "https://m80.gg/team/counter-strike",
+    "style": "shoulders"
+  },
+  "MANA": {
+    "accent": "#1c2026",
+    "badgeX": 160,
+    "base": "#24344b",
+    "chest": "",
+    "source": "https://rdy.gg/en/cs2/teams/18827",
+    "style": "raglan"
+  },
+  "MASONIC": {
+    "accent": "#70548d",
+    "badgeX": 160,
+    "base": "#221f26",
+    "chest": "",
+    "source": "https://rdy.gg/en/cs2/teams/2734",
+    "style": "piping"
+  },
+  "METANOIA Wolves": {
+    "accent": "#769577",
+    "badgeX": 160,
+    "base": "#203e33",
+    "chest": "",
+    "source": "https://profilerr.net/cs-go/team/metanoia-wolves/",
+    "style": "piping"
+  },
+  "MIBR": {
+    "accent": "#a0d5f8",
+    "badgeX": 160,
+    "base": "#141c39",
+    "chest": "1XBET",
+    "marks": [
+      [
+        "CSGO SKINS",
+        105,
+        321,
+        12
+      ]
+    ],
+    "source": "https://shop.mibr.gg/produto/uniforme-mibr-oficial-cs-2-2026-stage-003",
+    "style": "shoulders"
+  },
+  "MIBR Academy": {
+    "accent": "#c0d1e4",
+    "badgeX": 160,
+    "base": "#20273c",
+    "chest": "1XBET",
+    "source": "https://draft5.gg/partida/40785-MIBR-Academy-vs-RED-Canids-Academy-Cajunto-Copa-do-Brasil",
+    "style": "pinstripe"
+  },
+  "MINLATE": {
+    "accent": "#c2c0b7",
+    "badgeX": 160,
+    "base": "#292828",
+    "chest": "MINLATE",
+    "source": "https://www.hty.com/post/10332",
+    "style": "washed"
+  },
+  "MOUZ": {
+    "accent": "#d6b675",
+    "badgeX": 160,
+    "base": "#c02237",
+    "chest": "",
+    "source": "https://shop.mousesports.com/products/mouz-jersey-2026-red",
+    "style": "jacquard"
+  },
+  "Marsborne": {
+    "accent": "#a68a91",
+    "badgeX": 160,
+    "base": "#743343",
+    "chest": "MARSBORNE",
+    "source": "https://store.marsborne.com/products/armament",
+    "style": "hoops"
+  },
+  "Metizport": {
+    "accent": "#d3d8d5",
+    "badgeX": 160,
+    "base": "#212429",
+    "chest": "METIZPORT",
+    "marks": [
+      [
+        "KOMPLETT.no",
+        96,
+        322,
+        12
+      ],
+      [
+        "SAMSUNG",
+        44,
+        374,
+        10
+      ]
+    ],
+    "source": "https://shop.metizport.com/products/metizport-jersey-2025-26-dark-edition",
+    "style": "washed"
+  },
+  "Mindfreak": {
+    "accent": "#2587cc",
+    "badgeX": 120,
+    "base": "#171c23",
+    "chest": "",
+    "source": "https://www.pngkey.com/maxpic/u2t4e6i1u2i1u2q8/",
+    "style": "piping"
+  },
+  "Misa": {
+    "accent": "#a48b48",
+    "badgeX": 160,
+    "base": "#20201e",
+    "chest": "",
+    "source": "https://misaesports.com/",
+    "style": "brush"
+  },
+  "NEXVOID": {
+    "accent": "#466ba1",
+    "badgeX": 160,
+    "base": "#192536",
+    "chest": "",
+    "source": "https://mesa.mn/matches/d21da0fc-4f24-4893-af24-31694a973357",
+    "style": "piping"
+  },
+  "NRG": {
+    "accent": "#e96127",
+    "badgeX": 160,
+    "base": "#e9e7df",
+    "chest": "NRG",
+    "source": "https://x.com/NRGgg/status/2027461270975484010",
+    "style": "jacquard"
+  },
+  "Natus Vincere": {
+    "accent": "#8ada3f",
+    "badgeX": 160,
+    "base": "#191b20",
+    "chest": "",
+    "source": "https://shop.navi.gg/product/navi-2026-pro-kit-jersey",
+    "style": "glitch"
+  },
+  "Nemiga Gaming": {
+    "accent": "#a93040",
+    "badgeX": 160,
+    "base": "#202124",
+    "chest": "NEMIGA",
+    "source": "https://pickem-mongolia.com/cs2/teams/nemiga/",
+    "style": "raglanline"
+  },
+  "Ninjas in Pyjamas": {
+    "accent": "#899b41",
+    "badgeX": 160,
+    "base": "#202222",
+    "chest": "",
+    "source": "https://nip.gl/pages/new-look-ninjas",
+    "style": "jacquard"
+  },
+  "NuTorious": {
+    "accent": "#bf723c",
+    "badgeX": 160,
+    "base": "#242325",
+    "chest": "",
+    "source": "https://crafted.gg/products/2025-nutorious-jersey-black",
+    "style": "map"
+  },
+  "Nuclear TigeRES": {
+    "accent": "#aa3d3a",
+    "badgeX": 160,
+    "base": "#262424",
+    "chest": "NUCLEAR TIGRES",
+    "source": "https://draft5.gg/partida/41318-ENCE-vs-Nuclear-TigeRES-IEM-Rio-2026%3A-Global-Open-Qualifier",
+    "style": "brush"
+  },
+  "ODDIK": {
+    "accent": "#c7ab67",
+    "badgeX": 160,
+    "base": "#262424",
+    "chest": "ODDIK",
+    "source": "https://draft5.gg/equipe/2246-ODDIK",
+    "style": "raglanline"
+  },
+  "OMEGA": {
+    "accent": "#bb4e46",
+    "badgeX": 160,
+    "base": "#e9e8e3",
+    "chest": "",
+    "source": "https://www.hltv.org/player/25011/dan4o",
+    "style": "gradient"
+  },
+  "Outfit 49": {
+    "accent": "#555956",
+    "badgeX": 160,
+    "base": "#dfdfda",
+    "chest": "",
+    "source": "https://www.hltv.org/player/20234/gabe",
+    "style": "pinstripe"
+  },
+  "Passion UA": {
+    "accent": "#b4b4ad",
+    "badgeX": 160,
+    "base": "#17191b",
+    "chest": "vbet",
+    "source": "https://passionua.com/shop/passion-ua-adidas-jersey-new-collection",
+    "style": "triple"
+  },
+  "Phantom": {
+    "accent": "#ab3744",
+    "badgeX": 160,
+    "base": "#222329",
+    "chest": "",
+    "source": "https://profilerr.net/cs-go/team/phantom/",
+    "style": "camo"
+  },
+  "Phantom Esports": {
+    "accent": "#dbdcd6",
+    "badgeX": 160,
+    "base": "#202225",
+    "chest": "",
+    "source": "https://egamersworld.com/counterstrike/match/Fb1m2sBXq/phantom-esports-vs-whitebird-868zt__2q",
+    "style": "raglanline"
+  },
+  "R2": {
+    "accent": "#aa9569",
+    "badgeX": 160,
+    "base": "#222124",
+    "chest": "",
+    "source": "https://profilerr.net/cs-go/team/r2-esports-club/",
+    "style": "gold"
+  },
+  "RBLS Gaming": {
+    "accent": "#d6dfe2",
+    "badgeX": 160,
+    "base": "#2c4872",
+    "chest": "RankBeast",
+    "source": "https://www.hltv.org/team/12642/rebels",
+    "style": "piping"
+  },
+  "RED Canids": {
+    "accent": "#a72234",
+    "badgeX": 160,
+    "base": "#191a1c",
+    "chest": "",
+    "source": "https://redcanids.com.br/loja/index.php",
+    "style": "raglanline"
+  },
+  "Rare Atom": {
+    "accent": "#70528c",
+    "badgeX": 160,
+    "base": "#242029",
+    "chest": "",
+    "source": "https://profilerr.net/zh/cs-go/team/rare-atom/",
+    "style": "brush"
+  },
+  "Rebels": {
+    "accent": "#201f25",
+    "badgeX": 160,
+    "base": "#6b202a",
+    "chest": "",
+    "source": "https://csdb.gg/gear/keyboard-wooting-80he-black/",
+    "style": "brush"
+  },
+  "SAW": {
+    "accent": "#394d44",
+    "badgeX": 160,
+    "base": "#153931",
+    "chest": "skin.Club",
+    "source": "https://www.hltv.org/team/10567/saw",
+    "style": "piping"
+  },
+  "Sashi": {
+    "accent": "#b72b42",
+    "badgeX": 160,
+    "base": "#242326",
+    "chest": "",
+    "marks": [],
+    "source": "https://profilerr.net/cs-go/team/sashi-esport/",
+    "style": "brush"
+  },
+  "Sashi Academy": {
+    "accent": "#b03541",
+    "badgeX": 160,
+    "base": "#252326",
+    "chest": "",
+    "source": "https://csdb.gg/gear/monitor-zowie-xl2566x/",
+    "style": "brush"
+  },
+  "SemperFi": {
+    "accent": "#bab9a0",
+    "badgeX": 160,
+    "base": "#315444",
+    "chest": "",
+    "source": "https://profilerr.net/cs-go/team/semperfi-esports/",
+    "style": "piping"
+  },
+  "ShindeN": {
+    "accent": "#c46595",
+    "badgeX": 160,
+    "base": "#242325",
+    "chest": "ShindeN",
+    "source": "https://shop.shinden.gg/productos/camiseta-oficial-shinden-2024-25/",
+    "style": "brush"
+  },
+  "TNC": {
+    "accent": "#ce683d",
+    "badgeX": 160,
+    "base": "#242221",
+    "chest": "",
+    "source": "https://shopee.tw/Tnc-ML-%E7%94%B7%E5%A3%AB%E5%AE%98%E6%96%B9-S8-%E7%90%83%E8%A1%A3%28%E9%BB%91%E8%89%B2%29TNC-MLBB-%E5%AE%98%E6%96%B9%E9%8C%A6%E6%A8%99%E8%B3%BD%E7%90%83%E8%A1%A3-i.1053699101.23777259419",
+    "style": "camo"
+  },
+  "TYLOO": {
+    "accent": "#35191e",
+    "badgeX": 160,
+    "base": "#a52a3b",
+    "chest": "",
+    "source": "https://onwear.gg/en-global/collections/tyloo",
+    "style": "piping"
+  },
+  "Team Falcons": {
+    "accent": "#b8a05c",
+    "badgeX": 160,
+    "base": "#163e30",
+    "chest": "",
+    "source": "https://farmskins.com/news/falcons-unveil-2026-team-jersey-with-m0nesy-and-niko",
+    "style": "gold"
+  },
+  "Team Liquid": {
+    "accent": "#cfdce3",
+    "badgeX": 160,
+    "base": "#192b48",
+    "chest": "",
+    "source": "https://store.teamliquid.com/products/tl00026-000184-nvy-navy-2026-alienware-jersey-ecom",
+    "style": "piping"
+  },
+  "Team Nemesis": {
+    "accent": "#7353a0",
+    "badgeX": 160,
+    "base": "#dedce2",
+    "chest": "NEMESIS",
+    "source": "https://shop.nmss.gg/",
+    "style": "stripes"
+  },
+  "Team Spirit": {
+    "accent": "#bbb7b1",
+    "badgeX": 160,
+    "base": "#333334",
+    "chest": "BetBoom",
+    "marks": [
+      [
+        "ökko",
+        115,
+        357,
+        16
+      ],
+      [
+        "EXMO",
+        232,
+        349,
+        14
+      ]
+    ],
+    "source": "https://shop.teamspirit.gg/products/556",
+    "style": "washed"
+  },
+  "Team Spirit Academy": {
+    "accent": "#b7b4ac",
+    "badgeX": 160,
+    "base": "#333334",
+    "chest": "BetBoom",
+    "source": "https://cs2news.com/news/spirit-academy-unveil-new-2026-cs2-lineup",
+    "style": "washed"
+  },
+  "Team Vitality": {
+    "accent": "#f6d22d",
+    "badgeX": 160,
+    "base": "#222427",
+    "chest": "Stake",
+    "marks": [
+      [
+        "Fulllife",
+        106,
+        358,
+        13
+      ]
+    ],
+    "source": "https://vitality.gg/en-eu/products/maillot-pro-vitality-2026-par-equipe-int",
+    "style": "wing"
+  },
+  "The Huns": {
+    "accent": "#45454b",
+    "badgeX": 160,
+    "base": "#232427",
+    "chest": "SocialPay",
+    "source": "https://mesa.mn/matches/d21da0fc-4f24-4893-af24-31694a973357",
+    "style": "stripes"
+  },
+  "The QUBE": {
+    "accent": "#5fa46d",
+    "badgeX": 160,
+    "base": "#1e2723",
+    "chest": "",
+    "source": "https://www.hltv.org/player/24512/cozen",
+    "style": "piping"
+  },
+  "Tricked": {
+    "accent": "#ae3339",
+    "badgeX": 160,
+    "base": "#202022",
+    "chest": "Tricked Esport",
+    "source": "https://bo3.gg/pt/news/talent-rich-organizations-in-cs2-that-have-already-closed",
+    "style": "raglanline"
+  },
+  "UNO MILLE": {
+    "accent": "#cac8bc",
+    "badgeX": 160,
+    "base": "#232423",
+    "chest": "Banco do Brasil",
+    "source": "https://www.dust2.com.br/noticias/38161/uno-mille-retorna-com-novalineup",
+    "style": "washed"
+  },
+  "UNiTY esports": {
+    "accent": "#34383a",
+    "badgeX": 160,
+    "base": "#d9dcd7",
+    "chest": "",
+    "source": "https://www.playzone.cz/clanky/223547-za-cesko-slovensko-unity-konci-v-sanghaji-bez-vyhry-rvali-se-ale-jako-skutecni-lvi",
+    "style": "raglanline"
+  },
+  "Virtus.pro": {
+    "accent": "#db8135",
+    "badgeX": 160,
+    "base": "#212124",
+    "chest": "Winline",
+    "source": "https://shop.esl.com/products/virtus-pro-pro-jersey-2024",
+    "style": "brush"
+  },
+  "WAZABI": {
+    "accent": "#72b85d",
+    "badgeX": 160,
+    "base": "#1e2622",
+    "chest": "WAZABI",
+    "source": "https://draft5.gg/equipe/4242-WAZABI",
+    "style": "raglanline"
+  },
+  "Wanted Goons": {
+    "accent": "#d1d1ca",
+    "badgeX": 160,
+    "base": "#202323",
+    "chest": "",
+    "source": "https://wantedgoons.com/shop/2026-jerseys-1",
+    "style": "raglanline"
+  },
+  "Wildcard": {
+    "accent": "#9d3444",
+    "badgeX": 160,
+    "base": "#212223",
+    "chest": "WILDCARD",
+    "source": "https://crosshair.club/crosshairs",
+    "style": "brush"
+  },
+  "Yawara": {
+    "accent": "#b19875",
+    "badgeX": 160,
+    "base": "#242321",
+    "chest": "",
+    "source": "https://draft5.gg/partida/44443-Yawara-Esports-vs-BESTIA-Academy-CCT-South-America-2026-Series-2",
+    "style": "washed"
+  },
+  "Young Ninjas": {
+    "accent": "#747a50",
+    "badgeX": 160,
+    "base": "#232423",
+    "chest": "",
+    "source": "https://www.hltv.org/team/10960/young-ninjas",
+    "style": "jacquard"
+  },
+  "aAa": {
+    "accent": "#32272b",
+    "badgeX": 160,
+    "base": "#a32a35",
+    "chest": "",
+    "source": "https://www.team-aaa.com/fr/actualite/agenda-aaa-counter-strike_135246",
+    "style": "raglanline"
+  },
+  "paiN Academy": {
+    "accent": "#943844",
+    "badgeX": 160,
+    "base": "#242023",
+    "chest": "",
+    "source": "https://egamersworld.com/counterstrike/match/N1lHrwPx57g/pain-academy-vs-magicos-w8ySCmrJa",
+    "style": "raglanline"
+  },
+  "paiN Gaming": {
+    "accent": "#ab303b",
+    "badgeX": 160,
+    "base": "#1b1b20",
+    "chest": "",
+    "source": "https://www.pain.gg/uniforme2026/p",
+    "style": "raglanline"
+  }
+}
