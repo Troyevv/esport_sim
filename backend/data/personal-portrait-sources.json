@@ -856,6 +856,18 @@
       "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/Katkame.png",
       "width": 400
     },
+    "steam-76561198041683378": {
+      "frame": null,
+      "height": 400,
+      "identitySource": "https://en.wikipedia.org/wiki/Team_Falcons",
+      "name": "NiKo",
+      "nativeWidth": 172,
+      "originalSha256": "364abbd35e5c983288187009bffe657b2bec206f906588c886e8ba4e658e4c4a",
+      "publisher": "elhash-gg · NiKo",
+      "sha256": "c937f4bbff95cdc359992e4b176c40df4ee55894ae0f78cb4fdf81d67f138c98",
+      "source": "https://github.com/Amar-elhachemi/elhash-gg/blob/f807113d348541f78f7fb444e07fa5aee44997d7/public/images/players/NiKo.png",
+      "width": 320
+    },
     "steam-76561198043769572": {
       "frame": null,
       "height": 417,
@@ -1034,6 +1046,18 @@
       "publisher": "NoScope-Assets · SBT",
       "sha256": "c64c4a1ede71a8b114f77aacbf98a99362583d59243739cc958ca7b0afc5af4f",
       "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/SBT.png",
+      "width": 400
+    },
+    "steam-76561198057282432": {
+      "frame": null,
+      "height": 417,
+      "identitySource": "https://en.wikipedia.org/wiki/PGL_Major_Singapore_2026",
+      "name": "kyxsan",
+      "nativeWidth": 197,
+      "originalSha256": "2353451afe3a2da0b39699a4a8a5f95d9612c23ae54f550bab1d49d961e09135",
+      "publisher": "CS-Community-Ranking · kyxsan",
+      "sha256": "b27310f215833b286b301046bd8181730b45e5a61e856de97d04c215cd4b8c0e",
+      "source": "https://github.com/yfeng1714/CS-Community-Ranking/blob/056b2381174065ebc0529b3b084353a4895020f9/public/images/players/kyxsan.webp",
       "width": 400
     },
     "steam-76561198058500492": {
@@ -1592,6 +1616,18 @@
       "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/mhL.png",
       "width": 400
     },
+    "steam-76561198141272052": {
+      "frame": null,
+      "height": 417,
+      "identitySource": "https://en.wikipedia.org/wiki/PGL_Major_Singapore_2026",
+      "name": "xiELO",
+      "nativeWidth": 181,
+      "originalSha256": "9141a944c54757feca785c874cf2820803d6a32ec4bc8d71ffcce7e4b06b3644",
+      "publisher": "fantasy-polymarket · xiELO",
+      "sha256": "93d27b6edfb04f3da7792145868e0611a19fc3b330f92f24432ba480787c4da0",
+      "source": "https://github.com/MuhammadHanzalaIqbal/fantasy-polymarket/blob/ea0b4b9ec42a3dc97ee517a5135643fce35a9738/frontend/public/images/players/xiELO.png",
+      "width": 400
+    },
     "steam-76561198142000629": {
       "frame": null,
       "height": 417,
@@ -2082,6 +2118,18 @@
       "publisher": "NoScope-Assets · tuxa",
       "sha256": "12a4f10066c8cdf9b786238a70b7a4de31fd055bc7c0707ba33a4b300ca13962",
       "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/tuxa.png",
+      "width": 400
+    },
+    "steam-76561198210626739": {
+      "frame": null,
+      "height": 417,
+      "identitySource": "https://en.wikipedia.org/wiki/PGL_Major_Singapore_2026",
+      "name": "zweih",
+      "nativeWidth": 184,
+      "originalSha256": "e077faa3cac4974341497159ff8f70633088d4c55308e84d5ade5f11c63ed3a2",
+      "publisher": "fantasy-polymarket · zweih",
+      "sha256": "c825e9d355c94028852360bd407f664341098bc4edd6645fe1d0f988a77208a4",
+      "source": "https://github.com/MuhammadHanzalaIqbal/fantasy-polymarket/blob/ea0b4b9ec42a3dc97ee517a5135643fce35a9738/frontend/public/images/players/zweih.png",
       "width": 400
     },
     "steam-76561198210730700": {
