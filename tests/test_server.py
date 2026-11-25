@@ -43,7 +43,9 @@ def serve(app, sock, **tls):
     thread = threading.Thread(target=server.run, kwargs={"sockets": [sock]}, daemon=True)
     thread.start()
     try:
-        until = time.monotonic() + 8
+        # A fresh store verifies and installs the full scene before accepting sockets.
+        # Use the same startup allowance as the packaged desktop launcher.
+        until = time.monotonic() + 30
         while not server.started:
             assert thread.is_alive() and time.monotonic() < until, "Uvicorn did not start"
             time.sleep(0.01)

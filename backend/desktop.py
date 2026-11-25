@@ -38,6 +38,20 @@ def reserve_listener():
         raise
 
 
+def remove_descriptor(descriptor):
+    # Windows can deny deletion while stop.bat or a second launcher is reading.
+    # Both callers still own launcher.lock throughout this bounded retry.
+    deadline = time.monotonic() + 2
+    while True:
+        try:
+            descriptor.unlink(missing_ok=True)
+            return
+        except PermissionError as error:
+            if getattr(error, "winerror", None) != 32 or time.monotonic() >= deadline:
+                raise
+            time.sleep(0.025)
+
+
 async def serve(data, descriptor, listener, open_url):
     from starlette.responses import PlainTextResponse
 
@@ -66,9 +80,14 @@ async def serve(data, descriptor, listener, open_url):
                 return JSONResponse({"detail": "Запрос недоступен"}, status_code=403)
             return PlainTextResponse(nonce, headers={"Cache-Control": "no-store"})
         expected = request.headers.get("x-esportsim-instance")
-        if (request.url.path == "/api/host/shutdown" and expected is not None
-                and not secrets.compare_digest(expected.encode(), nonce.encode())):
-            return JSONResponse({"detail": "Экземпляр сервера изменился"}, status_code=409)
+        if (
+            request.url.path == "/api/host/shutdown"
+            and expected is not None
+            and not secrets.compare_digest(expected.encode(), nonce.encode())
+        ):
+            return JSONResponse(
+                {"detail": "Экземпляр сервера изменился"}, status_code=409
+            )
         return await call_next(request)
 
     config = uvicorn.Config(
@@ -84,13 +103,16 @@ async def serve(data, descriptor, listener, open_url):
         timeout_graceful_shutdown=3,
     )
     server = uvicorn.Server(config)
+
     async def run_server():
         try:
             await server.serve(sockets=[listener])
         except SystemExit as exc:
             # Uvicorn exits on lifespan failure. Propagate the concrete save error
             # to the launcher dialog before SystemExit reaches the event loop.
-            raise RuntimeError(getattr(app.state, "load_error", "Ошибка запуска сервера")) from exc
+            raise RuntimeError(
+                getattr(app.state, "load_error", "Ошибка запуска сервера")
+            ) from exc
 
     task = asyncio.create_task(run_server())
     try:
@@ -113,7 +135,7 @@ async def serve(data, descriptor, listener, open_url):
     finally:
         server.should_exit = True
         await task
-        descriptor.unlink(missing_ok=True)
+        remove_descriptor(descriptor)
 
 
 def launch(data, open_url, legacy_source=None):
@@ -130,7 +152,7 @@ def launch(data, open_url, legacy_source=None):
                     encoding="utf-8",
                 )
                 logging.basicConfig(level=logging.INFO, handlers=[handler])
-                descriptor.unlink(missing_ok=True)
+                remove_descriptor(descriptor)
                 if legacy_source is not None:
                     migrate_legacy(legacy_source, data / "scenario.sqlite")
                 with reserve_listener() as listener:
@@ -146,6 +168,24 @@ def launch(data, open_url, legacy_source=None):
 
 
 def main():
+    if sys.argv[1:2] == ["--prepare-head"]:
+        if len(sys.argv) != 4:
+            return 2
+        output = Path(sys.argv[3])
+        try:
+            from backend.portrait_processing import PortraitProcessor
+
+            processor = PortraitProcessor()
+            try:
+                output.write_bytes(processor.render(Path(sys.argv[2]).read_bytes()))
+            finally:
+                processor.close()
+        except Exception:
+            import traceback
+
+            Path(str(output) + ".error.txt").write_text(traceback.format_exc(), encoding="utf-8")
+            return 1
+        return 0
     try:
         data = windows_data_dir()
         directory = (

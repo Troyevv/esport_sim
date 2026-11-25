@@ -1,0 +1,16 @@
+{
+ "100 Thieves": {"nationality":"US","founded":2017,"website":"https://100thieves.com"},
+ "Alliance": {"nationality":"SE","founded":2013},
+ "Astralis": {"nationality":"DK"},
+ "ENCE": {"nationality":"FI","founded":2013,"website":"https://ence.gg"},
+ "FaZe Clan": {"nationality":"US","founded":2010,"website":"https://fazeclan.com"},
+ "Fnatic": {"nationality":"GB","founded":2004,"website":"https://fnatic.com"},
+ "FURIA Esports": {"nationality":"BR","founded":2017},
+ "G2 Esports": {"nationality":"DE","founded":2014},
+ "MOUZ": {"nationality":"DE","founded":2002,"website":"https://www.mousesports.com"},
+ "NRG": {"nationality":"US","founded":2015,"website":"https://www.nrg.gg"},
+ "Natus Vincere": {"nationality":"UA","founded":2009},
+ "Team Falcons": {"nationality":"SA","founded":2017,"website":"https://falcons.sa"},
+ "Team Vitality": {"nationality":"FR","founded":2013,"website":"https://vitality.gg"},
+ "The MongolZ": {"nationality":"MN","founded":2013}
+}

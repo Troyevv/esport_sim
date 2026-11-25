@@ -1,0 +1,5455 @@
+{
+ "t-0140da9d0aefde8181cf": {
+  "badgeX": 160,
+  "name": "Bounty Hunters Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 469.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-01a77b7ae93466acc43d": {
+  "badgeX": 160,
+  "name": "Black Phoenix",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-02ae7f53bde466495695": {
+  "badgeX": 160,
+  "name": "WBT",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 471.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-0783f2d18f07215b40e7": {
+  "badgeX": 160,
+  "name": "BORING PLAYERS",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 449.0,
+   "width": 480
+  },
+  "source": "https://csgo.5eplay.com/article/250829i3r0vu"
+ },
+ "t-083fffc3b8a6046d67de": {
+  "badgeX": 160,
+  "name": "RBLS Gaming",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 459.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/12642/rebels"
+ },
+ "t-0a7aacae9b43f9344981": {
+  "badgeX": 160,
+  "name": "LP",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": "https://rdy.gg/en/cs2/teams/21140"
+ },
+ "t-0b6d0fe0b32daa566e30": {
+  "badgeX": 160,
+  "name": "ex-RUBY",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 435.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-0c60185839ff2327a5e8": {
+  "badgeX": 160,
+  "name": "BRUTE",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 461.0,
+   "width": 480
+  },
+  "source": "https://cool.iprima.cz/cool-esport/daxen-nepripoustim-si-ze-ext-nemuzeme-porazit"
+ },
+ "t-105260ea5c192101f27a": {
+  "badgeX": 160,
+  "name": "Atreides",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 436.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-1063854bbf5155bcf9fe": {
+  "badgeX": 160,
+  "name": "Aether",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 459.0,
+   "width": 480
+  },
+  "source": "https://x.com/TeamAetherX"
+ },
+ "t-10997403211a7287c2dd": {
+  "badgeX": 160,
+  "name": "Alter Ego",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 434.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-1110834e8a7553259d84": {
+  "badgeX": 160,
+  "name": "Rebels",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 445.0,
+   "width": 480
+  },
+  "source": "https://csdb.gg/gear/keyboard-wooting-80he-black/"
+ },
+ "t-1548ba1b0f6ee54a0f60": {
+  "badgeX": 160,
+  "name": "ex ex-Zero Tenacity",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-15ca240d18b88d4f1206": {
+  "badgeX": 160,
+  "name": "BBL Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    320.0
+   ],
+   "cut": "polo",
+   "height": 560,
+   "seat": [
+    120,
+    158.0
+   ],
+   "span": 438.9,
+   "width": 480
+  },
+  "source": "https://x.com/Oidemirel"
+ },
+ "t-16329ae4fdda2ea09fc8": {
+  "badgeX": 160,
+  "name": "Keyd Stars",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/6033/keyd-stars"
+ },
+ "t-16dc886cc4fd35530e8b": {
+  "badgeX": 160,
+  "name": "BASEMENT BOYS",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.0,
+   "width": 480
+  },
+  "source": "https://www.tbboys.com/"
+ },
+ "t-17057013652043f03365": {
+  "badgeX": 160,
+  "name": "XI",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-17706c4689c7fa4591ec": {
+  "badgeX": 160,
+  "name": "METANOIA Wolves",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 425.0,
+   "width": 480
+  },
+  "source": "https://profilerr.net/cs-go/team/metanoia-wolves/"
+ },
+ "t-177b7cb0686749afeb39": {
+  "badgeX": 160,
+  "name": "ESC",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 461.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/player/22703/moonwalk"
+ },
+ "t-18f9c362a116454843cd": {
+  "badgeX": 120,
+  "name": "ENCE",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.0,
+   "width": 480
+  },
+  "source": "https://draft5.gg/partida/41318-ENCE-vs-Nuclear-TigeRES-IEM-Rio-2026%3A-Global-Open-Qualifier"
+ },
+ "t-19e14ffa0a7533794734": {
+  "badgeX": 160,
+  "name": "Iberian Soul",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 441.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-1a02958bf15aceb87195": {
+  "badgeX": 160,
+  "name": "SportsBetExpert",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-1b78bf6ac76e8a6c6e23": {
+  "badgeX": 160,
+  "name": "zajezdzacze",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 457.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-1c1935d8caed8aea8d3f": {
+  "badgeX": 160,
+  "name": "Crashers",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": "https://www.dust2.com.br/noticias/63331/crashers-volta-a-ativa"
+ },
+ "t-1da4457691123d28c3c7": {
+  "badgeX": 160,
+  "name": "TYLOO",
+  "rig": {
+   "collar": [
+    240.0,
+    334.0
+   ],
+   "cut": "v",
+   "height": 560,
+   "seat": [
+    120,
+    160.0
+   ],
+   "span": 441.0,
+   "width": 480
+  },
+  "source": "https://onwear.gg/en-global/collections/tyloo"
+ },
+ "t-1e36a149f896affad66f": {
+  "badgeX": 160,
+  "name": "Falcons Force",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 449.0,
+   "width": 480
+  },
+  "source": "https://bo3.gg/news/the-falcons-introduced-their-academy-roster-led-by-natosaphix"
+ },
+ "t-1eca153b980d789d5930": {
+  "badgeX": 160,
+  "name": "Fluxo",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 441.0,
+   "width": 480
+  },
+  "source": "https://esportsradar.gg/fluxo-secures-lottu-and-surf-telecom-as-new-commercial-partners/"
+ },
+ "t-1f29d26de450cc4aff54": {
+  "badgeX": 160,
+  "name": "megoshort",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 447.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-1fbfc36ceca68899bacf": {
+  "badgeX": 160,
+  "name": "RED Canids",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": "https://redcanids.com.br/loja/index.php"
+ },
+ "t-217b423fd9dc9ba16831": {
+  "badgeX": 120,
+  "name": "Mindfreak",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 433.0,
+   "width": 480
+  },
+  "source": "https://www.pngkey.com/maxpic/u2t4e6i1u2i1u2q8/"
+ },
+ "t-219f0a012e4cb66d8049": {
+  "badgeX": 160,
+  "name": "Tricked",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.9,
+   "width": 480
+  },
+  "source": "https://bo3.gg/pt/news/talent-rich-organizations-in-cs2-that-have-already-closed"
+ },
+ "t-21b39717f478b3164221": {
+  "badgeX": 160,
+  "name": "Team Falcons",
+  "rig": {
+   "collar": [
+    240.0,
+    321.0
+   ],
+   "cut": "polo",
+   "height": 560,
+   "seat": [
+    120,
+    158.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": "https://farmskins.com/news/falcons-unveil-2026-team-jersey-with-m0nesy-and-niko"
+ },
+ "t-2215f07624515572e5aa": {
+  "badgeX": 160,
+  "name": "Time Waves",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-23ac6841fe1a8a672cc8": {
+  "badgeX": 160,
+  "name": "1win",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 467.0,
+   "width": 480
+  },
+  "source": "https://www.championat.com/cybersport/news-5757018-anonsirovan-sostav-1win-team-po-counter-strike-2.html"
+ },
+ "t-2416e2b37299ccff699c": {
+  "badgeX": 160,
+  "name": "GenOne",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 449.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/11609/genone"
+ },
+ "t-264cf92d6e6be73d2f77": {
+  "badgeX": 160,
+  "name": "The QUBE",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 467.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/player/24512/cozen"
+ },
+ "t-27fe146f2258e3e45323": {
+  "badgeX": 160,
+  "name": "M80",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 471.0,
+   "width": 480
+  },
+  "source": "https://m80.gg/team/counter-strike"
+ },
+ "t-2853b8465ae2735304d8": {
+  "badgeX": 160,
+  "name": "FAVBET",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 467.0,
+   "width": 480
+  },
+  "source": "https://steamify.io/configs/guthriee"
+ },
+ "t-28d9011de666ae31b9cc": {
+  "badgeX": 160,
+  "name": "paiN Gaming",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 431.0,
+   "width": 480
+  },
+  "source": "https://www.pain.gg/uniforme2026/p"
+ },
+ "t-2a21fe6d592a19b7de89": {
+  "badgeX": 160,
+  "name": "BIG",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": "https://community.skin.club/en/news/cs2-winter-rostermania-all-2025-2026-roster-changes"
+ },
+ "t-2a2eb7703b3516031f9a": {
+  "badgeX": 160,
+  "name": "DNK",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-2a86702618c459530d45": {
+  "badgeX": 160,
+  "name": "FengDa",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 469.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-2b090a0ba2ad59b76604": {
+  "badgeX": 160,
+  "name": "BESTIA Academy",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 461.0,
+   "width": 480
+  },
+  "source": "https://draft5.gg/equipe/3496-BESTIA-Academy"
+ },
+ "t-2d0042b2b8a5540b4313": {
+  "badgeX": 160,
+  "name": "LAG",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/11955/lag"
+ },
+ "t-2d77a796d0318087e1b6": {
+  "badgeX": 160,
+  "name": "MIBR",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 438.9,
+   "width": 480
+  },
+  "source": "https://shop.mibr.gg/produto/uniforme-mibr-oficial-cs-2-2026-stage-003"
+ },
+ "t-2e9f768344ff39ac7c1e": {
+  "badgeX": 160,
+  "name": "ASTRAL",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 445.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-2f63f1edd8b2c3926f52": {
+  "badgeX": 160,
+  "name": "ALGO",
+  "rig": {
+   "collar": [
+    240.0,
+    322.0
+   ],
+   "cut": "polo",
+   "height": 560,
+   "seat": [
+    120,
+    158.0
+   ],
+   "span": 425.0,
+   "width": 480
+  },
+  "source": "https://rdy.gg/en/cs2/teams/18613"
+ },
+ "t-2fc1b348049341df90c6": {
+  "badgeX": 160,
+  "name": "MIBR Academy",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 471.0,
+   "width": 480
+  },
+  "source": "https://draft5.gg/partida/40785-MIBR-Academy-vs-RED-Canids-Academy-Cajunto-Copa-do-Brasil"
+ },
+ "t-2fdb824dd15f1d06f251": {
+  "badgeX": 160,
+  "name": "G2 Ares",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-304b4a90a76a1cbe4c11": {
+  "badgeX": 160,
+  "name": "OMEGA",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 469.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/player/25011/dan4o"
+ },
+ "t-31e106fe79b1dcc14807": {
+  "badgeX": 160,
+  "name": "Eternal Fire",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 442.9,
+   "width": 480
+  },
+  "source": "https://www.thegamingwear.com/eternal-fire-2025-jersey-cs2-turkish-esports"
+ },
+ "t-3218a36006fa218541b1": {
+  "badgeX": 160,
+  "name": "DEPO",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/player/22635/wetfy"
+ },
+ "t-328f3d6488fcc16cd6d9": {
+  "badgeX": 160,
+  "name": "Sashi",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 467.9,
+   "width": 480
+  },
+  "source": "https://profilerr.net/cs-go/team/sashi-esport/"
+ },
+ "t-35399865426ee843f8d3": {
+  "badgeX": 160,
+  "name": "WAZABI",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 459.0,
+   "width": 480
+  },
+  "source": "https://draft5.gg/equipe/4242-WAZABI"
+ },
+ "t-353b5fe9addc1630772a": {
+  "badgeX": 160,
+  "name": "DENDELE CS",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-36b0dc94084a9131303e": {
+  "badgeX": 160,
+  "name": "M1X KS",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 431.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-36d15319287a584f0e40": {
+  "badgeX": 160,
+  "name": "Betclic Apogee Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 469.0,
+   "width": 480
+  },
+  "source": "https://www.betclicapogee.gg/loja/p/teste-rys46"
+ },
+ "t-3805b58176be1dcd9d84": {
+  "badgeX": 160,
+  "name": "Outfit 49",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/player/20234/gabe"
+ },
+ "t-38760eabb666e8e61ee6": {
+  "badgeX": 160,
+  "name": "AaB",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 432.9,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/9621/aab"
+ },
+ "t-39c1a26a5c7110b0be4c": {
+  "badgeX": 160,
+  "name": "NuTorious",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 459.0,
+   "width": 480
+  },
+  "source": "https://crafted.gg/products/2025-nutorious-jersey-black"
+ },
+ "t-3a3bc77533b68e480d13": {
+  "badgeX": 160,
+  "name": "1w Team",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 433.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-3bb68de60f56156655a2": {
+  "badgeX": 160,
+  "name": "Phantom",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 449.0,
+   "width": 480
+  },
+  "source": "https://profilerr.net/cs-go/team/phantom/"
+ },
+ "t-3be7a505483c0050243c": {
+  "badgeX": 160,
+  "name": "magic",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-3c22c335030af99efc2d": {
+  "badgeX": 160,
+  "name": "Fnatic",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": "https://fnatic.com/products/2026-fnatic-pro-jersey"
+ },
+ "t-417c4652136f143c6881": {
+  "badgeX": 120,
+  "name": "HEROIC Academy",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 459.0,
+   "width": 480
+  },
+  "source": "https://heroic.gg/shop/heroic-2025-2026-jersey"
+ },
+ "t-4222e0502b9ed42d3973": {
+  "badgeX": 160,
+  "name": "BARCA",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-42c1037db6042b574ca2": {
+  "badgeX": 160,
+  "name": "Hashiras",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 471.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-431165a6db244dac9892": {
+  "badgeX": 160,
+  "name": "Ølgod Efterskole",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 457.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-45d7d6f6eba7e740114d": {
+  "badgeX": 160,
+  "name": "PARIVISION",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 467.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-47c5c28cae2574cdf5a1": {
+  "badgeX": 160,
+  "name": "mouse",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 468.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-4829cf158ce78f2b457a": {
+  "badgeX": 160,
+  "name": "CYBERSHOKE Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": "https://csgo.5eplay.com/article/250331wrdbtj"
+ },
+ "t-48b2769a272c373b8989": {
+  "badgeX": 160,
+  "name": "TNT",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-496a1f2d8d08a7c777dd": {
+  "badgeX": 160,
+  "name": "Ground Zero",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 445.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/8536/ground-zero"
+ },
+ "t-49b5e39c84ac95ca92d5": {
+  "badgeX": 160,
+  "name": "TNC",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 457.0,
+   "width": 480
+  },
+  "source": "https://shopee.tw/Tnc-ML-%E7%94%B7%E5%A3%AB%E5%AE%98%E6%96%B9-S8-%E7%90%83%E8%A1%A3%28%E9%BB%91%E8%89%B2%29TNC-MLBB-%E5%AE%98%E6%96%B9%E9%8C%A6%E6%A8%99%E8%B3%BD%E7%90%83%E8%A1%A3-i.1053699101.23777259419"
+ },
+ "t-49ee926287713f1ed87c": {
+  "badgeX": 160,
+  "name": "Young Ninjas",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 471.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/10960/young-ninjas"
+ },
+ "t-4af850d4ae2f5c0a2d9e": {
+  "badgeX": 160,
+  "name": "Ding Cuts",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 435.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-4ba69735ca53765ed6a7": {
+  "badgeX": 160,
+  "name": "STATE",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-4ba9b53b509ddd30355e": {
+  "badgeX": 160,
+  "name": "FlyQuest",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 453.0,
+   "width": 480
+  },
+  "source": "https://flyquest.gg/"
+ },
+ "t-4bea1ac5c02877bbbdd7": {
+  "badgeX": 160,
+  "name": "MAGICOS",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 425.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-4cacb4d85690b46b6fbf": {
+  "badgeX": 160,
+  "name": "Ursa",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-4cbfc72d1d8c4069da24": {
+  "badgeX": 160,
+  "name": "Persona Grata",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 469.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-4cd8cf8e48cfb313c2c5": {
+  "badgeX": 160,
+  "name": "UR",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 441.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-4d7731d9f1f2583ac09d": {
+  "badgeX": 160,
+  "name": "ClayMakers",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 435.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-4db62ddd4f8544af41cc": {
+  "badgeX": 160,
+  "name": "Chicken Coop",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 457.0,
+   "width": 480
+  },
+  "source": "https://chickencoop.gg/the-coop/cs2-team/"
+ },
+ "t-4ed976b2736a104aab74": {
+  "badgeX": 160,
+  "name": "5star eSports",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-4f1405c1c40de2e0a294": {
+  "badgeX": 160,
+  "name": "QUAZAR",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-4f3edfc53977afd652c4": {
+  "badgeX": 160,
+  "name": "ARCRED",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": "https://it-park.uz/index.php/en/itpark/news/adrenaline-open-cyber-cup-powered-by-it-park-tournament-s-winners-announced-1"
+ },
+ "t-4f65847f6da0d1491743": {
+  "badgeX": 160,
+  "name": "Rare Atom",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 447.0,
+   "width": 480
+  },
+  "source": "https://profilerr.net/zh/cs-go/team/rare-atom/"
+ },
+ "t-4f97bee73554d602b6fe": {
+  "badgeX": 160,
+  "name": "Last Bullet",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 449.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-53881bd56ea822c6b0e0": {
+  "badgeX": 160,
+  "name": "GameHunters",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 461.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-56a45db5be800c7288d9": {
+  "badgeX": 160,
+  "name": "Natus Vincere",
+  "rig": {
+   "collar": [
+    240.0,
+    334.0
+   ],
+   "cut": "v",
+   "height": 560,
+   "seat": [
+    120,
+    160.0
+   ],
+   "span": 463.0,
+   "width": 480
+  },
+  "source": "https://shop.navi.gg/product/navi-2026-pro-kit-jersey"
+ },
+ "t-57e0ee0fec818a8b150d": {
+  "badgeX": 160,
+  "name": "Metizport",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": "https://shop.metizport.com/products/metizport-jersey-2025-26-dark-edition"
+ },
+ "t-586d3f49dcea4e926138": {
+  "badgeX": 160,
+  "name": "Gaimin Gladiators",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": "https://shop.gaimingladiators.gg/products/2025-cyberarmour-professional-jersey"
+ },
+ "t-58c0c3fbe7d6f5aec550": {
+  "badgeX": 160,
+  "name": "BetBoom Team",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 463.0,
+   "width": 480
+  },
+  "source": "https://egamersworld.com/counterstrike/match/Xi2OW1wsT/fnatic-vs-betboom-team-b3WVxdYFc"
+ },
+ "t-5918e544af9a5152b827": {
+  "badgeX": 160,
+  "name": "BC.Game Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 461.0,
+   "width": 480
+  },
+  "source": "https://csdb.gg/pro-players/"
+ },
+ "t-5a20eafd2bbd1b545e00": {
+  "badgeX": 160,
+  "name": "BetBoom",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 457.0,
+   "width": 480
+  },
+  "source": "https://egamersworld.com/counterstrike/match/Xi2OW1wsT/fnatic-vs-betboom-team-b3WVxdYFc"
+ },
+ "t-5b141a9e490f34259fb9": {
+  "badgeX": 120,
+  "name": "HEROIC",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 447.0,
+   "width": 480
+  },
+  "source": "https://heroic.gg/shop/heroic-2025-2026-jersey"
+ },
+ "t-5d29c04f6964248020b3": {
+  "badgeX": 160,
+  "name": "Voca",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-5d5bddb577102d0a960b": {
+  "badgeX": 160,
+  "name": "Chaos",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-5d63ab5a7841aa1a3554": {
+  "badgeX": 160,
+  "name": "GamerLegion",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 451.0,
+   "width": 480
+  },
+  "source": "https://www.gamerlegion.gg/"
+ },
+ "t-5ffb2f24912149b6f495": {
+  "badgeX": 160,
+  "name": "MASONIC",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": "https://rdy.gg/en/cs2/teams/2734"
+ },
+ "t-601cddbc2d801c839d7e": {
+  "badgeX": 160,
+  "name": "ACROBATS",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 445.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-6096797756e1c3a89578": {
+  "badgeX": 160,
+  "name": "MOUZ NXT",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 445.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-60fdc5c308e4875a1f67": {
+  "badgeX": 160,
+  "name": "Aurora Gaming",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": "https://shop.auroragg.com/aurora-gaming-26-pro-jersey/"
+ },
+ "t-613bcee5ec761d59757a": {
+  "badgeX": 160,
+  "name": "LAGUNA",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 459.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-61f903344ff1922c934e": {
+  "badgeX": 160,
+  "name": "BESTIA",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-622e41f33d3e231c91a8": {
+  "badgeX": 160,
+  "name": "Demolition",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 459.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-62be22317cb1d240f084": {
+  "badgeX": 160,
+  "name": "Co Color",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-62cb81b5904a262ffaee": {
+  "badgeX": 160,
+  "name": "BEE",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 453.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-632ad93ff0e90e339e65": {
+  "badgeX": 160,
+  "name": "brazylijski luz",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 462.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-6377d0fc1413dc31753e": {
+  "badgeX": 160,
+  "name": "FURIA Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    334.0
+   ],
+   "cut": "v",
+   "height": 560,
+   "seat": [
+    120,
+    160.0
+   ],
+   "span": 461.0,
+   "width": 480
+  },
+  "source": "https://shop.furia.gg/products/camiseta-oficial-furia-adidas-preta"
+ },
+ "t-63d110b4529a2d713192": {
+  "badgeX": 160,
+  "name": "The Last Resort",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-654a4ea6a5500a4ec1a7": {
+  "badgeX": 160,
+  "name": "UNO MILLE",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 463.0,
+   "width": 480
+  },
+  "source": "https://www.dust2.com.br/noticias/38161/uno-mille-retorna-com-novalineup"
+ },
+ "t-6665c17b8ac819803434": {
+  "badgeX": 160,
+  "name": "Sangal Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 449.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-66a9fc1840539a223ca0": {
+  "badgeX": 160,
+  "name": "Just Swing",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 463.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/13053/just-swing"
+ },
+ "t-67671a2f53dd910a8b35": {
+  "badgeX": 160,
+  "name": "Entropy",
+  "rig": {
+   "collar": [
+    240.0,
+    321.0
+   ],
+   "cut": "polo",
+   "height": 560,
+   "seat": [
+    120,
+    158.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": "https://sectorsixapparel.gg/products/entropy-jersey"
+ },
+ "t-686f34552cee3bc3c46d": {
+  "badgeX": 160,
+  "name": "Team Spirit",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": "https://shop.teamspirit.gg/products/556"
+ },
+ "t-6944095d48d0c2130a18": {
+  "badgeX": 160,
+  "name": "Acend",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 433.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-6986dc19c3f9cf497aa5": {
+  "badgeX": 160,
+  "name": "IC Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-69feb509d019de33ab51": {
+  "badgeX": 160,
+  "name": "Fire Flux",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 436.8,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-6b1be31ff00c01ecaecc": {
+  "badgeX": 160,
+  "name": "BIG EQUIPA",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-6cb76a591e5782bfb062": {
+  "badgeX": 160,
+  "name": "NRG",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 449.9,
+   "width": 480
+  },
+  "source": "https://x.com/NRGgg/status/2027461270975484010"
+ },
+ "t-6d7c0eb420852d2e6288": {
+  "badgeX": 160,
+  "name": "Aura",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 435.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-6e10390574fe7533cfba": {
+  "badgeX": 160,
+  "name": "Vasco",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 454.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-6eae5bda51cee2067f64": {
+  "badgeX": 160,
+  "name": "yunglean",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 467.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-6ee49641bc410afc7833": {
+  "badgeX": 160,
+  "name": "ShindeN",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 467.0,
+   "width": 480
+  },
+  "source": "https://shop.shinden.gg/productos/camiseta-oficial-shinden-2024-25/"
+ },
+ "t-704b7acbacf9cd963218": {
+  "badgeX": 160,
+  "name": "INFINITE",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 426.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-707135e2a054518a46ad": {
+  "badgeX": 160,
+  "name": "Abyssal",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 461.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-70d0cb5ac39eb84853b4": {
+  "badgeX": 160,
+  "name": "Phantom Academy",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-70fcc2d90db29c2db889": {
+  "badgeX": 160,
+  "name": "Subtop De France",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 445.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-715dc8493c36579a5b11": {
+  "badgeX": 160,
+  "name": "PRIVATE",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 459.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-7196f2e8ff803c458703": {
+  "badgeX": 160,
+  "name": "insane players",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 425.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-71c100b39397ac61bacb": {
+  "badgeX": 160,
+  "name": "yngods",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 457.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-725e86100e5e44fe177c": {
+  "badgeX": 160,
+  "name": "Deorum",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-73f1fc20404444d675ae": {
+  "badgeX": 160,
+  "name": "regain",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 463.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-74f2fa84adeafd65b74c": {
+  "badgeX": 160,
+  "name": "BIG Academy",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 463.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/10254/big-academy"
+ },
+ "t-75f3d51e21192fd2422f": {
+  "badgeX": 160,
+  "name": "FarmVille",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 459.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-761b4edb125d85cb1574": {
+  "badgeX": 160,
+  "name": "Gentle Mates",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": "https://www.gentlemates.com/shop/product/official-jersey-2026"
+ },
+ "t-7737696952a92e50bc33": {
+  "badgeX": 160,
+  "name": "Nuclear TigeRES",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 453.0,
+   "width": 480
+  },
+  "source": "https://draft5.gg/partida/41318-ENCE-vs-Nuclear-TigeRES-IEM-Rio-2026%3A-Global-Open-Qualifier"
+ },
+ "t-77f51ee716b19380d99d": {
+  "badgeX": 160,
+  "name": "Lazer Cats",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": "https://draft5.gg/partida/28645-LEON-vs-Lazer-Cats-Thunderpick-World-Championship-2024%3A-European-Series-1"
+ },
+ "t-79219f2d93ac1d32ccf8": {
+  "badgeX": 160,
+  "name": "Lynn Vision Gaming",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 433.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/major/team/8840/Lynn%20Vision"
+ },
+ "t-795ac76f0acd4db4a6e5": {
+  "badgeX": 160,
+  "name": "Marsborne",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 451.9,
+   "width": 480
+  },
+  "source": "https://store.marsborne.com/products/armament"
+ },
+ "t-7b30cf465c8ef1dc1f19": {
+  "badgeX": 160,
+  "name": "MINLATE",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 441.0,
+   "width": 480
+  },
+  "source": "https://www.hty.com/post/10332"
+ },
+ "t-7b660b421449cd0af5d6": {
+  "badgeX": 160,
+  "name": "BMZ",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-7d2bf76df480b1dcad1d": {
+  "badgeX": 160,
+  "name": "paiN Academy",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 451.0,
+   "width": 480
+  },
+  "source": "https://egamersworld.com/counterstrike/match/N1lHrwPx57g/pain-academy-vs-magicos-w8ySCmrJa"
+ },
+ "t-7fef9479c8bc5a3c8689": {
+  "badgeX": 160,
+  "name": "UPGRADE",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-80b1509ea37643250da6": {
+  "badgeX": 160,
+  "name": "Eclipse",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-80db4218688d7406fb73": {
+  "badgeX": 160,
+  "name": "Alliance",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": "https://shop.thealliance.gg/collections/best-sellers"
+ },
+ "t-81f0abdaa063c548d611": {
+  "badgeX": 160,
+  "name": "Club 333",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 431.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-8218ddfb1ef7fbc17e4d": {
+  "badgeX": 160,
+  "name": "Winners",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 425.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-82257ad8f50481990d53": {
+  "badgeX": 160,
+  "name": "FRZ",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 453.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-83ceda7a9ee33efa66bd": {
+  "badgeX": 160,
+  "name": "Famalicão",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 451.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/13364/famalico"
+ },
+ "t-8535e86c8118bbbb0a18": {
+  "badgeX": 160,
+  "name": "Leo",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-85f109d857376746c26c": {
+  "badgeX": 160,
+  "name": "FUT Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 433.0,
+   "width": 480
+  },
+  "source": "https://futesports.store/products/iem-cologne-major-2026-fut-jersey-limited-edition"
+ },
+ "t-87da8bbbea6db324c6f7": {
+  "badgeX": 160,
+  "name": "Drama",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 457.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-889bc9c21f29dadf1ec6": {
+  "badgeX": 160,
+  "name": "Shimmer",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 431.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-891550bb3617414776fc": {
+  "badgeX": 160,
+  "name": "DXA",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 453.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-8a2747c6e7561a9035b0": {
+  "badgeX": 160,
+  "name": "Lilmix",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-8c2ea72dc38a843e43cd": {
+  "badgeX": 160,
+  "name": "Nemiga Gaming",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": "https://pickem-mongolia.com/cs2/teams/nemiga/"
+ },
+ "t-8cdb71d774316245649b": {
+  "badgeX": 160,
+  "name": "Imperial Academy",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 435.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-8d3d3047613078203f47": {
+  "badgeX": 160,
+  "name": "CSDIILIT",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 447.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-8dc39ffe01398880fbdd": {
+  "badgeX": 160,
+  "name": "G2 Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 457.0,
+   "width": 480
+  },
+  "source": "https://g2esports.com/products/g2-esports-jersey-2026"
+ },
+ "t-8e334f8632dbe10f26f3": {
+  "badgeX": 160,
+  "name": "Monte",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-90938262500f71b9e856": {
+  "badgeX": 160,
+  "name": "rottweilers",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 471.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-90c1dab9210f49f67fa6": {
+  "badgeX": 160,
+  "name": "DALUYONG",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-914e7c766d222850f61c": {
+  "badgeX": 160,
+  "name": "RUSTEC",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 435.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-92498a5cded030e33d5f": {
+  "badgeX": 160,
+  "name": "illwill",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-927a416d29f1e78e5765": {
+  "badgeX": 160,
+  "name": "EYEBALLERS",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-92ee93de02ea87db5302": {
+  "badgeX": 160,
+  "name": "B8",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": "https://betking.com.ua/collaboration/b8esports/"
+ },
+ "t-93797144b3d31e8897a3": {
+  "badgeX": 160,
+  "name": "NT",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 467.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-9453195f8b12e3ed7235": {
+  "badgeX": 160,
+  "name": "Bounty Hunters",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 445.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-95a35c2a0b1882cd4f52": {
+  "badgeX": 160,
+  "name": "Charrados",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-96361638d04ca3213adc": {
+  "badgeX": 160,
+  "name": "Julie&Cie",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 447.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-9746d0b572d70336d589": {
+  "badgeX": 160,
+  "name": "BA 2",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 431.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-9834876dcfb05cb167a5": {
+  "badgeX": 160,
+  "name": "aAa",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 451.0,
+   "width": 480
+  },
+  "source": "https://www.team-aaa.com/fr/actualite/agenda-aaa-counter-strike_135246"
+ },
+ "t-9870440ae360597a2b77": {
+  "badgeX": 160,
+  "name": "Just Players",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-98f2ce63b7729dfac77e": {
+  "badgeX": 160,
+  "name": "KUUSAMO",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-9b26900ebcf0f9004579": {
+  "badgeX": 160,
+  "name": "BOJONG",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-9b86798e98a5abca5eff": {
+  "badgeX": 160,
+  "name": "QWENTRY",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 451.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-9bbf33fa39f59ffca07c": {
+  "badgeX": 160,
+  "name": "AKA HERO KAJO",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 433.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-a067be54ecd98341d7cc": {
+  "badgeX": 160,
+  "name": "3DMAX",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": "https://skinrave.gg/en/blog/envy-returns-to-cs2"
+ },
+ "t-a0b71499a6970253d99b": {
+  "badgeX": 160,
+  "name": "JiJieHao",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 445.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-a10aae2b871db321ce42": {
+  "badgeX": 160,
+  "name": "Chinggis Warriors",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 463.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/12646/chinggis-warriors"
+ },
+ "t-a1409aca851600b87656": {
+  "badgeX": 160,
+  "name": "8Sins",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/13024/8sins"
+ },
+ "t-a5e7c002443743c58367": {
+  "badgeX": 160,
+  "name": "BOSS",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 433.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-a655c7e571083ed9376b": {
+  "badgeX": 160,
+  "name": "ex ex-INOX",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-a6debb8decdccf4848c7": {
+  "badgeX": 160,
+  "name": "100 Thieves",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 461.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-a7e53697fca533a02c19": {
+  "badgeX": 160,
+  "name": "Atrix",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-a8d48c88dbe768822d54": {
+  "badgeX": 160,
+  "name": "Team Voca",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-a8e97b692aba841bb320": {
+  "badgeX": 120,
+  "name": "ENCE Academy",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 459.0,
+   "width": 480
+  },
+  "source": "https://ence.gg/pages/cs-academy-team"
+ },
+ "t-a980b016e1894fd59552": {
+  "badgeX": 160,
+  "name": "ReThink",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-aae309ceec4c8e18269d": {
+  "badgeX": 160,
+  "name": "NEXVOID",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 467.0,
+   "width": 480
+  },
+  "source": "https://mesa.mn/matches/d21da0fc-4f24-4893-af24-31694a973357"
+ },
+ "t-ab6db599234d2636659c": {
+  "badgeX": 160,
+  "name": "AM",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-ab80177c2fa8dfa42997": {
+  "badgeX": 160,
+  "name": "Rooster",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 453.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-aeee5ee1b5b355fbb3c3": {
+  "badgeX": 160,
+  "name": "Wanted Goons",
+  "rig": {
+   "collar": [
+    240.0,
+    335.0
+   ],
+   "cut": "v",
+   "height": 560,
+   "seat": [
+    120,
+    160.0
+   ],
+   "span": 449.0,
+   "width": 480
+  },
+  "source": "https://wantedgoons.com/shop/2026-jerseys-1"
+ },
+ "t-af9d2c92ddc38ca77b3c": {
+  "badgeX": 160,
+  "name": "DASH",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 453.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-b00ceef243d3536c91f5": {
+  "badgeX": 92,
+  "name": "Astralis",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.0,
+   "width": 480
+  },
+  "source": "https://www.astralis.gg/products/astralis-2026-official-player-jersey"
+ },
+ "t-b200dcb6b919546c9f46": {
+  "badgeX": 160,
+  "name": "The Bardolphs",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-b2437a24e801562e37ae": {
+  "badgeX": 160,
+  "name": "FaZe Clan",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 447.0,
+   "width": 480
+  },
+  "source": "https://esportsinsider.com/2025/11/faze-clan-2026-esports-jersey-reveal"
+ },
+ "t-b2e403caa5045230cc82": {
+  "badgeX": 160,
+  "name": "HOTU",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-b2f3f21eadddd368c286": {
+  "badgeX": 160,
+  "name": "girl kissers",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 438.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-b3509ecf221115d67fc0": {
+  "badgeX": 160,
+  "name": "Change The Game",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 457.0,
+   "width": 480
+  },
+  "source": "https://egamersworld.com/counterstrike/match/y09iBr7jq/change-the-game-vs-chinggis-warriors-644xHX9Gb"
+ },
+ "t-b3828808a083dbdf24cc": {
+  "badgeX": 160,
+  "name": "BAKS Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 441.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-b6e1288527a6032c0f29": {
+  "badgeX": 160,
+  "name": "F5",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 441.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-b75c7bf9d324569d8d3d": {
+  "badgeX": 160,
+  "name": "ZEVS",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-b7f3763abaf7ce84b638": {
+  "badgeX": 160,
+  "name": "VCGO",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 449.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-b84ff8057ee3a7f87dea": {
+  "badgeX": 160,
+  "name": "WW",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-b87241adb54a4dac62c6": {
+  "badgeX": 160,
+  "name": "Re Di",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 467.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-b8ba2ec7e90713c10437": {
+  "badgeX": 160,
+  "name": "PURE",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-b91dff98ff9b959126e9": {
+  "badgeX": 160,
+  "name": "Team Vitality",
+  "rig": {
+   "collar": [
+    240.0,
+    332.0
+   ],
+   "cut": "v",
+   "height": 560,
+   "seat": [
+    120,
+    160.0
+   ],
+   "span": 461.9,
+   "width": 480
+  },
+  "source": "https://vitality.gg/en-eu/products/maillot-pro-vitality-2026-par-equipe-int"
+ },
+ "t-bb2255fa30c66120732a": {
+  "badgeX": 160,
+  "name": "Morningstar",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 469.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-bbbc2a23854ffd2e2c43": {
+  "badgeX": 160,
+  "name": "HAVU",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 469.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/player/11283/ottoNd"
+ },
+ "t-bbf3266d697841bdc5ab": {
+  "badgeX": 160,
+  "name": "OlyBet",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 471.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-bc59ac2d8ee26b4d1eba": {
+  "badgeX": 160,
+  "name": "Johnny Speeds",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 449.0,
+   "width": 480
+  },
+  "source": "https://egamersworld.com/counterstrike/match/jd57i55tO/johnny-speeds-vs-magic-6skf3Y8jd"
+ },
+ "t-be6167e40906d38e9663": {
+  "badgeX": 160,
+  "name": "Team Nemesis",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": "https://shop.nmss.gg/"
+ },
+ "t-bf639098e8d42c403d97": {
+  "badgeX": 160,
+  "name": "Passion UA",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 459.0,
+   "width": 480
+  },
+  "source": "https://passionua.com/shop/passion-ua-adidas-jersey-new-collection"
+ },
+ "t-bf795f03dcc01da997b4": {
+  "badgeX": 160,
+  "name": "ODDIK",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 455.0,
+   "width": 480
+  },
+  "source": "https://draft5.gg/equipe/2246-ODDIK"
+ },
+ "t-bf8b21d4685bdd27f1af": {
+  "badgeX": 160,
+  "name": "Natus Vincere Junior",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 447.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-c1212091aa78c0075bb4": {
+  "badgeX": 160,
+  "name": "MANA",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": "https://rdy.gg/en/cs2/teams/18827"
+ },
+ "t-c30630c8f93e7a5765f8": {
+  "badgeX": 160,
+  "name": "K27",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 457.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-c3652ad4add88753d2d8": {
+  "badgeX": 160,
+  "name": "Sashi Academy",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": "https://csdb.gg/gear/monitor-zowie-xl2566x/"
+ },
+ "t-c49fea7425fa7f869989": {
+  "badgeX": 160,
+  "name": "Legacy",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 469.0,
+   "width": 480
+  },
+  "source": "https://www.fallenstore.com.br/uniforme-legacy-2026-amarela"
+ },
+ "t-c57d8388e2480a9c9bad": {
+  "badgeX": 160,
+  "name": "EC BANGA",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 470.9,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/12568/ec-banga"
+ },
+ "t-c68a1590e628416cf488": {
+  "badgeX": 160,
+  "name": "Memeories",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 447.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-c6ddb02e1a95f0c747f0": {
+  "badgeX": 160,
+  "name": "Phantom Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": "https://egamersworld.com/counterstrike/match/Fb1m2sBXq/phantom-esports-vs-whitebird-868zt__2q"
+ },
+ "t-c7622b596dd0f7a48c5f": {
+  "badgeX": 160,
+  "name": "Fisher College",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": "https://x.com/i/trending/2040297349453418958"
+ },
+ "t-c7d936d57728e37b2014": {
+  "badgeX": 160,
+  "name": "Without a Roof",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-c963a4e1e041c76c1369": {
+  "badgeX": 160,
+  "name": "MyHUD",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-ca0a70ea840477f98ef2": {
+  "badgeX": 160,
+  "name": "Lavked",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-caf8224d677c4f798235": {
+  "badgeX": 160,
+  "name": "FORZE Reload",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 458.9,
+   "width": 480
+  },
+  "source": "https://rdy.gg/en/cs2/teams/14173"
+ },
+ "t-cb07f1c74badf9b3c231": {
+  "badgeX": 160,
+  "name": "FOKUS",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 435.0,
+   "width": 480
+  },
+  "source": "https://www.fokusclan.gg/products/fokus-clan-fullfokus-trikot"
+ },
+ "t-cd0148fcc5fa837b203d": {
+  "badgeX": 160,
+  "name": "ECSTATIC",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 441.0,
+   "width": 480
+  },
+  "source": "https://esportsinsider.com/2025/09/ecstatic-gamban-partnership-against-gambling"
+ },
+ "t-cd4e4cff96070aebcca5": {
+  "badgeX": 160,
+  "name": "The MongolZ",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 435.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-cec78237279ce8b625f7": {
+  "badgeX": 160,
+  "name": "MOUZ",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": "https://shop.mousesports.com/products/mouz-jersey-2026-red"
+ },
+ "t-cf7663ec9da7c841c08e": {
+  "badgeX": 160,
+  "name": "Bebop",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-d00eba7cf7e4566cc0c1": {
+  "badgeX": 160,
+  "name": "UBITEAM",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 445.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-d0cd939febeddab6a68a": {
+  "badgeX": 160,
+  "name": "Virtus.pro",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": "https://shop.esl.com/products/virtus-pro-pro-jersey-2024"
+ },
+ "t-d18102cbd8c956185a22": {
+  "badgeX": 160,
+  "name": "Reign Above",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 463.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-d2e1af19fbf84db11da2": {
+  "badgeX": 160,
+  "name": "Team Spirit Academy",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.0,
+   "width": 480
+  },
+  "source": "https://cs2news.com/news/spirit-academy-unveil-new-2026-cs2-lineup"
+ },
+ "t-d333755a3d6f32028b43": {
+  "badgeX": 160,
+  "name": "bond1e",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-d43fcd05ada20af28953": {
+  "badgeX": 160,
+  "name": "InControl",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 449.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-d602bf8f470bc67ca7fa": {
+  "badgeX": 160,
+  "name": "EMPIRE",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 449.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-d74c69db63e4763f64fc": {
+  "badgeX": 160,
+  "name": "Arcade",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-d962de38112755313f35": {
+  "badgeX": 160,
+  "name": "Chicanery",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 441.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-daf79813ecfbe95e289e": {
+  "badgeX": 160,
+  "name": "TDK",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 441.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-db2216fd3ee95a0e0d4a": {
+  "badgeX": 160,
+  "name": "Ninjas in Pyjamas",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 434.9,
+   "width": 480
+  },
+  "source": "https://nip.gl/pages/new-look-ninjas"
+ },
+ "t-db77fd01af957221a498": {
+  "badgeX": 160,
+  "name": "R2",
+  "rig": {
+   "collar": [
+    240.0,
+    320.0
+   ],
+   "cut": "polo",
+   "height": 560,
+   "seat": [
+    120,
+    158.0
+   ],
+   "span": 457.0,
+   "width": 480
+  },
+  "source": "https://profilerr.net/cs-go/team/r2-esports-club/"
+ },
+ "t-dd628dafd9907e63336b": {
+  "badgeX": 160,
+  "name": "Basement Bobs",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-df04d1b6031399c96241": {
+  "badgeX": 160,
+  "name": "PIVOSQUAD",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-df750e9ffd7b996f2551": {
+  "badgeX": 160,
+  "name": "11mins",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-dfc1a1888f01d9476764": {
+  "badgeX": 160,
+  "name": "SAW",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/10567/saw"
+ },
+ "t-e03c48e49c82a86f6d92": {
+  "badgeX": 160,
+  "name": "Zomblers",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 445.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-e09b05d3d741eea321ea": {
+  "badgeX": 160,
+  "name": "Team Liquid",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 469.0,
+   "width": 480
+  },
+  "source": "https://store.teamliquid.com/products/tl00026-000184-nvy-navy-2026-alienware-jersey-ecom"
+ },
+ "t-e0f13cff6d5c7d6d8006": {
+  "badgeX": 160,
+  "name": "ex-Zero Tenacity",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 461.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-e1f3f91a6747a1236202": {
+  "badgeX": 160,
+  "name": "DONSTU",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 431.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-e26bb17d0276876f5d60": {
+  "badgeX": 160,
+  "name": "HYPERSPIRIT",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 471.0,
+   "width": 480
+  },
+  "source": "https://draft5.gg/partida/42947-ECSTATIC-vs-HYPERSPIRIT-BC.Game-Masters-Championship"
+ },
+ "t-e2dc13ee2937512f50cc": {
+  "badgeX": 160,
+  "name": "OG",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-e47460a45f1a40ee9364": {
+  "badgeX": 160,
+  "name": "Strael Bora",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 459.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-e5263ae7e98c0b6e2a08": {
+  "badgeX": 160,
+  "name": "SemperFi",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 461.0,
+   "width": 480
+  },
+  "source": "https://profilerr.net/cs-go/team/semperfi-esports/"
+ },
+ "t-e56b1834fdc9a53d7610": {
+  "badgeX": 160,
+  "name": "SINNERS Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 471.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-e58911099d06ab259507": {
+  "badgeX": 160,
+  "name": "Oxuji",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 439.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-ea577870de536dcbff88": {
+  "badgeX": 160,
+  "name": "Luminosity Gaming",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 463.0,
+   "width": 480
+  },
+  "source": "https://shop.lumi.gg/"
+ },
+ "t-ea5b51dcd9a723846204": {
+  "badgeX": 160,
+  "name": "9z Team",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 437.0,
+   "width": 480
+  },
+  "source": "https://bo3.gg/teams/9z"
+ },
+ "t-ebcc2b89c4cdbea71435": {
+  "badgeX": 160,
+  "name": "Back to Back",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 428.9,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-eca1dfda3321f728c946": {
+  "badgeX": 160,
+  "name": "Prodigy",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 433.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-ecd98b08debdbe205ddc": {
+  "badgeX": 160,
+  "name": "eLITenergy",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-ed3c7bc96fed7441c591": {
+  "badgeX": 160,
+  "name": "Wildcard",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 469.0,
+   "width": 480
+  },
+  "source": "https://crosshair.club/crosshairs"
+ },
+ "t-ed3f1019816676ac2147": {
+  "badgeX": 160,
+  "name": "Fake do Biru",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 445.0,
+   "width": 480
+  },
+  "source": "https://profilerr.net/th/cs-go/team/fake-do-biru/"
+ },
+ "t-ee828843d9d91ac42693": {
+  "badgeX": 160,
+  "name": "Imperial Esports",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 447.0,
+   "width": 480
+  },
+  "source": "https://imperialesports.gg/equipe/counter-strike-2/"
+ },
+ "t-f122e872ead23a99188b": {
+  "badgeX": 160,
+  "name": "UNiTY esports",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 450.9,
+   "width": 480
+  },
+  "source": "https://www.playzone.cz/clanky/223547-za-cesko-slovensko-unity-konci-v-sanghaji-bez-vyhry-rvali-se-ale-jako-skutecni-lvi"
+ },
+ "t-f2eecf60ecc18cb7491b": {
+  "badgeX": 160,
+  "name": "Yawara",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 436.9,
+   "width": 480
+  },
+  "source": "https://draft5.gg/partida/44443-Yawara-Esports-vs-BESTIA-Academy-CCT-South-America-2026-Series-2"
+ },
+ "t-f3f4b1896488eccf74ea": {
+  "badgeX": 160,
+  "name": "MGLBROS",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-f5c21b4ede1739716d64": {
+  "badgeX": 160,
+  "name": "KOLESIE",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 457.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-f63aa9429abac96cf151": {
+  "badgeX": 160,
+  "name": "Galorys",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 464.0,
+   "width": 480
+  },
+  "source": "https://www.dust2.com.br/noticias/58998/dono-da-galorys-e-denunciado-pelo-mp-e-tem-ligacao-com-trabalho-analogo-a-escravidao"
+ },
+ "t-f698cb70b7b01c3e0689": {
+  "badgeX": 160,
+  "name": "Nexus Gaming",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 441.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-f702a9538cd1fc277fce": {
+  "badgeX": 160,
+  "name": "The Huns",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 435.0,
+   "width": 480
+  },
+  "source": "https://mesa.mn/matches/d21da0fc-4f24-4893-af24-31694a973357"
+ },
+ "t-f83bd1d1d8efd81de8e4": {
+  "badgeX": 160,
+  "name": "ALKA",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": "https://profilerr.net/cs-go/team/alka/"
+ },
+ "t-f9057264626f6c902478": {
+  "badgeX": 160,
+  "name": "Akimbo",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 441.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-fa159d3b67bc482fa092": {
+  "badgeX": 160,
+  "name": "Misa",
+  "rig": {
+   "collar": [
+    240.0,
+    327.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 452.8,
+   "width": 480
+  },
+  "source": "https://misaesports.com/"
+ },
+ "t-faea16399a669ce02715": {
+  "badgeX": 160,
+  "name": "Clockwork",
+  "rig": {
+   "collar": [
+    240.0,
+    326.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 451.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-fb0e5581f0335a48053f": {
+  "badgeX": 160,
+  "name": "Inner Circle Academy",
+  "rig": {
+   "collar": [
+    240.0,
+    329.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 429.0,
+   "width": 480
+  },
+  "source": "https://draft5.gg/equipe/4225-Inner-Circle-Academy"
+ },
+ "t-fc91368f2036677b48a4": {
+  "badgeX": 160,
+  "name": "ENVY",
+  "rig": {
+   "collar": [
+    240.0,
+    328.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 434.9,
+   "width": 480
+  },
+  "source": "https://envy.gg/pages/2026-shop"
+ },
+ "t-fe2b009066317d84393d": {
+  "badgeX": 160,
+  "name": "9INE",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 443.0,
+   "width": 480
+  },
+  "source": "https://www.hltv.org/team/10278/9ine"
+ },
+ "t-fea65db8a89cd34a8461": {
+  "badgeX": 160,
+  "name": "Beyond Limits",
+  "rig": {
+   "collar": [
+    240.0,
+    330.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 460.8,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-ff7db7a0c27a4151c812": {
+  "badgeX": 160,
+  "name": "XDM",
+  "rig": {
+   "collar": [
+    240.0,
+    323.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 465.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-ff838282e18632d8c82e": {
+  "badgeX": 160,
+  "name": "aimclub",
+  "rig": {
+   "collar": [
+    240.0,
+    324.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 427.0,
+   "width": 480
+  },
+  "source": null
+ },
+ "t-ffe7aff1d57ce72003a4": {
+  "badgeX": 160,
+  "name": "Rune Eaters",
+  "rig": {
+   "collar": [
+    240.0,
+    325.0
+   ],
+   "cut": "crew",
+   "height": 560,
+   "seat": [
+    120,
+    157.0
+   ],
+   "span": 449.0,
+   "width": 480
+  },
+  "source": null
+ }
+}

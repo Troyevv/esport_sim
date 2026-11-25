@@ -1,0 +1,3 @@
+# Source packages are reproducible byte-for-byte on Windows and Unix.
+backend/data/*.json text eol=lf
+tools/scene_sources/*.csv text eol=lf

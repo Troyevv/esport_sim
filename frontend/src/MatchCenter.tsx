@@ -4,17 +4,21 @@ import Radar from "./Radar";
 import type { Frame, View } from "./session";
 import type { RadarPlayback } from "./playback";
 import "./match.css";
+import {Identity,type Visual} from "./SceneIdentity";
+import {RoleRatings} from "./SceneProfiles";
 
 type Side = "CT" | "T";
 type Point = { x: number; y: number };
 export interface MatchView {
   rules: string;
+  source?: {id:string; revision:number};
   roleRatings: Record<string, Record<string, number>>;
   teamRating: number | null;
   round: number;
   phase: string;
   clock: number;
   teams: string[];
+  teamVisuals?:(Visual|null)[];
   sides: Side[];
   score: number[];
   pregame: boolean;
@@ -34,6 +38,7 @@ export interface MatchView {
     id: string;
     name: string;
     club: number;
+    visual?:Visual;
     team: Side;
     role: string;
     k: number;
@@ -74,10 +79,7 @@ export interface MatchView {
   calls: string[];
   feedback: { player: string; id: number; round: number; text: string }[];
 }
-const roles: Record<string, string> = {
-  rifler: "Рифлер", entry: "Энтри", lurker: "Люркер",
-  support: "Поддержка", awper: "Снайпер", igl: "Капитан",
-};
+
 const phases: Record<string, string> = {
   freeze: "Подготовка",
   live: "В игре",
@@ -142,10 +144,10 @@ export default function MatchCenter({
           </h1>
         </div>
         <button onClick={openBoard}>Редактор тактик</button>
-        <span className="match-format">
+        <span className={"match-format"+(m.source && m.source.id!=="depo-exhibition"?" sourced":"")}>
           Выставочный матч
           <br />
-          Тестовые составы
+          {m.source && m.source.id !== "depo-exhibition" ? "Составы из базы · ред. " + m.source.revision : "Тестовые составы"}
         </span>
       </header>
       <section className="scoreboard" aria-label="Счёт матча">
@@ -154,7 +156,7 @@ export default function MatchCenter({
             <span className="club-side">
               {m.sides[i]} · {i === 0 ? "Ваша команда" : "Соперник"}
             </span>
-            <strong>{club}</strong>
+            <strong>{m.teamVisuals?.[i]?<Identity name={club} visual={m.teamVisuals[i]!}/>:club}</strong>
             <b>{m.score[i]}</b>
           </div>
         ))}
@@ -233,7 +235,7 @@ export default function MatchCenter({
                 {m.teams.map((club, i) => (
                   <div key={club}>
                     <h3>
-                      {club} <small>{m.sides[i]}{i === 0 && m.teamRating != null && ` · OVR ${m.teamRating}`}</small>
+                      {m.teamVisuals?.[i]?<Identity name={club} visual={m.teamVisuals[i]!}/>:club} <small>{m.sides[i]}{i === 0 && m.teamRating != null && ` · OVR ${m.teamRating}`}</small>
                     </h3>
                     {m.stats
                       .filter((row) => row.club === i)
@@ -248,7 +250,7 @@ export default function MatchCenter({
                             onClick={() => select(row.id)}
                           >
                             <b>
-                              {row.name}
+                              {row.visual?<Identity name={row.name} visual={row.visual}/>:row.name}
                               <small>{row.role}</small>
                             </b>
                             <span>
@@ -274,10 +276,7 @@ export default function MatchCenter({
               <p className="inventory">
                 <b>{selectedAgent.name}</b> · {selectedAgent.status}
                 {m.roleRatings[selectedAgent.id] && (
-                  <span className="role-ratings">
-                    Рейтинги ролей · {Object.entries(m.roleRatings[selectedAgent.id])
-                      .map(([role, value]) => `${roles[role]} ${value}`).join(" · ")}
-                  </span>
+                  <RoleRatings values={m.roleRatings[selectedAgent.id]} compact/>
                 )}
                 {selectedAgent.hp !== undefined && (
                   <>
@@ -319,7 +318,7 @@ export default function MatchCenter({
                     {m.stats.map((p) => (
                       <tr key={p.id}>
                         <th>
-                          {p.name}
+                          {p.visual?<Identity name={p.name} visual={p.visual}/>:p.name}
                           <small>{m.teams[p.club]}</small>
                         </th>
                         {[
@@ -413,7 +412,7 @@ export default function MatchCenter({
           <section className="panel coaching">
             <h2>Скамейка тренера</h2>
             <p>
-              Север · осталось тайм-аутов <b>{m.remaining} / {m.timeoutLimit}</b>
+              {m.teams[0]} · осталось тайм-аутов <b>{m.remaining} / {m.timeoutLimit}</b>
             </p>
             {m.pregame && m.prepared.map(p=><p key={p.side+p.buy}>{p.side} · {p.buy} · {p.name} · в{p.revision}</p>)}
             {(timeout || m.pregame) && <button onClick={openBoard}>Выбрать тактику</button>}

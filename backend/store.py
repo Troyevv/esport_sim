@@ -1,5 +1,6 @@
 """One authoritative scenario, its manual snapshot and durable command receipts."""
 
+import gzip
 import json
 import sqlite3
 from collections import deque
@@ -7,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
 
-from . import checkpoints, engine, match, tactic_library
+from . import database, checkpoints, engine, match, tactic_library
 from .match_rules import LEGACY_VERSION
 
 
@@ -33,8 +34,14 @@ def validate_snapshot(state):
             raise Conflict("Несовместимая пара версий правил и контрольной точки")
 
 
+from .personal_badges import PersonalBadges
+from .portrait_library import PortraitLibrary
+
+
 class Store:
     def __init__(self, path: Path):
+        self.badges = PersonalBadges(Path(path).with_suffix(".club-originals.sqlite"))
+        self.portraits = PortraitLibrary(Path(path).with_suffix(".portraits.sqlite"))
         self.motion = deque(maxlen=6)  # Recent committed poses, never part of a save.
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.db.executescript("""
@@ -42,6 +49,7 @@ class Store:
             CREATE TABLE IF NOT EXISTS active (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS round_log (digest TEXT PRIMARY KEY, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS slot (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS data_pack (id TEXT, revision INTEGER, title TEXT NOT NULL, body TEXT NOT NULL, PRIMARY KEY(id,revision));
             CREATE TABLE IF NOT EXISTS tactic (id TEXT NOT NULL, revision INTEGER NOT NULL, body TEXT,
                 PRIMARY KEY(id, revision));
             CREATE TABLE IF NOT EXISTS tactic_mastery (id TEXT, revision INTEGER, familiarity INTEGER NOT NULL,
@@ -55,6 +63,19 @@ class Store:
         """)
         try:
             with self.transaction():
+                if not self.db.execute(
+                    "SELECT 1 FROM data_pack WHERE id=? AND revision=1",
+                    ("austin-registration",),
+                ).fetchone():
+                    database.install(self.db, database.STARTER.read_bytes())
+                if not self.db.execute(
+                    "SELECT 1 FROM data_pack WHERE id=? AND revision=1",
+                    (database.RELEASE_ID,),
+                ).fetchone():
+                    database.install(
+                        self.db, gzip.decompress(database.RELEASE.read_bytes())
+                    )
+                    database.migrate_club_links(self.db)
                 for table in ("active", "slot"):
                     row = self.db.execute(
                         f"SELECT body FROM {table} WHERE id=1"
@@ -85,7 +106,10 @@ class Store:
             state = json.loads(body)
             validate_snapshot(state)
             world = state["world"]
-            if world["version"] == 2 and world.get("checkpointVersion", 1) < checkpoints.VERSION:
+            if (
+                world["version"] == 2
+                and world.get("checkpointVersion", 1) < checkpoints.VERSION
+            ):
                 if world.get("checkpointVersion", 1) == 1:
                     checkpoints.upgrade_match(self.db, world)
                 match.migrate_legacy(world)
@@ -223,7 +247,9 @@ class Store:
                     if kind == "tactic-assign":
                         if state["world"]["version"] != 2:
                             raise ValueError("Сначала откройте матч BO1")
-                        match.assign(state["world"], tactic_library.resolve(self.db, value))
+                        match.assign(
+                            state["world"], tactic_library.resolve(self.db, value)
+                        )
                     else:
                         tactic_library.change(self.db, kind, value)
                         state["libraryRevision"] = state.get("libraryRevision", 0) + 1
@@ -269,6 +295,38 @@ class Store:
                     state["running"] = False
                 elif kind == "resume":
                     state["running"] = True
+            elif kind == "database-match":
+                if not isinstance(value, dict) or set(value) != {
+                    "id",
+                    "revision",
+                    "rosters",
+                    "seed",
+                }:
+                    raise ValueError("Укажите редакцию пакета, составы и seed")
+                seed = value["seed"]
+                database.require(
+                    type(seed) is int and 0 <= seed <= 2147483647, "Некорректный seed"
+                )
+                database.valid_id(value["id"])
+                database.require(
+                    type(value["revision"]) is int, "Некорректная редакция"
+                )
+                pack = database.get(self.db, value["id"], value["revision"])
+                domain = database.match_input(
+                    pack, value["rosters"], self.badges.index(pack)
+                )
+                cached = self.portraits.index(
+                    {pid: pack["players"][pid] for pid in domain["players"]}
+                )
+                for pid, portrait in cached.items():
+                    if not domain["players"][pid]["visual"].get("head"):
+                        domain["players"][pid]["visual"]["head"] = portrait["image"]
+                state.update(
+                    world=match.initial(seed, domain, value["rosters"]),
+                    running=False,
+                    speed=1,
+                    context=str(uuid4()),
+                )
             elif kind in ("reset", "match"):
                 if type(value) is not int or not 0 <= value <= 2147483647:
                     raise ValueError("Seed должен быть целым числом от 0 до 2147483647")

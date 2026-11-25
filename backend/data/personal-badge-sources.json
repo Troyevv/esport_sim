@@ -1,0 +1,1382 @@
+{
+  "clubs": {
+    "1w Team": {
+      "copy": {
+        "identity": "https://www.hltv.org/news/45947/pgl-announces-name-changes-for-four-teams-at-singapore-major",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/1win%20Team.png",
+        "sha256": "f373335d3683375dce63166b3a4750594247deabce312b03525c245263fe143c",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/1win%20Team.png"
+      }
+    },
+    "1win": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/1win_Team",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/1win%20Team.png",
+        "sha256": "f373335d3683375dce63166b3a4750594247deabce312b03525c245263fe143c",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/1win%20Team.png"
+      }
+    },
+    "5star eSports": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/5star_eSports",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/5star%20Esports.png",
+        "sha256": "45057febbd4a412d06d7eaa7186557b31ab4de82a6567cb0ad5411dde4d3cf64",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/5star%20Esports.png"
+      }
+    },
+    "8Sins": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13024/8sins",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/8Sins.png",
+        "sha256": "aa94e2ea4b1184fca5d7470a701e198367a83756dc28f811d63ba8896db9deb6",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/8Sins.png"
+      }
+    },
+    "9INE": {
+      "copy": {
+        "identity": "https://9ine.gg/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/9ine.png",
+        "sha256": "d149ceac4f3265d6a34e1e82257f004ea2c4370a3b2f150e7ded31dd9573e4ab",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/9ine.png"
+      }
+    },
+    "ALGO": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/ALGO_Esports",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ALGO%20Esports.png",
+        "sha256": "6f3dd6344e8d4d5f7cf1c8b7b3e01a40cd122ea2b98cbd2d8a1fc690ae50b7dd",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ALGO%20Esports.png"
+      }
+    },
+    "ALKA": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13756/alka",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ALKA.png",
+        "sha256": "7d8ae7dd1aef381cf98c9fef1321ab7101a565a2e88152306dfa0bbdcdb09a48",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ALKA.png"
+      }
+    },
+    "ARCRED": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/ARCRED",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ARCRED.png",
+        "sha256": "e17b0afc6115e74b8d7b35938ae607cb663d34ec4d48b94e0b87ca109b7239fe",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ARCRED.png"
+      }
+    },
+    "ASTRAL": {
+      "copy": {
+        "identity": "https://skinory.io/en/pro-teams-cs2/astral",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ASTRAL%20Esports.png",
+        "sha256": "4f3231eac49f8c4a1135ed0f6a1f8771fb91a88c1460a76e663ece1f220ea524",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ASTRAL%20Esports.png"
+      }
+    },
+    "AaB": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/9621/aab",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/aab/aab-logo.png",
+        "sha256": "18e077b1c27ec40d48363d6dd919663d1a7914f8212b541f527856f45ee2f468",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/aab/aab-logo.png"
+      }
+    },
+    "Aether": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12908/aether",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Aether.png",
+        "sha256": "32e464a3946a35a130e38bed82b5746d6fafca991c4063dc78c2a407b0932249",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Aether.png"
+      }
+    },
+    "Akimbo": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12567/akimbo",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Akimbo%20Esports.png",
+        "sha256": "a2449e78566cba2503225dc252912274806d1ed5f7655f29f58ba93718294856",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Akimbo%20Esports.png"
+      }
+    },
+    "Alter Ego": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Alter_Ego",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Alter%20Ego.png",
+        "sha256": "b5621f5d2209276ea46af3af69f3a6d858486e14f34f020940f4cf08c8aec4ec",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Alter%20Ego.png"
+      }
+    },
+    "Arcade": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12363/arcade",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/arcade/arcade-logo.png",
+        "sha256": "9bbc259dca9b982d30d679d1b38c292026dd01fd617c451cfaac0b64bc4fd796",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/arcade/arcade-logo.png"
+      }
+    },
+    "Atreides": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13668/atreides",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Atreides.png",
+        "sha256": "774c868cf1fca07071c0e1f35e371b54f6b0145ba63dfed461099a8e5eeab456",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Atreides.png"
+      }
+    },
+    "Atrix": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12533/atrix",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/atrix/atrix-logo.png",
+        "sha256": "2ae5df349861e7c4641dd6a2de360b98b23cb098e9d62f7419d87dba7bfa8fcc",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/atrix/atrix-logo.png"
+      }
+    },
+    "Aurora Gaming": {
+      "copy": {
+        "identity": "https://auroragg.my/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/aurora.png",
+        "sha256": "159d2bf6c6f1b04fa2505989ed2ad79e27e6d776966011987325b1c2ed3d0106",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/aurora.png"
+      }
+    },
+    "B8": {
+      "copy": {
+        "identity": "https://b8esports.gg/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/b8.png",
+        "sha256": "27551d059a9de68b5f66ab73c7c03d8bc0e66a18fd52268db9ac32214c713297",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/b8.png"
+      }
+    },
+    "BAKS Esports": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/BAKS_Esports",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BAKS%20Esports.png",
+        "sha256": "b60ebff3bbd04f6ca219b235b5f746e22f93913e0c4ae6256baaa9a0ad15595f",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BAKS%20Esports.png"
+      }
+    },
+    "BASEMENT BOYS": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13181/basement-boys",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BASEMENT%20BOYS.png",
+        "sha256": "d2da064f34d5d7f7ca5c868280cbfe569bb1cb4295f8c438f5cdf44c6f3e391a",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BASEMENT%20BOYS.png"
+      }
+    },
+    "BC.Game Esports": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/BC.Game_Esports",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BC.Game%20Esports.png",
+        "sha256": "5febcfa51c162bc7afdc35de5efe56493069fda502617f33f267bbf5c3575408",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BC.Game%20Esports.png"
+      }
+    },
+    "BEE": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/BEE",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BEE.png",
+        "sha256": "7af7eb7b2019f1716c725491c5eb56ecb5b73dbe4bbf3eae102630a03007b64c",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BEE.png"
+      }
+    },
+    "BESTIA": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/BESTIA",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BESTIA.png",
+        "sha256": "afd4348aaadc34b0614ad893896233f8dab4598fc51b979120b875ecebd13f53",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BESTIA.png"
+      }
+    },
+    "BESTIA Academy": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13026/bestia-academy",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BESTIA%20Academy.png",
+        "sha256": "0b9873f0133c5609a916c4f7e3c75ad6ba02a1bed8ca144a370a37e3037e10ac",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BESTIA%20Academy.png"
+      }
+    },
+    "BORING PLAYERS": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12948/boring-players",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BORING%20PLAYERS.png",
+        "sha256": "eea37941b5fbbbc43beb0746f09c92575a3fb66e57708abe89c706acadee4317",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BORING%20PLAYERS.png"
+      }
+    },
+    "BOSS": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/BOSS",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BOSS.png",
+        "sha256": "1b9a48f0bd317d9ea00d224af03a9ecd495f3d29e612f45541fc71a3daf379c7",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BOSS.png"
+      }
+    },
+    "BRUTE": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/BRUTE",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BRUTE.png",
+        "sha256": "a79d1fb229a78814adec6ee5dc3d28884213e95a2cc25053c388d388c9bdcc79",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BRUTE.png"
+      }
+    },
+    "Basement Bobs": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13753/basement-bobs",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Basement%20Bobs.png",
+        "sha256": "fad900793e3488462d6507146a60f4623f07d10383eebccd36e4efd56709f9c0",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Basement%20Bobs.png"
+      }
+    },
+    "BetBoom": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12394/betboom",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/betboom.png",
+        "sha256": "59948b9cb46059d57d5c0fcd229e68ff1473d507a69b2bc43ce8860000bd2914",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/betboom.png"
+      }
+    },
+    "BetBoom Team": {
+      "copy": {
+        "identity": "https://betboom.team/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/betboom.png",
+        "sha256": "59948b9cb46059d57d5c0fcd229e68ff1473d507a69b2bc43ce8860000bd2914",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/betboom.png"
+      }
+    },
+    "Betclic Apogee Esports": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Betclic_Apogee_Esports",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Betclic%20Apogee%20Esports.png",
+        "sha256": "9327ac64ea7ca520f03948ad89e7539ce7dd8a6bf0265148d26e8c9bef0b71fb",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Betclic%20Apogee%20Esports.png"
+      }
+    },
+    "Bounty Hunters": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12776/bounty-hunters",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/bounty-hunters/bounty-hunters-logo.png",
+        "sha256": "9be11c871151b8be5ffdf20750015fbf6f46375cd8b3951cb8f70237519e4113",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/bounty-hunters/bounty-hunters-logo.png"
+      }
+    },
+    "Bounty Hunters Esports": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Bounty_Hunters_Esports",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Bounty%20Hunters%20Esports.png",
+        "sha256": "2d9cfeb5f1a0024da6d86fec63e3b6309312ade800d9519134de26e3f60b6d3f",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Bounty%20Hunters%20Esports.png"
+      }
+    },
+    "CSDIILIT": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13340/csdiilit",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/CSDILLIT.png",
+        "sha256": "c3c83e3865ec66fdf1f2e33c7e48365f42c121925dee6c156630db989df4e0ac",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/CSDILLIT.png"
+      }
+    },
+    "CYBERSHOKE Esports": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/CYBERSHOKE_Esports",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/CYBERSHOKE%20Esports.png",
+        "sha256": "971831a4ed104776ab808740daaae07e0586e049346f524083bfcb9954dde928",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/CYBERSHOKE%20Esports.png"
+      }
+    },
+    "Change The Game": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13175/change-the-game",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Change%20The%20Game.png",
+        "sha256": "39e07ae0f728cdaf634d9ed4e23f306b911c1137bdb4e618decb51e3f961a1f7",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Change%20The%20Game.png"
+      }
+    },
+    "Chicken Coop": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13107/chicken-coop",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Chicken%20Coop.png",
+        "sha256": "72dc8ddda3d26116bad2378108e9330fc72f9f94a5b201a7fd69f2ab58775aa9",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Chicken%20Coop.png"
+      }
+    },
+    "Chinggis Warriors": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Chinggis_Warriors",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Chinggis%20Warriors.png",
+        "sha256": "0171a8b02c764697d38dadc2a97d59ee64c592cf6c6f7fe5b12ff0d10f8eda6d",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Chinggis%20Warriors.png"
+      }
+    },
+    "Crashers": {
+      "copy": {
+        "identity": "https://www.hltv.org/stats/teams/6788/crashers",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Crashers.png",
+        "sha256": "a34f89ec2bd9db9afc99f8a350e63e48304934cbab493bf698efeb2a7496d5ef",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Crashers.png"
+      }
+    },
+    "DENDELE CS": {
+      "copy": {
+        "identity": "https://www.dendele.com.br/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/dendele.png",
+        "sha256": "7573a11dae996d47363fb977140d18af665da0da716e6196162591ff0e72b720",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/dendele.png"
+      }
+    },
+    "DEPO": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12536/depo",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/DEPO.png",
+        "sha256": "e46fa7a2a6980b38c4363a24588b5b7cec8fd4a4b9901f7255ed1286b1a0a919",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/DEPO.png"
+      }
+    },
+    "DONSTU": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13714/donstu",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Donstu%20Esports.png",
+        "sha256": "544c665fd8a5c1252259b558706b9f12fc44deedc0f3d93e557880a3b9c68127",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Donstu%20Esports.png"
+      }
+    },
+    "DXA": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12276/dxa",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/dxa/dxa-logo.png",
+        "sha256": "547471112e0352a7ec2b9137d54cd5c4880b9bac315547aff1c7002d7daf638a",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/dxa/dxa-logo.png"
+      }
+    },
+    "Drama": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13704/drama",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Drama.png",
+        "sha256": "6e49c5f89316d936138ca587e5ba4b1238a4f5a813ac748a541ccff0d137b234",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Drama.png"
+      }
+    },
+    "EC BANGA": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12568/ec-banga",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/EC%20Banga.png",
+        "sha256": "cc31a0b14730669a12963e12744bf3ec6249008bde2b5836e9e8ec8edb14ecc9",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/EC%20Banga.png"
+      }
+    },
+    "ECSTATIC": {
+      "copy": {
+        "identity": "https://www.ecstatic.gg/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/ecstatic.png",
+        "sha256": "244e1a4a595df60023b0fd842db9866a3943ba89ea3fb4d1a30336585768f3a4",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/ecstatic.png"
+      }
+    },
+    "ENCE": {
+      "copy": {
+        "identity": "https://ence.gg/pages/media",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/ence.png",
+        "sha256": "9c6ba2b1546da4da71e6913e8f70fd1459feaa9f2427af54ff6595971e5f00ec",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/ence.png"
+      },
+      "personal": {
+        "page": "https://logotyp.us/get/ence/",
+        "url": "https://logotyp.us/file/ence.svg"
+      }
+    },
+    "ENCE Academy": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/ENCE_Academy",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ENCE%20Academy.png",
+        "sha256": "4dc0438b90d43e731607d53da8a2c53e285a4b4762f0141c2d7dbac7fbf9c2cc",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ENCE%20Academy.png"
+      }
+    },
+    "ESC": {
+      "copy": {
+        "identity": "https://escgaming.de/brand-guidelines/",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/esc/esc-logo.png",
+        "sha256": "2685e84f73351653769dca74e40f342497182b4cba954dbc2340bdc2d0332f58",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/esc/esc-logo.png"
+      }
+    },
+    "EYEBALLERS": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/EYEBALLERS",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/EYEBALLERS.png",
+        "sha256": "14a953118569d3936b41c219f644ba5eb1a83bdd62f4d4c91308372959cbd3e8",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/EYEBALLERS.png"
+      }
+    },
+    "Eclipse": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Eclipse",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/eclipse/eclipse-logo.png",
+        "sha256": "58264d264bfc7b29dc3cf6dc0a8c1cb267f3d944138efedfaca9bfdc2ade3ca1",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/eclipse/eclipse-logo.png"
+      }
+    },
+    "Entropy": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/7120/entropy",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/entropy/entropy-logo.png",
+        "sha256": "fffd45c13e165f624e8e4ea03e9467cfc0b10ab20111c630420006664ef0df93",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/entropy/entropy-logo.png"
+      }
+    },
+    "Eternal Fire": {
+      "copy": {
+        "identity": "https://eternalfire.gg/teams/cs2-team/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/eternal-fire.png",
+        "sha256": "19f6f0f7260f6e002bc7bfc44d0a8158d63c98c86efd3931158eb3a77a3f0056",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/eternal-fire.png"
+      },
+      "personal": {
+        "page": "https://vectorseek.com/vector_logo/eternal-fire-logo-vector/",
+        "url": "https://vectorseek.com/wp-content/uploads/2023/07/Eternal-Fire-Logo-Vector.zip"
+      }
+    },
+    "F5": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13201/f5",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/F5.png",
+        "sha256": "2a4c5f09155c966e90f87479cc698fc89284a8c98f9525af671ffcd28d12d678",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/F5.png"
+      }
+    },
+    "FAVBET": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12818/favbet",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FAVBET%20Team.png",
+        "sha256": "03b95a542465fcb1b4718446a1919ab93b28071af94864c317080f1e1e240225",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FAVBET%20Team.png"
+      }
+    },
+    "FOKUS": {
+      "copy": {
+        "identity": "https://www.fokusclan.de/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/fokus.png",
+        "sha256": "2e5c95ea3c7002885b5072491c81e06e4550086580135895d325b515496fbde7",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/fokus.png"
+      }
+    },
+    "FORZE Reload": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/FORZE_Reload",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FORZE%20Reload.png",
+        "sha256": "24f1aca327f73dac806b071bef1d86466894f72bb046e6ff8bdb3295f7ceba35",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FORZE%20Reload.png"
+      }
+    },
+    "FURIA Esports": {
+      "copy": {
+        "identity": "https://sites.google.com/furia.gg/furia-esports/our-teams/people-and-culture",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/furia.png",
+        "sha256": "01b94caab13959f659739dce98fe608992049c74c4f53023b0fb3052947004d6",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/furia.png"
+      },
+      "personal": {
+        "page": "https://logotyp.us/get/furia/",
+        "url": "https://logotyp.us/file/furia.svg"
+      }
+    },
+    "FUT Esports": {
+      "copy": {
+        "identity": "https://futesports.gg/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/fut.png",
+        "sha256": "4df53760d02d3e3c6744457f765644255d47f87515a4d7b5ca8a4cc4229bc5c3",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/fut.png"
+      },
+      "personal": {
+        "page": "https://vectorseek.com/vector_logo/fut-esports-logo-vector/",
+        "url": "https://vectorseek.com/wp-content/uploads/2023/11/FUT-eSports-Logo-Vector.zip"
+      }
+    },
+    "Fake do Biru": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Fake_do_Biru",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Fake%20do%20Biru.png",
+        "sha256": "a3fc67d59b35726995314a54eeb4f2370c5fe5df246c59d847ad444db3ccfe4d",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Fake%20do%20Biru.png"
+      }
+    },
+    "Falcons Force": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Falcons_Force",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Falcons%20Force.png",
+        "sha256": "2d02af1061bc7e30ca68a0189a102b9ad90a98a4cd04b322179305b21b15869d",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Falcons%20Force.png"
+      }
+    },
+    "FarmVille": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13665/farmville",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FarmVille.png",
+        "sha256": "942da08ce8875f0cd404db1af9693f280bb8a02a0b8e19316ed48ea5d4bc964d",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FarmVille.png"
+      }
+    },
+    "FengDa": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12899/fengda",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FengDa%20Gaming.png",
+        "sha256": "c1c19f632fceb8a2761500a3fb6c29654aa3f1360c7d3f0c4efc132b6c3146e9",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FengDa%20Gaming.png"
+      }
+    },
+    "Fire Flux": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12960/fire-flux",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Fire%20Flux%20Esports.png",
+        "sha256": "e68e913c0e28d9ab956f2fdae80d0603083c12bbbf8458b39fcc734539845946",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Fire%20Flux%20Esports.png"
+      }
+    },
+    "Fisher College": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Fisher_College",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Fisher%20College.png",
+        "sha256": "49456a48fdd91f26bb249364332b229b770844b8c405fa7c9ca87d825cf2437e",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Fisher%20College.png"
+      }
+    },
+    "Fluxo": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/11837/fluxo",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/fluxo/fluxo-logo.png",
+        "sha256": "b21b623dab481b82e95b259dfa9a935a63c6f7d11db995de845e3e84f1dc1d65",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/fluxo/fluxo-logo.png"
+      }
+    },
+    "Fnatic": {
+      "copy": {
+        "identity": "https://fnatic.com/brand",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/fnatic.png",
+        "sha256": "44c47b17b42bbb1415e74ba22151b824951665b2e342be1289c2f64e626ff410",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/fnatic.png"
+      },
+      "personal": {
+        "page": "https://vectorseek.com/vector_logo/fnatic-logo-vector/",
+        "url": "https://vectorseek.com/wp-content/uploads/2023/04/Fnatic-Logo-Vector.zip"
+      }
+    },
+    "G2 Ares": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/G2_Ares",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/G2%20Ares%20Esports.png",
+        "sha256": "ee9d9f97b906173111916c181780b9aea67b601bb7c06f2933a592c6b1fd2997",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/G2%20Ares%20Esports.png"
+      }
+    },
+    "Gaimin Gladiators": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Gaimin_Gladiators",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Gaimin%20Gladiators.png",
+        "sha256": "185060d7f8c5b5456db7b83f5d26106f06b067145814d88208465109a29be834",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Gaimin%20Gladiators.png"
+      }
+    },
+    "Galorys": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Galorys",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Galorys.png",
+        "sha256": "078c5be7f154966a14b203b4b99120a21dacbd92039fca68c201315e1d679f57",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Galorys.png"
+      }
+    },
+    "GameHunters": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12988/gamehunters",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/GameHunters.png",
+        "sha256": "72496099f58adbe5f3bbb28a579a6fc8ef448b3024c1ff00e505b215d8f2db99",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/GameHunters.png"
+      }
+    },
+    "GamerLegion": {
+      "copy": {
+        "identity": "https://www.gamerlegion.gg/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/gamerlegion.png",
+        "sha256": "8b9637316a7a6f5176a5292fa40d4dea119d722c6b5b7a0786f4c75b27ae75e9",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/gamerlegion.png"
+      }
+    },
+    "GenOne": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/GenOne",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/GenOne.png",
+        "sha256": "3f61ba00cb8449e5c3b0671173795dfeeef4ede9476f83aab779811fbb8f4e4e",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/GenOne.png"
+      }
+    },
+    "Gentle Mates": {
+      "copy": {
+        "identity": "https://www.gentlemates.com/en",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/gentle-mates.png",
+        "sha256": "65c406e69469f43a81f23a16722121441bc4a0b345a4e1c0800b072d08b0c233",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/gentle-mates.png"
+      }
+    },
+    "Ground Zero": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/8536/ground-zero",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/ground-zero/ground-zero-logo.png",
+        "sha256": "98a38060bcef764f7849e86741db143a2b15903f99b22cb3946ca066a67f7c06",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/ground-zero/ground-zero-logo.png"
+      }
+    },
+    "HAVU": {
+      "copy": {
+        "identity": "https://shop.havu.gg/pages/brand-kit",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/team_havu.png",
+        "sha256": "ae3437f63de46a2050f792cc3c49d5b5762f36575c2d92356df6b82f3ad0db48",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/team_havu.png"
+      }
+    },
+    "HOTU": {
+      "copy": {
+        "identity": "https://hotu.pro/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/hotu.png",
+        "sha256": "c1df074465a5718762d5d24cd3934cc39ec60c3398e834fa4119178d8cda4f80",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/hotu.png"
+      }
+    },
+    "HYPERSPIRIT": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/HYPERSPIRIT",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/HYPERSPIRIT.png",
+        "sha256": "922fbcb2267be322923bada86277760acbea3b1dd4961a6e8b71800ec22b3f4a",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/HYPERSPIRIT.png"
+      }
+    },
+    "INFINITE": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/INFINITE",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/INFINITE.png",
+        "sha256": "992cee9f9234eacf07843b33e679ced15187dc94507fed4c1a73ae2cd348d021",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/INFINITE.png"
+      }
+    },
+    "Imperial Academy": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13705/imperial-academy",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Imperial%20Academy.png",
+        "sha256": "028591ced99baa1d63ac7a6c1cb3dce60f8f87f63b6d1cbefdfa75f6d55b8f91",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Imperial%20Academy.png"
+      }
+    },
+    "InControl": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/InControl",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/InControl.png",
+        "sha256": "0e6a62cd7d9d6219b2353a490d0c9a766dfdba79c376ef3dafadec3d9e27efd7",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/InControl.png"
+      }
+    },
+    "Inner Circle Academy": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13681/inner-circle-academy",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Inner%20Circle%20Academy.png",
+        "sha256": "b3b2fd3d682d8bcc2af4985a52b3f0fff4559df976af2970f2f2623c57583f7b",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Inner%20Circle%20Academy.png"
+      }
+    },
+    "JiJieHao": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/JiJieHao",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/JiJieHao.png",
+        "sha256": "90da69898fbb2a55f74b734dad81f3dc74e971296db22635f2ea78b9eff498f0",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/JiJieHao.png"
+      }
+    },
+    "Johnny Speeds": {
+      "copy": {
+        "identity": "https://johnnyspeeds.se/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/johnny-speeds.png",
+        "sha256": "1a21b096274c41c45f16d9a8d16bdc7f71d1639c79ca93620038777d09dd19cb",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/johnny-speeds.png"
+      }
+    },
+    "Just Players": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13776/just-players",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Just%20Players.png",
+        "sha256": "5349b694262192e5afc83f492436d56b30cea256af1a0621478b83d230d1bcd4",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Just%20Players.png"
+      }
+    },
+    "Just Swing": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13053/just-swing",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Just%20Swing.png",
+        "sha256": "c303ce7e3cdff806e8f031aacd5baea830a7a7c385a6bd582c829f4ce55e681f",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Just%20Swing.png"
+      }
+    },
+    "K27": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/K27",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/K27.png",
+        "sha256": "b3414128f2c4a3911277e8c96afa104d733eb1741dc55e36695c2ac48dbae9d8",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/K27.png"
+      }
+    },
+    "KOLESIE": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/KOLESIE",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Kolesie.png",
+        "sha256": "7e63ad97695cc14733ce50db5e4de9ba76505e1820f58f04b0b6f78700cf7220",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Kolesie.png"
+      }
+    },
+    "Keyd Stars": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Keyd_Stars",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Keyd%20Stars.png",
+        "sha256": "c5105634835377462eef027cd067e4a46e424953e6c333d758569afbb0963a75",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Keyd%20Stars.png"
+      }
+    },
+    "LAG": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/11955/lag",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/lag/lag-logo.png",
+        "sha256": "a80516ae22eca7a4be8432c5220d4f18477afef244c50e8a0294e16f486997c1",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/lag/lag-logo.png"
+      }
+    },
+    "Last Bullet": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13433/last-bullet",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Last%20Bullet.png",
+        "sha256": "31eeca3bd1e067a2726595262f8bb2513a3e945b1125b79bc6687c0788b59c0c",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Last%20Bullet.png"
+      }
+    },
+    "Lavked": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12609/lavked",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Team%20Lavked.png",
+        "sha256": "f53d4e67bbb14ad51004da7524eaf7fe72f5fbc263c7abe3289966dd12d69dd5",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Team%20Lavked.png"
+      }
+    },
+    "Lazer Cats": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12087/lazer-cats",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Lazer%20Cats.png",
+        "sha256": "61bf63cc23c91822b4a20ed598f8e1d2694e79e0ba643aa45bff9261f5693957",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Lazer%20Cats.png"
+      }
+    },
+    "Legacy": {
+      "copy": {
+        "identity": "https://www.teamlegacy.gg/galeria",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/legacy.png",
+        "sha256": "53f02da22a7f3e8e05d825233cd9556a253290363155be730dcb69c783b2fa4b",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/legacy.png"
+      }
+    },
+    "Leo": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/11446/leo",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/leo/leo-logo.png",
+        "sha256": "ebc0571c3832ae6b44f4ce17bd4689b04d824435189e29c3ed4fa58997609b5a",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/leo/leo-logo.png"
+      }
+    },
+    "Lilmix": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Lilmix",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Lilmix.png",
+        "sha256": "1a02a9ae693958128bc5c38bbd7e9ff6d89ae84289d78ff4748518ff8d733880",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Lilmix.png"
+      }
+    },
+    "Luminosity Gaming": {
+      "copy": {
+        "identity": "https://cs2vibecheck.com/teams/luminosity-gaming",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Luminosity%20Gaming.png",
+        "sha256": "a7cd0c475f363b868acd5a3dfddbf2865422378e52e8e1b7dd7de4f54f42adc2",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Luminosity%20Gaming.png"
+      }
+    },
+    "Lynn Vision Gaming": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Lynn_Vision",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/lynn-vision/lynn-vision-logo.png",
+        "sha256": "c9fb2fe3e247056c0f183ee4b2eeeda254b8b9b7289f99be9be9f6ff0ad7bf0a",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/lynn-vision/lynn-vision-logo.png"
+      }
+    },
+    "M80": {
+      "copy": {
+        "identity": "https://m80.gg/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/m80.png",
+        "sha256": "a4700b2e9c82a2e37210bbe98de7919f8b690cab41cb01891f012c3881f3848d",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/m80.png"
+      }
+    },
+    "MAGICOS": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13265/magicos",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/MAGICOS.png",
+        "sha256": "4c2a3dabb9688ad8e18939ce4294110008ffa12a775ec9f82268d0adb3ff01df",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/MAGICOS.png"
+      }
+    },
+    "MASONIC": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/MASONIC",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/MASONIC.png",
+        "sha256": "ba184317344aaa062b337365b0ee27fe8bb8a14257599152f046dd6d287b59ca",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/MASONIC.png"
+      }
+    },
+    "Marsborne": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Marsborne",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Marsborne.png",
+        "sha256": "43505787bdb1d8160488cb174f5d0d8bf7fdf0e151cfb043ce24ee039aab9c78",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Marsborne.png"
+      }
+    },
+    "Metizport": {
+      "copy": {
+        "identity": "https://metizport.com/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/metizport.png",
+        "sha256": "06ffbcfcbce98b8371dce7639332ea05da80aee30342e4e1fa55dc5717131f9f",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/metizport.png"
+      }
+    },
+    "Mindfreak": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/11668/mindfreak",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Mindfreak.png",
+        "sha256": "2066e30a32df1f89caef475066298826ba443d9ebc65c0786572cf704682177e",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Mindfreak.png"
+      }
+    },
+    "Monte": {
+      "copy": {
+        "identity": "https://monteesports.com/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/monte.png",
+        "sha256": "4013602884b6d8c6736320a8f22286ef83cc919fd9d6462e7390ad2ac29dbce7",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/monte.png"
+      }
+    },
+    "Morningstar": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13602/morningstar",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Morningstar.png",
+        "sha256": "21e0f3e63c69c7d0f9bad4740f6c2cb7864e9a11305bd64c5059299bf16b5013",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Morningstar.png"
+      }
+    },
+    "NEXVOID": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/NEXVOID",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/NEXVOID.png",
+        "sha256": "a1641218cdcb07b90ddd2dc701d986e4ca9f42246760d7e6d2be12e86e72ec4b",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/NEXVOID.png"
+      }
+    },
+    "Nemiga Gaming": {
+      "copy": {
+        "identity": "https://nemiga.gg/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/nemiga.png",
+        "sha256": "c531f5ad477135f4b5e86bb0ea0d10baa8f62c4cc21a9f46a16c8268800393c0",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/nemiga.png"
+      }
+    },
+    "Nexus Gaming": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Nexus_Gaming",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Nexus%20Gaming.png",
+        "sha256": "4d78db46dfb3cc3fe1d9563dedd2a5a970c945410b333353a7cdf0a47dffeedf",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Nexus%20Gaming.png"
+      }
+    },
+    "Ninjas in Pyjamas": {
+      "copy": {
+        "identity": "https://nip.gl/pages/brand",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/nip.png",
+        "sha256": "2a8b9cc97ea44a22143c9f29d413d4e9d5ca2dddad09b5901e04fae94c237753",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/nip.png"
+      },
+      "personal": {
+        "page": "https://logotyp.us/get/ninjas-in-pyjamas/",
+        "url": "https://logotyp.us/file/ninjas-in-pyjamas.svg"
+      }
+    },
+    "Nuclear TigeRES": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Nuclear_TigeRES",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Nuclear%20TigeRES.png",
+        "sha256": "50bdc2b148c598acbdc7bb0ba1cc657b25195027aae4384b2b171742497209ec",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Nuclear%20TigeRES.png"
+      }
+    },
+    "ODDIK": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/ODDIK",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ODDIK.png",
+        "sha256": "526d8d71dbe3da72a6af69f30ba4e73f810e620fe27285b91ae77c89863d2522",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ODDIK.png"
+      }
+    },
+    "OMEGA": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13479/omega",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/omega/omega-logo.png",
+        "sha256": "b386bbfef7553568a580242eda5f230c467c80135081f20f05ca0ed31b7c3e53",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/omega/omega-logo.png"
+      }
+    },
+    "Oxuji": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13553/oxuji",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Oxuji.png",
+        "sha256": "7e5d348a9735eb564ed5741f28a8ca5feed10fb3e7971922a52424d2df97bf86",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Oxuji.png"
+      }
+    },
+    "PARIVISION": {
+      "copy": {
+        "identity": "https://parivision.gg/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/parivision.png",
+        "sha256": "99178be6b0723665153fd8c7aa51606f1f9cb2a8c88e13141019a43d0dce3512",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/parivision.png"
+      }
+    },
+    "PURE": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13777/pure",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/PURE.png",
+        "sha256": "d3c8aac12fd983ed01b308a00ae447a5ec6cb1f31580bda173d90d9c549d7f80",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/PURE.png"
+      }
+    },
+    "Passion UA": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Passion_UA",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Passion%20UA.png",
+        "sha256": "ad2254983538b8b63201fac50c12a1a3043941dd6c08ba79602b517d98a5d5ef",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Passion%20UA.png"
+      }
+    },
+    "Phantom Academy": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13766/phantom-academy",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Phantom%20Esports%20Academy.png",
+        "sha256": "a70af5734319c199ebfe575c8569b0952801ff220e2fba5c142f6a68d7d07fad",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Phantom%20Esports%20Academy.png"
+      }
+    },
+    "Phantom Esports": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Phantom_Esports",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Phantom%20Esports.png",
+        "sha256": "a445f0e37498a5d126bc7e1f1bfc7c93b2bc581fa44b05b7c97a964ed027d884",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Phantom%20Esports.png"
+      }
+    },
+    "QUAZAR": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/11312/quazar",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/QUAZAR.png",
+        "sha256": "423d324d63aff0ef1c070d64fe19d9748b9751378e03a17ddd5e4cf69eac0960",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/QUAZAR.png"
+      }
+    },
+    "RED Canids": {
+      "copy": {
+        "identity": "https://redcanids.com.br/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/red-canids.png",
+        "sha256": "7bb3279a26ca4a9d7cfa8baeff249224c771fce54d2cec080fa7db2feef82f5b",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/red-canids.png"
+      },
+      "personal": {
+        "page": "https://vectorseek.com/vector_logo/red-canids-logo-vector/",
+        "url": "https://vectorseek.com/wp-content/uploads/2023/07/Red-Canids-Logo-Vector.zip"
+      }
+    },
+    "RUSTEC": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12834/rustec",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/RUSTEC.png",
+        "sha256": "dee664c7955bf813c0608b34fa817cfce952e3713dce620868dfc192a3d8ceb0",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/RUSTEC.png"
+      }
+    },
+    "Rare Atom": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Rare_Atom",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Rare%20Atom.png",
+        "sha256": "831b16b6c64dc448bfcceba0aa449caec767631af311bf6c018538a1d9b2295b",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Rare%20Atom.png"
+      }
+    },
+    "ReThink": {
+      "copy": {
+        "identity": "https://escharts.com/teams/csgo/rethink",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ReThink.png",
+        "sha256": "7bd0ba6b836e823c5ded27f66776589b5fa364fdf501e5de2fedeb9b310ff546",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ReThink.png"
+      }
+    },
+    "Rebels": {
+      "copy": {
+        "identity": "https://rebelsgaming.gg/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/team_rebels.png",
+        "sha256": "32997714c55feebb431ea220a7dc7e6bdc0cd668e808fbbbf6b17e6b352bae64",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/team_rebels.png"
+      }
+    },
+    "Rooster": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Rooster",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Rooster.png",
+        "sha256": "e2819b2d8508737483e5c0630e4fd3027e5be95b852191696c913010c6877362",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Rooster.png"
+      }
+    },
+    "Rune Eaters": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12194/rune-eaters",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Rune%20Eaters.png",
+        "sha256": "11126c0ac8b12c6f0a91e6cbf44f548c57a5453f921557a0388aba11ed5b070b",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Rune%20Eaters.png"
+      }
+    },
+    "SAW": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/SAW",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/SAW.png",
+        "sha256": "e121366a1bb26f764f92794a91455cb588e2c8ba9431bdb9b416c95eb8544a9c",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/SAW.png"
+      }
+    },
+    "SINNERS Esports": {
+      "copy": {
+        "identity": "https://www.sinners.gg/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/sinners.png",
+        "sha256": "8249642f5c495b20b65bd93bd0073bf4839747ab1e84786d713f0020cfb74aad",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/sinners.png"
+      }
+    },
+    "STATE": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13623/state",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/STATE%20Esport.png",
+        "sha256": "f64de6b906ff773986b1569e7471e0c3bc7a3c6ca91c4f30a56f43a517c404c3",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/STATE%20Esport.png"
+      }
+    },
+    "Sangal Esports": {
+      "copy": {
+        "identity": "https://sangal.gg/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/sangal.png",
+        "sha256": "d25ffbb3564078a62234bbfa41336608b8d7f1ea8df7eb57cfb760abce30e5cc",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/sangal.png"
+      }
+    },
+    "Sashi": {
+      "copy": {
+        "identity": "https://sashiesport.dk/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/sashi.png",
+        "sha256": "655ea02421cd084243826b932b90f58d8cdd78c07f790d969d2bf8a19fd29b53",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/sashi.png"
+      }
+    },
+    "Sashi Academy": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12352/sashi-academy",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Sashi%20Academy.png",
+        "sha256": "4d4df840bdc73a9ac77b2b444c50ec8351fb839d123d862c908e90f07b76c99e",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Sashi%20Academy.png"
+      }
+    },
+    "SemperFi": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12901/semperfi",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/SemperFi%20Esports.png",
+        "sha256": "5d172650922feb3cd1382a9a112810b05020624dbda46a238f271643049c5d02",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/SemperFi%20Esports.png"
+      }
+    },
+    "Shimmer": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Shimmer",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Shimmer.png",
+        "sha256": "f120bdf773d7c360a436b24531bb62c5ea6027bdb9b3450cbe0ce9b6acb1f578",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Shimmer.png"
+      }
+    },
+    "ShindeN": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/ShindeN",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ShindeN.png",
+        "sha256": "d3663683dd686ba35b7ef5a9414c0517633b2b855951ebea690156aee0523ba4",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ShindeN.png"
+      }
+    },
+    "SportsBetExpert": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/SportsBetExpert",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/SportsBetExpert.png",
+        "sha256": "ffff585929dc5e49241b755070dc96d53d6f9a0d65983cd93f7053537baefb84",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/SportsBetExpert.png"
+      }
+    },
+    "Strael Bora": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13546/strael-bora",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Strael%20Bora.png",
+        "sha256": "92bc0fa3ceaf4e9737cf816bf2c458ed326ebe93396620afc3f196404ed7196d",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Strael%20Bora.png"
+      }
+    },
+    "TDK": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/TDK",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/TDK.png",
+        "sha256": "84c895cbd99c4948d0fb4987a55f35cfa483719f4fca635f8abd515c5c6f6a29",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/TDK.png"
+      }
+    },
+    "TYLOO": {
+      "copy": {
+        "identity": "https://cs2vibecheck.com/teams/tyloo",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/TYLOO.png",
+        "sha256": "261214f1debed7b575cfd17c68a39570efb6e89d1df85826df1a027726dbb63e",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/TYLOO.png"
+      }
+    },
+    "Team Falcons": {
+      "copy": {
+        "identity": "https://www.teamfalcons.sa/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/falcons.png",
+        "sha256": "8efd654d777f4724b68048c889ff0645f1e21a92f668e8b37f5484c1b78b91e4",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/falcons.png"
+      },
+      "personal": {
+        "page": "https://vectorseek.com/vector_logo/team-falcons-logo-vector/",
+        "url": "https://vectorseek.com/wp-content/uploads/2024/05/Team-Falcons-Logo-Vector.zip"
+      }
+    },
+    "Team Liquid": {
+      "copy": {
+        "identity": "https://teamliquid.com/brand-kit",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/liquid.png",
+        "sha256": "852549da70dff55c406cfe00f5bf5ccad6f9961fb4743796b5b44aadfbc99179",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/liquid.png"
+      },
+      "personal": {
+        "page": "https://logotyp.us/get/team-liquid/",
+        "url": "https://logotyp.us/file/team-liquid.svg"
+      }
+    },
+    "Team Nemesis": {
+      "copy": {
+        "identity": "https://nmss.gg/about/",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Team%20Nemesis.png",
+        "sha256": "a356d990558c70a7f1ee0290724833077d7c799d4e421b85aea7898315eabe2a",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Team%20Nemesis.png"
+      }
+    },
+    "Team Spirit Academy": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Team_Spirit_Academy",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Team%20Spirit%20Academy.png",
+        "sha256": "9cb20f0c575272b62b891f909021ea230015812baaa7b7dedf1dc1f4c791736e",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Team%20Spirit%20Academy.png"
+      }
+    },
+    "Team Vitality": {
+      "copy": {
+        "identity": "https://vitality.gg/en-eu/pages/general-conditions-of-use-1",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/vitality.png",
+        "sha256": "81ef25dd540c12e01d88f68235f05f85beb8f8352e617c07a732ea8aa7704237",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/vitality.png"
+      },
+      "personal": {
+        "page": "https://logotyp.us/get/team-vitality/",
+        "url": "https://logotyp.us/file/team-vitality.svg"
+      }
+    },
+    "Team Voca": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Team_Voca",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Voca.png",
+        "sha256": "f4bf4b068e6866972c59e7561710e396f2346254e6afa14061f03f91254ab923",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Voca.png"
+      }
+    },
+    "The Huns": {
+      "copy": {
+        "identity": "https://www.thehuns.gg/en",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/team_huns.png",
+        "sha256": "0e5b2d9db93800f136269f2acc2a3e39e6162f8d59ec915b4387d16a7ff46ed7",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/team_huns.png"
+      }
+    },
+    "The Last Resort": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/6089/the-last-resort",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/the-last-resort/the-last-resort-logo.png",
+        "sha256": "ab195f58d8cdb51cf568c9be650d63a2c5b4ecd627c5e9bb26b13b68118d7652",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/the-last-resort/the-last-resort-logo.png"
+      }
+    },
+    "The MongolZ": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/The_MongolZ",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/The%20MongolZ.png",
+        "sha256": "e76a27fb38ffa8193db98ba808b4775fafd93a51cd5007bc05e0e307184b889b",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/The%20MongolZ.png"
+      }
+    },
+    "Tricked": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/4602/tricked",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/tricked/tricked-logo.png",
+        "sha256": "4c18ee443b6a2f94b1ebf09210fd76cd816fef5b61b445d64600354d8f4dc21d",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/tricked/tricked-logo.png"
+      }
+    },
+    "UBITEAM": {
+      "copy": {
+        "identity": "https://www.hltv.org/stats/teams/events/10869/ubiteam?country=Spain&csVersion=CS2",
+        "page": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/ubiteam/ubiteam-logo.png",
+        "sha256": "fd0a0365a696643b466c6e577baf9ecaf0f5480389959e01f32861320dd606b5",
+        "url": "https://raw.githubusercontent.com/lootmarket/esport-team-logos/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/ubiteam/ubiteam-logo.png"
+      }
+    },
+    "UNiTY esports": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/UNiTY_esports",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/UNiTY%20esports.png",
+        "sha256": "8b43e566d1f5f53f642e6871674124280772beadc24535de6f2e3ac4be834461",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/UNiTY%20esports.png"
+      }
+    },
+    "Ursa": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13231/ursa",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Ursa.png",
+        "sha256": "2c082d2a9a95e980fd32eacdc1127c65e27f8c439ca67a262df5a04aa2ef3473",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Ursa.png"
+      }
+    },
+    "Vasco": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13413/vasco",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Vasco.png",
+        "sha256": "d4444bc62a5ea3ab500dbeb92cf15890e1b25b193ac5b614f30e5a0b17936c4f",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Vasco.png"
+      }
+    },
+    "Virtus.pro": {
+      "copy": {
+        "identity": "https://virtus.pro/about",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/team_vp.png",
+        "sha256": "2f533431644a5e7f92e16322f018cc05e33ef6c9bb8b39d3bf4860f2367afb21",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/team_vp.png"
+      }
+    },
+    "Voca": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Team_Voca",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Voca.png",
+        "sha256": "f4bf4b068e6866972c59e7561710e396f2346254e6afa14061f03f91254ab923",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Voca.png"
+      }
+    },
+    "WAZABI": {
+      "copy": {
+        "identity": "https://escharts.com/teams/csgo/wazabi",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/WAZABI.png",
+        "sha256": "25f2f5807a6f147567f80bc04dc74944714b583d13e6ac807fa6742ae6c41cd0",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/WAZABI.png"
+      }
+    },
+    "WBT": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/13683/wbt",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/WBT.png",
+        "sha256": "d0f0f5c47712a830adae5152f48a9e521a367b90fe335af6eb66a8ef4ff4f52e",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/WBT.png"
+      }
+    },
+    "Wildcard": {
+      "copy": {
+        "identity": "https://www.wildcard.gg/",
+        "page": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/wildcard.png",
+        "sha256": "f72d2335d1dba1605853f6466a3889ee91ab35540874957b728d65d058a227dd",
+        "url": "https://raw.githubusercontent.com/Aut-sep/Astrbot-plugin-CS2-match-push/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/wildcard.png"
+      }
+    },
+    "Without a Roof": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Without_a_Roof",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Without%20a%20Roof.png",
+        "sha256": "5909770a308ab4f98ea69be75fce958a7e9a959b92f65f129c5b5ebd60558017",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Without%20a%20Roof.png"
+      }
+    },
+    "XI": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/8947/xi",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/XI.png",
+        "sha256": "da6105f80aec3c27f7467052f9e54264e47d29bb05b1075c085599551f3c353a",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/XI.png"
+      }
+    },
+    "Yawara": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/11933/yawara",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Yawara.png",
+        "sha256": "17fbbddf4a0cc5655cab939328c3f2e0bdf76cac622810c36133d2fe26163564",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Yawara.png"
+      }
+    },
+    "Young Ninjas": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Young_Ninjas",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Young%20Ninjas.png",
+        "sha256": "8a0a6e1d8e68c4c945cac7fb124ebcf122d4cfe7b2e485145f658aba0de72a21",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Young%20Ninjas.png"
+      }
+    },
+    "Zomblers": {
+      "copy": {
+        "identity": "https://www.zomblers.com/press/",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Zomblers.png",
+        "sha256": "f59c5c36b34a07083b93f93de4624fe1035c68dd018a37e159d18f9066cb07f7",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Zomblers.png"
+      }
+    },
+    "aimclub": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Aimclub",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/aimclub.png",
+        "sha256": "630d9127290f5cb836368ad727b7493d4e7f7f68c424044529e52b21ec7a8dbb",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/aimclub.png"
+      }
+    },
+    "brazylijski luz": {
+      "copy": {
+        "identity": "https://www.hltv.org/team/12745/brazylijski-luz",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/brazylijski%20luz.png",
+        "sha256": "1fffb0f176c067861314994a32efe2240d396554879aa85c458525bd5ec9b9ed",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/brazylijski%20luz.png"
+      }
+    },
+    "illwill": {
+      "copy": {
+        "identity": "https://liquipedia.net/counterstrike/Illwill",
+        "page": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/illwill.png",
+        "sha256": "d349e4f3a636579408a461b202c11d184c6681b5c72fc82fe3ca199dc2d75d96",
+        "url": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/illwill.png"
+      }
+    }
+  },
+  "reviewed": "2026-11-25",
+  "version": 1
+}

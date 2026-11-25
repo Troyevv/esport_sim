@@ -886,6 +886,8 @@ def project(w, view="full"):
         )
         if view not in ("full", a["team"]) and w["phase"] != "finished":
             row["spent"] = None
+        if "visual" in w["domain"]["players"][a["playerId"]]:
+            row["visual"] = w["domain"]["players"][a["playerId"]]["visual"]
         stats.append(row)
     audience = lambda e: view == "full" or e["team"] in (view, None)
     journal = [
@@ -917,6 +919,7 @@ def project(w, view="full"):
         events=journal[-48:],
         match=dict(
             rules=w["rules"],
+            source=w["domain"]["source"],
             roleRatings=ratings,
             teamRating=world.team_rating(w["domain"], w["rosterIds"][0], MAP["id"])
             if coach_view
@@ -925,6 +928,7 @@ def project(w, view="full"):
             phase=w["phase"],
             clock=max(0, w["deadline"] - w["tick"]),
             teams=[team(w, i)["name"] for i in (0, 1)],
+            teamVisuals=[team(w,i).get("visual") for i in (0,1)],
             score=w["score"],
             sides=[w["agents"][i]["team"] for i in (0, 5)],
             history=[

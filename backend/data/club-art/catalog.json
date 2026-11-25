@@ -1,0 +1,3445 @@
+{
+  "100 Thieves": {
+    "checked": [
+      "https://cn.100thieves.com/zh?from=global",
+      "https://liquipedia.net/counterstrike/100_Thieves",
+      "https://www.hltv.org/team/8474/100-thieves",
+      "https://cs2vibecheck.com/teams/100-thieves",
+      "https://skinory.io/en/pro-teams-cs2/100-thieves",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/100%20Thieves.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/100-thieves/100-thieves-logo.png",
+      "https://commons.wikimedia.org/wiki/File:100_Thieves_logo_%28Version_2%29.svg"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/100-thieves/100-thieves-logo.png",
+    "kind": "original",
+    "sha256": "a986ceb80b693f322831e98ef12cc28554d88b83754bda535887f3a98d9dccdf",
+    "source": "https://commons.wikimedia.org/wiki/File:100_Thieves_logo_%28Version_2%29.svg"
+  },
+  "11mins": {
+    "checked": [
+      "https://www.hltv.org/team/13781/11mins"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "5953112965f1e2dc8299ddebb2edb8f0debc574b65b374e6a13e5e6110cb3db9",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "1w Team": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/1w_Team",
+      "https://cs2vibecheck.com/teams/1w-team"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "58d0979a71a3d735df3dfbf04ad81d9af59f2a5d67a80b2b02501f168ba33563",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "1win": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/1win_Team",
+      "https://www.hltv.org/team/10621/1win",
+      "https://escharts.com/teams/csgo/1win",
+      "https://skinory.io/en/pro-teams-cs2/1win",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/1win%20Team.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/1win/1win-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "8d8aac5376922a13326961cf81373075b69758d9bf1700959ebbf9133b357c03",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "3DMAX": {
+    "checked": [
+      "https://3dmax.gg/kits-medias/",
+      "https://liquipedia.net/counterstrike/3DMAX",
+      "https://www.hltv.org/team/4914/3dmax",
+      "https://skinory.io/en/teams/3dmax",
+      "https://www.cs2observer.com/team/3DMAX",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/3DMAX.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/3dmax/3dmax-logo.png",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/3dmax.png"
+    ],
+    "decision": "Фанатам, партнёрам и медиа разрешено представлять 3DMAX материалами набора с сохранением фирменного вида.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/3dmax.png",
+    "kind": "original",
+    "license": "Условия 3DMAX",
+    "sha256": "7d85d214290558f9a0e21b54571e0bb2373f9cbb0961d7d90bd7f2e8bde830c6",
+    "source": "https://3dmax.gg/kits-medias/"
+  },
+  "5star eSports": {
+    "aliases": [
+      "5star"
+    ],
+    "checked": [
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/5star%20Esports.png",
+      "https://liquipedia.net/counterstrike/5star_eSports",
+      "https://cs2vibecheck.com/teams/5star-esports",
+      "https://skinory.io/en/pro-teams-cs2/5star",
+      "https://www.hltv.org/team/13724/5star"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "7f8f6867112ce6240a225cfa9434aff500d6a724ae33675aade60f5afcc79438",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "8Sins": {
+    "checked": [
+      "https://www.hltv.org/team/13024/8sins",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/8Sins.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "25abb3d9ffe277a112bf569d26ccf472e0d37d61e972894f21fc3c2a6b861d83",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "9INE": {
+    "checked": [
+      "https://9ine.gg/",
+      "https://liquipedia.net/counterstrike/9INE",
+      "https://www.hltv.org/team/10278/9ine",
+      "https://skinory.io/en/pro-teams-cs2/9ine",
+      "https://www.cs2observer.com/team/9ine",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/9INE%20Pusulabet.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/9ine/9ine-logo.png",
+      "https://commons.wikimedia.org/wiki/File:9INE_Logo.png"
+    ],
+    "decision": "У версии 2019 года указана CC BY-SA сторонним загрузчиком. Для проверенной современной клубной эмблемы разрешение на включение в дистрибутив не установлено.",
+    "kind": "game",
+    "sha256": "30b326f66f92366b50fa608fbf9959bf10cd9483319b6f3c9aa3cf156268ab3a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "9z Team": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/9z_Team",
+      "https://cs2vibecheck.com/teams/9z-team",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/9z%20Team.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/9z-team/9z-team-logo.png",
+      "https://commons.wikimedia.org/wiki/File:9z_Team_allmode.svg",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/9z/9z-logo.png"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/9z/9z-logo.png",
+    "kind": "original",
+    "sha256": "f1863c25e6b9cb9817c305b63c93d90257edc7f5deaf10eb67bd0032b4dce2f8",
+    "source": "https://commons.wikimedia.org/wiki/File:9z_Team_allmode.svg"
+  },
+  "ACROBATS": {
+    "checked": [
+      "https://www.hltv.org/team/13757/acrobats"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "c95c639d93a1a43038a7a53fbc19f829abf0ee4851804e9a3d6341fe039d6d52",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "AKA HERO KAJO": {
+    "checked": [
+      "https://www.hltv.org/team/13142/aka-hero-kajo"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "a6772531abea6e7da6bd974eea40fc3b177bfde78171646f0f1c0c248a3ca2b4",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ALGO": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/ALGO_Esports",
+      "https://www.hltv.org/team/13163/algo",
+      "https://escharts.com/teams/csgo/algo",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ALGO%20Esports.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "f1984b2e10c7048e18af4bde95eec4c6928b2ee401cedd2b8bf6259ee0adad1b",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ALKA": {
+    "checked": [
+      "https://www.hltv.org/team/13756/alka",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ALKA.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "b98d27c47b46d4560efa21e4a6a4a842c3a4002ed92654411c22957e9f7ba3f2",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "AM": {
+    "checked": [
+      "https://www.hltv.org/team/13237/am"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "eb6409a0f2bb8a1f742de490565688eb382c0ac17354260764dcb5a2096fff8d",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ARCRED": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/ARCRED",
+      "https://www.hltv.org/team/10459/arcred",
+      "https://bo3.gg/teams/arcred",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ARCRED.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/arcred/arcred-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "45d44c2d411e648fd963e7bb2d8aa42063e9ff52517497d26c0171462617eb1b",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ASTRAL": {
+    "checked": [
+      "https://skinory.io/en/pro-teams-cs2/astral",
+      "https://www.hltv.org/team/13333/astral"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "3355f785e6a7745f6ba5cddbe5f2448e57773eaf10eddca64780e9fd32093da0",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "AaB": {
+    "checked": [
+      "https://www.hltv.org/team/9621/aab",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/aab/aab-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "086fdc58327071ffe80a922444e0e6512c8ca28b01dbd521f0fa329c957040f2",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Abyssal": {
+    "checked": [
+      "https://www.hltv.org/team/13686/abyssal"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "9500fd1e272aef17d0a58810dc1bfa8a4be94688cbf50d121217ca12a537f834",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Acend": {
+    "checked": [
+      "https://www.acendclub.com/",
+      "https://liquipedia.net/counterstrike/Acend",
+      "https://www.hltv.org/team/13518/acend",
+      "https://www.cs2observer.com/team/Acend",
+      "https://escharts.com/teams/csgo/acend",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Acend%20Club.png",
+      "https://commons.wikimedia.org/wiki/File:Acend_logo.png"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Acend%20Club.png",
+    "kind": "original",
+    "sha256": "0441687e150f7ef4b658fb8615713dd78e2a50c4b509b68aad3e3056afba9847",
+    "source": "https://commons.wikimedia.org/wiki/File:Acend_logo.png"
+  },
+  "Aether": {
+    "checked": [
+      "https://www.hltv.org/team/12908/aether",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Aether.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "2d9d724e2c3b1c03a23bf73f3b08beb5374fb4bdd450c6c9781d171139fe304c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Akimbo": {
+    "checked": [
+      "https://www.hltv.org/team/12567/akimbo",
+      "https://liquipedia.net/counterstrike/Akimbo_Esports",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Akimbo%20Esports.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/akimbo/akimbo-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "c936e8d4b663f8bc8bdde59df63ba0427a53c755fa9007d7b851af604f8b3f31",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Alliance": {
+    "checked": [
+      "https://thealliance.gg/about-us/",
+      "https://liquipedia.net/counterstrike/Alliance",
+      "https://cs2vibecheck.com/teams/alliance",
+      "https://www.hltv.org/team/12474/alliance",
+      "https://skinory.io/en/pro-teams-cs2/alliance",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Alliance.png",
+      "https://commons.wikimedia.org/wiki/File:Alliance_esports_logo.png"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Alliance.png",
+    "kind": "original",
+    "sha256": "bcfa560574ca095a5e13ac691a3ff041cc3dbe553522ed376eb1c7fb34dca126",
+    "source": "https://commons.wikimedia.org/wiki/File:Alliance_esports_logo.png"
+  },
+  "Alter Ego": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Alter_Ego",
+      "https://www.hltv.org/team/9958/alter-ego",
+      "https://skinory.io/en/pro-teams-cs2/alter-ego",
+      "https://cs2sell.com/esports/teams/alter-ego",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Alter%20Ego.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "3a336655c2581cceca0c89a6b4842c5e79ce054b864f9d235ef6a726877850c3",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Arcade": {
+    "checked": [
+      "https://www.hltv.org/team/12363/arcade",
+      "https://bo3.gg/teams/arcade",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/arcade/arcade-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "9548ed3dfd3091ddd05af261691b3d532703ab087ebeaf28cfadc77271e2cfd9",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Astralis": {
+    "checked": [
+      "https://news.cision.com/astralis-group/i/astralis-logo-svg,m22604",
+      "https://liquipedia.net/counterstrike/Astralis",
+      "https://cs2vibecheck.com/teams/astralis",
+      "https://www.hltv.org/team/6665/astralis",
+      "https://skinory.io/en/pro-teams-cs2/astralis",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Astralis.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/astralis/astralis-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Astralis_logo.svg"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/astralis/astralis-logo.png",
+    "kind": "original",
+    "sha256": "88427598fef46dae82585becb59cd9fbed7d99ec253c46085a108ef2dc046fd4",
+    "source": "https://commons.wikimedia.org/wiki/File:Astralis_logo.svg"
+  },
+  "Atreides": {
+    "checked": [
+      "https://www.hltv.org/team/13668/atreides",
+      "https://www.cs2observer.com/team/Atreides",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Atreides.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "01202a57fc57e4bbb998a0d3ddf28fcc906acfbdf664f8ae10759f9dea239586",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Atrix": {
+    "checked": [
+      "https://www.hltv.org/team/12533/atrix",
+      "https://bo3.gg/teams/atrix",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/atrix/atrix-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "dab2f16803b85be70c98a05a6cea1b55b5da8144f6663c9bf23a4d73403cfb81",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Aura": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13773/aura?csVersion=cs2",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/aura/aura-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "9fde392c3f97ff3f39a1ef1cf785d31e9a26287e78f0394af09433fa715672bd",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Aurora Gaming": {
+    "checked": [
+      "https://auroragg.my/",
+      "https://liquipedia.net/counterstrike/Aurora_Gaming",
+      "https://cs2vibecheck.com/teams/aurora-gaming",
+      "https://skinory.io/en/pro-teams-cs2/aurora",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Aurora%20Gaming.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/aurora/aurora-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "976f5812877004a80ea4592130a2907e4c83b20d3a8fd0c5c3f3b35762701c4a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "B8": {
+    "checked": [
+      "https://b8esports.gg/",
+      "https://cs2vibecheck.com/teams/b8",
+      "https://liquipedia.net/counterstrike/B8",
+      "https://www.hltv.org/team/11241/b8",
+      "https://skinory.io/en/pro-teams-cs2/b8",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/B8.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/b8/b8-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "06a70b004730cc094827f1a60bbb717d0c17f0d33bf0a8419621708be07587e7",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BA 2": {
+    "checked": [
+      "https://bo3.gg/teams/ba-2"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "c708ebc1bb6694f94b4c7b6d00b5967dd02d60b5d8bbf9f1cf1df34c0d8e5d55",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BAKS Esports": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/BAKS_Esports",
+      "https://skinory.io/en/pro-teams-cs2/baks",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BAKS%20Esports.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/baks/baks-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "de8272100a43e7bfbc497c3797b45e30161e76d1057036a089e804f84adf0f7f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BARCA": {
+    "checked": [
+      "https://www.hltv.org/team/14107/barca",
+      "https://skinory.io/en/pro-teams-cs2/barca"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "c2cdc1fa92fb9a7f319f4bcac4a38ff5ec04803173ebf3430913526441e018b2",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BASEMENT BOYS": {
+    "checked": [
+      "https://www.hltv.org/team/13181/basement-boys",
+      "https://liquipedia.net/counterstrike/BASEMENT_BOYS",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BASEMENT%20BOYS.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "4d08c63eadbeafc1fabcb5e8746d44c9d5dc65fde58773c3121ee14af7f14137",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BBL Esports": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/BBL_Esports",
+      "https://cs2vibecheck.com/teams/bbl-esports",
+      "https://escharts.com/teams/csgo/bbl-esports"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "a95d4b1fc768575316d5da5a7d33a381d3e7d0cf3e855637f6df7ea56615780a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BC.Game Esports": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/BC.Game_Esports",
+      "https://cs2vibecheck.com/teams/bc-game-esports",
+      "https://www.hltv.org/team/12878/bcgame",
+      "https://skinory.io/en/pro-teams-cs2/bc-game",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BC.Game%20Esports.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "e5d9617412a13bdb7c5f93e47a6210fb26d3e05bda9059a07e0785c0853ee312",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BEE": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/BEE",
+      "https://www.hltv.org/team/10957/bee",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BEE.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/bee/bee-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "08fb6b6c6071d38616309494f240fa896e9aedead95eacdd20c6f3f7536eef6f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BESTIA": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/BESTIA",
+      "https://cs2sell.com/esports/teams/bestia",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BESTIA.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/bestia/bestia-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "bcda06c9981e3204ab2961514765f73099337cb6b3511b9f152563ff39f189bf",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BESTIA Academy": {
+    "checked": [
+      "https://www.hltv.org/team/13026/bestia-academy",
+      "https://escharts.com/teams/csgo/bestia-academy",
+      "https://escorenews.com/en/csgo/team/bestia-academy",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BESTIA%20Academy.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "9027651376f9efca92b05dea9a4646dd8d08f385c0d419dbf16f74295b41b777",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BIG": {
+    "author": "BIG CLAN",
+    "checked": [
+      "https://bigclan.gg/pages/press-contact",
+      "https://liquipedia.net/counterstrike/BIG",
+      "https://cs2vibecheck.com/teams/big",
+      "https://www.hltv.org/team/7532/big",
+      "https://skinory.io/en/pro-teams-cs2/big",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BIG.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/big/big-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Big_clan_logo.jpg",
+      "https://www.youtube.com/watch?v=7k81v1H8_qk",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/big.png"
+    ],
+    "decision": "Знак лапы BIG из публикации самого клуба на YouTube под CC BY 3.0. Масштабирование и прозрачные поля.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/big.png",
+    "kind": "original",
+    "license": "CC BY 3.0",
+    "sha256": "30fba03963a90441795312ee909765a3587af18423d03e99d5f57fb29dcc4b08",
+    "source": "https://commons.wikimedia.org/wiki/File:Big_clan_logo.jpg"
+  },
+  "BIG Academy": {
+    "author": "BIG CLAN",
+    "checked": [
+      "https://liquipedia.net/counterstrike/BIG_Academy",
+      "https://cs2sell.com/esports/teams/big-academy",
+      "https://www.hltv.org/team/10254/big-academy",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BIG%20Academy.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/big-academy/big-academy-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Big_clan_logo.jpg",
+      "https://www.youtube.com/watch?v=7k81v1H8_qk",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/big.png"
+    ],
+    "decision": "Знак лапы BIG из публикации самого клуба на YouTube под CC BY 3.0. Масштабирование и прозрачные поля.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/big.png",
+    "kind": "original",
+    "license": "CC BY 3.0",
+    "sha256": "30fba03963a90441795312ee909765a3587af18423d03e99d5f57fb29dcc4b08",
+    "sharedWith": "BIG",
+    "source": "https://commons.wikimedia.org/wiki/File:Big_clan_logo.jpg"
+  },
+  "BIG EQUIPA": {
+    "author": "BIG CLAN",
+    "checked": [
+      "https://liquipedia.net/counterstrike/BIG_EQUIPA",
+      "https://www.hltv.org/team/11718/big-equipa",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BIG%20EQUIPA.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/big-equipa/big-equipa-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Big_clan_logo.jpg",
+      "https://www.youtube.com/watch?v=7k81v1H8_qk",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/big.png"
+    ],
+    "decision": "Знак лапы BIG из публикации самого клуба на YouTube под CC BY 3.0. Масштабирование и прозрачные поля.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/big.png",
+    "kind": "original",
+    "license": "CC BY 3.0",
+    "sha256": "30fba03963a90441795312ee909765a3587af18423d03e99d5f57fb29dcc4b08",
+    "sharedWith": "BIG",
+    "source": "https://commons.wikimedia.org/wiki/File:Big_clan_logo.jpg"
+  },
+  "BMZ": {
+    "checked": [
+      "https://www.hltv.org/team/13666/bmz",
+      "https://escharts.com/teams/csgo/bmz"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "882da7faf71606e607f235182279db3a49f350f5961a398b8ba27980e46f991d",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BOJONG": {
+    "checked": [
+      "https://www.hltv.org/team/13795/bojong"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "66f85abdbbbe6ab6bd41d3c625dac7806eb4f9e4b53565d19cee23cbf194d75e",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BORING PLAYERS": {
+    "checked": [
+      "https://www.hltv.org/team/12948/boring-players",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BORING%20PLAYERS.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "7b06346b18978bd5c6c034d7060ebc5fec79c412b85d9b79e01dd14c96faeb58",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BOSS": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/BOSS",
+      "https://www.hltv.org/team/12534/boss",
+      "https://bo3.gg/teams/boss",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BOSS.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/boss/boss-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "dac357c09fe2ca1106cac3482d5387b51e4255434bb935d3d9e55724a198f85d",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BRUTE": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/BRUTE",
+      "https://www.hltv.org/team/9139/brute",
+      "https://escharts.com/teams/csgo/brute",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BRUTE.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/brute/brute-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "80f4902ddf54df2e4ae9312cd96bfd3ac4bdb70030cd68c4cf2506526dc0a5a1",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Back to Back": {
+    "checked": [
+      "https://www.hltv.org/team/13691/back-to-back"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "b91bfadfe9784232470db72d68e00c1d2c3f237178d23c49fb4c4f0b236466f1",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Basement Bobs": {
+    "checked": [
+      "https://www.hltv.org/team/13753/basement-bobs",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Basement%20Bobs.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "71adfe2e95fa79dec7f3d07468a85cd9ed30123e3b5ef58b567f2e9f428874f3",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Bebop": {
+    "checked": [
+      "https://www.hltv.org/team/13613/bebop",
+      "https://escharts.com/teams/csgo/bebop"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "f4eeb7955bd2ff121d1999113588e177aeceafd57b1f3e0deb7807a789892cf6",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BetBoom": {
+    "checked": [
+      "https://www.hltv.org/team/12394/betboom",
+      "https://skinory.io/en/pro-teams-cs2/betboom",
+      "https://blast.tv/cs/news/betboom-become-broadcast-partner-for-blast",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/betboom/betboom-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "e2dad294195ce4a9b858cd9a50b77997df36a6be8482a46c78adb448df4f0f00",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "BetBoom Team": {
+    "checked": [
+      "https://betboom.team/",
+      "https://liquipedia.net/counterstrike/BetBoom_Team",
+      "https://cs2vibecheck.com/teams/betboom-team",
+      "https://www.hltv.org/team/12394/betboom",
+      "https://skinory.io/en/pro-teams-cs2/betboom",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BetBoom%20Team.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/betboom/betboom-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "5ac2930e533712a78835cad38c4e1841e303871f1d8263a58a77cba14bfeff39",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Betclic Apogee Esports": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Betclic_Apogee_Esports",
+      "https://escharts.com/teams/csgo/betclic-apogee-esports",
+      "https://blast.tv/cs/team/eae0c8e9/betclic-apogee-esports",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Betclic%20Apogee%20Esports.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "b64467346d3584926076a9da01b91f90747e1b3542ab2deb0ece025170be507f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Beyond Limits": {
+    "checked": [
+      "https://www.hltv.org/team/13610/beyond-limits"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "cbfec384a7d1ee3d720c47be932d08f656e2c8df5b5015412c8b5f2b35429f8a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Black Phoenix": {
+    "checked": [
+      "https://www.hltv.org/team/13924/black-phoenix",
+      "https://skinory.io/en/teams/black-phoenix"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "9c46bae374874074f7f3329d7e028e745458cf77c250e8e951dccf6473df44c9",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Bounty Hunters": {
+    "checked": [
+      "https://www.hltv.org/team/12776/bounty-hunters",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/bounty-hunters/bounty-hunters-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "8c14cfed03989e1e8e86f300fa07db5f85b5c2442551d016129f1fd2de4ecefb",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Bounty Hunters Esports": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Bounty_Hunters_Esports",
+      "https://escharts.com/teams/csgo/bounty-hunters-esports",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Bounty%20Hunters%20Esports.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/bounty-hunters/bounty-hunters-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "c0dce449c9143599d0513abfd54c4fccead44631bb29f0639b98abe92e842b4a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "CSDIILIT": {
+    "checked": [
+      "https://www.hltv.org/team/13340/csdiilit",
+      "https://www.cs2observer.com/team/CSDIILIT"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "f0a2a0a44970031590e085bebfb93860245f0c60fa53782842eae2763d431e4e",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "CYBERSHOKE Esports": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/CYBERSHOKE_Esports",
+      "https://www.hltv.org/team/12380/cybershoke",
+      "https://skinory.io/en/pro-teams-cs2/cybershoke",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/CYBERSHOKE%20Esports.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/cybershoke/cybershoke-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "6bea98dc9ada367a6ad4f93445be391f07dc7206e852cba8469c6bff3f307c98",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Change The Game": {
+    "checked": [
+      "https://www.hltv.org/team/13175/change-the-game",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Change%20The%20Game.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "91dac9b96769534b93eb8d5a6268af095b891c08f6342dabb9f1ecd9841a5306",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Chaos": {
+    "checked": [
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/chaos/chaos-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "0bddf8e394da93d76c24396d9d66294f243be6662303f30fdf1bbe0e3bffe2cf",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Charrados": {
+    "checked": [
+      "https://escharts.com/teams/csgo/charrados"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "96847259414743bd9575f71d1944d7082e1bae5a247be6998a0d14e58220bce0",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Chicanery": {
+    "checked": [
+      "https://www.hltv.org/team/13738/chicanery",
+      "https://bo3.gg/teams/chicanery"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "0a38c6a867d37643ca03a0f3499ef05baa15cd60d09008b47c19bc1ff85d45e4",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Chicken Coop": {
+    "checked": [
+      "https://www.hltv.org/team/13107/chicken-coop",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Chicken%20Coop.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "35af6887d9f95c079115fed41460add70d097d6f5c4795266459f050bb948512",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Chinggis Warriors": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Chinggis_Warriors",
+      "https://www.hltv.org/team/12646/chinggis-warriors",
+      "https://cs2sell.com/esports/teams/chinggis-warriors",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Chinggis%20Warriors.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "b7cb10ed70cfc7e7e14850910fee487c94bc15c212c4465104dd604f14f04890",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ClayMakers": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/12242/claymakers?csVersion=cs2",
+      "https://bo3.gg/teams/claymakers"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "0934cb15e3f442bde8af9dc3ca34047726ec301b93216f46d1bf6690d73e0a1b",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Clockwork": {
+    "checked": [
+      "https://www.hltv.org/team/13740/clockwork"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "bb2befe346a051dd0756e31f4492892fcacbc42fd7548e6f224653b4bc85df6b",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Club 333": {
+    "checked": [
+      "https://www.hltv.org/team/13574/club-333",
+      "https://www.cs2observer.com/team/club-333"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "f34fdb2331f3ea9adcf7db941a39cd29bfb1185113b8a506caaad35424d8e6eb",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Co Color": {
+    "checked": [
+      "https://www.hltv.org/team/13973/color",
+      "https://cs2news.com/news/1win-release-former-cs2-roster-color"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "779d4a09c1c9d82f361e0f0ea968e0dbc51eead2463f3d103050c9f4b25ff438",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Crashers": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/6788/crashers",
+      "https://escharts.com/teams/csgo/crashers",
+      "https://escorenews.com/en/csgo/team/crashers",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Crashers.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "6b90d17b10037970f9b64d102aa97fcf0f4d89bed2c48a9045f7db4e742df2ec",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "DALUYONG": {
+    "checked": [
+      "https://www.cs2observer.com/team/DALUYONG",
+      "https://escharts.com/teams/csgo/daluyong",
+      "https://www.hltv.org/stats/teams/13744/daluyong?csVersion=cs2",
+      "https://bo3.gg/teams/daluyong"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "1036890f664a9cbe259b3edb3444e0518ef792be77795cc01e6ed1897a47c1d2",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "DASH": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/lineups/13447/dash?csVersion=CS2"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "9839eabefafffff63c87b5af9a4a8188345bebb383bc42f5a5a95356729d407e",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "DENDELE CS": {
+    "checked": [
+      "https://www.dendele.com.br/",
+      "https://liquipedia.net/counterstrike/DENDELE_CS",
+      "https://cs2vibecheck.com/teams/dendele-cs",
+      "https://cs2sell.com/esports/teams/dendele-cs",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/DENDELE%20CS.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "a63431020040e764ec72a131cddff6a7bfdb744bb9e2c0314f498ac8da43fde4",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "DEPO": {
+    "checked": [
+      "https://www.hltv.org/team/12536/depo",
+      "https://escharts.com/teams/csgo/depo",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/DEPO.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "86ee290d73ae3e56c1eca3731b69dcd4a19c1711925bbc108c06ce25879b4c44",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "DNK": {
+    "checked": [
+      "https://www.hltv.org/team/13803/dnk",
+      "https://www.cs2observer.com/team/DNK"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "915d411fb872c20ca08505194b8a14da0f218c27db89d63f9260bfa5a40fb492",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "DONSTU": {
+    "checked": [
+      "https://www.hltv.org/team/13714/donstu",
+      "https://www.cs2observer.com/team/donstu",
+      "https://escorenews.com/en/csgo/team/donstu"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "73f0d7d574160f81d407de9a11e9b358413d4beff3182393febfface7e5dbf68",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "DXA": {
+    "checked": [
+      "https://www.hltv.org/team/12276/dxa",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/dxa/dxa-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "0467695255dff304b36db6f836ef03a241c02e7c8371feb2c1ae44e0d0d2c86a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Demolition": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13772/demolition"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "65767d98d54e71ceb05890b534570578f48e5f8e9996341204f21fad6f0a0dc7",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Deorum": {
+    "checked": [
+      "https://www.hltv.org/team/13784/deorum"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "c8a02522c1417c545cf4c02b5d8fcc80784469ea8967451b5072dbea098ab138",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Ding Cuts": {
+    "checked": [
+      "https://www.hltv.org/team/13660/ding-cuts",
+      "https://bo3.gg/teams/ding-cuts"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "ce1176cf7636a0a9105e566570b1bf3addda6bb59e0703b475ecb5f12c49e94c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Drama": {
+    "checked": [
+      "https://www.hltv.org/team/13704/drama",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Drama.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "2d1174407725a88df946e651a71f10df025d5bf3ce3de0c14c4251db87eb2829",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "EC BANGA": {
+    "checked": [
+      "https://www.hltv.org/team/12568/ec-banga",
+      "https://escharts.com/teams/csgo/ec-banga",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/EC%20Banga.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/ec-banga/ec-banga-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "38ab26244885e4568282e75871d55427381a7abc7fdfbe6b8c613fd4895b704f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ECSTATIC": {
+    "checked": [
+      "https://www.ecstatic.gg/",
+      "https://liquipedia.net/counterstrike/ECSTATIC",
+      "https://blast.tv/cs/tournaments/bounty-2026-season-1/match/91b6f455/falcons-ecstatic",
+      "https://cs2sell.com/esports/teams/ecstatic",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ECSTATIC.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/ecstatic/ecstatic-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "0af9cde4288e5fa63f76097198006ca49c60a8a4a3f8a99e79bcb6807084f79e",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "EMPIRE": {
+    "checked": [
+      "https://www.hltv.org/team/13729/empire"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "92d8effd76d99f190aa29707e25ce3de1528bb41b800ff23d9240955e8307010",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ENCE": {
+    "checked": [
+      "https://ence.gg/pages/media",
+      "https://liquipedia.net/counterstrike/ENCE",
+      "https://www.hltv.org/team/4869/ence",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ENCE.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/ence/ence-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "93358315f28b639aa648483049f02e5490452758f7822ed0febbd883184ff214",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ENCE Academy": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/ENCE_Academy",
+      "https://www.hltv.org/team/11790/ence-academy",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ENCE%20Academy.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/ence-academy/ence-academy-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "c485e153610ac166486868fa1f51d3a43aa93f3b3d6f0fb386f413737d839922",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ENVY": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Team_Envy",
+      "https://cs2vibecheck.com/teams/envy",
+      "https://www.hltv.org/team/5991/envy",
+      "https://skinory.io/en/pro-teams-cs2/envy",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Team%20Envy.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/envy/envy-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Team_Envy_logo.svg"
+    ],
+    "decision": "Круглая монограмма клуба с подписью TEAM ENVY.",
+    "fileSource": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Team%20Envy.png",
+    "kind": "original",
+    "sha256": "24fd254bb9ee236a6775e43f1e14b45cc512a7cdd429e4ed23fedc3cbd5b9582",
+    "source": "https://commons.wikimedia.org/wiki/File:Team_Envy_logo.svg"
+  },
+  "ESC": {
+    "checked": [
+      "https://escgaming.de/brand-guidelines/",
+      "https://www.hltv.org/team/4532/esc",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/esc/esc-logo.png"
+    ],
+    "decision": "На странице оформления ESC указано сохранение всех прав. Публичное разрешение на распространение клубной графики в игре не найдено.",
+    "kind": "game",
+    "sha256": "901c1938075d7a01d7fb41623024627e101d0ab6dcbdbc58b013012209354e83",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "EYEBALLERS": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/EYEBALLERS",
+      "https://www.hltv.org/team/11737/eyeballers",
+      "https://skinory.io/en/pro-teams-cs2/eyeballers",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/EYEBALLERS.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/eyeballers/eyeballers-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Esports_Team_EYEBALLERS_Logo.png"
+    ],
+    "decision": "В Commons найден знак 2022 года под PD-textlogo. Исходный PNG недоступен для загрузки из среды сборки (HTTP 403); соответствие клубных вариантов этому файлу не подтверждено.",
+    "kind": "game",
+    "sha256": "815cc1e2416909f16d780c919ba861cef0a7fe56b6a32065a84acce8f6e9931b",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Eclipse": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Eclipse",
+      "https://www.hltv.org/team/6987/eclipse",
+      "https://escharts.com/teams/csgo/eclipse",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/eclipse/eclipse-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "34263e6bbca9ff7f3319521dd3ecfb97e37bda39beabfe1fbb0a3e0404a55ea7",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Entropy": {
+    "checked": [
+      "https://www.hltv.org/team/7120/entropy",
+      "https://escharts.com/teams/csgo/entropy",
+      "https://www.cs2observer.com/team/Entropy",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/entropy/entropy-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "84a53028cc7b63b0b894edda873c5f28c5efbeaf0fab7079361fbdfe0cebb897",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Eternal Fire": {
+    "checked": [
+      "https://eternalfire.gg/teams/cs2-team/",
+      "https://cs2vibecheck.com/teams/eternal-fire",
+      "https://www.hltv.org/major/team/11251/Eternal%20Fire",
+      "https://liquipedia.net/counterstrike/Eternal_Fire",
+      "https://skinory.io/en/pro-teams-cs2/eternal-fire",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Eternal%20Fire.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/eternal-fire/eternal-fire-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "868291c77adb340a6fb47b9877f34c7e501562f64a75d76166b26c438e875409",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "F5": {
+    "checked": [
+      "https://www.hltv.org/team/13201/f5",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/F5.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "9629a23a5fdbeae90821e8c4a1692abfb17fe3ca958d7ec8c56f2253112606a2",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "FAVBET": {
+    "checked": [
+      "https://www.hltv.org/team/12818/favbet",
+      "https://bo3.gg/teams/favbet"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "821af547e6d78f8febf2b1beb7aada2871b0cd1fc8a64f4efe55513ea55f74c6",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "FOKUS": {
+    "checked": [
+      "https://www.fokusclan.de/",
+      "https://liquipedia.net/counterstrike/FOKUS",
+      "https://www.hltv.org/team/13679/fokus",
+      "https://skinory.io/en/pro-teams-cs2/fokus",
+      "https://escharts.com/teams/csgo/fokus"
+    ],
+    "decision": "Клуб публикует графику в своих бренд-материалах. Условия для распространения оригинала в поставке игры не подтверждены.",
+    "kind": "game",
+    "sha256": "49be5166acc88b4421d14ff9d36de395aa0bc0c72db82f5c0e81fd8faaf9f0b2",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "FORZE Esports": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/FORZE_Esports",
+      "https://www.championat.com/cybersport/news-4955295-rossijskij-klub-forze-esports-predstavil-novyj-logotip-i-ajdentiku.html",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FORZE.png"
+    ],
+    "decision": "Игровая эмблема организации. Права на распространение оригинального знака FORZE в общей поставке не установлены.",
+    "kind": "game",
+    "sha256": "fd94fc9bfe563f39e2029f9d1e8477383687f4416f830a5b88cd41b1098d007f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "FORZE Reload": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/FORZE_Reload",
+      "https://www.hltv.org/team/12857/forze-reload",
+      "https://escharts.com/teams/csgo/forze-reload",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FORZE%20Reload.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "8d66fa88b463a58b7c8eb02572a13ca0427688ca2b5d7bb25100e427cbb8df9c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "FRZ": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13774/frz?csVersion=cs2"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "b52f3f1ab9f1595d8494d2ac83a1b382840cf4f1f95620db033dec5aa37bd470",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "FURIA Esports": {
+    "checked": [
+      "https://sites.google.com/furia.gg/furia-esports/our-teams/people-and-culture",
+      "https://liquipedia.net/counterstrike/FURIA_Esports",
+      "https://www.hltv.org/team/8297/furia",
+      "https://cs2vibecheck.com/teams/furia",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/furia-esports/furia-esports-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "31b3df988bdc6afc9d8bfa16314f90289dcdbe3b4b715a772a9a04e5e63294fe",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "FUT Esports": {
+    "checked": [
+      "https://futesports.gg/",
+      "https://liquipedia.net/counterstrike/FUT_Esports",
+      "https://cs2vibecheck.com/teams/fut-esports",
+      "https://skinory.io/en/pro-teams-cs2/fut",
+      "https://cs2sell.com/esports/teams/fut-esports",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FUT%20Esports.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "3536303487d08b398d2bf9bd2be9899f93cd5e8768cfbfb38b8468b080a816b1",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "FaZe Clan": {
+    "checked": [
+      "https://fazeclan.com/pages/about",
+      "https://liquipedia.net/counterstrike/FaZe_Clan",
+      "https://cs2vibecheck.com/teams/faze-clan",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FaZe%20Clan.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/faze-clan/faze-clan-logo.png",
+      "https://commons.wikimedia.org/wiki/File:FaZe_Clan.png"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/faze-clan/faze-clan-logo.png",
+    "kind": "original",
+    "sha256": "1a924d9cd905f0083a70474ee9f045ce5a78dc8f8e3fa73eae58ff7101b40318",
+    "source": "https://commons.wikimedia.org/wiki/File:FaZe_Clan.png"
+  },
+  "Fake do Biru": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Fake_do_Biru",
+      "https://www.hltv.org/team/13081/fake-do-biru",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Fake%20do%20Biru.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "144cb519a0ce244b370daf03820ab0645a5a66c577812c7e8a82d6847b6715ad",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Falcons Force": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Falcons_Force",
+      "https://www.hltv.org/team/13321/falcons-force",
+      "https://escharts.com/teams/csgo/falcons-force",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Falcons%20Force.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "9f03c6a4b4b06d403d8d19b72c0bd3e400e3d77bdfc439a8254baf1df0c5e60a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Famalicão": {
+    "checked": [
+      "https://www.hltv.org/team/13364/famalico",
+      "https://www.cs2bet.io/team/137271/"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "f3fdf3d0999dd704ade9badcd321aa15914bcfea2635e730b56276c11b75695c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "FarmVille": {
+    "checked": [
+      "https://www.hltv.org/team/13665/farmville",
+      "https://escharts.com/teams/csgo/farmville",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FarmVille.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "0db025fbdcfcc742c9d00edf215c8c54ca58efb27160b6af5e3bf9f2650e78fe",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "FengDa": {
+    "checked": [
+      "https://www.hltv.org/team/12899/fengda"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "e7d2c3c2f2b3b5d7c65bfb122526dbb2fef2836fa7823dc351e725aff5a76adc",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Fire Flux": {
+    "checked": [
+      "https://www.hltv.org/team/12960/fire-flux",
+      "https://www.cs2observer.com/team/Fire%20Flux"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "b677bc887087e32471fdc042bbba3de9afe660b71e91000e92faf4de4f38e85f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Fisher College": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Fisher_College",
+      "https://www.hltv.org/team/12769/fisher-college",
+      "https://cs2sell.com/esports/teams/fisher-college",
+      "https://escharts.com/teams/csgo/fisher-college",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Fisher%20College.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "b87c6c510305ce691b5257915c3e839577c88cb593180121226e0a05c26afe64",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Fluxo": {
+    "checked": [
+      "https://www.hltv.org/team/11837/fluxo",
+      "https://liquipedia.net/counterstrike/Fluxo",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/fluxo/fluxo-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "57fb48f87cf1755d291fd8a04507faabe65546bb6b1b7322854a9a15bbe97a41",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "FlyQuest": {
+    "checked": [
+      "https://flyquest.gg/pages/cs2-roster",
+      "https://liquipedia.net/counterstrike/FlyQuest",
+      "https://www.hltv.org/team/12774/flyquest",
+      "https://skinory.io/en/teams/flyquest",
+      "https://cs2sell.com/esports/teams/flyquest",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FlyQuest.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/flyquest/flyquest-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Flyquest_logo_2021.svg"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/FlyQuest.png",
+    "kind": "original",
+    "sha256": "eaf10e5447bcbc5d48a90e31a634119766744d5574ac9cbc2510b4740175efb6",
+    "source": "https://commons.wikimedia.org/wiki/File:Flyquest_logo_2021.svg"
+  },
+  "Fnatic": {
+    "checked": [
+      "https://fnatic.com/brand",
+      "https://fnatic.com/",
+      "https://liquipedia.net/counterstrike/Fnatic",
+      "https://www.hltv.org/team/4991/fnatic",
+      "https://cs2vibecheck.com/teams/fnatic",
+      "https://skinory.io/en/pro-teams-cs2/fnatic",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Fnatic.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/fnatic/fnatic-logo.png"
+    ],
+    "decision": "Клуб публикует пресс-кит и контакт для вопросов. Условий, разрешающих включение клубного рисунка в поставку игры, не найдено.",
+    "kind": "game",
+    "sha256": "bcfca75b4ebd9051b3588f0e3b413832901779a697d0d1d673cf35e6f266762d",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "G2 Ares": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/G2_Ares",
+      "https://www.hltv.org/team/12889/g2-ares",
+      "https://escharts.com/teams/csgo/g2-ares"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "ceb68c13ee7e47a17e374fd4da9c8b03411156ab33e960042c96a6a86d3a71d7",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "G2 Esports": {
+    "checked": [
+      "https://g2esports.com/pages/brand-guidelines",
+      "https://cs2vibecheck.com/teams/g2-esports",
+      "https://liquipedia.net/counterstrike/G2_Esports",
+      "https://skinory.io/en/pro-teams-cs2/g2",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/G2%20Esports.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/g2-esports/g2-esports-logo.png",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/g2.png"
+    ],
+    "decision": "Руководство G2 разрешает изображение марки во всех медиа при сохранении пропорций и отсутствии эффектов.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/g2.png",
+    "kind": "original",
+    "license": "Условия G2 Esports",
+    "sha256": "83999d1f128c872259be040cdb050e61dec189ae3a56355cfb59dacf7448d789",
+    "source": "https://g2esports.com/pages/brand-guidelines"
+  },
+  "Gaimin Gladiators": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Gaimin_Gladiators",
+      "https://www.hltv.org/team/11571/gaimin-gladiators",
+      "https://cs2sell.com/esports/teams/gaimin-gladiators",
+      "https://escorenews.com/en/csgo/team/gaimin-gladiators",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Gaimin%20Gladiators.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/gaimin-gladiators/gaimin-gladiators-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "3840b65182d178d92c0a4952bf3e83c1a8332ebcd729485ec95e8e6eef4e57f9",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Galorys": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Galorys",
+      "https://skinory.io/en/teams/galorys",
+      "https://escharts.com/teams/csgo/galorys",
+      "https://www.hltv.org/team/12677/galorys",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Galorys.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/galorys/galorys-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "392f3e1a64c14957d1c16488dc2d45650a74087c8cae06ca4790cbdf3679d782",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "GameHunters": {
+    "checked": [
+      "https://www.hltv.org/team/12988/gamehunters",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/GameHunters.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "a5a7fe0c6d210873e93f50242943cffe5fa1d091a2eeef8bede5210af4212f60",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "GamerLegion": {
+    "checked": [
+      "https://commons.wikimedia.org/wiki/File:GamerLegion_Logo.webp",
+      "https://www.gamerlegion.gg/",
+      "https://liquipedia.net/counterstrike/GamerLegion",
+      "https://cs2vibecheck.com/teams/gamerlegion",
+      "https://www.hltv.org/team/9928/gamerlegion",
+      "https://skinory.io/en/pro-teams-cs2/gamerlegion",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/GamerLegion.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/gamerlegion/gamerlegion-logo.png"
+    ],
+    "decision": "Автор в Commons неизвестен; файл взят у Cybersport.ru. Право загрузчика разрешать распространение клубного знака не подтверждено.",
+    "kind": "game",
+    "sha256": "8aba0ecb758432e5a158decda27f69c88bb143c1d259647596c6f556f07e9780",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "GenOne": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/GenOne",
+      "https://www.hltv.org/team/11609/genone",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/GenOne.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/genone/genone-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "31d2e3ff0501ff10074933550d8ce32307e24e8989c0964301ced183713c8f5a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Gentle Mates": {
+    "checked": [
+      "https://www.gentlemates.com/en",
+      "https://liquipedia.net/counterstrike/Gentle_Mates",
+      "https://www.hltv.org/team/13404/gentle-mates",
+      "https://cs2sell.com/esports/teams/gentle-mates",
+      "https://www.cs2observer.com/team/gentle-mates",
+      "https://commons.wikimedia.org/wiki/File:Paris_Gentle_Mates_logo.svg"
+    ],
+    "decision": "Найден отдельный знак Paris Gentle Mates для Call of Duty. Для эмблемы подразделения CS2 разрешение на распространение вместе с игрой не установлено.",
+    "kind": "game",
+    "sha256": "c700906a348c2653e28c0885a09b8e3331c0afb8435ac6000c6ca70fd99d6513",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Ground Zero": {
+    "checked": [
+      "https://www.hltv.org/team/8536/ground-zero",
+      "https://www.cs2observer.com/team/ground-zero",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/ground-zero/ground-zero-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "bded208b4ec9f75d492869dc37b7fff7006b60a4858c27827a30352021bd3cae",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "HAVU": {
+    "checked": [
+      "https://shop.havu.gg/pages/brand-kit",
+      "https://liquipedia.net/counterstrike/HAVU",
+      "https://escharts.com/teams/csgo/havu",
+      "https://www.hltv.org/stats/teams/7865/havu?csVersion=cs2",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/HAVU.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/havu/havu-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "1945768c9ac2d3a9a01f22a51248209b8563f0287b54316b14e8832171de9681",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "HEROIC": {
+    "checked": [
+      "https://commons.wikimedia.org/wiki/File:Heroic_2023_logo.png",
+      "https://liquipedia.net/counterstrike/HEROIC",
+      "https://cs2vibecheck.com/teams/heroic",
+      "https://www.hltv.org/team/7175/heroic",
+      "https://skinory.io/en/pro-teams-cs2/heroic",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/HEROIC.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/heroic/heroic-logo.png",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/heroic.png"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/heroic.png",
+    "kind": "original",
+    "sha256": "ba318af426fe9e851136b0363392dac8e99ad329c5d6ff534d622a025dd6ee1a",
+    "source": "https://commons.wikimedia.org/wiki/File:Heroic_2023_logo.png"
+  },
+  "HEROIC Academy": {
+    "checked": [
+      "https://heroic.gg/atc/heroic-academy-returns",
+      "https://liquipedia.net/counterstrike/HEROIC_Academy",
+      "https://www.hltv.org/team/13233/heroic-academy",
+      "https://www.cs2observer.com/team/heroic-academy",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/HEROIC%20Academy.png",
+      "https://commons.wikimedia.org/wiki/File:Heroic_2023_logo.png",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/heroic.png"
+    ],
+    "decision": "Академия использует тот же клубный знак HEROIC.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/heroic.png",
+    "kind": "original",
+    "sha256": "ba318af426fe9e851136b0363392dac8e99ad329c5d6ff534d622a025dd6ee1a",
+    "sharedWith": "HEROIC",
+    "source": "https://commons.wikimedia.org/wiki/File:Heroic_2023_logo.png"
+  },
+  "HOTU": {
+    "checked": [
+      "https://hotu.pro/",
+      "https://liquipedia.net/counterstrike/HOTU",
+      "https://www.hltv.org/team/11581/hotu",
+      "https://cs2vibecheck.com/teams/hotu",
+      "https://skinory.io/en/pro-teams-cs2/hotu",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/HOTU.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/hotu/hotu-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "85fe7b175f79c387e81fea4459e2d4433490236e10b5070231750f3ef4b7bdc1",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "HYPERSPIRIT": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/HYPERSPIRIT",
+      "https://www.hltv.org/team/13012/hyperspirit",
+      "https://escharts.com/teams/csgo/hyperspirit",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/HYPERSPIRIT.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "71410eb44c81d484a5b38c8058dbe2414a8a3c134547dfcc65701f369e6bee1c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Hashiras": {
+    "checked": [
+      "https://www.hltv.org/team/13715/hashiras"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "96ac0d9396238d8b8d6ce0f325da4fd7ac47f5a958049172ac21ceee025394f9",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "IC Esports": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/IC_Esports",
+      "https://cs2vibecheck.com/teams/ic-esports"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "14fb8d0c701c1460e9f3a556039456269e696ed9d86e9415de1f8638c40ce372",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "INFINITE": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/INFINITE",
+      "https://www.hltv.org/team/10823/infinite",
+      "https://skinory.io/en/pro-teams-cs2/infinite",
+      "https://escharts.com/teams/csgo/infinite",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/INFINITE.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/infinite/infinite-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "464338649d2523ae74686e22810a38ba125187b6ea4834a65ddce189eb411ef5",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Iberian Soul": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Iberian_Soul",
+      "https://www.hltv.org/team/13104/iberian-soul",
+      "https://skinory.io/en/pro-teams-cs2/iberian-soul",
+      "https://www.cs2observer.com/team/iberian-soul"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "ca6af9a4a9ed47ee265bc8d39681daf8e4743ee09b27b3f460067da984ee9050",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Imperial Academy": {
+    "checked": [
+      "https://commons.wikimedia.org/wiki/File:Imperial_Esports.png",
+      "https://www.hltv.org/team/13705/imperial-academy",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Imperial%20Academy.png"
+    ],
+    "decision": "Зелёный знак академии в каталоге отличается от подтверждённого простого знака основной команды. Для этой версии отдельное основание не установлено.",
+    "kind": "game",
+    "sha256": "358a7c0705532c5a55b18fbb34ecf0bb62b58745a8357f28a446284c92b6ff26",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Imperial Esports": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Imperial_Esports",
+      "https://cs2vibecheck.com/teams/imperial-esports",
+      "https://skinory.io/en/pro-teams-cs2/imperial",
+      "https://cs2sell.com/esports/teams/imperial-esports",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Imperial%20Esports.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/imperial-e-sports/imperial-e-sports-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Imperial_Esports.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/imperial/imperial-logo.png"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/imperial/imperial-logo.png",
+    "kind": "original",
+    "sha256": "a12afc3ee58c3855ef1741bec567051d31192e2b2af4e5bd87585d122f459d6e",
+    "source": "https://commons.wikimedia.org/wiki/File:Imperial_Esports.png"
+  },
+  "InControl": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/InControl",
+      "https://www.hltv.org/team/7720/incontrol",
+      "https://escharts.com/teams/csgo/incontrol",
+      "https://www.cs2observer.com/team/InControl",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/InControl.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/incontrol/incontrol-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "621c23b2d8eecaaca12c383f0661ccb0d0763d60bd3f88367a27697bfcf522cb",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Inner Circle Academy": {
+    "checked": [
+      "https://www.hltv.org/team/13681/inner-circle-academy",
+      "https://escharts.com/teams/csgo/inner-circle-academy",
+      "https://www.cs2observer.com/team/inner-circle-academy",
+      "https://bo3.gg/teams/inner-circle-academy",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Inner%20Circle%20Academy.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "04ecdcf89792e749d4217e9288261213e2ca2d7d607cc8ff77de7b5cb2a9577b",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "JiJieHao": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/JiJieHao",
+      "https://www.hltv.org/team/10245/jijiehao",
+      "https://cs2vibecheck.com/teams/jijiehao",
+      "https://skinory.io/en/pro-teams-cs2/jijiehao",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/JiJieHao.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/jijiehao/jijiehao-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "a8e66cb07580c3b2d06bfc46e8bce3f8a58311561b9ecebef0e519a0566041ca",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Johnny Speeds": {
+    "checked": [
+      "https://johnnyspeeds.se/",
+      "https://liquipedia.net/counterstrike/Johnny_Speeds",
+      "https://www.hltv.org/team/12604/johnny-speeds",
+      "https://skinory.io/en/teams/johnny-speeds",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Johnny%20Speeds.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "632e4c2328cd2b6a15184df6218e2bebcf36e702509d0e7cceff2d79472e2d24",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Julie&Cie": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13791/juliecie"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "51d2ccf6aced13774dba49db2c0e051ac0556c50a72ad53cf5498c7722891914",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Just Players": {
+    "checked": [
+      "https://www.hltv.org/team/13776/just-players",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Just%20Players.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "8e52bf8a06019cc5ca100719fadfc495bd6faf214f5a8b0e1858793af8e07952",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Just Swing": {
+    "checked": [
+      "https://www.hltv.org/team/13053/just-swing",
+      "https://www.cs2observer.com/team/Just%20Swing",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Just%20Swing.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "8f52b36f2808a7070e4422c5b69383cc5195409d9618275bf9333c40b2b45c20",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "K27": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/K27",
+      "https://cs2vibecheck.com/teams/k27",
+      "https://www.hltv.org/team/12895/k27",
+      "https://skinory.io/en/teams/k27",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/K27.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "4080e2e3281447da3433caf80b633ec076dbaf85ef3dfe6490de9d73ccedcb8f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "KOLESIE": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/KOLESIE",
+      "https://www.hltv.org/team/13314/kolesie",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Kolesie.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "d160cbb07c63f3c9d89a4cc3fc24def33b9ad8f5b19072097297bd0a27fb175c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "KUUSAMO": {
+    "checked": [
+      "https://www.hltv.org/team/13745/kuusamo"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "ab3f4f57b07e32e6c8e4c78ba4938971c575569f0dc3f75c7312f2f721c59617",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Keyd Stars": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Keyd_Stars",
+      "https://www.hltv.org/team/6033/keyd-stars",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Keyd%20Stars.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/keyd-stars/keyd-stars-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "e5afd9ea828cd9c1f7ce44f9307e435473282d7ab2dbaf3d0d2f4e953fc7fb16",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "LAG": {
+    "checked": [
+      "https://www.hltv.org/team/11955/lag",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/lag/lag-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "0366531aa52f274ce7140d77a04611164db106f95f4789e77b2f5d6a7adbb875",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "LAGUNA": {
+    "checked": [
+      "https://www.hltv.org/team/13676/laguna"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "c534157819c83133a5c207bf9bfc44d19b47b3a5b73ca7854bd2767914ca378b",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "LP": {
+    "checked": [
+      "https://www.hltv.org/team/13304/lp",
+      "https://www.cs2observer.com/team/LP"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "d52efe86ad755e9ec0d5e661b2e28ead9872d7b92ec3b5a763e0dc16ff4e2b1d",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Last Bullet": {
+    "checked": [
+      "https://www.hltv.org/team/13433/last-bullet",
+      "https://escharts.com/teams/csgo/last-bullet",
+      "https://bo3.gg/teams/last-bullet",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Last%20Bullet.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "e44a3f4bc471bad54372810ca85c469c811e3e1ab622743a42d2f2a8e09cb1ba",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Lavked": {
+    "checked": [
+      "https://www.hltv.org/team/12609/lavked",
+      "https://liquipedia.net/counterstrike/Lavked"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "24b4c480226f1356a08830d21f08a8b70ef80f726fbe61d00633dbe58869678a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Lazer Cats": {
+    "checked": [
+      "https://www.hltv.org/team/12087/lazer-cats",
+      "https://liquipedia.net/counterstrike/Lazer_Cats",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Lazer%20Cats.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/lazer-cats/lazer-cats-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "a4a17f4114255743b24b2823efaebb4468ab5b10cc628f174db3ce401ecf96d1",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Legacy": {
+    "checked": [
+      "https://www.teamlegacy.gg/galeria",
+      "https://liquipedia.net/counterstrike/Legacy",
+      "https://cs2vibecheck.com/teams/legacy",
+      "https://skinory.io/en/pro-teams-cs2/legacy",
+      "https://www.hltv.org/team/12468/legacy",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Legacy.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/legacy/legacy-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "1fb6f7a77ec61ec76c368a80f059133a280391b0713d6801baa32ccbb6b61e4c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Leo": {
+    "checked": [
+      "https://www.hltv.org/team/11446/leo",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/leo/leo-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "2a5848c8e64a45357f46373e5951b3518140a1e638647b7e41c7c370ef5f715b",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Lilmix": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Lilmix",
+      "https://www.hltv.org/team/9735/lilmix",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Lilmix.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/lilmix/lilmix-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "2fe08e29e5e4cc7472123db29fa26cce1a2a6bb4175349f78092217725b8844c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Luminosity Gaming": {
+    "checked": [
+      "https://cs2vibecheck.com/teams/luminosity-gaming",
+      "https://liquipedia.net/counterstrike/Luminosity_Gaming",
+      "https://skinory.io/en/pro-teams-cs2/luminosity",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Luminosity%20Gaming.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/luminosity-gaming/luminosity-gaming-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "a51b73124096c636814c50067043617d60ced6d6775f638547d34cf7af194ef9",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Lynn Vision Gaming": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Lynn_Vision",
+      "https://cs2vibecheck.com/teams/lynn-vision-gaming",
+      "https://skinory.io/en/pro-teams-cs2/lynn-vision",
+      "https://cs2sell.com/esports/teams/lynn-vision-gaming",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/lynn-vision/lynn-vision-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "b63b07f409b15210a22adc9e5c5f1589cb315dce3f7fbaf3c03deae364961d95",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "M1X KS": {
+    "checked": [
+      "https://www.hltv.org/team/12846/m1x-ks",
+      "https://www.cs2observer.com/team/M1X%20KS",
+      "https://bo3.gg/teams/m1x-ks"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "1c74840f5eb2e846da06b1c861ab9e66cf59e5228e5eff2fc3e040a67051b3d6",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "M80": {
+    "checked": [
+      "https://m80.gg/",
+      "https://liquipedia.net/counterstrike/M80",
+      "https://cs2vibecheck.com/teams/m80",
+      "https://www.hltv.org/major/team/12376/M80",
+      "https://skinory.io/en/pro-teams-cs2/m80",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/M80.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/m80/m80-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "9e727a52e556c405123593177036b09094338c20b08a13a9e6e24e2032afa189",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "MAGICOS": {
+    "checked": [
+      "https://www.hltv.org/team/13265/magicos",
+      "https://escharts.com/teams/csgo/magicos",
+      "https://escorenews.com/en/csgo/team/magicos",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/MAGICOS.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "3ca9e47a9f3baac51dba3105e8bac85b2fc0ab5a4de937f255ee3fbc24415bd3",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "MANA": {
+    "checked": [
+      "https://www.hltv.org/team/13310/mana"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "c158f93ef768befdfe4399e3903dc87fa34bea8cc9fb0464d31ea8c00c600e7f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "MASONIC": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/MASONIC",
+      "https://www.hltv.org/team/10867/masonic",
+      "https://escharts.com/teams/csgo/masonic",
+      "https://www.cs2observer.com/team/masonic",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/MASONIC.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/masonic/masonic-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "be7b6fb443360c4d7276eb46e0d672b73e0e49f0ab71350be5cdb5ff1a8b672f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "METANOIA Wolves": {
+    "checked": [
+      "https://www.hltv.org/team/13726/metanoia-wolves"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "3396ad298b3998e384613deb895dc88ea3c25c699121f8a100dfa2dcb490d7b2",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "MGLBROS": {
+    "checked": [
+      "https://www.hltv.org/team/13800/mglbros",
+      "https://bo3.gg/teams/mglbros"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "2f93ba4d620f3c7ad17bc4027b4a5e453bf7afe0645466270847ce5220c0783e",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "MIBR": {
+    "checked": [
+      "https://mibr.gg/",
+      "https://liquipedia.net/counterstrike/MIBR",
+      "https://cs2vibecheck.com/teams/mibr",
+      "https://skinory.io/en/pro-teams-cs2/mibr",
+      "https://www.hltv.org/team/9215/mibr",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/MIBR.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/mibr/mibr-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Made_In_Brazil_logo.png"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/mibr/mibr-logo.png",
+    "kind": "original",
+    "sha256": "45292efbe002c7f8bbd82723f6a3a3ba7753100e10b9d018ef1f494b86dbb006",
+    "source": "https://commons.wikimedia.org/wiki/File:Made_In_Brazil_logo.png"
+  },
+  "MIBR Academy": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/MIBR_Academy",
+      "https://escharts.com/teams/csgo/mibracademy",
+      "https://www.hltv.org/stats/teams/3044/mibr-academy",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/MIBR%20Academy.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/mibr-academy/mibr-academy-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Made_In_Brazil_logo.png"
+    ],
+    "decision": "Текстовый знак MIBR с обычной подписью ACADEMY.",
+    "fileSource": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/MIBR%20Academy.png",
+    "kind": "original",
+    "sha256": "8f8897640fa4500559fc1a73353f9665d516713f5cad7bb83e60d4af8c388e03",
+    "source": "https://commons.wikimedia.org/wiki/File:Made_In_Brazil_logo.png"
+  },
+  "MINLATE": {
+    "checked": [
+      "https://www.hltv.org/team/6626/minlate",
+      "https://escharts.com/teams/csgo/minlate"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "93d4dd0ee5f8677b2977d4b631ff26e8c5606390e3b68de9b3c9e9e45dd37f2d",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "MOUZ": {
+    "checked": [
+      "https://mousesports.com/",
+      "https://liquipedia.net/counterstrike/MOUZ",
+      "https://www.hltv.org/team/4494/mouz",
+      "https://cs2vibecheck.com/teams/mouz",
+      "https://skinory.io/en/pro-teams-cs2/mouz",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/MOUZ.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/mouz/mouz-logo.png",
+      "https://commons.wikimedia.org/wiki/File:MOUZlogo2021.png"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/mouz/mouz-logo.png",
+    "kind": "original",
+    "sha256": "ededf0d37555ec12cd1d23ecfa79e2f1193a11ea02ea5f55de1f63c945c7cd2e",
+    "source": "https://commons.wikimedia.org/wiki/File:MOUZlogo2021.png"
+  },
+  "MOUZ NXT": {
+    "checked": [
+      "https://mousesports.com/news/rebranding/",
+      "https://www.hltv.org/team/11176/mouz-nxt",
+      "https://liquipedia.net/counterstrike/MOUZ_NXT",
+      "https://cs2sell.com/esports/teams/mouz-nxt",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/MOUZ%20NXT.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/mouz-nxt/mouz-nxt-logo.png",
+      "https://commons.wikimedia.org/wiki/File:MOUZlogo2021.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/mouz/mouz-logo.png"
+    ],
+    "decision": "У состава NXT в источнике опубликован знак MOUZ.",
+    "fileSource": "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/mouz/mouz-logo.png",
+    "kind": "original",
+    "sha256": "ededf0d37555ec12cd1d23ecfa79e2f1193a11ea02ea5f55de1f63c945c7cd2e",
+    "sharedWith": "MOUZ",
+    "source": "https://commons.wikimedia.org/wiki/File:MOUZlogo2021.png"
+  },
+  "Marsborne": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Marsborne",
+      "https://www.hltv.org/team/13124/marsborne",
+      "https://www.cs2observer.com/team/marsborne",
+      "https://blast.tv/cs/team/fba0416c/marsborne",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Marsborne.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "20f3df7df152eafa7cb4d9b5091e0cdc2471215b403100b5651a14ea0b913270",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Memeories": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13534/memeories",
+      "https://escorenews.com/en/csgo/team/memeories"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "ce847a17269d8a8c6c29404c6df8abea2d8ff6f890d2fe91fd870a26c84916b8",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Metizport": {
+    "checked": [
+      "https://metizport.com/",
+      "https://www.hltv.org/team/11641/metizport",
+      "https://liquipedia.net/counterstrike/Metizport",
+      "https://skinory.io/ar/pro-teams-cs2/metizport",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Metizport.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/metizport/metizport-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "9c6c9156c1add9fab2deb5dcaf8d4acb2632407112dc3983f2a0879c4730c67e",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Mindfreak": {
+    "checked": [
+      "https://www.hltv.org/team/11668/mindfreak",
+      "https://blast.tv/cs/team/2a1c4b11/mindfreak",
+      "https://escharts.com/teams/csgo/mindfreak",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Mindfreak.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/mindfreak/mindfreak-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "51dadec2be72af855266af51c352f29f4e74ccfb385a4175d5379e49026ef4ef",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Misa": {
+    "checked": [
+      "https://www.hltv.org/team/13528/misa",
+      "https://www.cs2observer.com/team/misa",
+      "https://x.com/misaesports/with_replies?lang=en"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "2c515c5d9ffc8da1210f7f57170aae4abd284a6804f08e5a27bdd72144943b38",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Monte": {
+    "checked": [
+      "https://monteesports.com/",
+      "https://liquipedia.net/counterstrike/Monte",
+      "https://www.hltv.org/team/11811/monte",
+      "https://blast.tv/cs/team/622c0637/monte",
+      "https://cs2sell.com/esports/teams/monte",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Monte.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/monte/monte-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "2ba7ee155fe6f4893e022c91926c7c629f9d0e1011f85141da9d0821367e4384",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Morningstar": {
+    "checked": [
+      "https://www.hltv.org/team/13602/morningstar",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Morningstar.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "928cd40f7d367b56b27df0940f2eee37e418379449d2a4fb3197ab525f66d4c8",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "MyHUD": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13565/myhud"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "f88c4ed9412e367c58152af7597551462b8af6e5e49ef2eb58c7bb211e53cd80",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "NEXVOID": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/NEXVOID",
+      "https://www.hltv.org/team/13667/nexvoid",
+      "https://skinory.io/en/pro-teams-cs2/nexvoid",
+      "https://cs2sell.com/esports/teams/nexvoid",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/NEXVOID.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "0c7b81f5b8169358e5633f5fbdcd232854fad164b5d0c31201bcda2e4a0ebf3c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "NRG": {
+    "checked": [
+      "https://nrg.gg/",
+      "https://liquipedia.net/counterstrike/NRG",
+      "https://www.hltv.org/team/6673/nrg",
+      "https://cs2vibecheck.com/teams/nrg",
+      "https://skinory.io/en/teams/nrg",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/NRG.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/nrg/nrg-logo.png",
+      "https://commons.wikimedia.org/wiki/File:NRG_2024_logo.png",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/nrg.png"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/nrg.png",
+    "kind": "original",
+    "sha256": "1ee4820a638ad86610a17b3a5a953eef2a80e5b2ff688c43c2d22ed530f2d294",
+    "source": "https://commons.wikimedia.org/wiki/File:NRG_2024_logo.png"
+  },
+  "NT": {
+    "checked": [
+      "https://www.hltv.org/team/14007/nt"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "bc7e9785ffc0a45e533237dffd67774dfc1b84b019b19f88c68828b8fb643aea",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Natus Vincere": {
+    "checked": [
+      "https://navi.gg/en",
+      "https://www.hltv.org/team/4608/natus-vincere",
+      "https://liquipedia.net/counterstrike/Natus_Vincere",
+      "https://cs2vibecheck.com/teams/natus-vincere",
+      "https://skinory.io/en/pro-teams-cs2/natus-vincere",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Natus%20Vincere.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/natus-vincere/natus-vincere-logo.png",
+      "https://commons.wikimedia.org/wiki/File:NAVI-Logo.svg",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/navi.png"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/navi.png",
+    "kind": "original",
+    "sha256": "45db049005c7249166cd75ae8b6a7673ae4c668d95c15f19ce25f7ccac29a362",
+    "source": "https://commons.wikimedia.org/wiki/File:NAVI-Logo.svg"
+  },
+  "Natus Vincere Junior": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/NAVI_Junior",
+      "https://liquipedia.net/counterstrike/Natus_Vincere_Junior",
+      "https://www.hltv.org/team/10371/navi-junior",
+      "https://skinory.io/en/pro-teams-cs2/navi-junior",
+      "https://cs2sell.com/esports/teams/natus-vincere-junior",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Natus%20Vincere%20Junior.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/natus-vincere-junior/natus-vincere-junior-logo.png",
+      "https://commons.wikimedia.org/wiki/File:NAVI-Logo.svg"
+    ],
+    "decision": "Текстовый знак NAVI с подписью JUNIOR.",
+    "fileSource": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Natus%20Vincere%20Junior.png",
+    "kind": "original",
+    "sha256": "c80f84604be339e85ea7629dce5e669dadc4ed83fbb339bbade483d2086f5d77",
+    "source": "https://commons.wikimedia.org/wiki/File:NAVI-Logo.svg"
+  },
+  "Nemiga Gaming": {
+    "checked": [
+      "https://nemiga.gg/",
+      "https://liquipedia.net/counterstrike/Nemiga_Gaming",
+      "https://cs2vibecheck.com/teams/nemiga-gaming",
+      "https://skinory.io/en/pro-teams-cs2/nemiga",
+      "https://escharts.com/teams/csgo/nemiga",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Nemiga%20Gaming.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/nemiga-gaming/nemiga-gaming-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "cd53a09182596d268ff94229a822122d37b93c2998d66d53560117ef344a195f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Nexus Gaming": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Nexus_Gaming",
+      "https://cs2sell.com/esports/teams/nexus-gaming",
+      "https://escharts.com/teams/csgo/nexus",
+      "https://skinory.io/tl/teams/nexus",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Nexus%20Gaming.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/nexus-gaming/nexus-gaming-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "9fcb68616c7261e359185fbebe8466a7576fb81d85e3a6d81dd99ceb5bcb5ad3",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Ninjas in Pyjamas": {
+    "checked": [
+      "https://nip.gl/pages/brand",
+      "https://cs2vibecheck.com/teams/ninjas-in-pyjamas",
+      "https://liquipedia.net/counterstrike/Ninjas_In_Pyjamas",
+      "https://www.hltv.org/team/4411/ninjas-in-pyjamas",
+      "https://blast.tv/cs/team/6b4aa065/ninjas-in-pyjamas",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Ninjas%20in%20Pyjamas.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/ninjas-in-pyjamas/ninjas-in-pyjamas-logo.png"
+    ],
+    "decision": "Клуб публикует бренд-материалы. Разрешение на распространение эмблемы в локальной базе игры не установлено.",
+    "kind": "game",
+    "sha256": "bd3351573a998c3f49537fb21444061e19773a9281ccb98e1db3d1aba44fd4d3",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "NuTorious": {
+    "checked": [
+      "https://www.hltv.org/team/12973/nutorious",
+      "https://www.cs2observer.com/team/NuTorious"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "846aaa3b94eb1b423e99b9d52c5c05117c465bb662155de62985e7600f9d54d2",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Nuclear TigeRES": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Nuclear_TigeRES",
+      "https://www.hltv.org/team/13027/nuclear-tigeres",
+      "https://blast.tv/cs/tournaments/tournamentId/match/ce68897e/nucleartigeres-mouz/matchups",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Nuclear%20TigeRES.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "6e4f6857df61f51c15b23fabaf7182bc4540042798c523c2d08041658810dcee",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ODDIK": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/ODDIK",
+      "https://www.hltv.org/team/11768/oddik",
+      "https://blast.tv/cs/team/43336f35/oddik",
+      "https://cs2sell.com/esports/teams/oddik",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ODDIK.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/oddik/oddik-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "43bdb9d73783dec66b3d643783e9f7056a893c6a70771100a6f7c7e4d84fdb87",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "OG": {
+    "checked": [
+      "https://ogs.gg/",
+      "https://liquipedia.net/counterstrike/OG",
+      "https://www.hltv.org/team/10503/og",
+      "https://skinory.io/en/teams/og",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/OG.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/og/og-logo.png",
+      "https://commons.wikimedia.org/wiki/File:OG_esports_Logo.png"
+    ],
+    "decision": "Самостоятельный знак OG без логотипа спонсора.",
+    "fileSource": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/OG.png",
+    "kind": "original",
+    "sha256": "0461e16be625299c51805042a239975fe8913080e6cccf13a34dd2d495456c48",
+    "source": "https://commons.wikimedia.org/wiki/File:OG_esports_Logo.png"
+  },
+  "OMEGA": {
+    "checked": [
+      "https://www.hltv.org/team/13479/omega",
+      "https://skinory.io/en/pro-teams-cs2/omega",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/omega/omega-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "964832954b704a17bfc371c3471450abfc63d32c230e44b14a670092bf0e0cec",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "OlyBet": {
+    "checked": [
+      "https://www.hltv.org/team/13551/olybet"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "2902bbe2caf32d7f9666fdf6ffdbfcead5f27e8b13452a74a915db1d1f964781",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Outfit 49": {
+    "checked": [
+      "https://www.hltv.org/team/13294/outfit-49",
+      "https://escharts.com/teams/csgo/outfit-49"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "e2689f2009801861d0a6ae62a5992dc75a33e41d0acf3055ac6a0ed0b09e8432",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Oxuji": {
+    "checked": [
+      "https://www.hltv.org/team/13553/oxuji",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Oxuji.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "6f0e28d8a77b4568fc701ace6d3a61ed251297f2b0c9fa398a091de888023db6",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "PARIVISION": {
+    "checked": [
+      "https://parivision.gg/",
+      "https://liquipedia.net/counterstrike/PARIVISION",
+      "https://cs2vibecheck.com/teams/parivision",
+      "https://www.hltv.org/team/12467/parivision",
+      "https://skinory.io/en/pro-teams-cs2/parivision",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/PARIVISION.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/parivision/parivision-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "15f74ee89e0aedb096f6d004480ce1246992c80a8594ed0455ca8ba494afe720",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "PIVOSQUAD": {
+    "checked": [
+      "https://www.hltv.org/team/13782/pivosquad",
+      "https://www.cs2observer.com/team/PIVOSQUAD",
+      "https://bo3.gg/teams/pivosquad"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "c494df93237c203c17ff5d38326e9eb02615a806b070875a26e0b7ab1c2639db",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "PRIVATE": {
+    "checked": [
+      "https://www.hltv.org/team/14030/private"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "02526880ca424a1c23f9fbb0d354d654d4a1aea33ffc7d11b66fb1a9ae071e86",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "PURE": {
+    "checked": [
+      "https://www.hltv.org/team/13777/pure",
+      "https://skinory.io/en/pro-teams-cs2/pure",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/PURE.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "918f3d6c9edfa1090f0f4eab246e5a213991a49225ff55a46bbfecc1cc22671c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Passion UA": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Passion_UA",
+      "https://www.hltv.org/team/12426/passion-ua",
+      "https://escharts.com/teams/csgo/passion-ua",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Passion%20UA.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/csgo/passion-ua/passion-ua-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "21469f1c6ff59ed8bf9c05e15b369f25dacf5b9fe69ceb83099926810172fc87",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Persona Grata": {
+    "checked": [
+      "https://bo3.gg/teams/persona-grata"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "29a05f4b45a3bb32cb693ceff8006c7a0575ff08e5365720916bff0798db028a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Phantom": {
+    "checked": [
+      "https://www.hltv.org/team/13173/phantom",
+      "https://skinory.io/en/pro-teams-cs2/phantom",
+      "https://www.cs2observer.com/team/phantom"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "ea89ce40b9c427831e05a502a93d5a2a5aacb3d7b9f96d25c9f8517bb650c877",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Phantom Academy": {
+    "checked": [
+      "https://www.hltv.org/team/13766/phantom-academy"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "2693b0fd69b925366a7c86dcf453ba3d0cb0812728b17bf380ccfe1a5a751829",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Phantom Esports": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Phantom_Esports",
+      "https://skinory.io/en/pro-teams-cs2/phantom",
+      "https://escharts.com/teams/csgo/phantom-esports",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Phantom%20Esports.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "91b4981df6918a7e6e9ef305d2ae9e9aa7439b833c5ae0a8cce1dd6460d0ff3c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Prodigy": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/12029/prodigy?csVersion=cs2",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/prodigy/prodigy-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "86380ce3e746dd8a25112c06301566ef97f5a10485dc4eb6635d88afc22872b7",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "QUAZAR": {
+    "checked": [
+      "https://www.hltv.org/team/11312/quazar",
+      "https://liquipedia.net/counterstrike/QUAZAR",
+      "https://cs2sell.com/esports/teams/quazar",
+      "https://www.cs2observer.com/team/QUAZAR",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/QUAZAR.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/quazar/quazar-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "388d8772c38468f90953a927a7058a2617eec6190e710742b04f7a111d851ee0",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "QWENTRY": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/QWENTRY",
+      "https://escharts.com/teams/csgo/qwentry",
+      "https://www.hltv.org/stats/teams/13510/qwentry?country=United+Kingdom&csVersion=CS2"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "b65d9aa68ae6f9a69a3c4b0652310872730d9c320a52068adef8e4cbeed95443",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "R2": {
+    "checked": [
+      "https://www.hltv.org/team/13327/r2"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "63ccb23c982d5e9f09b4d1224729d83c0f4fb45a4605982be41c83f7407fddb0",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "RBLS Gaming": {
+    "checked": [
+      "https://cs2sell.com/esports/teams/rbls-gaming"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "95cd1f8fe46e7bd552a9dd9d7a0b32dd90bf350c611306c33f38cd9c1e336e5b",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "RED Canids": {
+    "checked": [
+      "https://redcanids.com.br/",
+      "https://liquipedia.net/counterstrike/RED_Canids",
+      "https://www.hltv.org/team/7176/red-canids",
+      "https://blast.tv/cs/team/ce1c597f/red-canids",
+      "https://escharts.com/teams/csgo/redcanids",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/RED%20Canids.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/red-canids/red-canids-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "ef78a430a0df8465424612e60df52d210aeb6d0642a2f5a2c0014ba9f2dfd6dc",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "RUSTEC": {
+    "checked": [
+      "https://www.hltv.org/team/12834/rustec",
+      "https://escharts.com/teams/csgo/rustec",
+      "https://www.cs2observer.com/team/rustec",
+      "https://liquipedia.net/counterstrike/RUSTEC",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/RUSTEC.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "7f937ac2bfc2c31dfc40bf3ffd69067c9100ab0c1e2f5621d0f43af06e415412",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Rare Atom": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Rare_Atom",
+      "https://www.hltv.org/team/11514/rare-atom",
+      "https://blast.tv/cs/team/f61ed656/rareatom",
+      "https://cs2sell.com/esports/teams/rare-atom",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Rare%20Atom.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/rare-atom/rare-atom-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "4b849de6a72d4d332bd9a75f335ea3c21377fb3c8be2ccbe0095b2dc6d88747d",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Re Di": {
+    "checked": [
+      "https://www.cs2observer.com/team/Re%20Di",
+      "https://www.hltv.org/stats/teams/13785/re-di?csVersion=cs2"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "3882ec5f1ec1295f726782f4baa300509106bbe72a33b01c2acc56b2b9eedc5b",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ReThink": {
+    "checked": [
+      "https://escharts.com/teams/csgo/rethink",
+      "https://www.hltv.org/stats/teams/13651/rethink?csVersion=CS2",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ReThink.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "b337a9c03e43a12d72219cd0ec07a5e88daec518e59bb76ca431a3dd102b7072",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Rebels": {
+    "checked": [
+      "https://rebelsgaming.gg/",
+      "https://liquipedia.net/counterstrike/Rebels",
+      "https://www.hltv.org/team/6472/rebels",
+      "https://www.cs2observer.com/team/rebels",
+      "https://escharts.com/teams/csgo/rebels-gaming",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Rebels%20Gaming.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/rebels/rebels-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "b1ad07877fb411c5dbec0c1b5604fb0d24f197ef772fb900ac70dd8893410141",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Reign Above": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13425/reign-above?csVersion=CS2"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "63d342a2be2f27bfc39854ef613a194f52b319d8c7bdce09887e1067bb2ac65d",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Rooster": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Rooster",
+      "https://www.hltv.org/team/9881/rooster",
+      "https://www.cs2observer.com/team/rooster",
+      "https://escharts.com/teams/csgo/rooster",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Rooster.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/rooster/rooster-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "f0f35feab21b71f905df30a423b8470cc6703be29bb6187abfbe7ed987f21b4e",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Rune Eaters": {
+    "checked": [
+      "https://www.hltv.org/team/12194/rune-eaters",
+      "https://www.cs2observer.com/team/rune-eaters",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Rune%20Eaters.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "463086fe082d1375d67e36fa64374bc08688c63a1a96440e1ed8603c45dd3914",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "SAW": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/SAW",
+      "https://www.hltv.org/team/10567/saw",
+      "https://cs2sell.com/esports/teams/saw",
+      "https://blast.tv/cs/team/a2719ebe/saw",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/SAW.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/saw/saw-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "b31eb13050d3b550a7382b28df6ba2e6a6b7c3be2e7e3ec30ac2594ebdc4b57f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "SINNERS Esports": {
+    "aliases": [
+      "SINNERS"
+    ],
+    "checked": [
+      "https://www.sinners.gg/",
+      "https://liquipedia.net/counterstrike/SINNERS_Esports",
+      "https://cs2vibecheck.com/teams/sinners-esports",
+      "https://www.hltv.org/team/10577/sinners",
+      "https://skinory.io/en/pro-teams-cs2/sinners",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/SINNERS%20Esports.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/sinners-esports/sinners-esports-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "60b2396b83224ff7bf6c94c3900c41c1c14967796cf1dfb0d03cc6d2e38ba141",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "STATE": {
+    "checked": [
+      "https://www.hltv.org/team/13623/state",
+      "https://bo3.gg/teams/state"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "b4e0280d6ba0aa892986fc42f159669005116ec9a36eaad39c12181cc542ff09",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Sangal Esports": {
+    "checked": [
+      "https://sangal.gg/",
+      "https://liquipedia.net/counterstrike/Sangal_Esports",
+      "https://cs2vibecheck.com/teams/sangal-esports",
+      "https://www.hltv.org/team/10333/sangal",
+      "https://escharts.com/teams/csgo/sangal",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Sangal%20Esports.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/sangal/sangal-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "fc87306809858bf7e00047cd6faa35430d41b8fc5b643960ab2a93c3b352866e",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Sashi": {
+    "checked": [
+      "https://sashiesport.dk/",
+      "https://liquipedia.net/counterstrike/Sashi_Esport",
+      "https://escharts.com/teams/csgo/sashi-esport",
+      "https://blast.tv/cs/team/85a658b9/sashi-esport",
+      "https://www.hltv.org/stats/teams/events/11712/sashi",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/sashi/sashi-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "5f48cc14ca53d78cf635759152c5904f9e0e01f9d74b6f2cf85a791795e924e9",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Sashi Academy": {
+    "checked": [
+      "https://www.hltv.org/team/12352/sashi-academy",
+      "https://escharts.com/teams/csgo/sashi-academy",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Sashi%20Academy.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "704bd4edac437abf8cfe6665536fa838c04aa4f2e8f16385297a8ea9ba0096d2",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "SemperFi": {
+    "checked": [
+      "https://www.hltv.org/team/12901/semperfi",
+      "https://blast.tv/cs/tournaments/esl-pro-league-season-23-2026/match/c0828c82/3dmax-semperfi"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "161ce4764ae24ffc096ebba4c27a719afaeeea2888672be8794dbd7df571ddf9",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Shimmer": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Shimmer",
+      "https://www.hltv.org/team/12190/shimmer",
+      "https://bo3.gg/teams/shimmer",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Shimmer.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "52b926c365409c325071a89ffa387962f4f93e202a63c2330dd63f157bc1a248",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ShindeN": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/ShindeN",
+      "https://www.hltv.org/team/12959/shinden",
+      "https://skinory.io/en/pro-teams-cs2/shinden",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/ShindeN.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "b8e31eea9162e04815c8b2c3808b948c02de1e656f1caa21765e95c4adfffcb8",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "SportsBetExpert": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/SportsBetExpert",
+      "https://www.hltv.org/team/13375/sportsbetexpert",
+      "https://escharts.com/teams/csgo/sportsbetexpert",
+      "https://www.cs2observer.com/team/sportsbetexpert",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/SportsBetExpert.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "f35ef7e1b7d5edcac580bcc8e2419427b19dbd8d0e59bb24147c582eb4ec6e46",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Strael Bora": {
+    "checked": [
+      "https://www.hltv.org/team/13546/strael-bora",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Strael%20Bora.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "e022bba2e1e385435f790774e3f579c539e39cffbe45c5a997907d143c614065",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Subtop De France": {
+    "checked": [
+      "https://www.hltv.org/team/13789/subtop-de-france",
+      "https://www.cs2observer.com/team/Subtop%20De%20France"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "e2ec4a35eb9be55c0791944c512e53311b79bbd899fb81b9baa63fc14e5431a4",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "TDK": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/TDK",
+      "https://www.hltv.org/team/13644/tdk",
+      "https://bo3.gg/teams/tdk",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/TDK.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "1689905ab74fe8117a63d3483e65a0674c5f45c96c6d42b9cb685d10a6216cd3",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "TNC": {
+    "checked": [
+      "https://www.hltv.org/team/13403/tnc"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "e5d8b2622177b4da19a171e600348fb1d0e37ae5743ff2bc9db7c5163ddcf793",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "TNT": {
+    "checked": [
+      "https://www.hltv.org/team/13576/tnt",
+      "https://bo3.gg/teams/tnt"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "86945d93cd11ce7c369bab5b4c596fd1bcc5324f7082b0bfd9c6bb017c226d0c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "TYLOO": {
+    "checked": [
+      "https://cs2vibecheck.com/teams/tyloo",
+      "https://www.hltv.org/team/4863/tyloo",
+      "https://liquipedia.net/counterstrike/TYLOO",
+      "https://skinory.io/en/pro-teams-cs2/tyloo",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/TYLOO.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/tyloo/tyloo-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "4f7430b601ea954db30d911cd11773c2684f66104583c592398872a349371716",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Team Falcons": {
+    "checked": [
+      "https://www.teamfalcons.sa/",
+      "https://liquipedia.net/counterstrike/Team_Falcons",
+      "https://cs2vibecheck.com/teams/team-falcons",
+      "https://skinory.io/en/pro-teams-cs2/falcons",
+      "https://escharts.com/teams/csgo/falcons",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/falcons/falcons-logo.png"
+    ],
+    "decision": "Знак сокола найден на сайте клуба. Публичных условий для включения оригинальной иллюстрации в игровой пакет не найдено.",
+    "kind": "game",
+    "sha256": "0f3024dc0b72d6898096edc7e1822ccfe7261aa38a0db250f7b1c8863bc5e745",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Team Liquid": {
+    "checked": [
+      "https://teamliquid.com/brand-kit",
+      "https://liquipedia.net/counterstrike/Team_Liquid",
+      "https://cs2vibecheck.com/teams/team-liquid",
+      "https://cs2sell.com/esports/teams/team-liquid",
+      "https://blast.tv/cs/team/b75bce93/team-liquid",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/liquid/liquid-logo.png"
+    ],
+    "decision": "В открытом разделе есть фирменный герб и правила оформления. Разрешение распространять рисунок вместе с игрой не подтверждено.",
+    "kind": "game",
+    "sha256": "cd11fa2620aad02db88ee1a893a531a68e373c6c7bc8378317c5c989d03d87af",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Team Nemesis": {
+    "aliases": [
+      "Nemesis"
+    ],
+    "checked": [
+      "https://nmss.gg/about/",
+      "https://www.hltv.org/team/13355/nemesis",
+      "https://liquipedia.net/counterstrike/Team_Nemesis",
+      "https://skinory.io/en/teams/nemesis",
+      "https://escharts.com/teams/csgo/team-nemesis",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Team%20Nemesis.png",
+      "https://liquipedia.net/counterstrike/Nemesis"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "c11ab84371906f8cacab9862a238fdae3a4996d2bdc5af5dc14216fa8dd7ce49",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Team Spirit": {
+    "checked": [
+      "https://teamspirit.gg/",
+      "https://liquipedia.net/counterstrike/Team_Spirit",
+      "https://cs2vibecheck.com/teams/team-spirit",
+      "https://skinory.io/en/pro-teams-cs2/spirit",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Team%20Spirit.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/spirit/spirit-logo.png",
+      "https://teamspirit.gg/press-kit_EN.pdf",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/spirit.png"
+    ],
+    "decision": "Белый дракон из официального брендбука. Чёрная подложка, охранное поле и минимальный размер обеспечиваются интерфейсом.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/spirit.png",
+    "kind": "original",
+    "license": "Условия Team Spirit",
+    "sha256": "186288ad4d661483ff4222c2adf9160ae88d19cb293abf997f505afbd6833455",
+    "source": "https://teamspirit.gg/press-kit_EN.pdf"
+  },
+  "Team Spirit Academy": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Team_Spirit_Academy",
+      "https://cs2sell.com/esports/teams/team-spirit-academy",
+      "https://skinory.io/en/pro-teams-cs2/spirit-academy",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Team%20Spirit%20Academy.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/spirit-academy/spirit-academy-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "25fa4d88fa0a627c80c3aff19d1566265ff05c416c4080cdaa1c9c0735871b99",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Team Vitality": {
+    "checked": [
+      "https://vitality.gg/en-eu/pages/general-conditions-of-use-1",
+      "https://vitality.gg/",
+      "https://liquipedia.net/counterstrike/Team_Vitality",
+      "https://cs2vibecheck.com/teams/team-vitality",
+      "https://skinory.io/en/pro-teams-cs2/vitality",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/team-vitality/team-vitality-logo.png"
+    ],
+    "decision": "Клуб требует предварительное письменное разрешение для воспроизведения рисунка. Разрешение на поставку пчелы Team Vitality не получено.",
+    "kind": "game",
+    "sha256": "0964de760781da3fd9aa9003bccf241e3d25dd9190f1990aa91d18dc3cb97c77",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Team Voca": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Team_Voca",
+      "https://www.hltv.org/team/13499/voca",
+      "https://blast.tv/cs/team/35f7f416/voca",
+      "https://www.cs2observer.com/team/Voca"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "5d6a8800b6bebd13c100b016a1f73b122affd47fe6b0a4e772a56ea4cd871342",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "The Bardolphs": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13557/the-bardolphs?csVersion=CS2"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "275ef4b55c62e0a9cef65a46189f5caf702f782c2d63285a069f1a9e6642505f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "The Huns": {
+    "checked": [
+      "https://www.thehuns.gg/en",
+      "https://skinory.io/de/teams/the-huns",
+      "https://blast.tv/cs/tournaments/open-2025-season-1/match/cddf6230/spirit-huns",
+      "https://www.hltv.org/team/12510/the-huns"
+    ],
+    "decision": "Клуб публикует графику в своих бренд-материалах. Условия для распространения оригинала в поставке игры не подтверждены.",
+    "kind": "game",
+    "sha256": "7714559d04f54de4fc4043dbd31ea5cde368da5353b8f5a1f3670f3e49d0091c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "The Last Resort": {
+    "checked": [
+      "https://www.hltv.org/team/6089/the-last-resort",
+      "https://liquipedia.net/counterstrike/The_Last_Resort",
+      "https://bo3.gg/teams/the-last-resort",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/the-last-resort/the-last-resort-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "d8bcf202f3deaa2d0a918384c74c38b2645dd7a19764b7ab15554413a78558a6",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "The MongolZ": {
+    "checked": [
+      "https://commons.wikimedia.org/wiki/File:The_MongolZ.svg",
+      "https://liquipedia.net/counterstrike/The_MongolZ",
+      "https://www.hltv.org/team/6248/the-mongolz",
+      "https://cs2vibecheck.com/teams/the-mongolz",
+      "https://blast.tv/cs/team/c2f3ca41/mongolz",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/The%20MongolZ.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/the-mongolz/the-mongolz-logo.png"
+    ],
+    "decision": "В карточке Commons указана CC BY 4.0, но загрузчик перенёс рисунок из Liquipedia. Подтверждение выдачи лицензии клубом найти не удалось.",
+    "kind": "game",
+    "sha256": "a548b8e7c96d3cf4cb4cc50e155f49089720c3c1a33d37d8be87b44abfe25436",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "The QUBE": {
+    "checked": [
+      "https://www.hltv.org/team/12825/the-qube"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "cd28db4c70979aefb554d547e4a3f0685b896c57d8ff165c49b7be8668fe0108",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Time Waves": {
+    "checked": [
+      "https://www.hltv.org/team/13543/time-waves",
+      "https://bo3.gg/teams/time-waves"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "a9df48050830ad0eb06c2f91fc23e7e38d1a371ebd5a16de814ee88afff79455",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Tricked": {
+    "checked": [
+      "https://www.hltv.org/team/4602/tricked",
+      "https://www.cs2observer.com/team/Tricked",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/tricked/tricked-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "bf76b2e5a1b2698c6b16087272a6284748d960901c43a17ca476f6be9877298e",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "UBITEAM": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/events/10869/ubiteam?country=Spain&csVersion=CS2",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/ubiteam/ubiteam-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "499bc160193933a3258e634df862c6663bfb9b392ea45e0e7df749792f0d0691",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "UNO MILLE": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/UNO_MILLE",
+      "https://www.hltv.org/team/11555/uno-mille",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/UNO%20MILLE.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "dd0e62a47a95f821571aa530d08284b58bfefb52e26e21d8892daed2909224a8",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "UNiTY esports": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/UNiTY_esports",
+      "https://skinory.io/en/pro-teams-cs2/unity",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/UNiTY%20esports.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "ca3925318912ecafb5d9f7eb5c7f34f9022f286a09fbb64c3545ad200d800275",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "UPGRADE": {
+    "checked": [
+      "https://www.hltv.org/team/13989/upgrade",
+      "https://skinory.io/en/teams/upgrade",
+      "https://bo3.gg/teams/upgrade"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "b9384576f93ed73ce76a2d642d4edcdaa3d3d758cf4045e466a9a8763ae4f3dc",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "UR": {
+    "checked": [
+      "https://www.hltv.org/team/13116/ur"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "42c085c4a5888bd5c0a3e03fe58051b73e4a0861267ce9e604adec5593ebcb7b",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Ursa": {
+    "checked": [
+      "https://www.hltv.org/team/13231/ursa",
+      "https://www.cs2observer.com/team/Ursa",
+      "https://escharts.com/teams/csgo/ursa",
+      "https://bo3.gg/teams/ursa",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Ursa.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "43ffe8f4beb9f91f30c77b7d9758027b7f58ccf40f515aa8e8bfaaf1b15d0714",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "VCGO": {
+    "checked": [
+      "https://www.hltv.org/team/13790/vcgo"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "b0821a3d1550c4afa0515fb320944531a8c564c8ec359d6898eb5d42cd9cafc7",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Vasco": {
+    "checked": [
+      "https://www.hltv.org/team/13413/vasco",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Vasco.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "8ae5a1afb46f7c989aa2ba02efb6caa6e1defaa6fd8b8fd5d5c13ff9a3411ca6",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Virtus.pro": {
+    "checked": [
+      "https://virtus.pro/about",
+      "https://liquipedia.net/counterstrike/Virtus.pro",
+      "https://www.hltv.org/team/5378/virtuspro",
+      "https://cs2sell.com/esports/teams/virtus-pro",
+      "https://skinory.io/en/pro-teams-cs2/virtus-pro",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Virtus.pro.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/virtus-pro/virtus-pro-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "de4966ab499ca0c6f5e10ddb36ef119c96be5b5ccc3a00318ca125ae249f6bfe",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Voca": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Team_Voca",
+      "https://www.hltv.org/team/13499/voca",
+      "https://blast.tv/cs/team/35f7f416/voca",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Voca.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "002e1b5884c8a5cbdc16ef9fb40f39aa50369bd83fff94fc4773e163bc8a7ff7",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "WAZABI": {
+    "checked": [
+      "https://escharts.com/teams/csgo/wazabi",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/WAZABI.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "ef907675271096917657b5c7a743c1fbc0dd5b756f500ae2b407f3a1681fef0c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "WBT": {
+    "checked": [
+      "https://www.hltv.org/team/13683/wbt",
+      "https://www.cs2observer.com/team/WBT",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/WBT.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "a1e7698b030b96cea34252dae63ff9535930e9a877a558ddd7d859289d6a5fa8",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "WW": {
+    "checked": [
+      "https://www.hltv.org/team/12967/ww"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "92e86ae1f4c8250f8ca18c68a199129143afe692de2f8a67847d35e34b2e54da",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Wanted Goons": {
+    "checked": [
+      "https://www.hltv.org/team/12971/wanted-goons",
+      "https://escorenews.com/en/csgo/team/wanted-goons"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "1ffbf67c9c2fe3758e619bf42e06a2688588f16691a15fc23ef403f5946a10ff",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Wildcard": {
+    "checked": [
+      "https://www.wildcard.gg/",
+      "https://liquipedia.net/counterstrike/Wildcard",
+      "https://www.hltv.org/team/12257/wildcard",
+      "https://cs2vibecheck.com/teams/wildcard",
+      "https://cs2sell.com/esports/teams/wildcard",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Wildcard.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/wildcard/wildcard-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "6dda8be972f1eb5618c142358dc40c16aaf9af5b1d9583944bd31adfa2a22b93",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Winners": {
+    "checked": [
+      "https://www.hltv.org/team/13899/winners",
+      "https://escharts.com/teams/csgo/winners"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "d4243fc2ec3959d13c6ba6642b400d15657180be66ce1f8d7fea33004f0f3c84",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Without a Roof": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Without_a_Roof",
+      "https://www.hltv.org/team/6914/without-a-roof",
+      "https://skinory.io/en/pro-teams-cs2/without-a-roof",
+      "https://www.cs2observer.com/team/Without%20a%20Roof",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Without%20a%20Roof.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "23f5516dac9f96b58dde3269da805f297bdedc976a55db2c8d90d68e12939ea4",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "XDM": {
+    "checked": [
+      "https://www.hltv.org/team/13242/xdm"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "c461389ccca2d1f0f70201175b2abc0940f3b88277f1fc1c047b75cb76981377",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "XI": {
+    "checked": [
+      "https://www.hltv.org/team/8947/xi",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/XI.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "319bde66a1f6ea676ec6986189ce2553ea108d50fc5ba350941fdd2aceed8e97",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Yawara": {
+    "checked": [
+      "https://www.hltv.org/team/11933/yawara",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Yawara.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/yawara/yawara-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "78fb3db9fd50969669b696ca0fb548ef32fbefae3f99d8f87aea17a81d1312a4",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Young Ninjas": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Young_Ninjas",
+      "https://www.hltv.org/team/10960/young-ninjas",
+      "https://cs2sell.com/esports/teams/young-ninjas",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Young%20Ninjas.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/young-ninjas/young-ninjas-logo.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "548984a4d5fab068c584dea1632f2b0555dc50b598b7a22abd5a77f8899c34e4",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ZEVS": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13787/zevs"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "8a12a255708679483568c35568dc26c103a5b3bd01ed9da6644252342fba4c1c",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Zomblers": {
+    "checked": [
+      "https://www.zomblers.com/press/",
+      "https://liquipedia.net/counterstrike/Zomblers",
+      "https://www.hltv.org/team/12164/zomblers",
+      "https://escharts.com/teams/csgo/zomblers",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Zomblers.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/zomblers/zomblers-logo.png"
+    ],
+    "decision": "Проверены пресс-раздел клуба и опубликованная эмблема. Права на включение рисунка в игровые пакеты не подтверждены.",
+    "kind": "game",
+    "sha256": "a08bd1cc21a1cfdb8b2162791fa59a2a80abe641b3b77454ac97b594d68d0875",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "aAa": {
+    "checked": [
+      "https://www.hltv.org/team/5639/aaa"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "e3c30a661620135992b807869448ada5ca308104cdb68293610fff2f75f09e7d",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "aimclub": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Aimclub",
+      "https://www.hltv.org/team/6810/aimclub",
+      "https://escharts.com/teams/csgo/aimclub",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/aimclub.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "1c3b42c89339281d34c87bf3104cf226a085e4b6192e3824550114285cd9456d",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "bond1e": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13743/bond1e"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "4eb7bb22193a22c01d52fdd955eea8d7f9fed7cb235fc1dadfb60045d5f68fc2",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "brazylijski luz": {
+    "checked": [
+      "https://www.hltv.org/team/12745/brazylijski-luz",
+      "https://escharts.com/teams/csgo/brazylijski-luz",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/brazylijski%20luz.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "105ed976d62b059faf139698277ec6b935178ac50b47a240988ec003011a207d",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "eLITenergy": {
+    "checked": [
+      "https://escharts.com/teams/csgo/elitenergy",
+      "https://www.cs2observer.com/team/eLITenergy",
+      "https://www.hltv.org/stats/teams/13568/elitenergy?csVersion=cs2"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "959a92d1a6aca2875ec64bc6866a2b717868d11253a72a27bbe96fbf80eafc88",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ex ex-INOX": {
+    "checked": [
+      "https://www.hltv.org/team/14116/ex-inox",
+      "https://ensigame.com/teams/cs-2/ex-inox-ex-inox"
+    ],
+    "decision": "Для состава после ухода из клуба самостоятельная разрешённая эмблема не подтверждена. Знак бывшей организации ему не присвоен.",
+    "kind": "game",
+    "sha256": "b740673a9957583b0ea52e7f507270968929c5cdf1b0fc71a50c829b9c700b4b",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ex ex-Zero Tenacity": {
+    "checked": [
+      "https://cs2settings.com/teams/ex-zero-tenacity",
+      "https://www.esportsfantasyleague.gg/teams/ex-zero-tenacity"
+    ],
+    "decision": "Для состава после ухода из клуба самостоятельная разрешённая эмблема не подтверждена. Знак бывшей организации ему не присвоен.",
+    "kind": "game",
+    "sha256": "0d62b24be1066fb1b56a929d62c6da16df86ce711c6ce6cb550c8d539552039a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ex-RUBY": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Ex-RUBY",
+      "https://www.hltv.org/team/13617/ex-ruby",
+      "https://www.cs2observer.com/team/ex-ruby"
+    ],
+    "decision": "Для состава после ухода из клуба самостоятельная разрешённая эмблема не подтверждена. Знак бывшей организации ему не присвоен.",
+    "kind": "game",
+    "sha256": "da0a1fd1c8d407e1db4bd42be168ec70571c9a5a58ab56edfe9f764a0177a43f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "ex-Zero Tenacity": {
+    "checked": [
+      "https://www.hltv.org/team/13573/ex-zero-tenacity",
+      "https://skinory.io/en/teams/ex-zero-tenacity",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/Ex-Zero%20Tenacity.png"
+    ],
+    "decision": "Для состава после ухода из клуба самостоятельная разрешённая эмблема не подтверждена. Знак бывшей организации ему не присвоен.",
+    "kind": "game",
+    "sha256": "f47ed06a5fff4be1ac3c3f0c2ec80db50b62920f63e5ebb7c1bca21bd492bd1a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "girl kissers": {
+    "checked": [
+      "https://www.hltv.org/team/13270/girl-kissers",
+      "https://profilerr.net/cs-go/team/girl-kissers"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "310d919f509371a62c19d7ad9c090f1aca6e28d16d73f6869f2d07644ae9000e",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "illwill": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Illwill",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/illwill.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "2be7a41a61d90923a044ac74be0b1a58535ebc48e060375df861f71b9ac95e1a",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "insane players": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13778/insane-players?csVersion=cs2"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "7204b52a831652faef2ff4f1f6f94a4dcffcbfe60edd3e77ab4edaf751e4e7cd",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "magic": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Magic",
+      "https://cs2vibecheck.com/teams/magic",
+      "https://www.hltv.org/team/13592/magic",
+      "https://skinory.io/en/pro-teams-cs2/magic"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "6e705163c1aa017e7df5ded935ebd96b9f9de837dfb9262cf94db7258d4ca355",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "megoshort": {
+    "checked": [
+      "https://www.hltv.org/team/11018/megoshort",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/megoshort.png"
+    ],
+    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "kind": "game",
+    "sha256": "49d5434edde875b275faca1b5b70a6dab38bd40b8e175921a5b2f8b2ae1a3592",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "mouse": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13661/mouse"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "30c9d7a6e582f7feeef515a0f0346594f3e87967fd4c6da53b98bd127f1efb0f",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "paiN Academy": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/PaiN_Gaming_Academy",
+      "https://www.hltv.org/team/11905/pain-academy",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/paIN%20Gaming%20Academy.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/pain-academy/pain-academy-logo.png",
+      "https://commons.wikimedia.org/wiki/File:PaiN_Gaming_logo.svg",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/paIN%20Gaming.png"
+    ],
+    "decision": "Академия использует клубный знак paiN Gaming.",
+    "fileSource": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/paIN%20Gaming.png",
+    "kind": "original",
+    "sha256": "56526c2b43e6d1fb0cc3e148cce44fc3f3b01a612f0e44b063b46c44ea6ff83b",
+    "sharedWith": "paiN Gaming",
+    "source": "https://commons.wikimedia.org/wiki/File:PaiN_Gaming_logo.svg"
+  },
+  "paiN Gaming": {
+    "checked": [
+      "https://www.pain.gg/",
+      "https://liquipedia.net/counterstrike/PaiN_Gaming",
+      "https://cs2vibecheck.com/teams/pain-gaming",
+      "https://skinory.io/en/pro-teams-cs2/pain",
+      "https://escharts.com/teams/csgo/pain",
+      "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/paIN%20Gaming.png",
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/pain-gaming/pain-gaming-logo.png",
+      "https://commons.wikimedia.org/wiki/File:PaiN_Gaming_logo.svg"
+    ],
+    "decision": "Сверен оригинальный клубный знак и описание прав на эту графическую версию.",
+    "fileSource": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/paIN%20Gaming.png",
+    "kind": "original",
+    "sha256": "56526c2b43e6d1fb0cc3e148cce44fc3f3b01a612f0e44b063b46c44ea6ff83b",
+    "source": "https://commons.wikimedia.org/wiki/File:PaiN_Gaming_logo.svg"
+  },
+  "regain": {
+    "checked": [
+      "https://liquipedia.net/counterstrike/Regain",
+      "https://www.hltv.org/team/12554/regain",
+      "https://escharts.com/teams/csgo/regain",
+      "https://bo3.gg/teams/regain"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "241fe9373ae4f86a3b5fee8d9130394291ce05b13430b116d82f1b3252830d70",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "rottweilers": {
+    "checked": [
+      "https://www.hltv.org/stats/teams/13643/rottweilers?csVersion=CS2",
+      "https://bo3.gg/teams/rottweilers"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "e0f01db24d17b19abaa759d03197fdd6d58ee181f8c2681ff7598e76661aa1f0",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "yngods": {
+    "checked": [
+      "https://www.cs2observer.com/team/yngods",
+      "https://escorenews.com/en/csgo/team/yngods",
+      "https://bo3.gg/teams/yngods",
+      "https://www.hltv.org/team/13450/yngods"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "5c76f49088e9f0a27f6d517d107b936439bfa6361f8c4d4266c8fe06ed597097",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "yunglean": {
+    "checked": [
+      "https://www.hltv.org/team/13786/yunglean"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "8c1eef799d439eceffe0c6ec0f41ad2040e244fe7e9db0055de134e9335ef335",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "zajezdzacze": {
+    "checked": [
+      "https://bo3.gg/teams/zajezdzacze",
+      "https://www.hltv.org/stats/teams/13690/zajezdzacze?country=russia&csVersion=CS2"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "4ec09002f6bc16c071a0867966e9ee1586fbb94659806bd22c9e2d54373bbdb2",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  },
+  "Ølgod Efterskole": {
+    "checked": [
+      "https://www.hltv.org/team/13801/lgod-efterskole",
+      "https://escharts.com/teams/csgo/lgod-efterskole"
+    ],
+    "decision": "Найдена публикация о составе. Подтверждённая пара из оригинального файла клуба и условий его распространения не найдена.",
+    "kind": "game",
+    "sha256": "e228360e0da44590bfbd18a4fe15ee601cd8f846169aba504599e78083b94bbd",
+    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+  }
+}

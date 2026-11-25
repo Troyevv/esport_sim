@@ -17,6 +17,8 @@ from . import tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
+from .portrait_api import portrait_router
+from .database_api import editor_router
 from .home_settings import home_router
 from .lan import LanAccess
 
@@ -29,8 +31,28 @@ class Command(BaseModel):
     id: UUID
     revision: StrictInt
     context: str
-    kind: Literal["start", "pause", "speed", "reset", "save", "load", "match", "timeout", "call", "resume", "tactic-save", "tactic-delete", "tactic-assign"]
-    value: StrictInt | Literal["Капитану", "Выход A", "Выход B", "Ускориться", "Экономить"] | dict | None = None
+    kind: Literal[
+        "start",
+        "pause",
+        "speed",
+        "reset",
+        "save",
+        "load",
+        "match",
+        "timeout",
+        "call",
+        "resume",
+        "tactic-save",
+        "tactic-delete",
+        "tactic-assign",
+        "database-match",
+    ]
+    value: (
+        StrictInt
+        | Literal["Капитану", "Выход A", "Выход B", "Ускориться", "Экономить"]
+        | dict
+        | None
+    ) = None
 
 
 class Pair(BaseModel):
@@ -66,6 +88,8 @@ def create_app(
                 app.state.load_error = str(exc)
                 raise
             app.state.store = store
+            store.portraits.resume()
+            store.badges.resume()
             if pairing_code:
                 with store.transaction():
                     issue_code(store.db, pairing_code)
@@ -101,6 +125,8 @@ def create_app(
             try:
                 yield
             finally:
+                store.portraits.close()
+                store.badges.close()
                 task.cancel()
                 with suppress(asyncio.CancelledError):
                     await task
@@ -212,6 +238,9 @@ def create_app(
             max_age=2592000,
         )
         return response
+
+    app.include_router(editor_router(app))
+    app.include_router(portrait_router(app))
 
     @app.get("/api/tactics")
     async def library():

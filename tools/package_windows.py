@@ -57,6 +57,12 @@ def main():
             str(ROOT),
             "--add-data",
             f"{frontend}:frontend/dist",
+            "--add-data",
+            f"{ROOT / 'backend' / 'data'}:backend/data",
+            "--collect-data",
+            "mediapipe",
+            "--collect-binaries",
+            "mediapipe",
             "--collect-submodules",
             "uvicorn",
             str(ROOT / "backend" / "desktop.py"),
@@ -73,9 +79,33 @@ def main():
     shutil.copyfile(ROOT / "LICENSE", output / "LICENSE")
     shutil.copyfile(ROOT / "docs" / "TACTICS.md", output / "TACTICS.md")
     shutil.copyfile(ROOT / "docs" / "WORLD_R31.md", output / "WORLD_R31.md")
+    shutil.copyfile(ROOT / "SOURCES.md", output / "SOURCES.md")
+    guide = (ROOT / "docs" / "DATABASE_R32.md").read_text(encoding="utf-8")
+    (output / "DATABASE_R32.md").write_text(
+        guide.replace("../SOURCES.md", "SOURCES.md"), encoding="utf-8"
+    )
+    for name in (
+        "SCENE_202611.md",
+        "PORTRAITS_R32.md",
+        "SCENE_ART_R32.md",
+        "CLUBS_AND_KITS_R32.md",
+        "PORTRAIT_FIT_R32.md",
+        "TEAM_KIT_COVERAGE.csv",
+        "PERSONAL_BADGES_R32.md",
+        "PRIVATE_STUDIO_R32.md",
+        "PRIVATE_STUDIO_COVERAGE.csv",
+        "PRIVATE_STUDIO_SEARCH.csv",
+        "CLUB_BADGE_SOURCES.md",
+    ):
+        doc = (ROOT / "docs" / name).read_text(encoding="utf-8")
+        (output / name).write_text(
+            doc.replace("../backend/data/", "_internal/backend/data/"), encoding="utf-8"
+        )
     screenshots = output / "screenshots"
     screenshots.mkdir(exist_ok=True)
-    for source in (ROOT / "docs" / "screenshots").glob("r2-*.png"):
+    for source in sorted((ROOT / "docs" / "screenshots").glob("*.png")):
+        if not source.name.startswith(("r2-", "r32-")):
+            continue
         shutil.copyfile(source, screenshots / source.name)
     archive = dist / "EsportSim-windows-x64.zip"
     with zipfile.ZipFile(archive, "w") as bundle:
