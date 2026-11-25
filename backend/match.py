@@ -220,7 +220,8 @@ def next_round(w):
         if space:
             (x,y,z),heading,area = space.spawn(side,slot,(w["seed"]+n) % len(space.spawns[side]))
             a.update(z=z,navArea=area,waypoint=0,blockedTicks=0,inspectedSites={},routeReports={},lastRouteReport=-100,
-                     useTarget=None,useFloor=None,checkContact=None,checkPosition=None)
+                     useTarget=None,useFloor=None,checkContact=None,checkPosition=None,
+                     shelter=None,coverUntil=0,coverReview=0,bombSearch=None)
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
@@ -790,6 +791,8 @@ def advance(w):
             previous = a["status"]
             step_index = a.get("stepIndex", 0)
             intents.append((a, *ai.act(observation, a, squad, known_bomb, fire)))
+            if space and a.get("lastBlockedTick") != now:
+                a["blockedTicks"] = 0
             if (space and side=="T" and w["phase"]=="live" and a.get("blockedTicks",0)>=20
                     and now-a.get("lastRouteReport",-100)>=60):
                 site=w["plans"][side]["site"]

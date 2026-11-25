@@ -263,7 +263,14 @@ class Map:
             if side == "CT" and waypoints:
                 options = self.angles(defended, variant, hold)
                 guards_view = dict(options)
-                hold = self._reachable(xyz(player), guards_view) or hold
+                # A second anchor or the rotator can share a callout. Take a
+                # separate reachable position before falling back to that spot.
+                occupied = [slot["hold"] for slot in slots if slot["site"] == defended]
+                positions = sorted(
+                    guards_view,
+                    key=lambda p: any(dist(p, other) < 6 for other in occupied),
+                )
+                hold = self._reachable(xyz(player), positions) or hold
                 waypoints = [hold]
             if side == "T":
                 covers = [

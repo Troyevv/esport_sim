@@ -41,6 +41,8 @@ def play(name, seed, pair, pack, replay, adjustment=0):
     retakes = set()
     stalls = set()
     blocked_areas = Counter()
+    blocked_tasks = Counter()
+    examples = []
     team_sides = {}
     outcomes = []
     while game["phase"] != "finished":
@@ -72,7 +74,21 @@ def play(name, seed, pair, pack, replay, adjustment=0):
                 if a["status"] == "Идёт на ретейк":
                     retakes.add(game["round"])
                 if a.get("blockedTicks", 0) >= 20:
-                    stalls.add((game["round"], a["id"]))
+                    episode = (game["round"], a["id"])
+                    if episode not in stalls:
+                        blocked_tasks[a["status"]] += 1
+                        if len(examples) < 4:
+                            examples.append(
+                                dict(
+                                    tick=tick,
+                                    player=a["id"],
+                                    area=a["navArea"],
+                                    goal=a.get("blockedGoal"),
+                                    task=a["status"],
+                                    phase=game["phase"],
+                                )
+                            )
+                    stalls.add(episode)
                     blocked_areas[a["navArea"]] += 1
             if replay:
                 frames.append(
@@ -151,6 +167,8 @@ def play(name, seed, pair, pack, replay, adjustment=0):
         trades=trades,
         stalls=len(stalls),
         blockedAreas=blocked_areas.most_common(8),
+        blockedTasks=blocked_tasks,
+        blockedExamples=examples,
     )
     return results, frames, outcomes
 

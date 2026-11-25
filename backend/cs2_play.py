@@ -41,6 +41,99 @@ def opening(space, w, squad, captain, player, buy, site, style, call):
     return site, style, lane
 
 
+def assign_backup(space, plan, squad, site, pressure):
+    """Send an available off-site player to an angle that complements the anchors."""
+    if not site:
+        plan.pop("backup", None)
+        return
+    slots = plan["orders"]["slots"]
+    other = [a for a in squad if slots[a["slot"]]["site"] != site]
+    if not other or (len(other) == 1 and pressure < 3):
+        plan.pop("backup", None)
+        return
+    current = plan.get("backup")
+    if (
+        current
+        and current["site"] == site
+        and any(p["id"] == current["id"] for p in other)
+    ):
+        return
+    guards = [slots[p["slot"]] for p in squad if slots[p["slot"]]["site"] == site]
+    candidates = list(space.holds[site])
+    if not candidates:
+        candidates = [(i, space.centers[i]) for i in space.plants[site]]
+    routes = []
+    for actor in other:
+        pos = xyz(actor)
+        for area, target in candidates:
+            if any(dist(target, guard["hold"]) < 6 for guard in guards):
+                continue
+            route = space.route(actor["navArea"], area)
+            if route is not None:
+                routes.append((len(route), dist(pos, target), actor["slot"], target))
+    by_slot = {p["slot"]: p for p in other}
+    for _, _, index, target in sorted(routes):
+        actor = by_slot[index]
+        if space._reachable(xyz(actor), [target]) is not None:
+            visible = [
+                q
+                for q in space.ingress(site, plan["lane"])
+                if dist(q, target) > 6 and space.hit(target, q, 1, 64) is None
+            ]
+            watch = visible[0] if visible else space.site_points[site]
+            plan["backup"] = dict(
+                id=actor["id"], site=site, hold=list(target), watch=list(watch)
+            )
+            return
+    plan.pop("backup", None)
+
+
+def seek_cover(space, actor, contact, allies, skills, now, fire, travel):
+    """Break sight or finish reloading using only this player's last contact."""
+    if contact and (
+        actor["reloadAt"] or actor["hp"] < 35 and len(actor["visible"]) > 1
+    ):
+        if now >= actor.get("coverReview", 0):
+            threat = xyz(contact)
+            pos = xyz(actor)
+            spots = set(space.centers[i] for i in space.nearby_areas(pos, 15))
+            spots.update(p for _, p in space.cover if dist(p, pos) <= 15)
+            occupied = [xyz(p) for p in allies if p is not actor]
+            choices = sorted(
+                (
+                    q
+                    for q in spots
+                    if 1 < dist(q, pos) and space.hit(q, threat, 1, 64) is not None
+                ),
+                key=lambda q: (any(dist(q, a) < 3 for a in occupied), dist(q, pos), q),
+            )
+            actor["coverReview"] = now + 5 + (100 - skills["positioning"]) // 12
+            for q in choices:
+                path = space.path(
+                    actor["navArea"], pos, space.locate(q), q, frozenset()
+                )
+                if path is None:
+                    continue
+                prev = pos
+                length = 0
+                for node in path:
+                    length += dist(prev, node[:3])
+                    prev = node[:3]
+                if length > 20:
+                    continue
+                actor["shelter"] = list(q)
+                actor["coverUntil"] = max(actor["reloadAt"], now + 10)
+                break
+    if actor.get("shelter") and now < actor.get("coverUntil", 0):
+        actor["status"] = "Уходит за укрытие"
+        moved = travel(actor, actor["shelter"], 2, fire, allow_detour=True)
+        if not moved and actor.get("blockedTicks"):
+            actor.pop("shelter")
+            return None
+        return ("move" if moved else "hold"), None
+    return None
+
+
 def exit_goal(space, w, a, allies, bomb):
     site = (bomb and bomb["site"]) or a["heardSite"] or w["plan"]["reinforce"]
     if not site:
@@ -140,6 +233,47 @@ def rescue(space, squad, bomb):
     return bomb["recovery"]
 
 
+def search_site(space, actor, site, now):
+    # A beep identifies the site, but a crate or raised platform can hide
+    # the device from the site's centre. Clear the actual plant surfaces.
+    pos = xyz(actor)
+    center = space.site_points[site]
+    state = actor.get("bombSearch")
+    if not state or state["site"] != site:
+        if dist(pos, center) > 25 and actor.get("blockedTicks", 0) < 5:
+            return center
+        state = actor["bombSearch"] = dict(site=site, seen=[], goal=None, next=0)
+    if (
+        state["goal"]
+        and dist(pos, state["goal"]) > 2
+        and actor.get("blockedTicks", 0) < 5
+    ):
+        return state["goal"]
+    if now < state["next"]:
+        return state["goal"] or pos
+    state["next"] = now + 8
+    candidates = space.plants[site]
+    seen = set(state["seen"])
+    for i in candidates:
+        p = space.centers[i]
+        if i not in seen and dist(pos, p) < 26 and space.hit(pos, p, 1, 64, 5) is None:
+            seen.add(i)
+    unsearched = [i for i in candidates if i not in seen]
+    if not unsearched:
+        # The centre of each polygon is only one sample of a legal plant.
+        # Inspect it from a different position as the retake develops.
+        seen.clear()
+        unsearched = sorted(candidates)
+        offset = (actor["slot"] + now // 8) % len(unsearched)
+        unsearched = unsearched[offset:] + unsearched[:offset]
+    else:
+        unsearched.sort(key=lambda i: (dist(pos, space.centers[i]), i))
+    state["seen"] = sorted(seen)
+    goal = space._reachable(pos, (space.centers[i] for i in unsearched))
+    state["goal"] = list(goal) if goal else None
+    return goal or center
+
+
 def spatial_intent(space, w, a, allies, bomb, fire, travel):
     now, plan = w["tick"], w["plan"]
     side, slot = a["team"], a["slot"]
@@ -158,6 +292,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
     skill = w["player"]["skills"]
     familiarity = w["player"]["mapKnowledge"].get(space.name.removeprefix("de_"), 0)
     goal = order["hold"]
+    watch = order["watch"]
     if w["phase"] == "planted":
         if side == "CT":
             site = a["heardSite"] or plan["reinforce"] or order["site"]
@@ -173,7 +308,12 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                     site = other_site
                 if dist(pos, space.site_points[site]) < 15:
                     inspected[site] = now
-            goal = xyz(bomb) if bomb else space.site_points[site]
+            if bomb:
+                goal = xyz(bomb)
+            elif a["heardSite"]:
+                goal = search_site(space, a, site, now)
+            else:
+                goal = space.site_points[site]
             other = w["action"] and w["action"]["player"] != a["id"]
             if bomb and dist(pos, goal) <= 6 and not other and space.clear(a, bomb):
                 return "defuse", None
@@ -239,9 +379,9 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                     a["status"] = "Ждёт партнёра для выхода"
     else:
         site = order["site"]
-        if plan["reinforce"] and slot in (1, 4):
-            site = plan["reinforce"]
-            goal = space.site_points[site]
+        backup = plan.get("backup")
+        if backup and backup["id"] == a["id"]:
+            site, goal, watch = backup["site"], backup["hold"], backup["watch"]
         a["status"] = f"Занимает {site}"
     if (
         side == "T"
@@ -314,7 +454,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             a["heading"] = atan2(latest["y"] - a["y"], latest["x"] - a["x"])
         return "move", None
     # Watch an approach known to this team or turn toward the last reported contact.
-    watch = xyz(latest) if latest else order["watch"]
+    watch = xyz(latest) if latest else watch
     a["heading"] = atan2(watch[1] - a["y"], watch[0] - a["x"]) + 0.65 * sin(
         (now + 13 * slot) / 26
     )

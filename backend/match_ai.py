@@ -215,6 +215,12 @@ def captain(w, squad, space=None):
     if leader["team"] == "CT":
         if counts["A"] != counts["B"] and max(counts.values()) >= 2:
             plan["reinforce"] = max(counts, key=counts.get)
+        if space and w["phase"] == "live":
+            if max(counts.values()) >= 2 and counts["A"] != counts["B"]:
+                plan["reinforceUntil"] = max(p["tick"] for p in contacts) + 75
+            elif now > plan.get("reinforceUntil", plan["start"] + 75):
+                plan["reinforce"] = None
+            cs2_play.assign_backup(space,plan,squad,plan["reinforce"],max(counts.values()))
         if w["phase"] == "planted":
             # The announcement is public. Site identification travels with the beep.
             heard = leader["heardSite"]
@@ -365,9 +371,16 @@ def act(w, a, allies, bomb, visible_fire):
     s = player["skills"]
     side, slot = a["team"], a["slot"]
 
+    if w.get("space") and a.get("lastBlockedTick") != now - 1:
+        a["blockedTicks"] = 0
+
     def travel(agent, goal, pace, fire, **options):
         if w.get("space"):
-            return w["space"].walk(agent,goal,pace*perf.move_speed(player),fire)
+            moved = w["space"].walk(agent,goal,pace*perf.move_speed(player),fire)
+            if agent["blockedTicks"]:
+                agent["lastBlockedTick"] = now
+                agent["blockedGoal"] = list(goal)
+            return moved
         return walk(agent, goal, pace * perf.move_speed(player), fire, **options)
 
     site = plan["site"]
@@ -415,6 +428,10 @@ def act(w, a, allies, bomb, visible_fire):
                 return ("move", None)
             if not contact:
                 return ("hold", None)
+    if w.get("space") and not w["action"] and w["deadline"]-now > 35:
+        retreat = cs2_play.seek_cover(w["space"],a,contact,allies,s,now,visible_fire,travel)
+        if retreat:
+            return retreat
     if contact:
         old_heading = a["heading"]
         a["heading"] = atan2(contact["y"] - a["y"], contact["x"] - a["x"])
@@ -469,9 +486,9 @@ def act(w, a, allies, bomb, visible_fire):
         rescuer = recover and assignment and assignment["player"] == a["id"]
     else:
         rescuer = recover and min(alive, key=lambda p: (distance(p, bomb), p["id"])) is a
-    reinforce = side == "CT" and (
-        w["phase"] == "planted" or (plan["reinforce"] and slot in (1, 4))
-    )
+    backup = plan.get("backup")
+    responding = (backup and backup["id"] == a["id"]) if w.get("space") else (plan["reinforce"] and slot in (1, 4))
+    reinforce = side == "CT" and (w["phase"] == "planted" or responding)
     if (
         not rescuer
         and not reinforce

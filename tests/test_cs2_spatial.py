@@ -192,3 +192,65 @@ def test_squad_reassigns_dropped_c4_by_accessible_route():
     assert rescue(space, squad[2:], bomb)["player"] == 2
     bomb["carrier"] = 2
     assert rescue(space, squad, bomb) is None and "recovery" not in bomb
+
+
+def test_fifth_defender_can_reinforce_without_moving_the_anchor():
+    from types import SimpleNamespace
+    from backend.cs2_play import assign_backup
+
+    pos = (7, 0, 0)
+    plan = dict(lane=0, orders=dict(slots=[
+        dict(site="A", hold=[0, 0, 0]),
+        dict(site="B", hold=[50, 0, 0]),
+        dict(site="B", hold=[60, 0, 0]),
+    ]))
+    squad = [dict(id=f"p{i}", slot=i, navArea=i, x=x, y=0, z=0)
+             for i, x in enumerate((0, 50, 60))]
+    space = SimpleNamespace(
+        holds={"A": [(0, (0, 0, 0)), (3, pos)]},
+        route=lambda *args: [3],
+        _reachable=lambda origin, goals: goals[0],
+        ingress=lambda *args: [(15, 0, 0)],
+        hit=lambda *args: None,
+        site_points={"A": pos},
+    )
+    assign_backup(space, plan, squad, "A", 2)
+    assert plan["backup"]["id"] == "p1" and plan["backup"]["hold"] == list(pos)
+    assign_backup(space, plan, squad, None, 0)
+    assert "backup" not in plan
+
+
+def test_visible_contact_can_trigger_a_reachable_reload_shelter():
+    from types import SimpleNamespace
+    from backend.cs2_play import seek_cover
+
+    actor = dict(x=0, y=0, z=0, hp=65, reloadAt=20, visible=["x"], navArea=1)
+    enemy = dict(x=20, y=0, z=0)
+    hidden = (4, 5, 0)
+    exposed = (3, 0, 0)
+    space = SimpleNamespace(
+        centers={1: exposed, 2: hidden}, nearby_areas=lambda *_: [1, 2], cover=[],
+        hit=lambda a,*_: (0.5, "stone", None) if a == hidden else None,
+        locate=lambda *_: 2, path=lambda *_: [(*hidden, 2)],
+    )
+    def travel(a, goal, *args, **kwargs):
+        assert goal == list(hidden)
+        return True
+    assert seek_cover(space, actor, enemy, [actor], {"positioning":70}, 5, [], travel) == ("move", None)
+
+
+def test_retaker_checks_obscured_plant_surfaces_after_hearing_the_beep():
+    from types import SimpleNamespace
+    from backend.cs2_play import search_site
+
+    center = (0, 0, 0)
+    behind_cover = (8, 5, 0)
+    actor = dict(x=0, y=0, z=0, slot=2)
+    space = SimpleNamespace(
+        site_points={"B": center}, plants={"B": [1, 2]},
+        centers={1: center, 2: behind_cover},
+        hit=lambda a,b,*_: None if b == center else (0.5, "crate", None),
+        _reachable=lambda _, points: next(iter(points), None),
+    )
+    assert search_site(space, actor, "B", 100) == behind_cover
+    assert actor["bombSearch"]["seen"] == [1]
