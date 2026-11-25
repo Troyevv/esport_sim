@@ -7,7 +7,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).with_name("data") / "club-art"
-ARCHIVES = {"austin-registration", "scene-20261124", "scene-202611"}
+ARCHIVES = {"scene-20261125", "austin-registration", "scene-20261124", "scene-202611"}
 ALIASES = {
     "Nemesis": "Team Nemesis",
     "5star": "5star eSports",
@@ -26,6 +26,13 @@ def catalog():
     return json.loads((ROOT / "catalog.json").read_text(encoding="utf-8"))
 
 
+@lru_cache(maxsize=1)
+def personal_sources():
+    return json.loads(
+        (ROOT.parent / "personal-badge-sources.json").read_text(encoding="utf-8")
+    )["clubs"]
+
+
 @lru_cache(maxsize=320)
 def stock(name):
     key = ALIASES.get(name, name)
@@ -35,13 +42,18 @@ def stock(name):
     original = item["kind"] == "original"
     return {
         "image": "/api/database/club-art/" + item["sha256"] + ".png",
-        "author": key if original else "EsportSim",
+        "author": item.get("author", key) if original else "EsportSim",
         "source": item["source"],
         "license": item.get("license", "PD-textlogo" if original else "MIT"),
         "changes": (
             "Оригинальная эмблема · локальная копия знака, нормализованы размер и поля."
             if original
-            else "Игровая эмблема · " + item["decision"]
+            else (
+                "Игровая эмблема · Оригинал доступен в личном пакете. "
+                if key in personal_sources()
+                else "Игровая эмблема · "
+            )
+            + item["decision"]
         ),
     }
 

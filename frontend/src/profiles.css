@@ -509,3 +509,31 @@
     height: 6.6rem;
   }
 }
+
+.badge-library {
+  padding: 0.8rem;
+  background: #172b2c;
+  border: 1px solid #385251;
+  border-radius: 0.5rem;
+}
+.badge-library p {
+  line-height: 1.45;
+  margin: 0.35rem 0 0.65rem;
+}
+.badge-library-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.6rem;
+  margin: 0.65rem 0;
+}
+.badge-library-options > div {
+  padding: 0.7rem;
+  background: #213536;
+  border-radius: 0.4rem;
+}
+.badge-library details ul {
+  max-height: 12rem;
+  overflow-y: auto;
+  padding-inline-start: 1.5rem;
+  overflow-wrap: anywhere;
+}

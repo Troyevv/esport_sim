@@ -34,11 +34,13 @@ def validate_snapshot(state):
             raise Conflict("Несовместимая пара версий правил и контрольной точки")
 
 
+from .personal_badges import PersonalBadges
 from .portrait_library import PortraitLibrary
 
 
 class Store:
     def __init__(self, path: Path):
+        self.badges = PersonalBadges(Path(path).with_suffix(".club-originals.sqlite"))
         self.portraits = PortraitLibrary(Path(path).with_suffix(".portraits.sqlite"))
         self.motion = deque(maxlen=6)  # Recent committed poses, never part of a save.
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
@@ -309,7 +311,9 @@ class Store:
                     type(value["revision"]) is int, "Некорректная редакция"
                 )
                 pack = database.get(self.db, value["id"], value["revision"])
-                domain = database.match_input(pack, value["rosters"])
+                domain = database.match_input(
+                    pack, value["rosters"], self.badges.index(pack)
+                )
                 cached = self.portraits.index(
                     {pid: pack["players"][pid] for pid in domain["players"]}
                 )

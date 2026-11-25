@@ -19,13 +19,15 @@ import {
 } from "./databaseModel";
 import "./database.css";
 import { PortraitImport } from "./PortraitImport";
-import type { PhotoAsset } from "./portraits";
+import { resolvePortrait, type PhotoAsset } from "./portraits";
 import {
   attachArchiveClubs,
   archiveClubsFor,
+  portraitCacheFor,
   attachPortraitCache,
   playerAppearance,
 } from "./databaseModel";
+import { PersonalBadges } from "./PersonalBadges";
 import { KitEditor, KitPreview } from "./KitStudio";
 import { Identity } from "./SceneIdentity";
 import { entityVisual } from "./databaseModel";
@@ -610,6 +612,18 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
           {notice}
         </p>
       )}
+      <PersonalBadges
+        refresh={async () => {
+          const marks = await request("/" + refKey(pack) + "/club-index");
+          setPack((previous) => {
+            if (!previous || refKey(previous) !== refKey(pack)) return previous;
+            const next = { ...previous };
+            attachArchiveClubs(next, marks);
+            attachPortraitCache(next, portraitCacheFor(previous));
+            return next;
+          });
+        }}
+      />
       <PortraitImport
         pack={pack}
         onRefresh={async () => {
@@ -922,7 +936,19 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
                       )}
                       {g === "teams" && (
                         <>
-                          <KitEditor team={r} id={at.id} patch={patch} />
+                          <KitEditor
+                            team={r}
+                            id={at.id}
+                            patch={patch}
+                            currentBadge={
+                              JSON.stringify(r.logo) ===
+                              JSON.stringify(pack.teams[at.id]?.logo)
+                                ? resolvePortrait(
+                                    entityVisual(pack, "teams", at.id).photo,
+                                  )
+                                : undefined
+                            }
+                          />
                           <Select
                             label="Регион"
                             value={r.region || ""}

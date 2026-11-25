@@ -89,6 +89,7 @@ def create_app(
                 raise
             app.state.store = store
             store.portraits.resume()
+            store.badges.resume()
             if pairing_code:
                 with store.transaction():
                     issue_code(store.db, pairing_code)
@@ -125,6 +126,7 @@ def create_app(
                 yield
             finally:
                 store.portraits.close()
+                store.badges.close()
                 task.cancel()
                 with suppress(asyncio.CancelledError):
                     await task

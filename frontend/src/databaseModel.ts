@@ -329,6 +329,9 @@ export function attachPortraitCache(
 ) {
   studioCache.set(pack, cache);
 }
+export function portraitCacheFor(pack: Pack) {
+  return studioCache.get(pack) || {};
+}
 export function playerAppearance(pack: Pack, id: string) {
   return pack.players[id]?.appearance ?? studioCache.get(pack)?.[id] ?? null;
 }

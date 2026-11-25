@@ -147,7 +147,7 @@ export function ProfileHeading({
           </a>{" "}
           ·{" "}
           <a
-            href={photoLicenses[asset.license]}
+            href={photoLicenses[asset.license] || asset.source}
             target="_blank"
             rel="noreferrer"
           >

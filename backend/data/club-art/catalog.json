@@ -101,9 +101,10 @@
       "https://skinory.io/en/pro-teams-cs2/9ine",
       "https://www.cs2observer.com/team/9ine",
       "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/9INE%20Pusulabet.png",
-      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/9ine/9ine-logo.png"
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/9ine/9ine-logo.png",
+      "https://commons.wikimedia.org/wiki/File:9INE_Logo.png"
     ],
-    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "decision": "У версии 2019 года указана CC BY-SA сторонним загрузчиком. Для проверенной современной клубной эмблемы разрешение на включение в дистрибутив не установлено.",
     "kind": "game",
     "sha256": "30b326f66f92366b50fa608fbf9959bf10cd9483319b6f3c9aa3cf156268ab3a",
     "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
@@ -473,6 +474,7 @@
     "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
   },
   "BIG": {
+    "author": "BIG CLAN",
     "checked": [
       "https://bigclan.gg/pages/press-contact",
       "https://liquipedia.net/counterstrike/BIG",
@@ -480,37 +482,56 @@
       "https://www.hltv.org/team/7532/big",
       "https://skinory.io/en/pro-teams-cs2/big",
       "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BIG.png",
-      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/big/big-logo.png"
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/big/big-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Big_clan_logo.jpg",
+      "https://www.youtube.com/watch?v=7k81v1H8_qk",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/big.png"
     ],
-    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
-    "kind": "game",
-    "sha256": "130a1cca935a1bcbedbee08b2e12b95192225659f652bd144cd385c91bfed739",
-    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+    "decision": "Знак лапы BIG из публикации самого клуба на YouTube под CC BY 3.0. Масштабирование и прозрачные поля.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/big.png",
+    "kind": "original",
+    "license": "CC BY 3.0",
+    "sha256": "30fba03963a90441795312ee909765a3587af18423d03e99d5f57fb29dcc4b08",
+    "source": "https://commons.wikimedia.org/wiki/File:Big_clan_logo.jpg"
   },
   "BIG Academy": {
+    "author": "BIG CLAN",
     "checked": [
       "https://liquipedia.net/counterstrike/BIG_Academy",
       "https://cs2sell.com/esports/teams/big-academy",
       "https://www.hltv.org/team/10254/big-academy",
       "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BIG%20Academy.png",
-      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/big-academy/big-academy-logo.png"
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/big-academy/big-academy-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Big_clan_logo.jpg",
+      "https://www.youtube.com/watch?v=7k81v1H8_qk",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/big.png"
     ],
-    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
-    "kind": "game",
-    "sha256": "ecca3c6b6ad60492db3fb2975d8033c65c977cbaf17a80cb61f5696f4ab63445",
-    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+    "decision": "Знак лапы BIG из публикации самого клуба на YouTube под CC BY 3.0. Масштабирование и прозрачные поля.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/big.png",
+    "kind": "original",
+    "license": "CC BY 3.0",
+    "sha256": "30fba03963a90441795312ee909765a3587af18423d03e99d5f57fb29dcc4b08",
+    "sharedWith": "BIG",
+    "source": "https://commons.wikimedia.org/wiki/File:Big_clan_logo.jpg"
   },
   "BIG EQUIPA": {
+    "author": "BIG CLAN",
     "checked": [
       "https://liquipedia.net/counterstrike/BIG_EQUIPA",
       "https://www.hltv.org/team/11718/big-equipa",
       "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/BIG%20EQUIPA.png",
-      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/big-equipa/big-equipa-logo.png"
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/big-equipa/big-equipa-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Big_clan_logo.jpg",
+      "https://www.youtube.com/watch?v=7k81v1H8_qk",
+      "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/big.png"
     ],
-    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
-    "kind": "game",
-    "sha256": "352070a65953e906ace3d3fbb301d6b1293878186ffe086ed03950aae27ebfab",
-    "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
+    "decision": "Знак лапы BIG из публикации самого клуба на YouTube под CC BY 3.0. Масштабирование и прозрачные поля.",
+    "fileSource": "https://github.com/Aut-sep/Astrbot-plugin-CS2-match-push/blob/77f36c61cacd85ff08cb2f08bc2260046e7d6b64/pages/management/logos/big.png",
+    "kind": "original",
+    "license": "CC BY 3.0",
+    "sha256": "30fba03963a90441795312ee909765a3587af18423d03e99d5f57fb29dcc4b08",
+    "sharedWith": "BIG",
+    "source": "https://commons.wikimedia.org/wiki/File:Big_clan_logo.jpg"
   },
   "BMZ": {
     "checked": [
@@ -1017,9 +1038,10 @@
       "https://www.hltv.org/team/11737/eyeballers",
       "https://skinory.io/en/pro-teams-cs2/eyeballers",
       "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Teams/EYEBALLERS.png",
-      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/eyeballers/eyeballers-logo.png"
+      "https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/eyeballers/eyeballers-logo.png",
+      "https://commons.wikimedia.org/wiki/File:Esports_Team_EYEBALLERS_Logo.png"
     ],
-    "decision": "Найдена копия клубного знака в каталоге изображений. Разрешение правообладателя на включение этой версии в поставку игры не установлено.",
+    "decision": "В Commons найден знак 2022 года под PD-textlogo. Исходный PNG недоступен для загрузки из среды сборки (HTTP 403); соответствие клубных вариантов этому файлу не подтверждено.",
     "kind": "game",
     "sha256": "815cc1e2416909f16d780c919ba861cef0a7fe56b6a32065a84acce8f6e9931b",
     "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"
@@ -1379,9 +1401,10 @@
       "https://liquipedia.net/counterstrike/Gentle_Mates",
       "https://www.hltv.org/team/13404/gentle-mates",
       "https://cs2sell.com/esports/teams/gentle-mates",
-      "https://www.cs2observer.com/team/gentle-mates"
+      "https://www.cs2observer.com/team/gentle-mates",
+      "https://commons.wikimedia.org/wiki/File:Paris_Gentle_Mates_logo.svg"
     ],
-    "decision": "Клуб публикует графику в своих бренд-материалах. Условия для распространения оригинала в поставке игры не подтверждены.",
+    "decision": "Найден отдельный знак Paris Gentle Mates для Call of Duty. Для эмблемы подразделения CS2 разрешение на распространение вместе с игрой не установлено.",
     "kind": "game",
     "sha256": "c700906a348c2653e28c0885a09b8e3331c0afb8435ac6000c6ca70fd99d6513",
     "source": "https://github.com/Troyevv/esport_sim/tree/feature/r3-2-real-database/backend/data/club-art"

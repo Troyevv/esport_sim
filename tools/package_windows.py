@@ -84,8 +84,17 @@ def main():
     (output / "DATABASE_R32.md").write_text(
         guide.replace("../SOURCES.md", "SOURCES.md"), encoding="utf-8"
     )
-    for name in ("SCENE_202611.md", "PORTRAITS_R32.md"):
-        shutil.copyfile(ROOT / "docs" / name, output / name)
+    for name in (
+        "SCENE_202611.md",
+        "PORTRAITS_R32.md",
+        "SCENE_ART_R32.md",
+        "PERSONAL_BADGES_R32.md",
+        "CLUB_BADGE_SOURCES.md",
+    ):
+        doc = (ROOT / "docs" / name).read_text(encoding="utf-8")
+        (output / name).write_text(
+            doc.replace("../backend/data/", "_internal/backend/data/"), encoding="utf-8"
+        )
     screenshots = output / "screenshots"
     screenshots.mkdir(exist_ok=True)
     for source in sorted((ROOT / "docs" / "screenshots").glob("*.png")):

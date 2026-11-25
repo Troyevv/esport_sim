@@ -1,13 +1,15 @@
 """Authenticated editor context; package content never travels on the game stream."""
 
-from uuid import uuid4
 import base64
 import re
-from fastapi.responses import Response, RedirectResponse
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import RedirectResponse, Response
+from starlette.concurrency import run_in_threadpool
 
-from . import club_art, database as data, valve_import
+from . import club_art, valve_import
+from . import database as data
 from .portrait_sources import previously_rejected
 
 
@@ -17,6 +19,55 @@ def editor_router(app):
     @router.get("")
     async def catalog():
         return data.installed(app.state.store.db)
+
+    @router.get("/personal-badges/status")
+    async def personal_status():
+        return app.state.store.badges.status()
+
+    @router.post("/personal-badges/action")
+    async def personal_action(body: dict):
+        try:
+            return app.state.store.badges.start(body.get("mode"))
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @router.post("/personal-badges/offline")
+    async def personal_offline(request: Request):
+        content = bytearray()
+        async for chunk in request.stream():
+            if len(content) + len(chunk) > 24 * 1024 * 1024:
+                raise HTTPException(413, "Личный пакет больше 24 МиБ")
+            content.extend(chunk)
+        try:
+            return await run_in_threadpool(
+                app.state.store.badges.install_offline, content
+            )
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @router.get("/personal-image/{digest}")
+    async def personal_image(digest: str):
+        if not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise HTTPException(404)
+        result = app.state.store.badges.image(digest)
+        if not result:
+            raise HTTPException(404)
+        return Response(
+            result[0],
+            media_type=result[1],
+            headers={
+                "Cache-Control": "private, no-store",
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
+
+    @router.get("/{key}/{revision}/club-index")
+    async def club_index(key: str, revision: int):
+        try:
+            p = data.get(app.state.store.db, key, revision)
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        return {**club_art.archive_index(p), **app.state.store.badges.index(p)}
 
     @router.get("/club-art/{filename}")
     async def club_image(filename: str):
@@ -38,7 +89,10 @@ def editor_router(app):
             return dict(
                 data.envelope(p),
                 portraits=app.state.store.portraits.index(p["players"]),
-                clubArt=club_art.archive_index(p),
+                clubArt={
+                    **club_art.archive_index(p),
+                    **app.state.store.badges.index(p),
+                },
             )
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
@@ -72,6 +126,17 @@ def editor_router(app):
                 else record.get("logo") or record.get("photo")
             )
             if group in ("teams", "organizations"):
+                lookup = {
+                    "id": key,
+                    "teams": {},
+                    "organizations": {},
+                    group: {ident: record},
+                }
+                override = app.state.store.badges.index(lookup).get(group + "/" + ident)
+                if override:
+                    return RedirectResponse(
+                        override["image"], headers={"Cache-Control": "no-store"}
+                    )
                 fallback = club_art.archive_badge(key, record)
                 if fallback:
                     return RedirectResponse(fallback["image"])
@@ -90,7 +155,11 @@ def editor_router(app):
             return Response(
                 base64.b64decode(payload),
                 media_type=header[5:].split(";")[0],
-                headers={"Cache-Control": "private, max-age=86400"},
+                headers={
+                    "Cache-Control": "private, no-store"
+                    if group in ("teams", "organizations")
+                    else "private, max-age=86400"
+                },
             )
         except (KeyError, ValueError):
             raise HTTPException(404)

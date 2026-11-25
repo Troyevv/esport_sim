@@ -20,7 +20,7 @@ VERSIONS = dict(
     map=match.MAP["version"],
 )
 STARTER = Path(__file__).with_name("data") / "austin.json"
-RELEASE_ID = "scene-20261125"
+RELEASE_ID = "scene-20261125-art2"
 RELEASE = STARTER.with_name("scene-202611.json.gz")
 MAPS = (
     "depo",
@@ -619,7 +619,7 @@ def edit(db, key, rev, group, ident, record, create):
     return dict(id=key, revision=p["revision"])
 
 
-def match_input(p, roster_ids):
+def match_input(p, roster_ids, personal_badges=None):
     require(
         isinstance(roster_ids, list) and len(roster_ids) == 2, "Выберите два состава"
     )
@@ -645,7 +645,8 @@ def match_input(p, roster_ids):
         require(len(r["players"]) == 5, "Для BO1 нужны пять игроков в каждом составе")
         org = t["organization"] or "@team-" + tid
         domain["organizations"][org] = dict(name=p["organizations"].get(org, t)["name"])
-        badge = club_art.archive_badge(p["id"], t) or t.get("logo")
+        personal = (personal_badges or {}).get("teams/" + tid)
+        badge = personal or club_art.archive_badge(p["id"], t) or t.get("logo")
         badge_meta = badge if isinstance(badge, dict) else {}
         media_root = f"/api/database/{p['id']}/{p['revision']}/media/"
         domain["teams"][tid] = dict(

@@ -34,3 +34,7 @@ test-results/
 .DS_Store
 Thumbs.db
 .idea/
+
+# Private club artwork belongs to the local installation.
+*.eslogos
+*.club-originals.sqlite*

@@ -131,12 +131,14 @@ export function KitEditor({
   team,
   id,
   patch,
+  currentBadge,
 }: {
+  currentBadge?: ReturnType<typeof resolvePortrait>;
   team: Entity;
   id: string;
   patch: (values: Partial<Entity>) => void;
 }) {
-  const badge = resolvePortrait(team.logo);
+  const badge = currentBadge || resolvePortrait(team.logo);
   const kit = {
     id,
     name: team.name,
