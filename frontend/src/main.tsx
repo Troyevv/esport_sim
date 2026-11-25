@@ -8,6 +8,8 @@ import Radar from "./Radar";
 import HostSettings from "./HostSettings";
 import { useSession, type View } from "./session";
 import "./style.css";
+import "./reference.css";
+import "./manager.css";
 
 const formatTime = (seconds: number) =>
   [
@@ -91,36 +93,23 @@ function App() {
   useEffect(() => {
     if (world) setSeed(String(world.seed));
   }, [world?.seed]);
+  const inCareer = !!frame?.careerId && screen !== "menu" && !playingLab;
+  const showManager = !!frame && !playingLab && (!database && !board || inCareer);
+  const status = <span className={"connection "+(connection==="На связи"?"up":"")} data-testid="connection"><i/>{connection}</span>;
+  const settings = <HostSettings connected={connection==="На связи"}/>;
+  const leaveTool = () => {clearNotice();showBoard(false);showDatabase(false);if(screen==="match")go("hub");};
+  const tactics = board && frame && <TacticEditor frame={frame} enabled={enabled} act={act} commandNotice={notice} clearNotice={clearNotice} onClose={()=>{clearNotice();showBoard(false);}}/>;
+  const match = showMatch && !board && world?.match && frame && <MatchCenter openBoard={()=>showBoard(true)} key={frame.context} frame={frame} playback={playback} connected={connection==="На связи"} enabled={enabled} act={act} setView={setView}/>;
+  const editor = database && world && <DatabaseEditor onClose={()=>showDatabase(false)} enabled={enabled} start={async value=>{const ok=await act(frame?.careerId?"career-exhibition":"database-match",value);if(ok){showDatabase(false);go("lab");}return ok;}}/>;
+  const tool = editor || tactics || (match && <><button className="cr-return" onClick={()=>go(frame?.careerId?"hub":"menu")}>{frame?.careerId?"← Карьера":"← Главное меню"}</button>{world?.match?.phase==="finished" && frame?.careerId && <button className="primary" disabled={!enabled} onClick={async()=>{if(await act("career-finish"))go("hub");}}>Вернуться к календарю</button>}{match}</>);
   return (
     <>
-      <header className="mast">
-        <div className="identity">
-          <i className="brandmark">
-            <b />
-            <b />
-            <b />
-          </i>
-          esport<span>_sim</span>
-        </div>
-        <div className="mastline" />
-        <span className="masttitle">{playingLab ? "Лаборатория симуляции" : "Менеджер команды"}</span>
-        <span
-          className={"connection " + (connection === "На связи" ? "up" : "")}
-          data-testid="connection"
-        >
-          <i />
-          {connection}
-        </span>
-        <HostSettings connected={connection === "На связи"}/>
-      </header>
-      <main>
-        {workspace && frame && !playingLab && !(showMatch && world?.match) &&
-          <CareerScreen key={frame.context} frame={frame} act={act} enabled={enabled} screen={screen==="menu"?"menu":"hub"} go={go} database={()=>showDatabase(true)} board={()=>showBoard(true)}/>}
-        {workspace && showMatch && frame && <button className="cr-return" onClick={()=>go(frame.careerId?"hub":"menu")}>{frame.careerId?"← Карьера":"← Главное меню"}</button>}
-        {workspace && screen==="match" && frame?.careerId && world?.match?.phase==="finished" &&
-          <button className="primary" disabled={!enabled} onClick={async()=>{if(await act("career-finish"))go("hub");}}>Вернуться к календарю</button>}
+      {!showManager && <header className="mast"><div className="identity">ESPORT<span> SIM</span></div><div className="mastline"/><span className="masttitle">{playingLab?"Лаборатория симуляции":"База сцены"}</span>{status}{settings}</header>}
+      <main className={showManager?"manager-root":""}>
+        {showManager && frame && <CareerScreen frame={frame} act={act} enabled={enabled} screen={screen==="menu"?"menu":"hub"} go={go} database={()=>showDatabase(true)} board={()=>showBoard(true)} status={status} settings={settings} leaveTool={leaveTool} tool={tool} toolName={tool?(board?"Тактики":database?"Редактор базы":"Матч-центр"):undefined}/>}
+        {!showManager && tool}
+        {playingLab && workspace && !match && <button className="cr-return" onClick={()=>go("menu")}>← Главное меню</button>}
         {world && playingLab && !database && !board && <button className="database-entry" onClick={()=>showDatabase(true)}>База сцены</button>}
-        {database && world && <DatabaseEditor onClose={()=>showDatabase(false)} enabled={enabled} start={async value=>{const ok=await act(frame?.careerId?"career-exhibition":"database-match",value);if(ok)go("lab");return ok;}}/>}
         {playingLab && !database && !board && !world?.match && <div className="intro">
           <div>
             <div className="eyebrow">
@@ -172,8 +161,6 @@ function App() {
             {notice}
           </p>
         )}
-        {!database && board && frame && <TacticEditor frame={frame} enabled={enabled} act={act} commandNotice={notice} clearNotice={clearNotice} onClose={()=>{clearNotice();showBoard(false);}}/>}
-        {showMatch && !database && !board && world?.match && frame && <MatchCenter openBoard={()=>showBoard(true)} key={frame.context} frame={frame} playback={playback} connected={connection==="На связи"} enabled={enabled} act={act} setView={setView}/>}
         {playingLab && !database && !board && world && !world.match && frame && (
           <div className="dashboard">
             <div className="column">

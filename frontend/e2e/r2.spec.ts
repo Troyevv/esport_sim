@@ -109,7 +109,8 @@ test("доска, жесты, библиотека, спарринг и назн
     await second
       .getByRole("button", { name: "Редактор тактик", exact: true })
       .click();
-    await second.getByRole("button", { name: "▤ Библиотека" }).click();
+    const library = second.getByRole("button", { name: "▤ Библиотека" });
+    if(await library.getAttribute("aria-expanded")!=="true")await library.click();
     await second
       .locator(".board-cards button")
       .filter({ hasText: name })

@@ -53,6 +53,8 @@ test("Scorebot показывает установленную C4, обе пят
   const planted = await (await page.request.get("/api/state")).json();
   expect(planted.running).toBe(true);
   for (const club of planted.world.match.clubs) {
+    if (await page.locator(".touch-lineup").isVisible())
+      await page.locator(".touch-lineup").getByRole("button",{name:club.name,exact:true}).tap();
     const team = page.locator(".hud-team").filter({
       has: page.getByRole("heading", { name: new RegExp(club.name) }),
     });
@@ -67,6 +69,7 @@ test("Scorebot показывает установленную C4, обе пят
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+  if (await page.locator(".touch-lineup").isVisible()) await page.locator(".touch-lineup").getByText("Радар").tap();
   await page.locator(".scoreboard").scrollIntoViewIfNeeded();
   await page.screenshot({
     path: info.outputPath("r33-scorebot-" + info.project.name + ".png"),
@@ -121,11 +124,16 @@ test("Scorebot показывает установленную C4, обе пят
     (a: { alive: boolean; primary: string }) => a.alive && a.primary,
   );
   const card = page.locator('[data-player="' + selected.id + '"]');
+  if (await page.locator(".touch-lineup").isVisible()) {
+    const club=paused.match.clubs.find((c:{side:string})=>c.side===selected.team);
+    await page.locator(".touch-lineup").getByRole("button",{name:club.name,exact:true}).tap();
+  }
   if (info.project.use.hasTouch) await card.tap();
   else await card.click();
   await expect(
     page.locator(".selected-loadout .primary-gun img"),
   ).toHaveAttribute("data-item", selected.primary);
+  if (await page.locator(".touch-lineup").isVisible()) await page.locator(".touch-lineup").getByText("Радар").tap();
   await page.getByLabel("Режим обзора").selectOption("T");
   await expect(page.locator('.hud-team[data-side="CT"] .hud-kit')).toHaveText(
     Array(5).fill("Снаряжение —"),

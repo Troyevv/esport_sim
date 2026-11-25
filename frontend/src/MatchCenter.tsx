@@ -234,6 +234,7 @@ export default function MatchCenter({
   const world = frame.world,
     m = world.match!;
   const [tab, setTab] = useState<(typeof tabs)[number]>("Статистика");
+  const [pane,setPane] = useState(0);
   const [selected, select] = useState<string | null>(null);
   const [seed, setSeed] = useState(String(world.seed));
   const [nextCall, setNextCall] = useState(m.calls[0]);
@@ -276,7 +277,7 @@ export default function MatchCenter({
         <div>
           <span className="eyebrow">МАТЧ-ЦЕНТР</span>
           <h1>
-            Депо <small>/ BO1</small>
+            {m.clubs.map(c=>c.name).join(" — ")}
           </h1>
         </div>
         <button onClick={openBoard}>Редактор тактик</button>
@@ -292,6 +293,7 @@ export default function MatchCenter({
             : "Тестовые составы"}
         </span>
       </header>
+      <div className="match-meta-strip"><span>{world.map.name} · BO1</span><span>{phases[m.phase]}</span></div>
       <section className="scoreboard" aria-label="Счёт матча">
         {m.clubs.map((club, i) => (
           <div
@@ -329,28 +331,8 @@ export default function MatchCenter({
           Победитель матча — <strong>{clubName(m.winnerTeamId!)}</strong>
         </p>
       )}
-      <section className="hud-controls" aria-label="Управление просмотром">
-        <button
-          className="primary"
-          disabled={!enabled || finished || timeout}
-          onClick={() => act(frame.running ? "pause" : "start")}
-        >
-          {frame.running ? "Пауза просмотра" : "Запустить"}
-        </button>
-        <div className="speed-list">
-          {[1, 2, 4, 8, 128].map((n) => (
-            <button
-              key={n}
-              disabled={!enabled}
-              aria-pressed={frame.speed === n}
-              onClick={() => act("speed", n)}
-            >
-              {n === 128 ? "Быстро" : n + "×"}
-            </button>
-          ))}
-        </div>
-      </section>
-      <div className="lineups">
+      <nav className="touch-lineup" aria-label="Панель матча">{["Радар",...m.clubs.map(c=>c.name)].map((label,i)=><button key={i} aria-pressed={pane===i} onClick={()=>setPane(i)}>{label}</button>)}</nav>
+      <div className="lineups" data-pane={pane}>
         {roster(m.clubs[0])}
         <section className="panel hud-map">
           <div className="maphead">
@@ -507,6 +489,27 @@ export default function MatchCenter({
         </section>
         {roster(m.clubs[1])}
       </div>
+      <section className="hud-controls" aria-label="Управление просмотром">
+        <button
+          className="primary"
+          disabled={!enabled || finished || timeout}
+          onClick={() => act(frame.running ? "pause" : "start")}
+        >
+          {frame.running ? "Пауза просмотра" : "Запустить"}
+        </button>
+        <div className="speed-list">
+          {[1, 2, 4, 8, 128].map((n) => (
+            <button
+              key={n}
+              disabled={!enabled}
+              aria-pressed={frame.speed === n}
+              onClick={() => act("speed", n)}
+            >
+              {n === 128 ? "Быстро" : n + "×"}
+            </button>
+          ))}
+        </div>
+      </section>
       <div className="match-grid">
         <div className="match-main">
           <section className="panel match-data">

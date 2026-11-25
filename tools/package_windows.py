@@ -87,6 +87,7 @@ def main():
     for name in (
         "BO1.md",
         "CAREER_R33.md",
+        "INTERFACE_R34.md",
         "SCENE_202611.md",
         "PORTRAITS_R32.md",
         "SCENE_ART_R32.md",

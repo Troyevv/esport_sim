@@ -293,6 +293,9 @@ class CareerStore:
                     realName=player["realName"],
                     born=player["born"],
                     visual=domain["players"][pid]["visual"],
+                    form=domain["players"][pid]["form"],
+                    morale=domain["players"][pid]["morale"],
+                    fatigue=domain["players"][pid]["fatigue"],
                 )
             )
         menu[c["id"]] = summary(c)
@@ -315,6 +318,7 @@ class CareerStore:
             queue=c["queue"],
             history=c["history"],
             roster=members,
+            teamRating=world.team_rating(domain, c["teams"][own], match.MAP["id"]),
             slots=self.slots(c["id"]),
         )
         return dict(careers=list(menu.values()), active=info)
