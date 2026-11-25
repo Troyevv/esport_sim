@@ -49,11 +49,9 @@ test("Scorebot показывает установленную C4, обе пят
   const planted = await (await page.request.get("/api/state")).json();
   expect(planted.running).toBe(true);
   for (const club of planted.world.match.clubs) {
-    const team = page
-      .locator(".hud-team")
-      .filter({
-        has: page.getByRole("heading", { name: new RegExp(club.name) }),
-      });
+    const team = page.locator(".hud-team").filter({
+      has: page.getByRole("heading", { name: new RegExp(club.name) }),
+    });
     await expect(team.getByRole("meter")).toHaveCount(5);
     await expect(team).toHaveAttribute("data-side", club.side);
     await expect(
@@ -75,5 +73,29 @@ test("Scorebot показывает установленную C4, обе пят
   await expect(page.locator('.hud-team[data-side="CT"] .hud-kit')).toHaveText(
     Array(5).fill("Снаряжение —"),
   );
+  await page.getByLabel("Режим обзора").selectOption("full");
+  await command("speed", 128);
+  await command("start");
+  const firstAttack = planted.world.match.clubs.find(
+    (c: { side: string }) => c.side === "T",
+  );
+  await expect(
+    page.locator('.scoreboard [data-team="' + firstAttack.id + '"]'),
+  ).toHaveAttribute("data-side", "CT");
+  await expect(page.locator(".match-result")).toBeVisible({ timeout: 30000 });
+  const final = (await (await page.request.get("/api/state")).json()).world
+    .match;
+  const winner = final.clubs.find(
+    (club: { id: string }) => club.id === final.winnerTeamId,
+  );
+  await expect(page.locator(".match-result strong")).toHaveText(winner.name);
+  for (const club of final.clubs) {
+    const wins = final.history.filter(
+      (r: { winnerTeamId: string }) => r.winnerTeamId === club.id,
+    ).length;
+    await expect(
+      page.locator('.scoreboard [data-team="' + club.id + '"] > b'),
+    ).toHaveText(String(wins));
+  }
   await command("reset", 42);
 });

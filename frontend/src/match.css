@@ -787,6 +787,11 @@ th small {
   gap: 5px 12px;
   margin: -5px 0 10px;
 }
+.hud-controls > .primary {
+  width: auto;
+  height: 36px;
+  padding-inline: 15px;
+}
 .hud-controls .speed-list {
   margin: 0;
 }
@@ -795,6 +800,7 @@ th small {
   font-size: 12px;
 }
 .hud-controls .speed-list button {
+  flex: 0 0 auto;
   min-width: 34px;
   padding: 5px 9px;
 }
