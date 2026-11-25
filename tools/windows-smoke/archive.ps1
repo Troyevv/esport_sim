@@ -244,8 +244,10 @@ Command $origin 'career-load' @{slot='2'}
 $c = (Invoke-RestMethod "$origin/api/career").active
 if ($c.date -ne $c.start -or $c.history.Count -ne 0 -or $c.roster.Count -ne 5) { throw 'Career slot did not restore.' }
 Command $origin 'career-lab'
-$maps = @(Invoke-RestMethod "$origin/api/maps")
-if ($maps.Count -ne 10) { throw 'Expected nine CS2 maps plus the lab.' }
+$maps = Invoke-RestMethod "$origin/api/maps"
+$installed = @($maps | ForEach-Object { $_.id } | Sort-Object)
+$expected = @('de_ancient', 'de_anubis', 'de_cache', 'de_dust2', 'de_inferno', 'de_mirage', 'de_nuke', 'de_train', 'de_vertigo', 'depo')
+if (Compare-Object $expected $installed) { throw "Unexpected packaged map catalog: $($installed -join ', ')" }
 Command $origin 'database-match' @{id=$scene.id;revision=1;seed=42;rosters=$lineups;map='de_nuke'}
 $realMatch = (Invoke-RestMethod "$origin/api/state").world.match
 if ($realMatch.source.id -ne $scene.id -or 'Team Vitality' -notin $realMatch.teams) { throw 'Packaged real BO1 did not load.' }
