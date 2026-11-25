@@ -86,3 +86,16 @@ def test_tactical_route_requires_a_single_ordered_path():
     assert routes.route(2) is None
     assert routes.route(3)[1] == selected
     assert nav.routes_through([{4}, {3}, {5}]).route(1) is None
+
+
+def test_reviewed_positions_require_the_bound_nav_version():
+    import pytest
+    from tools.check_cs2_playable_areas import resolve_anchors
+
+    markers = {"Middle": [dict(area=10)], "B": [dict(area=11)]}
+    profile = {"navAnchors": {"sha256": "dated-nav", "places": {"Middle": [12]}}}
+    nav = Navigation(dict(format=1, space="Hammer XYZ", ladders=[],
+                          areas=[area(10, 0, 0, 128), area(11, 20, 0, 0), area(12, 0, 0, 0)]))
+    assert resolve_anchors(profile, markers, nav, "dated-nav") == {"Middle": {12}, "B": {11}}
+    with pytest.raises(ValueError, match="Версия NAV"):
+        resolve_anchors(profile, markers, nav, "different-nav")

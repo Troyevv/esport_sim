@@ -97,7 +97,19 @@
         "Headshot"
       ]
     },
-    "middle": "Middle"
+    "middle": "Middle",
+    "navAnchors": {
+      "sha256": "a3dd9d3b9b0be9fa319e7f0ab035238ea7987b9773d21e49d25438e7e8a8b0b2",
+      "places": {
+        "Middle": [
+          439,
+          688
+        ],
+        "Checkers": [
+          2198
+        ]
+      }
+    }
   },
   "de_dust2": {
     "A": [
@@ -133,7 +145,15 @@
         "Hole"
       ]
     },
-    "middle": "Middle"
+    "middle": "Middle",
+    "navAnchors": {
+      "sha256": "64bbc202edae8a92d432368e86948bbee3af9c56555e190dda251d28c64e1ea7",
+      "places": {
+        "TopofMid": [
+          70
+        ]
+      }
+    }
   },
   "de_inferno": {
     "A": [

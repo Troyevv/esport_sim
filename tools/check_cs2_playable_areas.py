@@ -35,7 +35,20 @@ def named_stages(data, nav, profile):
     return dict(sorted(markers.items()))
 
 
-def measure(data, profile):
+def resolve_anchors(profile, markers, nav, nav_sha256):
+    places = {name: {row["area"] for row in rows} for name, rows in markers.items()}
+    if "navAnchors" in profile:
+        binding = profile["navAnchors"]
+        if binding["sha256"] != nav_sha256:
+            raise ValueError("Версия NAV расходится с привязкой тактических позиций")
+        for name, areas in binding["places"].items():
+            if name not in places or not areas or not set(areas).issubset(nav.areas):
+                raise ValueError(f"Неизвестная привязка NAV для {name}: {areas}")
+            places[name] = set(areas)
+    return places
+
+
+def measure(data, profile, nav_sha256):
     nav = Navigation(data)
     sites = BombSites(data["targets"])
     plant_areas = {"A": set(), "B": set()}
@@ -49,7 +62,7 @@ def measure(data, profile):
             plant_areas[site].add(ident)
     reached = {site: nav.routes_through([goals]).costs for site, goals in plant_areas.items()}
     markers = named_stages(data, nav, profile)
-    places = {name: {row["area"] for row in rows} for name, rows in markers.items()}
+    places = resolve_anchors(profile, markers, nav, nav_sha256)
     result = {}
     routes = []
 
@@ -81,7 +94,8 @@ def measure(data, profile):
         "ladders": len(data["ladders"]),
         "namedPlaces": len({p["name"] for p in data["places"] if p["name"]}),
         "hidingSpots": sum(len(a["cover"]) for a in nav.areas.values()),
-        "profileMarkers": markers, "profileRoutes": routes,
+        "profileMarkers": markers, "profileAreas": {k: sorted(v) for k, v in places.items()},
+        "profileRoutes": routes,
     }
 
 
@@ -100,7 +114,7 @@ def main():
         if source["unresolvedModels"]:
             failures.append(f"{name}: остались ссылки на отсутствующие модели")
         data = json.loads((folder / "gameplay.json").read_bytes())
-        result = measure(data, profiles[name])
+        result = measure(data, profiles[name], source["navSha256"])
         print(name, json.dumps(result, sort_keys=True), flush=True)
         for side, counts in result["spawnRoutes"].items():
             if counts["enabledSpawns"] < 5 or counts["reachableBoth"] != counts["enabledSpawns"]:
