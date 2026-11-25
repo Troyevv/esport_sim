@@ -32,7 +32,7 @@ def pressure(space, contacts, now):
         site = space.reported_site(pos)
         if not site:
             continue
-        weight = 1 - age / 75
+        weight = (1 - age / 75) * (0.45 if report["source"] == "Граната" else 1)
         direction = report.get("direction")
         if direction and age <= 20:
             target = space.site_points[site]

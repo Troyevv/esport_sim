@@ -164,6 +164,7 @@ class Map:
         self.path = lru_cache(maxsize=4096)(partial(Map._path, proxy(self)))
         self.route = lru_cache(maxsize=8192)(self.nav.route)
         self.approach = lru_cache(maxsize=32)(partial(Map._approach, proxy(self)))
+        self.contest = lru_cache(maxsize=4)(partial(Map._contest, proxy(self)))
         self.ingress = lru_cache(maxsize=4)(partial(Map._ingress, proxy(self)))
         self.angles = lru_cache(maxsize=128)(partial(Map._angles, proxy(self)))
         self.escape = lru_cache(maxsize=16)(partial(Map._escape, proxy(self)))
@@ -210,6 +211,14 @@ class Map:
         return self.nav.routes_through(
             [self.places[n] for n in labels] + [self.plants[site]]
         )
+
+    def _contest(self, site, lane):
+        # Both teams know legal spawns. Estimate a race to the final approach
+        # without knowing which opposing spawn or opening a player actually drew.
+        label = self.profile[site][lane][-1]
+        costs = self.nav.routes_through([self.places[label]]).costs
+        guards = [self.spawn("CT", i)[2] for i in range(len(self.spawns["CT"]))]
+        return costs, min((costs.get(i,float("inf")) for i in guards),default=0)
 
     def _escape(self, bomb):
         goals = [

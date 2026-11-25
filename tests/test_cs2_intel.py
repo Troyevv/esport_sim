@@ -22,7 +22,7 @@ def test_report_survives_observer_and_carries_only_observed_information():
     targets = game["agents"][5:7]
     space = SightLines(scout)
     for i, a in enumerate([scout, captain, *targets]):
-        a.update(x=10*i, y=0, z=0, heading=0)
+        a.update(x=10 * i, y=0, z=0, heading=0)
     game["tick"] = 100
     match_ai.observe(game, [scout, captain, *targets], space)
     sight = scout["knowledge"][targets[0]["id"]]
@@ -54,7 +54,10 @@ def test_direction_and_equipment_affect_calls_without_tracking_target():
     pos = dict(id="enemy", x=10, y=0, z=0, tick=10, source="Радио", weapon="AWP")
     toward = dict(pos, direction=[1, 0, 0])
     away = dict(pos, direction=[-1, 0, 0])
-    assert cs2_intel.pressure(space, [toward], 12)["A"] > cs2_intel.pressure(space, [away], 12)["A"]
+    assert (
+        cs2_intel.pressure(space, [toward], 12)["A"]
+        > cs2_intel.pressure(space, [away], 12)["A"]
+    )
     space.hit = lambda *args: None
     order = {"via": [[60, 0, 0]]}
     assert cs2_intel.sniper_lane(space, [pos], order, 15)

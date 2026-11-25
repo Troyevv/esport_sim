@@ -225,7 +225,7 @@ def next_round(w):
                      useTarget=None,useFloor=None,checkContact=None,checkPosition=None,
                      shelter=None,coverUntil=0,coverReview=0,bombSearch=None,coveredDefuser=None,coverPoint=None,revisedApproach=None,
                      rendezvous=None,plantCover=None,watchDevice=None,heardUse=-1000,
-                     seenDevice=None,beepBearing=None,plantCue=None)
+                     seenDevice=None,beepBearing=None,plantCue=None,crossingReview=0,friendlyUtility=[])
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)

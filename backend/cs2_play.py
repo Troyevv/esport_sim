@@ -41,6 +41,13 @@ def opening(space, w, squad, captain, player, buy, site, style, call):
             ]
             lane = min(range(2), key=options.__getitem__)
             style = "Групповой выход"
+        elif buy == "Полная" and style == "Быстро" and not call:
+            costs, defender = space.contest(site,lane)
+            approach = sorted(costs.get(p["navArea"],float("inf")) for p in squad)
+            # A fast split requires two players able to contest together. A lone
+            # favourable spawn does not justify ordering four late players through it.
+            if approach[1] > defender:
+                style = "Контроль карты"
         elif knowledge + player["skills"]["map_control"] >= 115 and style == "Сбор":
             style = "Контроль карты"
     return site, style, lane
@@ -272,7 +279,7 @@ def exit_goal(space, w, a, allies, bomb):
     remaining = w["deadline"] - w["tick"]
     speed = 2 * perf.move_speed(w["player"])
     threats = sum(
-        p["source"] != "Слух" and w["tick"] - p["tick"] < 32 and dist(xyz(p), pos) < 60
+        p["source"] not in ("Слух","Граната") and w["tick"] - p["tick"] < 32 and dist(xyz(p), pos) < 60
         for p in a["knowledge"].values()
     )
     if a["team"] == "T":
@@ -543,6 +550,51 @@ def search_site(space, actor, site, now, allies=()):
     return goal or center
 
 
+def crossing_utility(space, w, a, allies, order, site):
+    """Use available cover and utility to open or deny the next crossing."""
+    now, plan = w["tick"], w["plan"]
+    if not a["utility"] or now < a["throwAt"] or now < a.get("crossingReview",0):
+        return None
+    a["crossingReview"] = now + 14
+    pos = xyz(a)
+    key = a["team"] + site
+    calls = plan.setdefault("utilityCalls", {})
+    if now < calls.get(key,0):
+        return None
+    reserve = plan.get("probe") or {}
+    feint = a["team"]=="T" and a["id"]==reserve.get("scout") and not reserve.get("released") and not plan["rotated"]
+    if a["team"]=="T" and not feint and a["playingRole"] not in ("support","captain","igl"):
+        return None
+    if a["team"]=="CT" and (a["slot"] not in (2,3) or now-plan["start"]>200):
+        return None
+    sector = ("B" if site=="A" else "A") if feint else site
+    if a["team"]=="CT":
+        targets = space.ingress(sector,plan["lane"])
+        gadgets = ("Огонь","Дым")
+    else:
+        # Known map angles on the attacker's own map. The opposing plan is private.
+        labels = space.profile["guards"][sector]
+        targets = [space.centers[i] for label in labels for i in sorted(space.places[label])]
+        gadgets = ("Ложная","Дым","Свет") if feint else ("Дым","Свет")
+    item = next((g for g in gadgets if g in a["utility"]),None)
+    if not item:
+        return None
+    candidates = sorted((p for p in targets if 24 < dist(pos,p)<68),key=lambda p:dist(pos,p))
+    for p in candidates[:6]:
+        if space.hit(pos,p,1,64) is not None or any(dist(xyz(m),p)<(36 if item=="Свет" else 18) for m in allies):
+            continue
+        flight = max(3,round(dist(pos,p)/7))
+        x,y,z,_ = space.grenade(pos,p,flight)
+        if dist((x,y,z),p)>8:
+            continue
+        # A short radio call coordinates the next throw. Do not stack the same
+        # screen while the first player's grenade is still covering the crossing.
+        calls[key]=now + flight + (100 if item=="Дым" else 42)
+        a["status"]="Имитирует выход" if feint else "Готовит гранату на подход"
+        return "throw", dict(zip(("x","y","z"),p),utility=item)
+    return None
+
+
 def spatial_intent(space, w, a, allies, bomb, fire, travel):
     now, plan = w["tick"], w["plan"]
     side, slot = a["team"], a["slot"]
@@ -691,6 +743,10 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         if backup and backup["id"] == a["id"]:
             site, goal, watch = backup["site"], backup["hold"], backup["watch"]
         a["status"] = f"Занимает {site}"
+    if w["phase"]=="live" and not w["action"] and not latest:
+        intent = crossing_utility(space,w,a,allies,order,site)
+        if intent:
+            return intent
     cue = a.get("plantCue")
     if side == "CT" and w["phase"] == "live" and cue and 0 <= now-cue["tick"] < 30:
         if "peek" not in cue:

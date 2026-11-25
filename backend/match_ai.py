@@ -95,6 +95,10 @@ def observe(w, players, space=None):
         w["messages"].remove(message)
         for a in players:
             if a["team"] == message["team"] and a["id"] != message["sender"]:
+                if "friendlyUtility" in message:
+                    a["friendlyUtility"] = [p for p in a.get("friendlyUtility",[]) if p["end"] >= now]
+                    a["friendlyUtility"].append(message["friendlyUtility"])
+                    continue
                 if "blockedSite" in message:
                     a.setdefault("routeReports",{})[message["sender"]]=[message["blockedSite"],now]
                     continue
@@ -107,7 +111,7 @@ def observe(w, players, space=None):
                     continue
                 sight = message["sight"]
                 if sight["tick"] > a["knowledge"].get(sight["id"], {}).get("tick", -1):
-                    a["knowledge"][sight["id"]] = dict(sight, source="Радио")
+                    a["knowledge"][sight["id"]] = dict(sight, source="Граната" if sight["source"]=="Граната" else "Радио")
     smoke = [
         f for f in w["effects"] if f["kind"] == "Дым" and f["land"] <= now < f["end"]
     ]
@@ -194,10 +198,10 @@ def captain(w, squad, space=None):
     contacts = [
         p
         for p in leader["knowledge"].values()
-        if p["source"] != "Слух" and now - p["tick"] <= (74 if space else 74 - s["game_reading"] // 2)
+        if p["source"] not in ("Слух","Граната") and now - p["tick"] <= (74 if space else 74 - s["game_reading"] // 2)
     ]
     if space:
-        counts = cs2_intel.pressure(space, contacts, now)
+        counts = cs2_intel.pressure(space, leader["knowledge"].values(), now)
     else:
         counts = {site: sum(distance(at(POSITIONS[site][0]), p) < 80 for p in contacts)
                   for site in POSITIONS}
@@ -246,12 +250,12 @@ def captain(w, squad, space=None):
             if w["phase"] == "live":
                 orders = plan["orders"]["slots"]
                 for site in ("A", "B"):
-                    if any(orders[p["slot"]]["site"] == site for p in squad):
+                    if any(p["slot"] != 4 and orders[p["slot"]]["site"] == site and space.reported_site(xyz(p)) == site for p in squad):
                         continue
                     lost = [p["lastHurt"] for p in w["agents"] if p["team"] == "CT" and not p["hp"]
                             and now-p["lastHurt"] < 75 and space.reported_site(xyz(p)) == site]
                     if lost:
-                        counts[site] += len(lost)
+                        counts[site] = max(counts[site], 2)  # known loss of the last local guard
                         last_report = max(last_report, max(lost))
         if counts["A"] != counts["B"] and max(counts.values()) >= (1.65 if space else 2):
             plan["reinforce"] = max(counts, key=counts.get)
@@ -756,6 +760,11 @@ def throw(w, a, target, space=None):
     )
     if space:
         effect.update(z=z,sz=a["z"],trajectory=trajectory)
+    if space and name in ("Дым","Огонь"):
+        # Teammates call their intended target. A missed/bounced grenade can be misidentified.
+        cue=dict(**at(point(target)),end=now+flight+10)
+        w["messages"].append(dict(team=a["team"],sender=a["id"],friendlyUtility=cue,
+                                  due=now+radio_delay(world.match_player(w,a)["skills"])))
     w["effects"].append(effect)
     w["recentEffects"].append(effect)
     emit(
@@ -774,6 +783,17 @@ def apply_effects(w, ids, space=None):
     w["recentEffects"] = [f for f in w["recentEffects"] if f["end"] + 42 > now]
     w["effects"] = [f for f in w["effects"] if f["end"] > now]
     for f in w["effects"]:
+        if space and f["kind"] in ("Дым","Огонь") and now==f["land"]:
+            for a in ids.values():
+                if (a["hp"] and a["id"]!=f["player"] and a["blind"]<=now and distance(a,f)<58
+                    and in_view(a,f) and space.clear(a,f)):
+                    if any(call["end"] >= now and distance(call, f) < 10 for call in a.get("friendlyUtility", [])):
+                        continue
+                    # A visible screen identifies a threatened angle, not a thrower or a head count.
+                    pos=sound_position(space,f)
+                    a["knowledge"]["Граната"]=dict(id="Граната",**pos,tick=now,source="Граната")
+                    w["messages"].append(dict(team=a["team"],sender=a["id"],sight=a["knowledge"]["Граната"],
+                                              due=now+radio_delay(world.match_player(w,a)["skills"])))
         if now < f["land"] or f["kind"] == "Дым":
             continue
         if f["kind"] == "Ложная":

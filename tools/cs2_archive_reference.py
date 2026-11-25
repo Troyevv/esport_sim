@@ -1,4 +1,5 @@
 """Select a historical Source 2 tournament demo and export actual round events and radar."""
+
 import argparse
 from hashlib import sha256
 import json
@@ -22,13 +23,18 @@ def read(url):
 
 def candidates(name):
     origin = f"https://huggingface.co/datasets/{ARCHIVE}/resolve/{REVISION}/"
-    records = [json.loads(line) for line in read(origin + "processed_manifest.jsonl").splitlines()]
-    for row in sorted(records, key=lambda r: (-int(r.get("stars") or 0), -int(r["match_id"]))):
+    records = [
+        json.loads(line)
+        for line in read(origin + "processed_manifest.jsonl").splitlines()
+    ]
+    for row in sorted(
+        records, key=lambda r: (-int(r.get("stars") or 0), -int(r["match_id"]))
+    ):
         if int(row["match_id"]) < 2370000:
             continue
         for file in row["demo_files"]:
             if file.lower().endswith(name.removeprefix("de_") + ".dem"):
-                yield row | dict(url=origin+file, repo=ARCHIVE, revision=REVISION)
+                yield row | dict(url=origin + file, repo=ARCHIVE, revision=REVISION)
     # Search the public HLTV metadata sidecar by the actual demo filename.
     repo = "blanchon/opencs2_dataset_demo"
     info = json.loads(read("https://huggingface.co/api/datasets/" + repo))
@@ -37,7 +43,7 @@ def candidates(name):
         if not f.lower().endswith(name.removeprefix("de_") + ".dem"):
             continue
         meta = json.loads(read(origin + f.rsplit("/", 1)[0] + "/meta.json"))
-        yield meta | dict(url=origin+f, repo=repo, revision=info["sha"])
+        yield meta | dict(url=origin + f, repo=repo, revision=info["sha"])
 
 
 def rounds_from_events(parser):
@@ -50,14 +56,34 @@ def rounds_from_events(parser):
         end = int(e["tick"])
         previous = rows[-1]["end_tick"] if rows else -1
         start = max((v for v in starts if previous < v < end), default=None)
-        if start is None or e["winner"] not in ("T", "CT", "TERRORIST", "Terrorist", "Terrorists", "CounterTerrorist", 2, 3):
+        if start is None or e["winner"] not in (
+            "T",
+            "CT",
+            "TERRORIST",
+            "Terrorist",
+            "Terrorists",
+            "CounterTerrorist",
+            2,
+            3,
+        ):
             continue
         ct = e["winner"] in ("CT", "CounterTerrorist", 3)
-        rows.append(dict(round_num=len(rows)+1, freeze_end_tick=int(start), end_tick=end,
-                         winner_side="ct" if ct else "t", end_reason=str(e["reason"]),
-                         bomb_planted=any(start <= t <= end for t in plant_ticks)))
-    if len(rows) < 13 or max(sum(r["winner_side"]==s for r in rows) for s in ("t","ct")) == len(rows):
-        raise ValueError(f"Unusable rounds ({len(rows)}). Original round_end sample: {ends[:2]}")
+        rows.append(
+            dict(
+                round_num=len(rows) + 1,
+                freeze_end_tick=int(start),
+                end_tick=end,
+                winner_side="ct" if ct else "t",
+                end_reason=str(e["reason"]),
+                bomb_planted=any(start <= t <= end for t in plant_ticks),
+            )
+        )
+    if len(rows) < 13 or max(
+        sum(r["winner_side"] == s for r in rows) for s in ("t", "ct")
+    ) == len(rows):
+        raise ValueError(
+            f"Unusable rounds ({len(rows)}). Original round_end sample: {ends[:2]}"
+        )
     return rows
 
 
@@ -79,11 +105,23 @@ def main():
             if header["map_name"] != args.map:
                 continue
             rows = rounds_from_events(demo)
-            record = dict(map=args.map, source=candidate, header=header, rounds=parse(path, rows))
-            (args.out / (args.map+"-utility.json")).write_text(json.dumps([record], default=str))
-            print(args.map,candidate.get("event"),candidate.get("match_id"),len(rows), flush=True)
+            record = dict(
+                map=args.map, source=candidate, header=header, rounds=parse(path, rows)
+            )
+            (args.out / (args.map + "-utility.json")).write_text(
+                json.dumps([record], default=str)
+            )
+            print(
+                args.map,
+                candidate.get("event"),
+                candidate.get("match_id"),
+                len(rows),
+                flush=True,
+            )
             return
-    raise ValueError(f"No eligible Source 2 tournament demo for {args.map} in archives searched")
+    raise ValueError(
+        f"No eligible Source 2 tournament demo for {args.map} in archives searched"
+    )
 
 
 if __name__ == "__main__":
