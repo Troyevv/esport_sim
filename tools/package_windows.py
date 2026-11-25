@@ -138,6 +138,7 @@ def main():
     screenshots = output / "screenshots"
     screenshots.mkdir(exist_ok=True)
     shutil.copytree(ROOT / "docs" / "screenshots" / "r34", screenshots / "r34", dirs_exist_ok=True)
+    shutil.copyfile(ROOT / "docs" / "screenshots" / "r41-bo1.webp", screenshots / "r41-bo1.webp")
     for source in sorted((ROOT / "docs" / "screenshots").glob("*.png")):
         if not source.name.startswith(("r2-", "r32-", "r33-")):
             continue
