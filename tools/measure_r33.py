@@ -14,7 +14,7 @@ from backend import career, database, match
 from backend.store import Store
 
 
-def measure(scope):
+def measure(scope, weeks):
     with tempfile.TemporaryDirectory() as folder:
         proc = psutil.Process()
         store = Store(Path(folder) / "world.sqlite")
@@ -49,12 +49,27 @@ def measure(scope):
         )
         started = time.perf_counter()
         peak = proc.memory_info().rss
-        command("career-advance")
-        while job := store.careers.work(store.read()):
-            token, game = job
-            report = career.simulate(game) if game else None
-            store.careers.commit_work(token, report)
-            peak = max(peak, proc.memory_info().rss)
+
+        def advance():
+            nonlocal peak
+            command("career-advance")
+            while job := store.careers.work(store.read()):
+                token, game = job
+                report = career.simulate(game) if game else None
+                store.careers.commit_work(token, report)
+                peak = max(peak, proc.memory_info().rss)
+
+        advance()
+        for week in range(weeks):
+            if week:
+                advance()
+            command("career-play")
+            command("speed", 128)
+            command("start")
+            while store.tick():
+                pass
+            command("career-finish")
+            advance()
         c = store.read()["career"]
         print(
             json.dumps(
@@ -82,5 +97,14 @@ def measure(scope):
 if __name__ == "__main__":
     args = argparse.ArgumentParser(description=__doc__)
     args.add_argument("scopes", nargs="*", default=list(career.SCOPES))
-    for scope in args.parse_args().scopes:
-        measure(scope)
+    args.add_argument(
+        "--weeks",
+        type=int,
+        default=0,
+        help="Число полных недель, 0 — до первого матча клуба",
+    )
+    options = args.parse_args()
+    if options.weeks < 0:
+        args.error("Число недель должно быть неотрицательным")
+    for scope in options.scopes:
+        measure(scope, options.weeks)

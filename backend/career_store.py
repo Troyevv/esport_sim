@@ -85,14 +85,15 @@ class CareerStore:
             "SELECT summary,body,digest FROM career_slot WHERE career=? AND slot=?",
             (cid, slot),
         ).fetchone()
-        if old and old[2] != checksum(body) and checksum(old[1]) == old[2]:
+        digest = checksum(body)
+        if old and old[2] != digest and checksum(old[1]) == old[2]:
             self.db.execute(
                 "INSERT OR REPLACE INTO career_slot VALUES(?,?,?,?,?)",
                 (cid, slot + ".bak", *old),
             )
         self.db.execute(
             "INSERT OR REPLACE INTO career_slot VALUES(?,?,?,?,?)",
-            (cid, slot, json.dumps(info), body, checksum(body)),
+            (cid, slot, json.dumps(info), body, digest),
         )
 
     def load(self, state, cid, slot):
@@ -140,6 +141,23 @@ class CareerStore:
         return json.loads(row[0])
 
     def record(self, c, report):
+        event = c["queue"][0]
+        pack = self.pack(c["source"])
+        expected = [
+            pid
+            for team in event["teams"]
+            for pid in pack["rosters"][c["teams"][team]]["players"]
+        ]
+        require(
+            event["kind"] == "match"
+            and report["seed"] == event["seed"]
+            and report["rules"] == match.VERSION
+            and report["map"] == match.MAP["version"]
+            and [row["player"] for row in report["stats"]] == expected
+            and report["score"]
+            == [sum(r["winner"] == club for r in report["rounds"]) for club in (0, 1)],
+            "Результат не соответствует встрече календаря",
+        )
         body = database.encode(report)
         digest = checksum(body)
         self.db.execute(
@@ -177,7 +195,9 @@ class CareerStore:
             require(isinstance(cid, str) and cid != "lab", "Выберите карьеру")
             if not c or c["id"] != cid:
                 self.save(state, "auto")
-            self.load(state, cid, slot if "slot" in value else "auto")
+                self.load(state, cid, value.get("slot", "auto"))
+            elif "slot" in value:
+                self.load(state, cid, slot)
         elif kind == "career-lab":
             if c:
                 self.save(state, "auto")

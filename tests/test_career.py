@@ -59,6 +59,10 @@ def test_calendar_slots_switch_restart_and_finish(tmp_path):
     assert store.apply(first) == store.apply(first)
     token, game = store.careers.work(store.read())
     report = career.simulate(game)
+    before = store.read()
+    with pytest.raises(ValueError, match="не соответствует"):
+        store.careers.commit_work(token, report | {"seed": -1})
+    assert store.read() == before
     act(store, "career-save", {"slot": "2"})
     act(store, "career-load", {"slot": "2"})
     assert not store.careers.commit_work(token, report)
@@ -148,6 +152,18 @@ def test_damaged_slot_and_pinned_edition(tmp_path):
         with pytest.raises(ValueError):
             start(store, **params)
     assert store.read()["career"]["id"] == cid
+    before = store.read()
+    with pytest.raises(ValueError):
+        act(store, "career-exhibition", {})
+    assert store.read() == before
+    act(
+        store,
+        "career-exhibition",
+        dict(id=pack["id"], revision=1, seed=91, rosters=list(pack["rosters"])[:2]),
+    )
+    assert not store.read().get("career") and store.read()["world"]["seed"] == 91
+    act(store, "career-open", {"career": cid})
+    assert store.read()["career"] == before["career"]
     store.db.close()
 
 

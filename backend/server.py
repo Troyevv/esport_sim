@@ -48,6 +48,7 @@ class Command(BaseModel):
         "database-match",
         "career-create",
         "career-open",
+        "career-exhibition",
         "career-lab",
         "career-save",
         "career-load",
@@ -133,7 +134,11 @@ def create_app(
                     except (ValueError, ArithmeticError, KeyError) as exc:
                         error = f"Не удалось рассчитать встречу: {exc}"
                     async with condition:
-                        if store.careers.commit_work(token, report, error):
+                        try:
+                            changed = store.careers.commit_work(token, report, error)
+                        except ValueError as exc:
+                            changed = store.careers.commit_work(token, None, str(exc))
+                        if changed:
                             condition.notify_all()
 
             if manages_home:

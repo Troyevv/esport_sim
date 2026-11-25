@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { serverURL, type Frame } from "./session";
 import { Avatar, type Visual } from "./SceneIdentity";
 import {
@@ -324,43 +324,67 @@ function NewCareer({
   );
 }
 
-function MatchReport({ event, close }: { event: Fixture; close: () => void }) {
+function MatchReport({
+  event,
+  teams,
+  close,
+}: {
+  event: Fixture;
+  teams: Record<string, string>;
+  close: () => void;
+}) {
   const data = useData<Report>("/api/career/report/" + event.id);
+  const title = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    title.current?.focus();
+  }, [event.id]);
+  const rounds = data.data?.rounds.length || 0;
   return (
-    <section className="cr-card">
+    <section className="cr-card cr-report">
       <div className="cr-line">
-        <h2>Протокол матча</h2>
+        <h2 ref={title} tabIndex={-1}>
+          Протокол матча
+        </h2>
         <button onClick={close}>Закрыть протокол</button>
       </div>
+      <h3 className="cr-result-title">
+        {teams[event.teams[0]]} <strong>{event.score?.join(" : ")}</strong>{" "}
+        {teams[event.teams[1]]}
+      </h3>
       {!data.data || data.error ? (
         <Load {...data} />
       ) : (
         <>
           <p>
-            {date(event.date)} · Депо · {data.data.rounds.length} раундов
+            {date(event.date)} · Депо · {rounds} раундов
           </p>
-          <table>
-            <thead>
-              <tr>
-                <th>Игрок</th>
-                <th>K</th>
-                <th>D</th>
-                <th>A</th>
-                <th>ADR</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.data.stats.map((p) => (
-                <tr key={p.player}>
-                  <th>{p.name}</th>
-                  <td>{p.k}</td>
-                  <td>{p.d}</td>
-                  <td>{p.a}</td>
-                  <td>{(p.damage / data.data!.rounds.length).toFixed(1)}</td>
+          {event.teams.map((tid, club) => (
+            <table key={tid}>
+              <caption>{teams[tid]}</caption>
+              <thead>
+                <tr>
+                  <th>Игрок</th>
+                  <th>K</th>
+                  <th>D</th>
+                  <th>A</th>
+                  <th>ADR</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data
+                  .data!.stats.filter((p) => p.club === club)
+                  .map((p) => (
+                    <tr key={p.player}>
+                      <th scope="row">{p.name}</th>
+                      <td>{p.k}</td>
+                      <td>{p.d}</td>
+                      <td>{p.a}</td>
+                      <td>{(p.damage / rounds).toFixed(1)}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          ))}
         </>
       )}
     </section>
@@ -370,9 +394,21 @@ function MatchReport({ event, close }: { event: Fixture; close: () => void }) {
 function Calendar({ c }: { c: Career }) {
   const [filter, setFilter] = useState("club"),
     [report, setReport] = useState<Fixture | null>(null);
+  const [chosenMonth, setMonth] = useState("");
+  const trigger = useRef<HTMLButtonElement | null>(null);
+  const month = chosenMonth || c.date.slice(0, 7);
+  const months = Array.from(
+    new Set(
+      [...c.queue, ...c.history, ...c.milestones].map((e) =>
+        e.date.slice(0, 7),
+      ),
+    ),
+  ).sort();
   const relevant = (e: Fixture) =>
-    e.kind === "review" || filter === "all" || e.teams.includes(c.team);
-  const list = (items: Fixture[]) =>
+    e.date.startsWith(month) &&
+    (e.kind === "review" || filter === "all" || e.teams.includes(c.team));
+
+  const list = (items: Fixture[], empty: string) =>
     items.length ? (
       <ol className="cr-fixtures">
         {items.map((e) => (
@@ -386,7 +422,10 @@ function Calendar({ c }: { c: Career }) {
             {e.score ? (
               <button
                 aria-label={"Протокол " + e.score.join(" : ")}
-                onClick={() => setReport(e)}
+                onClick={(click) => {
+                  trigger.current = click.currentTarget;
+                  setReport(e);
+                }}
               >
                 {e.score.join(" : ")} ↗
               </button>
@@ -397,7 +436,7 @@ function Calendar({ c }: { c: Career }) {
         ))}
       </ol>
     ) : (
-      <p>Завершённых встреч пока нет.</p>
+      <p>{empty}</p>
     );
   return (
     <>
@@ -405,21 +444,53 @@ function Calendar({ c }: { c: Career }) {
         <div className="cr-line">
           <h2>Календарь</h2>
           <label>
+            Месяц{" "}
+            <select
+              value={month}
+              onChange={(e) => {
+                setMonth(e.target.value);
+                setReport(null);
+              }}
+            >
+              {months.map((m) => (
+                <option key={m} value={m}>
+                  {new Date(m + "-01T12:00:00Z").toLocaleDateString("ru-RU", {
+                    month: "long",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  })}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             Показать{" "}
-            <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+            <select
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value);
+                setReport(null);
+              }}
+            >
               <option value="club">Моя команда</option>
               <option value="all">Весь мир</option>
             </select>
           </label>
         </div>
         <h3>Расписание</h3>
-        {list(c.queue.filter(relevant))}
+        {list(
+          c.queue.filter(relevant),
+          "На этот месяц встреч не запланировано.",
+        )}
         <h3>Результаты</h3>
-        {list(c.history.filter(relevant).slice().reverse())}
+        {list(
+          c.history.filter(relevant).slice().reverse(),
+          "Завершённых встреч за этот месяц нет.",
+        )}
         <h3>События клуба</h3>
         <ol className="cr-fixtures">
           {c.milestones
-            .slice()
+            .filter((m) => m.date.startsWith(month))
             .reverse()
             .map((m) => (
               <li key={m.date + m.title}>
@@ -432,7 +503,16 @@ function Calendar({ c }: { c: Career }) {
             ))}
         </ol>
       </section>
-      {report && <MatchReport event={report} close={() => setReport(null)} />}
+      {report && (
+        <MatchReport
+          event={report}
+          teams={c.teams}
+          close={() => {
+            setReport(null);
+            trigger.current?.focus();
+          }}
+        />
+      )}
     </>
   );
 }

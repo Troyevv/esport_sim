@@ -292,3 +292,22 @@
 .cr-card .pf-attributes {
   grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
 }
+.cr-report h2 {
+  scroll-margin: 18px;
+}
+.cr-result-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.cr-result-title strong {
+  font: 700 1.35em var(--mono);
+  color: var(--accent);
+}
+.cr-report caption {
+  text-align: left;
+  padding: 12px 4px 4px;
+  color: var(--accent);
+  font-weight: 700;
+}

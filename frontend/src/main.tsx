@@ -120,7 +120,7 @@ function App() {
         {workspace && screen==="match" && frame?.careerId && world?.match?.phase==="finished" &&
           <button className="primary" disabled={!enabled} onClick={async()=>{if(await act("career-finish"))go("hub");}}>Вернуться к календарю</button>}
         {world && playingLab && !database && !board && <button className="database-entry" onClick={()=>showDatabase(true)}>База сцены</button>}
-        {database && world && <DatabaseEditor onClose={()=>showDatabase(false)} enabled={enabled} start={async value=>{if(frame?.careerId && !await act("career-lab"))return false;const ok=await act("database-match",value);if(ok)go("lab");return ok;}}/>}
+        {database && world && <DatabaseEditor onClose={()=>showDatabase(false)} enabled={enabled} start={async value=>{const ok=await act(frame?.careerId?"career-exhibition":"database-match",value);if(ok)go("lab");return ok;}}/>}
         {playingLab && !database && !board && !world?.match && <div className="intro">
           <div>
             <div className="eyebrow">

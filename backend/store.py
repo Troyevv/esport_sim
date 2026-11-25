@@ -260,6 +260,10 @@ class Store:
                 )
             kind, value = command["kind"], command.get("value")
             c = state.get("career")
+            if kind == "career-exhibition":
+                # Switching away and validating the editor selection are one command.
+                self.careers.change(state, "career-lab", None)
+                kind, c = "database-match", None
             if kind.startswith("career-") or (c and kind in ("save", "load")):
                 self.careers.change(state, kind, value)
             elif c and (
