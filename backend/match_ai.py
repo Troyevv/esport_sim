@@ -217,6 +217,7 @@ def captain(w, squad, space=None):
             contacts=[p["id"] for p in contacts],
         )
     if leader["team"] == "CT":
+        last_report = max((p["tick"] for p in contacts), default=plan["start"])
         if space:
             # A contact on the upper site must not also count as pressure below it.
             counts = dict.fromkeys(("A", "B"), 0)
@@ -224,11 +225,23 @@ def captain(w, squad, space=None):
                 threatened = space.reported_site(xyz(contact))
                 if threatened:
                     counts[threatened] += 1
+            # Friendly casualties and their last positions are known on the squad radar.
+            # A lost site calls for a response without inventing any enemy position.
+            if w["phase"] == "live":
+                orders = plan["orders"]["slots"]
+                for site in ("A", "B"):
+                    if any(orders[p["slot"]]["site"] == site for p in squad):
+                        continue
+                    lost = [p["lastHurt"] for p in w["agents"] if p["team"] == "CT" and not p["hp"]
+                            and now-p["lastHurt"] < 75 and space.reported_site(xyz(p)) == site]
+                    if lost:
+                        counts[site] += len(lost)
+                        last_report = max(last_report, max(lost))
         if counts["A"] != counts["B"] and max(counts.values()) >= 2:
             plan["reinforce"] = max(counts, key=counts.get)
         if space and w["phase"] == "live":
             if max(counts.values()) >= 2 and counts["A"] != counts["B"]:
-                plan["reinforceUntil"] = max(p["tick"] for p in contacts) + 75
+                plan["reinforceUntil"] = last_report + 75
             elif now > plan.get("reinforceUntil", plan["start"] + 75):
                 plan["reinforce"] = None
             cs2_play.assign_backup(space,plan,squad,plan["reinforce"],max(counts.values()))

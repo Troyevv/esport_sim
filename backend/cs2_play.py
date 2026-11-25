@@ -94,7 +94,7 @@ def assign_backup(space, plan, squad, site, pressure):
     reserves = [a for a in other if a["slot"] >= 2]
     if reserves:
         other = reserves
-    elif len(other) == 1:
+    elif len(other) == 1 and any(slots[p["slot"]]["site"] == site for p in squad):
         plan.pop("backup", None)
         return
     if not other:
@@ -388,15 +388,38 @@ def plant_guard(space, actor, allies, bomb, order, direct, check):
     return actor["plantCover"]
 
 
+def sound_bearing(actor, device):
+    dx, dy = device["x"] - actor["x"], device["y"] - actor["y"]
+    sector = round(atan2(dy, dx) * 8 / tau) % 8
+    directions = ((1, 0), (1, 1), (0, 1), (-1, 1),
+                  (-1, 0), (-1, -1), (0, -1), (1, -1))
+    return [actor["x"], actor["y"], *directions[sector]]
+
+
+def hear_plant(space, players, planter, tick):
+    # One audible interaction, including a fake. The keypad does not identify its user.
+    source = xyz(planter)
+    for actor in players:
+        if actor["team"] != "CT" or not actor["hp"]:
+            continue
+        pos = xyz(actor)
+        distance = dist(pos, source)
+        if distance > 55 or (distance > 26 and space.hit(pos, source, 1, 64, 34)):
+            continue
+        cue = sound_bearing(actor, planter)
+        # Choose from known plant areas in the audible direction; stacked sites can be ambiguous.
+        guesses = [(costs.get(actor["navArea"], float("inf")), site)
+                   for site, costs in space.site_costs.items()
+                   if any(not outside_bearing(space.centers[i], cue) for i in space.plants[site])]
+        if guesses:
+            _, site = min(guesses)
+            actor["plantCue"] = dict(tick=tick, site=site, bearing=cue)
+
+
 def hear_device(actor, device, tick):
-    # A beep gives a listener a coarse bearing. It carries neither range
-    # nor the height or exact coordinates of a plant behind an obstacle.
+    # A beep gives a coarse direction but no range or floor.
     if tick % 10 == 0:
-        dx, dy = device["x"] - actor["x"], device["y"] - actor["y"]
-        sector = round(atan2(dy, dx) * 8 / tau) % 8
-        directions = ((1, 0), (1, 1), (0, 1), (-1, 1),
-                      (-1, 0), (-1, -1), (0, -1), (1, -1))
-        actor["beepBearing"] = [actor["x"], actor["y"], *directions[sector]]
+        actor["beepBearing"] = sound_bearing(actor, device)
 
 
 def outside_bearing(point, cue):
@@ -623,6 +646,23 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         if backup and backup["id"] == a["id"]:
             site, goal, watch = backup["site"], backup["hold"], backup["watch"]
         a["status"] = f"Занимает {site}"
+    cue = a.get("plantCue")
+    if side == "CT" and w["phase"] == "live" and cue and 0 <= now-cue["tick"] < 30:
+        if "peek" not in cue:
+            points = [space.centers[i] for i in space.plants[cue["site"]]
+                      if not outside_bearing(space.centers[i], cue["bearing"])]
+            if points:
+                target = min(points, key=lambda p: dist(p, pos))
+                angles = sorted((space.centers[i] for i in space.nearby_areas(pos, 18)),
+                                key=lambda p: dist(pos, p))
+                spots = [pos, *angles]
+                cue["peek"] = space._reachable(pos, (p for p in spots if space.hit(p, target, 1, 64) is None))
+                cue["watch"] = target
+            else:
+                cue["peek"] = None
+        if cue["peek"] is not None:
+            goal, watch = cue["peek"], cue["watch"]
+            a["status"] = "Проверяет звук установки"
     if (
         side == "T"
         and plan["style"] == "Контроль карты"

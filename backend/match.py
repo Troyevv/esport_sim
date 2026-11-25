@@ -223,7 +223,7 @@ def next_round(w):
                      useTarget=None,useFloor=None,checkContact=None,checkPosition=None,
                      shelter=None,coverUntil=0,coverReview=0,bombSearch=None,coveredDefuser=None,coverPoint=None,revisedApproach=None,
                      rendezvous=None,plantCover=None,watchDevice=None,heardUse=-1000,
-                     seenDevice=None,beepBearing=None)
+                     seenDevice=None,beepBearing=None,plantCue=None)
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
@@ -684,6 +684,8 @@ def objective(w, a, kind, site=None):
         w["action"] = dict(
             player=a["id"], kind=kind, site=site, start=now, end=now + duration
         )
+        if space and kind == "plant":
+            ai.cs2_play.hear_plant(space, w["agents"], a, now)
         if space and kind == "defuse":
             ai.cs2_play.hear_c4_use(space,w["agents"],w["bomb"],now)
         a["status"] = "Ставит C4" if kind == "plant" else "Обезвреживает"
