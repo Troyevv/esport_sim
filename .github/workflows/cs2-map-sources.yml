@@ -66,3 +66,24 @@ jobs:
           python build/awpy-data/scripts/process_geometry.py --input build/cs2-worlds/de_inferno/world_physics.glb --output build/cs2/de_inferno/de_inferno.mesh --no-decimate
           python build/awpy-data/scripts/process_geometry.py --input build/cs2-worlds/de_cache/world_physics.glb --output build/cs2-worlds/de_cache/world_visibility.mesh --no-decimate
           python -m tools.check_cs2_navigation build/cs2 --require-all-meshes --worlds build/cs2-worlds --compare-source de_cache
+      - name: Collect versioned BO1 runtime data from the verified import
+        run: |
+          python - <<'PY'
+          import json, shutil
+          from pathlib import Path
+          worlds = Path("build/cs2-worlds")
+          for name in json.loads(Path("build/cs2/inventory.json").read_bytes())["maps"]:
+              target = Path("build/runtime-maps") / name
+              target.mkdir(parents=True)
+              source = worlds / name
+              for filename in ("gameplay.json", "provenance.json", "collision.json", "collision.bin"):
+                  shutil.copyfile(source / filename, target / filename)
+              for png in source.glob("*.png"):
+                  shutil.copyfile(png, target / png.name)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cs2-runtime-26879581
+          path: build/runtime-maps/
+          retention-days: 3
+          if-no-files-found: error
