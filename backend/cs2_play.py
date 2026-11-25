@@ -310,6 +310,60 @@ def rescue(space, squad, bomb):
     return bomb["recovery"]
 
 
+def hear_c4_use(space, players, device, tick):
+    # The use sound is emitted once. It discloses neither the defuser's
+    # identity, kit, duration, nor whether the CT later lets go of the device.
+    objective = xyz(device)
+    for actor in players:
+        if not actor["hp"] or actor["team"] != "T":
+            continue
+        pos = xyz(actor)
+        distance = dist(pos, objective)
+        if distance < 26 or (
+            distance < 55 and space.hit(pos, objective, 1, 64, 12) is None
+        ):
+            actor["heardUse"] = tick
+
+
+def plant_guard(space, actor, allies, bomb, order, direct, check):
+    pos, device, site = xyz(actor), xyz(bomb), bomb["site"]
+    # The nearest living attacker watches the plant itself; other players
+    # cover entries. A local use sound gives its hearer a reason to peek.
+    cover = actor.get("plantCover")
+    if (
+        cover is not None
+        and actor.get("watchDevice") == direct
+        and actor.get("blockedTicks", 0) < 5
+    ):
+        return cover
+    reserved = [
+        p["plantCover"] for p in allies if p is not actor and p.get("plantCover")
+    ]
+    named = [p for _, p in space.holds[site]]
+    choices = list(
+        dict.fromkeys(
+            [*named, *(space.centers[i] for i in space.nearby_areas(device, 36))]
+        )
+    )
+    if order["site"] == site:
+        choices.append(tuple(order["hold"]))
+    if direct and space.hit(pos, device, 1, 64, 40) is None and dist(pos, device) > 5:
+        choices.append(pos)
+    choices.sort(
+        key=lambda q: (
+            direct and space.hit(q, device, 1, 64, 40) is not None,
+            any(dist(q, r) < 5 for r in reserved),
+            not check and q not in named and q != tuple(order["hold"]),
+            dist(q, pos),
+            q,
+        )
+    )
+    chosen = space._reachable(pos, choices)
+    actor["plantCover"] = list(chosen or pos)
+    actor["watchDevice"] = direct
+    return actor["plantCover"]
+
+
 def search_site(space, actor, site, now):
     # A beep identifies the site, but a crate or raised platform can hide
     # the device from the site's centre. Clear the actual plant surfaces.
@@ -429,24 +483,23 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             a["status"] = "Прикрывает разминирование" if other else "Идёт на ретейк"
         else:
             site = bomb["site"]
-            cover = a.get("plantCover")
-            if cover is None or a.get("blockedTicks", 0) >= 5:
-                choices = [p for _, p in space.holds[site]]
-                reserved = [
-                    p["plantCover"]
-                    for p in allies
-                    if p is not a and p.get("plantCover")
-                ]
-                choices.sort(
-                    key=lambda q: (any(dist(q, r) < 5 for r in reserved), dist(q, pos))
-                )
-                if order["site"] == site:
-                    choices.insert(0, order["hold"])
-                choices.extend(space.centers[i] for i in space.plants[site])
-                cover = space._reachable(pos, choices)
-                a["plantCover"] = list(cover) if cover is not None else list(pos)
-            goal = a["plantCover"]
-            a["status"] = "Прикрывает C4"
+            check = now - a.get("heardUse", -1000) <= 34
+            if not any(p["id"] == plan.get("deviceWatch") for p in allies):
+                plan["deviceWatch"] = min(
+                    allies, key=lambda p: (dist(xyz(p), xyz(bomb)), p["slot"])
+                )["id"]
+            goal = plant_guard(
+                space,
+                a,
+                allies,
+                bomb,
+                order,
+                check or a["id"] == plan["deviceWatch"],
+                check,
+            )
+            if a["watchDevice"]:
+                watch = xyz(bomb)
+            a["status"] = "Проверяет C4 после звука" if check else "Прикрывает C4"
     elif side == "T":
         if (
             bomb
@@ -600,7 +653,8 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             a["heading"] = atan2(latest["y"] - a["y"], latest["x"] - a["x"])
         return "move", None
     # Watch an approach known to this team or turn toward the last reported contact.
-    watch = xyz(latest) if latest else watch
+    if latest and latest["tick"] >= a.get("heardUse", -1000):
+        watch = xyz(latest)
     a["heading"] = atan2(watch[1] - a["y"], watch[0] - a["x"]) + 0.65 * sin(
         (now + 13 * slot) / 26
     )

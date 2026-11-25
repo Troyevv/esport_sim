@@ -300,3 +300,15 @@ def test_support_rejoins_near_a_teammate_between_levels():
     )
     assert rendezvous(space,support,teammate,100) == floor
     assert rendezvous(space,support,teammate,101) == list(floor)
+
+
+def test_use_sound_does_not_reveal_a_defuser_through_distant_geometry():
+    from types import SimpleNamespace
+    from backend.cs2_play import hear_c4_use
+
+    actors = [dict(x=x, y=0, z=z, hp=100, team="T") for x,z in [(4,0),(42,0),(4,65)]]
+    bomb = dict(x=0,y=0,z=0)
+    hear_c4_use(SimpleNamespace(hit=lambda *_:(0.4,"concrete",None)),actors,bomb,220)
+    assert actors[0]["heardUse"] == 220
+    assert all("heardUse" not in a for a in actors[1:])
+    assert "target" not in actors[0]
