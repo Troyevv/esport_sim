@@ -7,6 +7,9 @@ using ValveResourceFormat.ResourceTypes;
 using ValveResourceFormat.Serialization.KeyValues;
 using Hull = ValveResourceFormat.ResourceTypes.RubikonPhysics.Shapes.Hull;
 
+if (args is ["model-list", var maps, var list]) return Dependencies.Find(maps, list);
+if (args is ["chunk-list" or "unpack", var index, var names, var result])
+    return Dependencies.ReadPackage(index, names, result, args[0] == "unpack");
 if (args.Length != 2)
 {
     Console.Error.WriteLine("Cs2Export <map.vpk> <output.json>");
@@ -18,6 +21,7 @@ var map = Path.GetFileNameWithoutExtension(path);
 using var package = new Package();
 package.Read(path);
 using var loader = new GameFileLoader(package, path);
+loader.AddDiskPathToSearch(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(path)!, "..")));
 var navigation = new NavMeshFile();
 using (var input = loader.GetFileStream($"maps/{map}.nav")
     ?? throw new InvalidDataException($"Missing NAV for {map}"))
@@ -70,8 +74,7 @@ foreach (var name in world.GetEntityLumpNames())
         classes[kind] = classes.GetValueOrDefault(kind) + 1;
         var pose = EntityTransformHelper.ToTransformationMatrix(entity) * parent;
         var position = Point(pose.Translation);
-        if (kind is "func_brush" or "func_breakable" or "prop_door_rotating"
-            or "prop_dynamic" or "prop_dynamic_override" or "prop_physics" or "prop_physics_multiplayer")
+        if (Dependencies.IsPlacedCollision(kind))
         {
             var nameOfModel = entity.GetStringProperty("model");
             if (!string.IsNullOrEmpty(nameOfModel))

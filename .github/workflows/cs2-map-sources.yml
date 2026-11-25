@@ -5,6 +5,7 @@ on:
       - 'backend/cs2_*.py'
       - tests/test_cs2_spatial.py
       - tools/check_cs2_playable_areas.py
+      - tools/cs2_ci_shared_models.py
       - tools/cs2_map_sources.py
       - tools/cs2_world_sources.py
       - 'tools/cs2_export/**'
@@ -43,6 +44,8 @@ jobs:
           Path("maps.txt").write_text("game/csgo/steam.inf\n" + "".join(f"game/csgo/maps/{name}.vpk\n" for name in maps))
           PY
           depot/DepotDownloader -app 730 -depot 2347770 -manifest 5924479096069937098 -filelist maps.txt -dir gamefiles -validate
+      - name: Resolve shared models referenced by placed map entities
+        run: python tools/cs2_ci_shared_models.py "$RUNNER_TEMP/gamefiles/game/csgo" "$RUNNER_TEMP/depot/DepotDownloader" tools/cs2_export/bin/Release/net11.0/Cs2Export.dll
       - name: Extract game entities and original world physics
         run: |
           curl -fsSLo "$RUNNER_TEMP/vrf.zip" https://github.com/ValveResourceFormat/ValveResourceFormat/releases/download/21.1/cli-linux-x64.zip
