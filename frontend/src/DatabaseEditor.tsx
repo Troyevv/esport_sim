@@ -31,6 +31,7 @@ import {
 import { PersonalBadges } from "./PersonalBadges";
 import { KitEditor, KitPreview } from "./KitStudio";
 import { Identity } from "./SceneIdentity";
+import { Glyph } from "./GameUI";
 import { entityVisual } from "./databaseModel";
 import PortraitEditor from "./PortraitEditor";
 import {
@@ -374,7 +375,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
   const head = (
     <header className="db-heading">
       <div>
-        <span className="eyebrow">Предматчевая подготовка</span>
+        <span className="eyebrow">Редактор базы</span>
         <h1>База сцены</h1>
       </div>
       <button
@@ -643,6 +644,8 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
           });
         }}
       />
+      <div className="db-layout">
+        <section className="db-index">
       <nav className="db-tabs" aria-label="Раздел базы">
         {groupKeys.map((k) => (
           <button
@@ -651,12 +654,11 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
             aria-pressed={k === g}
             onClick={() => move(k, firstId(pack, k))}
           >
-            {groups[k]} <b>{Object.keys(pack[k]).length}</b>
+            <Glyph name={{players:"users",teams:"trophy",staff:"inbox",rosters:"book",organizations:"building"}[k]}/> {groups[k]} <b>{Object.keys(pack[k]).length}</b>
           </button>
         ))}
       </nav>
-      <div className="db-layout">
-        <section className="db-index">
+
           <div className="db-bar">
             <h2>{groups[g]}</h2>
             <button disabled={!latest || busy} onClick={() => begin()}>

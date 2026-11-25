@@ -7,7 +7,7 @@ import {
   skillGroups,
   skillLabels,
 } from "./databaseModel";
-import { RoleRatings } from "./SceneProfiles";
+import { RoleRatings, Familiarity } from "./SceneProfiles";
 import { Heading, Tabs, Glyph, Dialog, Readiness } from "./GameUI";
 import {
   age,
@@ -181,6 +181,10 @@ export function Squad({
             {display.map((r) => (
               <tr
                 key={r.p.id}
+                onClick={(event) => {
+                  if (!(event.target as Element).closest("button"))
+                    open({ group: "players", id: r.p.id });
+                }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   setContext(r.p.id);
@@ -258,16 +262,22 @@ export function Squad({
     </>
   );
 }
+export function useDirectoryView() {
+  const [group, setGroup] = useState<Group>("teams");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
+  return { group, setGroup, query, setQuery, page, setPage };
+}
 export function Directory({
   scene,
   open,
+  view,
 }: {
   scene: Scene;
   open: Props["open"];
+  view: ReturnType<typeof useDirectoryView>;
 }) {
-  const [group, setGroup] = useState<Group>("teams"),
-    [query, setQuery] = useState(""),
-    [page, setPage] = useState(0);
+  const { group, setGroup, query, setQuery, page, setPage } = view;
   const rows = Object.values(scene[group])
     .filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name, "ru"));
@@ -341,6 +351,7 @@ export function EntityProfile({
   back,
 }: Props & { profile: Profile; back: () => void }) {
   const [tab, setTab] = useState("Обзор");
+  const [chosenRole, setRole] = useState("");
   const { group, id } = profile,
     item = scene[group][id];
   if (!item) return <p role="alert">Запись отсутствует в редакции карьеры.</p>;
@@ -366,7 +377,83 @@ export function EntityProfile({
   const staffList = Object.values(scene.staff).filter((s) =>
     team ? s.team === id : orgTeams.some((t) => t.id === s.team),
   );
-  const rating = own?.ratings[own.role];
+  const selectedRole = chosenRole || own?.role || "";
+  const rating = own?.ratings[selectedRole];
+  if (org)
+    return (
+      <>
+        <div className="org-title">
+          <Avatar name={org.name} {...org.visual} />
+          <Heading title={org.name} sub="Организация · команды и персонал">
+            <button className="btn" onClick={back}>
+              Назад
+            </button>
+          </Heading>
+        </div>
+        <div className="org-grid">
+          <div className="stack">
+            {panel(
+              "Команды организации",
+              orgTeams.length ? (
+                orgTeams.map((t) => (
+                  <button
+                    className="entity-button roster-branch"
+                    key={t.id}
+                    onClick={() => open({ group: "teams", id: t.id })}
+                  >
+                    <Avatar {...t.visual} name={t.name} />
+                    <span>
+                      <strong>{t.name}</strong>
+                      <small>
+                        {teamTypes[t.teamType] || "Команда"} ·{" "}
+                        {t.members.length} игроков
+                      </small>
+                    </span>
+                    <Glyph name="chevron-right" />
+                  </button>
+                ))
+              ) : (
+                <p className="panel-body muted">Нет связанных команд.</p>
+              ),
+            )}
+            {panel(
+              "Персонал",
+              staffList.length ? (
+                staffList.map((s) => link("staff", s.id))
+              ) : (
+                <p className="panel-body muted">
+                  В редакции нет сведений о штабе.
+                </p>
+              ),
+            )}
+          </div>
+          {panel(
+            "Профиль организации",
+            <dl className="club-facts">
+              <div>
+                <dt>Название</dt>
+                <dd>{org.name}</dd>
+              </div>
+              <div>
+                <dt>Основание</dt>
+                <dd>{org.founded || "Нет сведений"}</dd>
+              </div>
+              <div>
+                <dt>Команд</dt>
+                <dd>{orgTeams.length}</dd>
+              </div>
+              {orgTeams.some((t) => t.id === c.team) && (
+                <div>
+                  <dt>Менеджер</dt>
+                  <dd>{c.character}</dd>
+                </div>
+              )}
+            </dl>,
+          )}
+        </div>
+      </>
+    );
+
   return (
     <>
       <Heading
@@ -418,6 +505,19 @@ export function EntityProfile({
               <span className="ovr large">{rating ?? "—"}</span>
               <span>Ролевой OVR</span>
             </div>
+            {own && (
+              <select
+                aria-label="Роль для оценки OVR"
+                value={selectedRole}
+                onChange={(e) => setRole(e.target.value)}
+              >
+                {Object.keys(own.ratings).map((r) => (
+                  <option value={r} key={r}>
+                    {roles[r]}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
       </section>
@@ -486,6 +586,44 @@ export function EntityProfile({
         <div className="org-grid">
           {player && (
             <>
+              {own && (
+                <Familiarity
+                  title="Ключевые характеристики"
+                  names={skillLabels}
+                  values={Object.fromEntries(
+                    [
+                      "aim",
+                      "positioning",
+                      "rifles",
+                      "communication",
+                      "concentration",
+                      "endurance",
+                    ]
+                      .filter((k) => own.skills[k] !== undefined)
+                      .map((k) => [k, own.skills[k]]),
+                  )}
+                />
+              )}
+              {own &&
+                panel(
+                  "Состояние игрока",
+                  <dl className="club-facts">
+                    <div>
+                      <dt>Готовность</dt>
+                      <dd>
+                        <Readiness fatigue={own.fatigue} />
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Мораль</dt>
+                      <dd>{own.morale} / 100</dd>
+                    </div>
+                    <div>
+                      <dt>Форма</dt>
+                      <dd>{own.form} / 100</dd>
+                    </div>
+                  </dl>,
+                )}
               {panel(
                 "Команды",
                 player.teams.length ? (
@@ -517,16 +655,7 @@ export function EntityProfile({
                 panel("Организация", link("organizations", team.organization))}
             </>
           )}
-          {org &&
-            panel(
-              "Команды организации",
-              orgTeams.length ? (
-                orgTeams.map((t) => link("teams", t.id))
-              ) : (
-                <p className="panel-body">Нет связанных команд.</p>
-              ),
-            )}
-          {(team || org) &&
+          {team &&
             panel(
               "Персонал",
               staffList.length ? (

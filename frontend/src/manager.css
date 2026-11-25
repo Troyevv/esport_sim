@@ -608,3 +608,145 @@ button.host-action {
     visibility: visible;
   }
 }
+.org-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.org-title > .scene-avatar {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+.org-title .page-heading {
+  flex: 1;
+  margin-bottom: 0;
+}
+.roster-branch span {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+.roster-branch small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.club-facts {
+  margin: 0;
+  padding: 6px 20px;
+}
+.club-facts > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.club-facts > div:last-child {
+  border: 0;
+}
+.club-facts dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+.club-facts dd {
+  margin: 0;
+}
+.main-content .pf-section {
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.main-content .pf-section h3 {
+  margin: 0 0 16px;
+}
+.radar-broadcast {
+  position: relative;
+}
+.hud-map .radar-broadcast .live-feed {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  right: 6px;
+  max-width: 70%;
+  max-height: 40%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  pointer-events: none;
+  background: transparent;
+}
+.hud-map .radar-broadcast .kill-row {
+  width: fit-content;
+  margin-left: auto;
+  margin-bottom: 3px;
+  padding: 3px 7px;
+  min-height: 24px;
+  background: #101317e8;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+.match-center > .hud-history {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow-x: auto;
+  background: var(--surface);
+  padding: 7px 12px;
+  margin-bottom: 10px;
+}
+.match-center > .hud-history button {
+  min-width: 35px;
+  min-height: 27px;
+  font-size: 10px;
+  flex: none;
+  padding: 2px 5px;
+}
+.db .db-index .db-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 10px;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.db-index .db-tabs button {
+  justify-content: flex-start;
+  font-size: 12px;
+  gap: 6px;
+  padding: 5px 7px;
+  min-width: 0;
+}
+.db-index .db-tabs .ui-icon {
+  width: 14px;
+}
+.db-index .db-tabs b {
+  margin-left: auto;
+}
+.db .pf-heading,
+.db .db-person,
+.db .pf-section,
+.db .db-bar {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+.db .db-layout {
+  margin-top: 16px;
+}
+@media (max-width: 600px) {
+  .priority-card .btn.primary {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .match-center .hud-map .radar-broadcast .live-feed {
+    max-width: 85%;
+  }
+  .org-title .page-actions {
+    align-self: center;
+  }
+  .db-index .db-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

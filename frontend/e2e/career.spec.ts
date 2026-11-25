@@ -46,7 +46,8 @@ test("Карьера от выбора базы до общей сохранён
   await capture("career");
   await press("Состав");
   await capture("roster");
-  await page.getByRole("button", { name: /ZywOo/ }).click();
+  await press("Действия · ZywOo");
+  await press("Открыть профиль");
   await expect(page.locator(".pf-heading h2")).toHaveText("ZywOo");
   await capture("profile");
   await press("Характеристики · 58");

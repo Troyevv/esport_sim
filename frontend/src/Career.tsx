@@ -18,7 +18,12 @@ import { Load, NewCareer, Saves } from "./CareerForms";
 import { CareerMenu } from "./CareerMenu";
 import { Calendar } from "./CareerCalendar";
 import { Dashboard, Inbox, letters } from "./CareerHome";
-import { Directory, EntityProfile, Squad } from "./CareerScene";
+import {
+  Directory,
+  EntityProfile,
+  Squad,
+  useDirectoryView,
+} from "./CareerScene";
 import "./career.css";
 
 const sections = [
@@ -156,6 +161,7 @@ function Manager({
     [motion, setMotion] = useState(
       () => localStorage.getItem("esport-sim/motion") !== "false",
     );
+  const directoryView = useDirectoryView();
   const historyStack = useRef<Route[]>([]);
   const scene = directory.data,
     box = letters(c),
@@ -205,6 +211,10 @@ function Manager({
   };
   const nav = (page: string) => {
     closeOverlays();
+    if (page === "Календарь") {
+      calendar(c.date);
+      return;
+    }
     if (page === "Тактики") {
       board();
       return;
@@ -502,7 +512,7 @@ function Manager({
                   }}
                 />
               ) : active === "База сцены" ? (
-                <Directory {...{ scene, open }} />
+                <Directory {...{ scene, open }} view={directoryView} />
               ) : active === "Матч-центр" ? (
                 <>
                   <Heading title="Матч-центр" sub="Ближайшая встреча" />

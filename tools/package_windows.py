@@ -88,6 +88,7 @@ def main():
         "BO1.md",
         "CAREER_R33.md",
         "INTERFACE_R34.md",
+        "INTERFACE_R34_QA.md",
         "SCENE_202611.md",
         "PORTRAITS_R32.md",
         "SCENE_ART_R32.md",
@@ -109,6 +110,7 @@ def main():
         )
     screenshots = output / "screenshots"
     screenshots.mkdir(exist_ok=True)
+    shutil.copytree(ROOT / "docs" / "screenshots" / "r34", screenshots / "r34", dirs_exist_ok=True)
     for source in sorted((ROOT / "docs" / "screenshots").glob("*.png")):
         if not source.name.startswith(("r2-", "r32-", "r33-")):
             continue

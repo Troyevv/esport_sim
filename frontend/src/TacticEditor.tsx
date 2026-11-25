@@ -87,7 +87,9 @@ export default function TacticEditor({
     [replace, setReplace] = useState(false);
   const [dirty, setDirty] = useState(!!plan),
     [history, setHistory] = useState<Plan[]>([]);
-  const [libOpen, setLibOpen] = useState(()=>matchMedia("(min-width:1250px)").matches),
+  const [libOpen, setLibOpen] = useState(
+      () => matchMedia("(min-width:1250px)").matches,
+    ),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
   const [retry, setRetry] = useState(0),
@@ -96,7 +98,9 @@ export default function TacticEditor({
     [tick, setTick] = useState(0),
     [playing, play] = useState(false),
     [rate, setRate] = useState(2);
-  const coachSide = frame.world.match?.clubs.find(c => c.id === frame.world.match?.coachTeamId)?.side;
+  const coachSide = frame.world.match?.clubs.find(
+    (c) => c.id === frame.world.match?.coachTeamId,
+  )?.side;
   const clock = useRef(0),
     version = frame.libraryRevision || 0;
   const request = useRef(0);
@@ -114,9 +118,7 @@ export default function TacticEditor({
         const initial =
           data.plans.find(
             (p) =>
-              p.standard &&
-              p.side === coachSide &&
-              p.buy === match?.nextBuy,
+              p.standard && p.side === coachSide && p.buy === match?.nextBuy,
           ) || data.plans.find((p) => p.standard)!;
         setPlan((old) => old || initial);
       })
@@ -367,32 +369,29 @@ export default function TacticEditor({
     );
   }
   const disabled = working || !enabled;
-  const playerPicker = (<div className="board-players" aria-label="Выбор игрока">
-              {library.roles.map((role, i) => (
-                <button
-                  key={i}
-                  aria-label={
-                    "Игрок " +
-                    (i + 1) +
-                    " · " +
-                    library.players[i] +
-                    " · " +
-                    role
-                  }
-                  aria-pressed={slot === i}
-                  onClick={() => pick(i, null)}
-                >
-                  <b style={{ background: colors[i] }}>{i + 1}</b>
-                  <span>
-                    {library.players[i]}
-                    <small>{role}</small>
-                  </span>
-                </button>
-              ))}
-            </div>);
+  const playerPicker = (
+    <div className="board-players" aria-label="Выбор игрока">
+      {library.roles.map((role, i) => (
+        <button
+          key={i}
+          aria-label={
+            "Игрок " + (i + 1) + " · " + library.players[i] + " · " + role
+          }
+          aria-pressed={slot === i}
+          onClick={() => pick(i, null)}
+        >
+          <b style={{ background: colors[i] }}>{i + 1}</b>
+          <span>
+            {library.players[i]}
+            <small>{role}</small>
+          </span>
+        </button>
+      ))}
+    </div>
+  );
   const previewEvent = preview?.events.filter((e) => e.tick <= tick).at(-1);
   return (
-    <article className={"tactics "+(libOpen?"library-open":"")}>
+    <article className={"tactics " + (libOpen ? "library-open" : "")}>
       <header className="board-title">
         <div>
           <span className="eyebrow">ПОДГОТОВКА К МАТЧУ</span>
@@ -445,7 +444,8 @@ export default function TacticEditor({
               )}
             </section>
           ))}
-          <h3>Исполнители</h3>{playerPicker}
+          <h3>Исполнители</h3>
+          {playerPicker}
         </section>
       )}
       <fieldset className="board-fieldset" disabled={working}>
