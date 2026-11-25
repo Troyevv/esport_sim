@@ -14,7 +14,7 @@ TABLES = ("full_rounds", "full_team_round_economy", "full_maps")
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--revision", default="main")
+    parser.add_argument("--revision", default="75c4642627cbb92453ed0736a0a9b6564809e8e8")
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     with urlopen(f"https://huggingface.co/api/datasets/{REPO}/revision/{args.revision}", timeout=60) as response:
