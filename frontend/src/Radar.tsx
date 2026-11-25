@@ -25,7 +25,7 @@ export interface Agent extends Point {
   team: Team;
   heading: number;
   hp?: number; armor?: number; cash?: number; ammo?: number; reserve?: number; weapon?: string;
-  utility?: string[]; kit?: boolean; alive?: boolean;
+  utility?: string[]; kit?: boolean; helmet?: boolean; equipmentValue?: number; alive?: boolean;
   visible: string[];
   knowledge: (Point & { id: string; tick: number })[];
   status: string;

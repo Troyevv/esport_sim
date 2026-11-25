@@ -96,6 +96,7 @@ export default function TacticEditor({
     [tick, setTick] = useState(0),
     [playing, play] = useState(false),
     [rate, setRate] = useState(2);
+  const coachSide = frame.world.match?.clubs.find(c => c.id === frame.world.match?.coachTeamId)?.side;
   const clock = useRef(0),
     version = frame.libraryRevision || 0;
   const request = useRef(0);
@@ -114,8 +115,8 @@ export default function TacticEditor({
           data.plans.find(
             (p) =>
               p.standard &&
-              p.side === match?.sides[0] &&
-              p.buy === match.nextBuy,
+              p.side === coachSide &&
+              p.buy === match?.nextBuy,
           ) || data.plans.find((p) => p.standard)!;
         setPlan((old) => old || initial);
       })
@@ -187,7 +188,7 @@ export default function TacticEditor({
     match &&
     ((match.pregame && !frame.running) ||
       (match.phase === "timeout" &&
-        match.sides[0] === plan.side &&
+        coachSide === plan.side &&
         match.nextBuy === plan.buy));
   const stale =
     plan.revision > 0 &&
@@ -744,7 +745,7 @@ export default function TacticEditor({
                       ? "До старта можно подготовить план для каждой стороны и закупки."
                       : match.phase === "timeout"
                         ? "Ближайший раунд · " +
-                          match.sides[0] +
+                          coachSide +
                           " · " +
                           match.nextBuy
                         : "Назначение откроется в свой тактический тайм-аут."}

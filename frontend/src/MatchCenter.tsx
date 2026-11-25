@@ -4,21 +4,30 @@ import Radar from "./Radar";
 import type { Frame, View } from "./session";
 import type { RadarPlayback } from "./playback";
 import "./match.css";
-import {Identity,type Visual} from "./SceneIdentity";
-import {RoleRatings} from "./SceneProfiles";
+import { Avatar, Identity, type Visual } from "./SceneIdentity";
+import { RoleRatings } from "./SceneProfiles";
 
 type Side = "CT" | "T";
 type Point = { x: number; y: number };
 export interface MatchView {
   rules: string;
-  source?: {id:string; revision:number};
+  clubs: {
+    id: string;
+    name: string;
+    side: Side;
+    score: number;
+    visual?: Visual;
+  }[];
+  coachTeamId: string;
+  winnerTeamId: string | null;
+  source?: { id: string; revision: number };
   roleRatings: Record<string, Record<string, number>>;
   teamRating: number | null;
   round: number;
   phase: string;
   clock: number;
   teams: string[];
-  teamVisuals?:(Visual|null)[];
+  teamVisuals?: (Visual | null)[];
   sides: Side[];
   score: number[];
   pregame: boolean;
@@ -28,6 +37,8 @@ export interface MatchView {
     tactic?: PlanRef;
     round: number;
     winner: number;
+    winnerTeamId: string;
+    scoreByTeam: Record<string, number>;
     side: Side;
     reason: string;
     score: number[];
@@ -38,7 +49,8 @@ export interface MatchView {
     id: string;
     name: string;
     club: number;
-    visual?:Visual;
+    teamId: string;
+    visual?: Visual;
     team: Side;
     role: string;
     k: number;
@@ -71,7 +83,9 @@ export interface MatchView {
     weapon: string;
     head: boolean;
   }[];
-  plans: Partial<Record<Side, { site: string; style: string; buy: string; tactic?: PlanRef }>>;
+  plans: Partial<
+    Record<Side, { site: string; style: string; buy: string; tactic?: PlanRef }>
+  >;
   remaining: number;
   timeoutLimit: number;
   pending: boolean;
@@ -103,6 +117,119 @@ type Props = {
   setView: (v: View) => void;
 };
 
+const money = (amount: number) => "$" + amount.toLocaleString("ru-RU");
+const utilities: Record<string, string> = {
+  Свет: "Flash",
+  Дым: "Smoke",
+  Огонь: "Fire",
+  Ложная: "Decoy",
+};
+
+function RosterPanel({
+  club,
+  frame,
+  selected,
+  select,
+}: {
+  club: MatchView["clubs"][number];
+  frame: Frame;
+  selected: string | null;
+  select: (id: string) => void;
+}) {
+  const { match: m, agents } = frame.world;
+  const players = m!.stats.filter((row) => row.teamId === club.id);
+  return (
+    <section
+      className="hud-team"
+      data-team={club.id}
+      data-side={club.side}
+      aria-label={"Пятёрка · " + club.name}
+    >
+      <h3>
+        <span>{club.name}</span>
+        <small>
+          {club.side}
+          {club.id === m!.coachTeamId &&
+            m!.teamRating != null &&
+            " · OVR " + m!.teamRating}
+        </small>
+      </h3>
+      {players.map((row) => {
+        const a = agents.find((p) => p.id === row.id);
+        const dead =
+          a?.alive === false || m!.kills.some((k) => k.target === row.id);
+        const hp = dead ? 0 : a?.hp;
+        const equipped = a?.equipmentValue !== undefined && !dead;
+        return (
+          <button
+            key={row.id}
+            className="player-card"
+            data-dead={dead}
+            aria-pressed={selected === row.id}
+            disabled={!a}
+            onClick={() => select(row.id)}
+          >
+            <span className="hud-head">
+              <Avatar name={row.name} {...row.visual} />
+              <span>
+                <strong>{row.name}</strong>
+                <small>{row.role}</small>
+              </span>
+              <b className="hud-hp">
+                {hp ?? "—"}
+                <small>HP</small>
+              </b>
+            </span>
+            <span
+              className="hud-health"
+              role="meter"
+              aria-label={"Здоровье · " + row.name}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={hp}
+            >
+              <i style={{ width: (hp ?? 0) + "%" }} />
+            </span>
+            <span className="hud-loadout">
+              <strong>{dead ? "Выбыл" : a?.weapon || "Вне обзора"}</strong>
+              <span>{a?.cash !== undefined ? money(a.cash) : "—"}</span>
+            </span>
+            <span className="hud-kit">
+              {equipped
+                ? [
+                    "Броня " + a!.armor,
+                    ...(a!.helmet ? ["Шлем"] : []),
+                    ...(a!.kit ? ["Набор"] : []),
+                    ...(a!.utility || []).map((g) => utilities[g] || g),
+                  ].join(" · ")
+                : "Снаряжение —"}
+            </span>
+            <span className="hud-figures">
+              <span title="Убийства / смерти / передачи">
+                K/D/A{" "}
+                <b>
+                  {row.k}/{row.d}/{row.a}
+                </b>
+              </span>
+              <span>
+                ADR <b>{Math.round(row.damage / m!.round)}</b>
+              </span>
+              <span title="Стоимость экипировки">
+                Инв.{" "}
+                <b>
+                  {a?.equipmentValue !== undefined
+                    ? money(a.equipmentValue)
+                    : "—"}
+                </b>
+              </span>
+            </span>
+          </button>
+        );
+      })}
+    </section>
+  );
+}
+
 export default function MatchCenter({
   frame,
   playback,
@@ -114,7 +241,7 @@ export default function MatchCenter({
 }: Props) {
   const world = frame.world,
     m = world.match!;
-  const [tab, setTab] = useState<(typeof tabs)[number]>("Составы");
+  const [tab, setTab] = useState<(typeof tabs)[number]>("Статистика");
   const [selected, select] = useState<string | null>(null);
   const [seed, setSeed] = useState(String(world.seed));
   const [nextCall, setNextCall] = useState(m.calls[0]);
@@ -123,14 +250,31 @@ export default function MatchCenter({
   const finished = m.phase === "finished",
     timeout = m.phase === "timeout";
   const rounds = m.history.length;
-  const played = new Map<string, {plan: PlanRef; rounds: number; wins: number}>();
+  const coach = m.clubs.find((c) => c.id === m.coachTeamId)!;
+  const opponent = m.clubs.find((c) => c.id !== m.coachTeamId)!;
+  const clubName = (id: string) => m.clubs.find((c) => c.id === id)?.name;
+  const roster = (club: MatchView["clubs"][number]) => (
+    <RosterPanel
+      club={club}
+      frame={frame}
+      selected={selected}
+      select={(id) => {
+        select(id);
+        setTab("Составы");
+      }}
+    />
+  );
+  const played = new Map<
+    string,
+    { plan: PlanRef; rounds: number; wins: number }
+  >();
   if (tab === "Раунды") {
     for (const row of m.history) {
       if (!row.tactic) continue;
       const key = row.tactic.id + "/" + row.tactic.revision;
-      const entry = played.get(key) || {plan: row.tactic, rounds: 0, wins: 0};
+      const entry = played.get(key) || { plan: row.tactic, rounds: 0, wins: 0 };
       entry.rounds++;
-      if (row.winner === 0) entry.wins++;
+      if (row.winnerTeamId === coach.id) entry.wins++;
       played.set(key, entry);
     }
   }
@@ -144,23 +288,37 @@ export default function MatchCenter({
           </h1>
         </div>
         <button onClick={openBoard}>Редактор тактик</button>
-        <span className={"match-format"+(m.source && m.source.id!=="depo-exhibition"?" sourced":"")}>
-          Выставочный матч
-          <br />
-          {m.source && m.source.id !== "depo-exhibition" ? "Составы из базы · ред. " + m.source.revision : "Тестовые составы"}
+        <span
+          className={
+            "match-format" +
+            (m.source && m.source.id !== "depo-exhibition" ? " sourced" : "")
+          }
+        >
+          Выставочный матч · <br />
+          {m.source && m.source.id !== "depo-exhibition"
+            ? "Составы из базы · ред. " + m.source.revision
+            : "Тестовые составы"}
         </span>
       </header>
       <section className="scoreboard" aria-label="Счёт матча">
-        {m.teams.map((club, i) => (
-          <div key={club} className={"club club-" + i}>
+        {m.clubs.map((club, i) => (
+          <div
+            key={club.id}
+            data-team={club.id}
+            data-side={club.side}
+            className={"club club-" + i}
+          >
             <span className="club-side">
-              {m.sides[i]} · {i === 0 ? "Ваша команда" : "Соперник"}
+              {club.side} · {club.id === coach.id ? "Ваша команда" : "Соперник"}
             </span>
-            <strong>{m.teamVisuals?.[i]?<Identity name={club} visual={m.teamVisuals[i]!}/>:club}</strong>
-            <b>{m.score[i]}</b>
+            <strong>
+              <Avatar name={club.name} club {...club.visual} />
+              <span>{club.name}</span>
+            </strong>
+            <b>{club.score}</b>
           </div>
         ))}
-        <div className="round-clock">
+        <div className="round-clock" data-planted={m.phase === "planted"}>
           <small>РАУНД {m.round}</small>
           <b>
             {finished
@@ -176,48 +334,137 @@ export default function MatchCenter({
       </section>
       {finished && (
         <p className="match-result">
-          Победитель матча —{" "}
-          <strong>{m.teams[m.score[0] > m.score[1] ? 0 : 1]}</strong>
+          Победитель матча — <strong>{clubName(m.winnerTeamId!)}</strong>
         </p>
       )}
+      <section className="hud-controls" aria-label="Управление просмотром">
+        <button
+          className="primary"
+          disabled={!enabled || finished || timeout}
+          onClick={() => act(frame.running ? "pause" : "start")}
+        >
+          {frame.running ? "Пауза просмотра" : "Запустить"}
+        </button>
+        <div className="speed-list">
+          {[1, 2, 4, 8, 128].map((n) => (
+            <button
+              key={n}
+              disabled={!enabled}
+              aria-pressed={frame.speed === n}
+              onClick={() => act("speed", n)}
+            >
+              {n === 128 ? "Быстро" : n + "×"}
+            </button>
+          ))}
+        </div>
+      </section>
+      <div className="lineups">
+        {roster(m.clubs[0])}
+        <section className="panel hud-map">
+          <div className="maphead">
+            <div className="mapname">
+              <h2>Тактический радар</h2>
+            </div>
+            <select
+              aria-label="Режим обзора"
+              value={world.view}
+              onChange={(e) => {
+                select(null);
+                setView(e.target.value as View);
+              }}
+            >
+              <option value="full">Полная карта · анализ</option>
+              <option value="T">Видимость T</option>
+              <option value="CT">Видимость CT</option>
+            </select>
+          </div>
+          {m.phase === "planted" && (
+            <div className="hud-bomb">
+              <strong>C4 · {m.bomb?.site || "Установлена"}</strong>
+              <span>
+                {m.action?.kind === "defuse" ? "Обезвреживание" : "До взрыва"} ·{" "}
+                {clock(m.clock)}
+              </span>
+              <progress
+                aria-label="Время до взрыва"
+                value={m.clock}
+                max={400}
+              />
+            </div>
+          )}
+          <Radar
+            frame={frame}
+            playback={playback}
+            connected={connected}
+            selected={selectedAgent?.id ?? null}
+            onSelect={select}
+          />
+          <div className="match-legend">
+            <span>● CT</span>
+            <span>◆ T</span>
+            <span>▣ C4</span>
+            <span>
+              {selectedAgent
+                ? selectedAgent.name + " · " + selectedAgent.status
+                : "Выберите игрока на карте"}
+            </span>
+          </div>
+          {rounds > 0 && (
+            <div className="hud-history" aria-label="Последние раунды">
+              <strong>Раунды</strong>
+              {m.history.slice(-12).map((r) => (
+                <button
+                  data-side={r.side}
+                  key={r.round}
+                  onClick={() => {
+                    setTab("Раунды");
+                    document
+                      .querySelector(".match-data")
+                      ?.scrollIntoView({ block: "start" });
+                  }}
+                  title={clubName(r.winnerTeamId) + " · " + r.reason}
+                  aria-label={
+                    "Раунд " +
+                    r.round +
+                    " · " +
+                    clubName(r.winnerTeamId) +
+                    " · " +
+                    r.reason
+                  }
+                >
+                  <b>{r.round}</b>
+                  {{
+                    "Взрыв C4": "C4",
+                    Обезвреживание: "KIT",
+                    Время: "◷",
+                    Устранение: "×",
+                  }[r.reason] || r.side}
+                </button>
+              ))}
+            </div>
+          )}
+          <section className="live-feed">
+            <h2>Лента убийств</h2>
+            {!m.kills.length && <p>В этом раунде ещё нет фрагов.</p>}
+            {m.kills
+              .slice()
+              .reverse()
+              .map((k) => (
+                <div key={k.id}>
+                  <b>{k.weapon === "C4" ? "C4" : name(k.player)}</b>
+                  <span>
+                    {k.weapon}
+                    {k.head ? " · HS" : ""}
+                  </span>
+                  <b>{name(k.target)}</b>
+                </div>
+              ))}
+          </section>
+        </section>
+        {roster(m.clubs[1])}
+      </div>
       <div className="match-grid">
         <div className="match-main">
-          <section className="panel">
-            <div className="maphead">
-              <div className="mapname">
-                <h2>Тактический радар</h2>
-              </div>
-              <select
-                aria-label="Режим обзора"
-                value={world.view}
-                onChange={(e) => {
-                  select(null);
-                  setView(e.target.value as View);
-                }}
-              >
-                <option value="full">Полная карта · анализ</option>
-                <option value="T">Видимость T</option>
-                <option value="CT">Видимость CT</option>
-              </select>
-            </div>
-            <Radar
-              frame={frame}
-              playback={playback}
-              connected={connected}
-              selected={selectedAgent?.id ?? null}
-              onSelect={select}
-            />
-            <div className="match-legend">
-              <span>● CT</span>
-              <span>◆ T</span>
-              <span>▣ C4</span>
-              <span>
-                {selectedAgent
-                  ? selectedAgent.name + " · " + selectedAgent.status
-                  : "Выберите игрока на карте"}
-              </span>
-            </div>
-          </section>
           <section className="panel match-data">
             <nav aria-label="Данные матча">
               {tabs.map((t) => (
@@ -230,53 +477,20 @@ export default function MatchCenter({
                 </button>
               ))}
             </nav>
-            {tab === "Составы" && (
-              <div className="lineups">
-                {m.teams.map((club, i) => (
-                  <div key={club}>
-                    <h3>
-                      {m.teamVisuals?.[i]?<Identity name={club} visual={m.teamVisuals[i]!}/>:club} <small>{m.sides[i]}{i === 0 && m.teamRating != null && ` · OVR ${m.teamRating}`}</small>
-                    </h3>
-                    {m.stats
-                      .filter((row) => row.club === i)
-                      .map((row) => {
-                        const a = world.agents.find((p) => p.id === row.id);
-                        return (
-                          <button
-                            className="player-card"
-                            key={row.id}
-                            aria-pressed={selected === row.id}
-                            disabled={!a}
-                            onClick={() => select(row.id)}
-                          >
-                            <b>
-                              {row.visual?<Identity name={row.name} visual={row.visual}/>:row.name}
-                              <small>{row.role}</small>
-                            </b>
-                            <span>
-                              {a
-                                ? a.alive
-                                  ? a.weapon
-                                  : "Выбыл"
-                                : "Вне обзора"}
-                              <small>
-                                {a?.hp !== undefined
-                                  ? a.hp + " HP · " + a.cash + " $"
-                                  : "—"}
-                              </small>
-                            </span>
-                          </button>
-                        );
-                      })}
-                  </div>
-                ))}
-              </div>
+            {tab === "Составы" && !selectedAgent && (
+              <p className="inventory">
+                Выберите игрока на радаре или в пятёрке команды, чтобы открыть
+                его роль и снаряжение.
+              </p>
             )}
             {tab === "Составы" && selectedAgent && (
-              <p className="inventory">
+              <div className="inventory">
                 <b>{selectedAgent.name}</b> · {selectedAgent.status}
                 {m.roleRatings[selectedAgent.id] && (
-                  <RoleRatings values={m.roleRatings[selectedAgent.id]} compact/>
+                  <RoleRatings
+                    values={m.roleRatings[selectedAgent.id]}
+                    compact
+                  />
                 )}
                 {selectedAgent.hp !== undefined && (
                   <>
@@ -287,7 +501,7 @@ export default function MatchCenter({
                     {selectedAgent.utility?.join(", ") || "—"}
                   </>
                 )}
-              </p>
+              </div>
             )}
             {tab === "Статистика" && (
               <div
@@ -318,8 +532,12 @@ export default function MatchCenter({
                     {m.stats.map((p) => (
                       <tr key={p.id}>
                         <th>
-                          {p.visual?<Identity name={p.name} visual={p.visual}/>:p.name}
-                          <small>{m.teams[p.club]}</small>
+                          {p.visual ? (
+                            <Identity name={p.name} visual={p.visual} />
+                          ) : (
+                            p.name
+                          )}
+                          <small>{clubName(p.teamId)}</small>
                         </th>
                         {[
                           p.k,
@@ -342,13 +560,24 @@ export default function MatchCenter({
                 </table>
               </div>
             )}
-            {tab === "Раунды" && played.size > 0 && <section className="inventory tactic-results">
-              <h3>Тактики против «{m.teams[1]}»</h3>
-              <small>{world.map.name} · {m.stats.filter(p=>p.club===0).map(p=>p.name).join(", ")}</small>
-              {[...played.values()].map(({plan, rounds, wins})=><p key={plan.id+plan.revision}>
-                <b>{plan.name}</b> · в{plan.revision} · {plan.side} · {plan.buy} · выиграно {wins} из {rounds}
-              </p>)}
-            </section>}
+            {tab === "Раунды" && played.size > 0 && (
+              <section className="inventory tactic-results">
+                <h3>Тактики против «{opponent.name}»</h3>
+                <small>
+                  {world.map.name} ·{" "}
+                  {m.stats
+                    .filter((p) => p.teamId === coach.id)
+                    .map((p) => p.name)
+                    .join(", ")}
+                </small>
+                {[...played.values()].map(({ plan, rounds, wins }) => (
+                  <p key={plan.id + plan.revision}>
+                    <b>{plan.name}</b> · в{plan.revision} · {plan.side} ·{" "}
+                    {plan.buy} · выиграно {wins} из {rounds}
+                  </p>
+                ))}
+              </section>
+            )}
             {tab === "Раунды" && (
               <div className="round-list">
                 {!rounds && <p>История появится после первого раунда.</p>}
@@ -358,13 +587,20 @@ export default function MatchCenter({
                   .map((r) => (
                     <div key={r.round}>
                       <small>R{r.round}</small>
-                      <b>{r.score.join(" : ")}</b>
+                      <b>
+                        {m.clubs.map((c) => r.scoreByTeam[c.id]).join(" : ")}
+                      </b>
                       <span>
-                        {m.teams[r.winner]} · {r.side}
+                        {clubName(r.winnerTeamId)} · {r.side}
                       </span>
                       <span>
                         {r.reason}
-                        {r.tactic && <small className="round-economy">{r.tactic.name} · в{r.tactic.revision} · {r.tactic.side} · {r.tactic.buy}</small>}
+                        {r.tactic && (
+                          <small className="round-economy">
+                            {r.tactic.name} · в{r.tactic.revision} ·{" "}
+                            {r.tactic.side} · {r.tactic.buy}
+                          </small>
+                        )}
                         <small className="round-economy">
                           {clock(r.duration)} ·{" "}
                           {Object.entries(r.economy)
@@ -392,30 +628,23 @@ export default function MatchCenter({
           </section>
         </div>
         <aside className="match-aside">
-          <section className="panel live-feed">
-            <h2>Лента убийств</h2>
-            {!m.kills.length && <p>В этом раунде ещё нет фрагов.</p>}
-            {m.kills
-              .slice()
-              .reverse()
-              .map((k) => (
-                <div key={k.id}>
-                  <b>{name(k.player)}</b>
-                  <span>
-                    {k.weapon}
-                    {k.head ? " · HS" : ""}
-                  </span>
-                  <b>{name(k.target)}</b>
-                </div>
-              ))}
-          </section>
           <section className="panel coaching">
             <h2>Скамейка тренера</h2>
             <p>
-              {m.teams[0]} · осталось тайм-аутов <b>{m.remaining} / {m.timeoutLimit}</b>
+              {coach.name} · осталось тайм-аутов{" "}
+              <b>
+                {m.remaining} / {m.timeoutLimit}
+              </b>
             </p>
-            {m.pregame && m.prepared.map(p=><p key={p.side+p.buy}>{p.side} · {p.buy} · {p.name} · в{p.revision}</p>)}
-            {(timeout || m.pregame) && <button onClick={openBoard}>Выбрать тактику</button>}
+            {m.pregame &&
+              m.prepared.map((p) => (
+                <p key={p.side + p.buy}>
+                  {p.side} · {p.buy} · {p.name} · в{p.revision}
+                </p>
+              ))}
+            {(timeout || m.pregame) && (
+              <button onClick={openBoard}>Выбрать тактику</button>
+            )}
             {!timeout ? (
               <button
                 disabled={
@@ -439,7 +668,7 @@ export default function MatchCenter({
                   ))
                 ) : (
                   <p>
-                    {world.view !== "full" && world.view !== m.sides[0]
+                    {world.view !== "full" && world.view !== coach.side
                       ? "Переключитесь на обзор своей команды."
                       : "У состава пока нет наблюдений."}
                   </p>
@@ -473,31 +702,16 @@ export default function MatchCenter({
             )}
             {Object.entries(m.plans).map(([side, p]) => (
               <p className="plan-line" key={side}>
-                <b>{side} · IGL</b> {p.tactic ? p.tactic.name+" · в"+p.tactic.revision : p.style} · {p.site} · {p.buy}
+                <b>{side} · IGL</b>{" "}
+                {p.tactic
+                  ? p.tactic.name + " · в" + p.tactic.revision
+                  : p.style}{" "}
+                · {p.site} · {p.buy}
               </p>
             ))}
           </section>
           <section className="panel broadcast">
-            <h2>Просмотр</h2>
-            <button
-              className="primary"
-              disabled={!enabled || finished || timeout}
-              onClick={() => act(frame.running ? "pause" : "start")}
-            >
-              {frame.running ? "Пауза просмотра" : "Запустить"}
-            </button>
-            <div className="speed-list">
-              {[1, 2, 4, 8, 128].map((n) => (
-                <button
-                  key={n}
-                  disabled={!enabled}
-                  aria-pressed={frame.speed === n}
-                  onClick={() => act("speed", n)}
-                >
-                  {n === 128 ? "Быстро" : n + "×"}
-                </button>
-              ))}
-            </div>
+            <h2>Сохранение матча</h2>
             <div className="slots">
               <button disabled={!enabled} onClick={() => act("save")}>
                 Сохранить
@@ -509,35 +723,37 @@ export default function MatchCenter({
                 Загрузить
               </button>
             </div>
-            {!frame.careerId && <details>
-              <summary>Новый сценарий</summary>
-              <label>
-                Seed
-                <input
-                  value={seed}
-                  inputMode="numeric"
-                  onChange={(e) => setSeed(e.target.value)}
-                />
-              </label>
-              <div className="slots">
-                {[
-                  ["match", "Новый BO1"],
-                  ["reset", "Стенд R0"],
-                ].map(([kind, label]) => (
-                  <button
-                    key={kind}
-                    disabled={
-                      !enabled ||
-                      !/^\d+$/.test(seed) ||
-                      Number(seed) > 2147483647
-                    }
-                    onClick={() => act(kind, Number(seed))}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </details>}
+            {!frame.careerId && (
+              <details>
+                <summary>Новый сценарий</summary>
+                <label>
+                  Seed
+                  <input
+                    value={seed}
+                    inputMode="numeric"
+                    onChange={(e) => setSeed(e.target.value)}
+                  />
+                </label>
+                <div className="slots">
+                  {[
+                    ["match", "Новый BO1"],
+                    ["reset", "Стенд R0"],
+                  ].map(([kind, label]) => (
+                    <button
+                      key={kind}
+                      disabled={
+                        !enabled ||
+                        !/^\d+$/.test(seed) ||
+                        Number(seed) > 2147483647
+                      }
+                      onClick={() => act(kind, Number(seed))}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </details>
+            )}
           </section>
         </aside>
       </div>

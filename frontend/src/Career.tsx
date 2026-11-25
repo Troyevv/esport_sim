@@ -25,7 +25,11 @@ type Fixture = {
   date: string;
   teams: string[];
   score?: number[];
+  scoreByTeam?: Record<string,number>;
 };
+// Older completed reports stored their points in the frozen fixture's team order.
+const fixtureScore = (e: Fixture) => (e.scoreByTeam ? e.teams.map(id => e.scoreByTeam![id]) : e.score)?.join(" : ");
+
 type Player = {
   id: string;
   name: string;
@@ -68,6 +72,7 @@ type Report = {
     player: string;
     name: string;
     club: number;
+    teamId?: string;
     k: number;
     d: number;
     a: number;
@@ -348,7 +353,7 @@ function MatchReport({
         <button onClick={close}>Закрыть протокол</button>
       </div>
       <h3 className="cr-result-title">
-        {teams[event.teams[0]]} <strong>{event.score?.join(" : ")}</strong>{" "}
+        {teams[event.teams[0]]} <strong>{fixtureScore(event)}</strong>{" "}
         {teams[event.teams[1]]}
       </h3>
       {!data.data || data.error ? (
@@ -372,7 +377,7 @@ function MatchReport({
               </thead>
               <tbody>
                 {data
-                  .data!.stats.filter((p) => p.club === club)
+                  .data!.stats.filter((p) => p.teamId ? p.teamId === tid : p.club === club)
                   .map((p) => (
                     <tr key={p.player}>
                       <th scope="row">{p.name}</th>
@@ -421,13 +426,13 @@ function Calendar({ c }: { c: Career }) {
             </span>
             {e.score ? (
               <button
-                aria-label={"Протокол " + e.score.join(" : ")}
+                aria-label={"Протокол " + fixtureScore(e)}
                 onClick={(click) => {
                   trigger.current = click.currentTarget;
                   setReport(e);
                 }}
               >
-                {e.score.join(" : ")} ↗
+                {fixtureScore(e)} ↗
               </button>
             ) : (
               <b>{e.kind === "review" ? "Обзор" : "BO1"}</b>

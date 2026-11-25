@@ -251,7 +251,7 @@ $plan = $library.plans | Where-Object { $_.id -eq 'std-T-0' }
 if ($plan.slots.Count -ne 5) { throw 'Packaged board has no five-slot plan.' }
 Command $origin 'match' 705177
 $projection = (Invoke-RestMethod "$origin/api/state").world
-if ($projection.match.rules -ne 'depo-bo1.2' -or $null -eq $projection.match.teamRating -or
+if ($projection.match.rules -ne 'depo-bo1.3' -or $null -eq $projection.match.teamRating -or
     $projection.match.roleRatings.T1.PSObject.Properties.Name.Count -ne 6 -or $projection.domain) {
     throw 'R3.1 match projection is missing or exposes the private world.'
 }
@@ -265,6 +265,11 @@ Wait-Check 'packaged BO1 reaches a final score' {
         ($world.match.score[0] + $world.match.score[1]) -eq $world.match.history.Count
 }
 $world = (Invoke-RestMethod "$origin/api/state").world
+foreach ($club in $world.match.clubs) {
+    $wins = @($world.match.history | Where-Object { $_.winnerTeamId -eq $club.id }).Count
+    if ($club.score -ne $wins) { throw "Packaged BO1 standings do not match the round ledger." }
+}
+if ($world.match.winnerTeamId -ne $world.match.history[-1].winnerTeamId) { throw 'BO1 winner mismatch.' }
 if ($world.match.history[0].tactic.id -ne $plan.id) { throw 'BO1 did not execute the packaged board.' }
 Command $origin 'save'
 Command $origin 'reset' 47

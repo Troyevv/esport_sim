@@ -96,6 +96,24 @@ class CareerStore:
             (cid, slot, json.dumps(info), body, digest),
         )
 
+    def upgrade_slots(self):
+        # Upgrade parked careers, manual slots and their backups in the same transaction as active.
+        rows = self.db.execute(
+            """SELECT career,slot,body,digest FROM career_slot
+            WHERE CASE WHEN json_valid(body) THEN json_extract(body,'$.world.checkpointVersion') END=4"""
+        )
+        for cid, slot, body, digest in rows:
+            if checksum(body) != digest:
+                # Keep damaged slots untouched. load() reports the digest failure and allows selecting .bak.
+                continue
+            saved = json.loads(body)
+            if self.store.upgrade_checkpoint(saved, cid + "/" + slot, body):
+                updated = json.dumps(saved, ensure_ascii=False, separators=(",", ":"))
+                self.db.execute(
+                    "UPDATE career_slot SET body=?,digest=? WHERE career=? AND slot=?",
+                    (updated, checksum(updated), cid, slot),
+                )
+
     def load(self, state, cid, slot):
         from .store import validate_snapshot
 
@@ -143,19 +161,28 @@ class CareerStore:
     def record(self, c, report):
         event = c["queue"][0]
         pack = self.pack(c["source"])
-        expected = [
-            pid
-            for team in event["teams"]
-            for pid in pack["rosters"][c["teams"][team]]["players"]
-        ]
+        expected = {
+            pid: tid
+            for tid in event["teams"]
+            for pid in pack["rosters"][c["teams"][tid]]["players"]
+        }
+        points = {
+            tid: sum(r["winnerTeamId"] == tid for r in report["rounds"])
+            for tid in event["teams"]
+        }
         require(
             event["kind"] == "match"
             and report["seed"] == event["seed"]
             and report["rules"] == match.VERSION
             and report["map"] == match.MAP["version"]
-            and [row["player"] for row in report["stats"]] == expected
-            and report["score"]
-            == [sum(r["winner"] == club for r in report["rounds"]) for club in (0, 1)],
+            and len(report["stats"]) == len(expected)
+            and {row["player"]: row["teamId"] for row in report["stats"]} == expected
+            and set(report["teams"]) == set(points)
+            and report["score"] == [points[t] for t in report["teams"]]
+            and points == report["scoreByTeam"]
+            and len(set(points.values())) == 2
+            and report["winnerTeamId"] == max(points, key=points.get)
+            and sum(points.values()) == len(report["rounds"]),
             "Результат не соответствует встрече календаря",
         )
         body = database.encode(report)
@@ -163,7 +190,7 @@ class CareerStore:
         self.db.execute(
             "INSERT OR IGNORE INTO career_report VALUES(?,?)", (digest, body)
         )
-        career.complete(c, digest, report["score"])
+        career.complete(c, digest, points, report["winnerTeamId"])
 
     def change(self, state, kind, value):
         c = state.get("career")

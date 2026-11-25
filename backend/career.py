@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import database, match, world
+from . import database, match, match_score, world
 from .database import require
 
 VERSION = 1
@@ -165,6 +165,8 @@ def match_domain(pack, c, event, badges=None, portraits=None):
     rosters = [c["teams"][team] for team in event["teams"]]
     domain = database.match_input(pack, rosters, badges)
     domain["authority"]["mode"] = c["mode"]
+    if c["team"] in domain["teams"]:
+        domain["authority"]["organization"] = domain["teams"][c["team"]]["organization"]
     if portraits:
         for pid, portrait in portraits.index(
             {pid: pack["players"][pid] for pid in domain["players"]}
@@ -177,7 +179,12 @@ def match_domain(pack, c, event, badges=None, portraits=None):
 
 def initial(pack, c, event, badges=None, portraits=None):
     domain, rosters = match_domain(pack, c, event, badges, portraits)
-    return match.initial(event["seed"], domain, rosters)
+    return match.initial(
+        event["seed"],
+        domain,
+        rosters,
+        c["team"] if c["team"] in event["teams"] else None,
+    )
 
 
 def simulate(game):
@@ -189,7 +196,10 @@ def simulate(game):
 def result(game):
     require(game.get("phase") == "finished", "Матч ещё идёт")
     return dict(
+        teams=match_score.team_ids(game),
         score=game["score"],
+        scoreByTeam=game["scoreByTeam"],
+        winnerTeamId=game["winnerTeamId"],
         rules=game["rules"],
         map=game["map_version"],
         seed=game["seed"],
@@ -201,6 +211,7 @@ def result(game):
                 player=a["playerId"],
                 name=a["name"],
                 club=a["club"],
+                teamId=a["teamId"],
                 **game["stats"][a["id"]],
             )
             for a in game["agents"]
@@ -208,9 +219,17 @@ def result(game):
     )
 
 
-def complete(c, digest, score):
+def complete(c, digest, points, winner):
     event = c["queue"].pop(0)
-    c["history"].append(dict(**event, score=score, result=digest))
+    c["history"].append(
+        dict(
+            **event,
+            score=[points[t] for t in event["teams"]],
+            scoreByTeam=points,
+            winnerTeamId=winner,
+            result=digest,
+        )
+    )
     c["date"] = event["date"]
     if c["progress"]:
         c["progress"]["done"] += 1

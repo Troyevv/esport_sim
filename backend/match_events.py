@@ -39,7 +39,37 @@ def money(w, a, delta, reason):
     return event
 
 
-def damage(w, shooter, target, amount, weapon, head=False):
+def impact(w, shooter, target, base, weapon, group):
+    """Resolve one game hit into HP and armor loss, then use the single death ledger."""
+    spec = WEAPONS.get(weapon)
+    multiplier = {
+        "head": spec.head_multiplier if spec else 1,
+        "stomach": 1.25,
+        "leg": 0.75,
+    }.get(group, 1)
+    raw = base * multiplier
+    protected = group in ("chest", "arm", "stomach", "blast") or (
+        group == "head" and target["helmet"]
+    )
+    if raw <= 0 or not target["hp"]:
+        return
+    armor_loss = 0
+    if target["armor"] and protected:
+        ratio = spec.penetration if spec else 0.5
+        absorbed = min(raw * (1 - ratio), 2 * target["armor"])
+        armor_loss = (
+            min(target["armor"], max(1, round(absorbed * 0.5))) if absorbed else 0
+        )
+        raw -= absorbed
+    target["armor"] -= armor_loss
+    if not target["armor"]:
+        target["helmet"] = False
+    damage(
+        w, shooter, target, max(1, int(raw)), weapon, group == "head", group, armor_loss
+    )
+
+
+def damage(w, shooter, target, amount, weapon, head=False, group=None, armor_loss=0):
     if not target["hp"]:
         return
     amount = min(target["hp"], amount)
@@ -54,6 +84,8 @@ def damage(w, shooter, target, amount, weapon, head=False):
         amount=amount,
         weapon=weapon,
         head=head,
+        hitgroup=group,
+        armorLoss=armor_loss,
     )
     target["lastHurt"] = w["tick"]
     target["hp"] -= event["amount"]

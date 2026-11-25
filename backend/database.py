@@ -214,7 +214,8 @@ def _validate(p):
         "Неверный набор разделов пакета",
     )
     require(
-        encode(p["versions"]) == encode(VERSIONS),
+        encode(p["versions"])
+        in (encode(VERSIONS), encode(dict(VERSIONS, rules=match.PREVIOUS_VERSION))),
         "Несовместимые версии пакета, мира, карты или правил",
     )
     valid_id(p["id"])
@@ -759,9 +760,11 @@ def match_input(p, roster_ids, personal_badges=None):
                 visual=dict(
                     flag=player.get("nationality"),
                     player=True,
-                    head=media_root + "appearance/" + pid
-                    if player.get("appearance")
-                    else None,
+                    head=(
+                        media_root + "appearance/" + pid
+                        if player.get("appearance")
+                        else None
+                    ),
                     kit=dict(
                         id=tid,
                         name=t["name"],

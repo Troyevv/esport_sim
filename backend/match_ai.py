@@ -1,12 +1,22 @@
 """Perception, captain decisions and execution on Depo's navigation grid."""
 
+from collections import deque
 from functools import lru_cache
-from math import atan2, hypot, pi, sin
+from math import atan2, ceil, hypot, pi, sin
 
 from . import engine, tactic_execution, world
 from . import match_performance as perf
-from .match_events import damage, emit
-from .match_rules import MAP, POSITIONS, RULES, UTILITY, WEAPONS, role_orders
+from .match_events import impact, emit
+from .match_rules import (
+    BLAST_RADIUS,
+    equipment_value,
+    MAP,
+    POSITIONS,
+    RULES,
+    UTILITY,
+    WEAPONS,
+    role_orders,
+)
 
 
 def distance(a, b):
@@ -228,6 +238,71 @@ def walk(a, goal, pace, hazards, *, allow_detour=False):
     return True
 
 
+@lru_cache(maxsize=96)
+def escape_routes(x, y):
+    """Shortest walkable exits from every cell for this known plant location."""
+    floor = engine._FLOOR
+    exits = [
+        cell
+        for cell in floor
+        if hypot(engine._center(cell)[0] - x, engine._center(cell)[1] - y)
+        >= BLAST_RADIUS + engine.CELL
+    ]
+    queue = deque(sorted(exits))
+    routes = {cell: (0, engine._center(cell)) for cell in exits}
+    while queue:
+        cell = queue.popleft()
+        length, goal = routes[cell]
+        for other in engine._NEIGHBORS[cell]:
+            if other not in routes:
+                routes[other] = (length + engine.CELL, goal)
+                queue.append(other)
+    return routes
+
+
+def postplant_exit(w, a, allies, bomb):
+    """Only public fuse, own inventory, allied radio and recent observations."""
+    site = (bomb and bomb["site"]) or a["heardSite"] or w["plan"]["reinforce"]
+    if not site:
+        return None
+    position = (bomb["x"], bomb["y"]) if bomb and "x" in bomb else POSITIONS[site][0]
+    cell = engine._cell(a["x"], a["y"])
+    speed = 2 * perf.move_speed(w["player"])
+    length, goal = escape_routes(*position)[cell]
+    # walk() rounds each simulation step and may recenter before turning.
+    escape_ticks = length / engine.CELL * ceil(engine.CELL / speed) + 5
+    remaining = w["deadline"] - w["tick"]
+    contacts = [
+        p
+        for p in a["knowledge"].values()
+        if p["source"] != "Слух"
+        and w["tick"] - p["tick"] <= 30
+        and distance(p, at(position)) < 75
+    ]
+    value = equipment_value(a)
+    reserve = min(
+        24, value // 450 + (100 - a["hp"]) // 10 + (6 if a["cash"] < 1800 else 0)
+    )
+    if a["team"] == "CT":
+        if w["action"]:
+            return None
+        route = path_between(cell, engine._cell(*position))
+        approach = max(0, (len(route) * engine.CELL - 8) / speed)
+        use = RULES["kitDefuse"] if a["kit"] else RULES["defuse"]
+        # At the known device an immediately feasible defuse takes precedence.
+        if bomb and distance(a, bomb) <= 8 and remaining > use:
+            return None
+        opposition = max(0, len(contacts) - len(allies) + 1)
+        margin = perf.retake_margin(w["player"]["skills"], approach * speed, value)
+        if remaining > approach + use + max(0, opposition * (12 + reserve) + margin):
+            return None
+    else:
+        # An observed retake prolongs cover; silence is not evidence of a CT save.
+        if remaining > escape_ticks + (0 if contacts else reserve):
+            return None
+    return goal
+
+
 def act(w, a, allies, bomb, visible_fire):
     """Choose an intention using allies, own sensory memory and known objective."""
     now = w["tick"]
@@ -274,6 +349,17 @@ def act(w, a, allies, bomb, visible_fire):
         and w["action"]["end"] - now <= perf.commit_ticks(s, player["morale"])
     ):
         contact = None
+    if w["phase"] == "planted" and not (
+        w["action"] and w["action"]["player"] == a["id"]
+    ):
+        exit_goal = a.get("saving") or postplant_exit(w, a, allies, bomb)
+        if exit_goal:
+            a["saving"] = list(exit_goal)
+            a["status"] = "Отходит от C4" if side == "T" else "Сохраняет оружие"
+            if travel(a, exit_goal, 2, visible_fire, allow_detour=True):
+                return ("move", None)
+            if not contact:
+                return ("hold", None)
     if contact:
         old_heading = a["heading"]
         a["heading"] = atan2(contact["y"] - a["y"], contact["x"] - a["x"])
@@ -336,7 +422,13 @@ def act(w, a, allies, bomb, visible_fire):
             a["status"] = "К капитану после потери союзника"
             moved = travel(a, (partner["x"], partner["y"]), 2, visible_fire)
             return ("move" if moved else "hold", None)
-    if board and not plan["rotated"] and not rescuer and not reinforce:
+    if (
+        board
+        and w["phase"] != "planted"
+        and not plan["rotated"]
+        and not rescuer
+        and not reinforce
+    ):
         if now < a["stepReady"]:
             a["status"] = "Готовит следующий шаг"
             return ("hold", None)
@@ -366,16 +458,7 @@ def act(w, a, allies, bomb, visible_fire):
                 goal = (
                     POSITIONS[site][slot] if teammate_using else (bomb["x"], bomb["y"])
                 )
-            too_late = w["deadline"] - now < (
-                RULES["kitDefuse"] if a["kit"] else RULES["defuse"]
-            ) + distance(a, at(goal)) / (
-                2 * perf.move_speed(player)
-            ) + perf.retake_margin(s, distance(a, at(goal)), WEAPONS[a["weapon"]].price)
-            if too_late and not w["action"]:
-                goal = engine._center(engine._SPAWN_CELLS["CT"][slot])
-                a["status"] = "Сохраняет оружие"
-            else:
-                a["status"] = "Идёт на ретейк"
+            a["status"] = "Идёт на ретейк"
         else:
             site = bomb["site"]
             goal = POSITIONS[site][slot]
@@ -392,9 +475,7 @@ def act(w, a, allies, bomb, visible_fire):
         goal = (
             order["approach"]
             if approach
-            else order["stage"]
-            if staging
-            else order["hold"]
+            else order["stage"] if staging else order["hold"]
         )
         if (
             approach
@@ -496,13 +577,20 @@ def shoot(w, a, sight, b):
         and near_line(a, sight, b, 3)
         and engine.clear_line(a["x"], a["y"], b["x"], b["y"])
     )
-    if (engine._draw(a) >> 16) % 100 < accuracy and intersects:
-        head = (engine._draw(a) >> 16) % 100 < 24
-        amount = spec.damage * (3 if head else 1)
-        if b["armor"] and not head:
-            b["armor"] = max(0, b["armor"] - max(1, amount // 8))
-            amount = int(amount * 0.76)
-        damage(w, a, b, amount, a["weapon"], head)
+    for _ in range(spec.pellets):
+        if (engine._draw(a) >> 16) % 100 >= accuracy or not intersects or not b["hp"]:
+            continue
+        location = (engine._draw(a) >> 16) % 100
+        group = (
+            "head"
+            if location < 24
+            else (
+                "chest"
+                if location < 62
+                else "stomach" if location < 78 else "arm" if location < 89 else "leg"
+            )
+        )
+        impact(w, a, b, spec.damage * spec.falloff ** (dist / 100), a["weapon"], group)
 
 
 def throw(w, a, target):
@@ -584,8 +672,15 @@ def apply_effects(w, ids):
                 )
             else:
                 amount = (
-                    9
+                    min(32, 8 + 4 * ((now - f["land"]) // 5))
                     if f["kind"] == "Огонь"
-                    else max(1, round(73 * (1 - dist / f["radius"])))
+                    else max(0, round(98 * (1 - dist / f["radius"])))
                 )
-                damage(w, ids[f["player"]], a, amount, f["kind"])
+                impact(
+                    w,
+                    ids[f["player"]],
+                    a,
+                    amount,
+                    f["kind"],
+                    "fire" if f["kind"] == "Огонь" else "blast",
+                )

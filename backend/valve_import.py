@@ -28,7 +28,9 @@ def blank(key, title, cutoff):
         revision=1,
         title=title,
         asOf=cutoff,
-        versions=db.VERSIONS,
+        versions=dict(
+            db.VERSIONS, rules="depo-bo1.2"
+        ),  # Published Austin and November source editions.
         origins={"model": origin("modeled", cutoff, "Параметры BO1 · модель 1")},
         history={},
         **{group: {} for group in db.GROUPS},
