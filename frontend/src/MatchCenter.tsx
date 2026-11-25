@@ -509,7 +509,7 @@ export default function MatchCenter({
                 Загрузить
               </button>
             </div>
-            <details>
+            {!frame.careerId && <details>
               <summary>Новый сценарий</summary>
               <label>
                 Seed
@@ -537,7 +537,7 @@ export default function MatchCenter({
                   </button>
                 ))}
               </div>
-            </details>
+            </details>}
           </section>
         </aside>
       </div>

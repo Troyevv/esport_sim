@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import TacticEditor from "./TacticEditor";
 import DatabaseEditor from "./DatabaseEditor";
+import CareerScreen from "./Career";
 import MatchCenter from "./MatchCenter";
 import Radar from "./Radar";
 import HostSettings from "./HostSettings";
@@ -65,6 +66,7 @@ function takePairingCode() {
 }
 
 function App() {
+  const [screen,go] = useState<"menu"|"hub"|"lab"|"match">(()=>new URLSearchParams(location.search).get("screen")==="lab"?"lab":"menu");
   const [database, showDatabase] = useState(false);
   const [board, showBoard] = useState(false);
   const [view, setView] = useState<View>("full");
@@ -80,6 +82,9 @@ function App() {
     if (connection === "На связи") setCode("");
   }, [connection]);
   const world = frame?.world;
+  const playingLab = screen==="lab" && !frame?.careerId;
+  const workspace = !board && !database;
+  const showMatch = playingLab || (screen==="match" && !!frame?.careerId);
   const agent = world?.agents.find((item) => item.id === selected);
   const enabled = !!frame && connection === "На связи" && !busy;
   const validSeed = /^\d+$/.test(seed) && Number(seed) <= 2147483647;
@@ -98,7 +103,7 @@ function App() {
           esport<span>_sim</span>
         </div>
         <div className="mastline" />
-        <span className="masttitle">Лаборатория симуляции</span>
+        <span className="masttitle">{playingLab ? "Лаборатория симуляции" : "Менеджер команды"}</span>
         <span
           className={"connection " + (connection === "На связи" ? "up" : "")}
           data-testid="connection"
@@ -109,9 +114,14 @@ function App() {
         <HostSettings connected={connection === "На связи"}/>
       </header>
       <main>
-        {world && !database && !board && <button className="database-entry" onClick={()=>showDatabase(true)}>База сцены</button>}
-        {database && world && <DatabaseEditor onClose={()=>showDatabase(false)} enabled={enabled} start={value=>act("database-match",value)}/>}
-        {!database && !board && !world?.match && <div className="intro">
+        {workspace && frame && !playingLab && !(showMatch && world?.match) &&
+          <CareerScreen key={frame.context} frame={frame} act={act} enabled={enabled} screen={screen==="menu"?"menu":"hub"} go={go} database={()=>showDatabase(true)} board={()=>showBoard(true)}/>}
+        {workspace && showMatch && frame && <button className="cr-return" onClick={()=>go(frame.careerId?"hub":"menu")}>{frame.careerId?"← Карьера":"← Главное меню"}</button>}
+        {workspace && screen==="match" && frame?.careerId && world?.match?.phase==="finished" &&
+          <button className="primary" disabled={!enabled} onClick={async()=>{if(await act("career-finish"))go("hub");}}>Вернуться к календарю</button>}
+        {world && playingLab && !database && !board && <button className="database-entry" onClick={()=>showDatabase(true)}>База сцены</button>}
+        {database && world && <DatabaseEditor onClose={()=>showDatabase(false)} enabled={enabled} start={async value=>{if(frame?.careerId && !await act("career-lab"))return false;const ok=await act("database-match",value);if(ok)go("lab");return ok;}}/>}
+        {playingLab && !database && !board && !world?.match && <div className="intro">
           <div>
             <div className="eyebrow">
               <i /> СТЕНД СИМУЛЯЦИИ <span>/ R0</span>
@@ -163,8 +173,8 @@ function App() {
           </p>
         )}
         {!database && board && frame && <TacticEditor frame={frame} enabled={enabled} act={act} commandNotice={notice} clearNotice={clearNotice} onClose={()=>{clearNotice();showBoard(false);}}/>}
-        {!database && !board && world?.match && frame && <MatchCenter openBoard={()=>showBoard(true)} key={frame.context} frame={frame} playback={playback} connected={connection==="На связи"} enabled={enabled} act={act} setView={setView}/>}
-        {!database && !board && world && !world.match && frame && (
+        {showMatch && !database && !board && world?.match && frame && <MatchCenter openBoard={()=>showBoard(true)} key={frame.context} frame={frame} playback={playback} connected={connection==="На связи"} enabled={enabled} act={act} setView={setView}/>}
+        {playingLab && !database && !board && world && !world.match && frame && (
           <div className="dashboard">
             <div className="column">
               <section className="panel mapcard">

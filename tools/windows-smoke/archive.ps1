@@ -227,6 +227,22 @@ if ($portraits.PSObject.Properties.Name.Count -gt 0) { throw 'Fresh Windows prof
 $scene = (Invoke-RestMethod "$origin/api/database/scene-20261125-clubs/1").package
 if ($scene.players.PSObject.Properties.Name.Count -lt 1500) { throw 'Offline player database missing from Windows distribution.' }
 $lineups = @($scene.rosters.PSObject.Properties | Where-Object { $_.Value.name -in @('Team Vitality','Team Falcons') } | ForEach-Object { $_.Name })
+if (!(Test-Path (Join-Path $install 'EsportSim\CAREER_R33.md'))) { throw 'Career guide missing.' }
+$starter = Invoke-RestMethod "$origin/api/career/options/austin-registration/1"
+Command $origin 'career-create' @{id='austin-registration'; revision=1; team=$starter.teams[0].id; mode='owner'; scope='full'; name='Manager'}
+Command $origin 'career-save' @{slot='2'}
+Command $origin 'career-advance'
+Wait-Check 'packaged career stops before user match' {
+    $c = (Invoke-RestMethod "$origin/api/career").active
+    $c.date -gt $c.start -and !$c.progress -and $c.history.Count -gt 0
+}
+Command $origin 'career-play'
+$careerState = (Invoke-RestMethod "$origin/api/state")
+if (!$careerState.careerId -or $careerState.world.match.teams.Count -ne 2) { throw 'Career match missing.' }
+Command $origin 'career-load' @{slot='2'}
+$c = (Invoke-RestMethod "$origin/api/career").active
+if ($c.date -ne $c.start -or $c.history.Count -ne 0 -or $c.roster.Count -ne 5) { throw 'Career slot did not restore.' }
+Command $origin 'career-lab'
 Command $origin 'database-match' @{id=$scene.id;revision=1;seed=42;rosters=$lineups}
 $realMatch = (Invoke-RestMethod "$origin/api/state").world.match
 if ($realMatch.source.id -ne $scene.id -or 'Team Vitality' -notin $realMatch.teams) { throw 'Packaged real BO1 did not load.' }

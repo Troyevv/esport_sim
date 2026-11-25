@@ -92,7 +92,7 @@ async function check(mode) {
     const page = await device.newPage()
     const errors = []
     page.on('pageerror', err => errors.push(err.message))
-    await page.goto(mode === 'lan' ? origin + '/#pair=' + encodeURIComponent(code) : origin)
+    await page.goto(mode === 'lan' ? origin + '/?screen=lab#pair=' + encodeURIComponent(code) : origin + '/?screen=lab')
     await expect(page.getByTestId('connection')).toHaveText('Требуется код')
     await expect(page.getByRole('button', {name:'Настройки сервера'})).toHaveCount(0)
     const field = page.getByLabel('Одноразовый код с домашнего ПК')

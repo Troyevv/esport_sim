@@ -6,6 +6,8 @@ import type { Agent, RadarMap } from "./Radar";
 export type View = "full" | "CT" | "T";
 export interface Frame {
   libraryRevision?: number;
+  careerId?: string;
+  careerRevision?: number;
   sequence: number;
   revision: number;
   context: string;
@@ -76,6 +78,8 @@ export function useSession(view: View) {
         setNotice(
           (
             {
+              "career-save": "Карьера сохранена",
+              "career-load": "Сохранение загружено",
               save: "Снимок сохранён",
               load: "Снимок загружен",
               reset: "Сценарий сброшен",

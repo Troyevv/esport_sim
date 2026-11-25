@@ -9,6 +9,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from . import database, checkpoints, engine, match, tactic_library
+from . import career, career_store
 from .match_rules import LEGACY_VERSION
 
 
@@ -44,6 +45,8 @@ class Store:
         self.portraits = PortraitLibrary(Path(path).with_suffix(".portraits.sqlite"))
         self.motion = deque(maxlen=6)  # Recent committed poses, never part of a save.
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
+        migrate_profile = career_store.prepare_migration(self.db, path)
+        self.careers = career_store.CareerStore(self)
         self.db.executescript("""
             PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS active (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL);
@@ -63,6 +66,8 @@ class Store:
         """)
         try:
             with self.transaction():
+                if migrate_profile:
+                    career_store.install(self.db)
                 if not self.db.execute(
                     "SELECT 1 FROM data_pack WHERE id=? AND revision=1",
                     ("austin-registration",),
@@ -105,6 +110,8 @@ class Store:
         try:
             state = json.loads(body)
             validate_snapshot(state)
+            if state.get("career") and state["career"].get("version") != career.VERSION:
+                raise ValueError("Несовместимая версия карьеры")
             world = state["world"]
             if (
                 world["version"] == 2
@@ -175,13 +182,23 @@ class Store:
                 if is_match and world["phase"] in ("finished", "timeout"):
                     state["running"] = False
                     break
+            finished = state.get("career") and world.get("phase") == "finished"
+            if finished:
+                self.careers.record(state["career"], career.result(world))
+                state["careerRevision"] += 1
+                state["revision"] += 1
             state["sequence"] += 1
             self.write(state)
+            if finished:
+                self.careers.save(state, "auto")
         self.motion.append((state["context"], start, world["tick"], samples))
         return True
 
     def snapshot(self, view, previous=None):
         state = self.read()
+        c = state.pop("career", None)
+        if c:
+            state["careerId"] = c["id"]
         model = match if state["world"]["version"] == 2 else engine
         state["world"] = model.project(state["world"], view)
         world = state["world"]
@@ -242,7 +259,18 @@ class Store:
                     "Другое устройство уже изменило состояние. Проверьте данные и повторите действие."
                 )
             kind, value = command["kind"], command.get("value")
-            if kind in ("tactic-save", "tactic-delete", "tactic-assign"):
+            c = state.get("career")
+            if kind.startswith("career-") or (c and kind in ("save", "load")):
+                self.careers.change(state, kind, value)
+            elif c and (
+                kind in ("reset", "match", "database-match")
+                or (
+                    state["world"]["version"] == 1
+                    and kind not in ("tactic-save", "tactic-delete")
+                )
+            ):
+                raise ValueError("Действие недоступно в текущей карьере")
+            elif kind in ("tactic-save", "tactic-delete", "tactic-assign"):
                 try:
                     if kind == "tactic-assign":
                         if state["world"]["version"] != 2:
@@ -341,6 +369,12 @@ class Store:
             state["revision"] += 1
             state["sequence"] += 1
             self.write(state)
+            if state.get("career") and kind in (
+                "career-play",
+                "career-finish",
+                "career-advance",
+            ):
+                self.careers.save(state, "auto")
             result = {key: state[key] for key in ("context", "revision")}
             self.db.execute(
                 "INSERT INTO receipt VALUES(?,?,?)",

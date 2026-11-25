@@ -27,7 +27,7 @@ try {
 
   const forbidden = await page.request.get(origin + "/api/state", { headers: { Origin: "https://example.invalid" } });
   assert.equal(forbidden.status(), 403);
-  await page.goto(origin);
+  await page.goto(origin + "/?screen=lab");
   await expect(page.getByTestId("connection")).toHaveText("На связи");
   assert.equal(frames[0].context, before.context);
   assert.deepEqual(frames[0].world.match.history, before.world.match.history);

@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 test("Ноябрьский срез, доступный флаг и клубная форма", async ({
   page,
 }, info) => {
-  await page.goto("/");
+  await page.goto("/?screen=lab");
   await page.getByRole("button", { name: "База сцены", exact: true }).click();
   await expect(page.getByLabel("Пакет и редакция")).toHaveValue(
     "scene-20261125-clubs/1",
@@ -82,7 +82,7 @@ test("Ноябрьский срез, доступный флаг и клубна
 test("Одна внешность в двух командах и у свободного агента", async ({
   page,
 }, info) => {
-  await page.goto("/");
+  await page.goto("/?screen=lab");
   await page.getByRole("button", { name: "База сцены", exact: true }).click();
   const pack = (
     await (await page.request.get("/api/database/austin-registration/1")).json()
@@ -229,7 +229,7 @@ test("Одна внешность в двух командах и у свобо�
 test("Однокнопочный импорт сохраняет уже подготовленную внешность", async ({
   page,
 }, info) => {
-  await page.goto("/");
+  await page.goto("/?screen=lab");
   await page.getByRole("button", { name: "База сцены", exact: true }).click();
   const { package: p } = await (
     await page.request.get("/api/database/austin-registration/1")
