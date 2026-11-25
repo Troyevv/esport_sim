@@ -95,6 +95,9 @@ def observe(w, players, space=None):
         w["messages"].remove(message)
         for a in players:
             if a["team"] == message["team"] and a["id"] != message["sender"]:
+                if "blockedSite" in message:
+                    a.setdefault("routeReports",{})[message["sender"]]=[message["blockedSite"],now]
+                    continue
                 if "site" in message:
                     a["heardSite"] = message["site"]
                     continue
@@ -182,10 +185,11 @@ def captain(w, squad, space=None):
         for s in POSITIONS
     }
     site = plan["site"]
+    obstructed=space and any(s==site and now-t<60 for s,t in leader.get("routeReports",{}).values())
     if (
         leader["team"] == "T"
-        and counts[site] >= (max(2,min(3,len(squad))) if space else 3)
-        and (not space or counts[site] > counts["B" if site=="A" else "A"])
+        and (obstructed or (counts[site] >= (max(2,min(3,len(squad))) if space else 3)
+             and (not space or counts[site] > counts["B" if site=="A" else "A"])))
         and now - plan["start"] >= (100 - s["adaptability"]) // 2
         and not plan["rotated"]
         and w["deadline"] - now > 250
@@ -202,7 +206,8 @@ def captain(w, squad, space=None):
         emit(
             w,
             "rotate",
-            f"{leader['name']} меняет направление после трёх контактов · {plan['site']}",
+            (f"{leader['name']} меняет направление после донесения · {plan['site']}" if space else
+             f"{leader['name']} меняет направление после трёх контактов · {plan['site']}"),
             "T",
             player=leader["id"],
             contacts=[p["id"] for p in contacts],

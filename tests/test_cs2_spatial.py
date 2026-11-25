@@ -108,3 +108,48 @@ def test_reviewed_positions_require_the_bound_nav_version():
     assert resolve_anchors(profile, markers, nav, "dated-nav") == {"Middle": {12}, "B": {11}}
     with pytest.raises(ValueError, match="Версия NAV"):
         resolve_anchors(profile, markers, nav, "different-nav")
+
+
+def test_portal_can_be_crossed_away_from_its_obstructed_midpoint():
+    from backend.cs2_maps import Map
+
+    first,second = area(1,0,0,0),area(2,20,0,0)
+    first["edges"][1] = [dict(to=2,edge=3)]
+    nav=Navigation(dict(format=1,space="Hammer XYZ",areas=[first,second],ladders=[]))
+    space=Map.__new__(Map)
+    space.to_sim=lambda p:tuple(p)
+    space.world=lambda p:p
+    space.centers=nav.centers
+    space.nav=nav
+    space.ladder_mounts=set()
+    # A narrow prop occupies the central part of the portal.
+    def crosses(a,b,climbing=False):
+        if a==b:
+            return True
+        return not any(17<x<23 and 7<y<13 for x,y,_ in
+                       (tuple(s+(e-s)*t/30 for s,e in zip(a,b)) for t in range(31)))
+    space.passage=crosses
+    space.inside=space._inside
+    space.gate=space._gate
+    space.route=nav.route
+    points=space._path(1,(10,10,0),2,(30,10,0),frozenset())
+    assert points is not None and points[-1] == (30,10,0,2)
+    route=[(10,10,0),*(p[:3] for p in points)]
+    assert all(crosses(a,b) for a,b in zip(route,route[1:]))
+    assert any(abs(p[0]-20)<1e-8 and abs(p[1]-10)>3 for p in points)
+
+
+def test_disabled_source_entity_does_not_block_runtime_rays(tmp_path):
+    import json
+    import struct
+    from backend.cs2_collision import Collision, MOVEMENT
+
+    raw=b"".join(struct.pack("<3f",*p) for p in ((0.,0.,0.),(10.,0.,0.),(0.,10.,0.)))
+    raw+=struct.pack("<3i",0,1,2)
+    (tmp_path/"collision.bin").write_bytes(raw*2)
+    block=dict(offset=0,vertices=3,triangles=1,material=11,perFace=False,group="default",tags=["solid"])
+    data=dict(format=1,missingModels=[],primitives=[],surfaces={11:"metal"},instances=[dict(id=0,active=False)],
+              blocks=[dict(block,instance=0),dict(block,offset=len(raw),tags=["csgo_grenadeclip"])])
+    (tmp_path/"collision.json").write_text(json.dumps(data))
+    scene=Collision(tmp_path)
+    assert scene.trace((1,1,-3),(1,1,3),MOVEMENT) is None

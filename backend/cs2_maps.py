@@ -155,6 +155,7 @@ class Map:
                 :16
             ]
         self.passage = lru_cache(maxsize=32768)(partial(Map._passage, proxy(self)))
+        self.gate = lru_cache(maxsize=32768)(partial(Map._gate, proxy(self)))
         self.inside = lru_cache(maxsize=32768)(partial(Map._inside, proxy(self)))
         self.path = lru_cache(maxsize=4096)(partial(Map._path, proxy(self)))
         self.route = lru_cache(maxsize=8192)(self.nav.route)
@@ -263,6 +264,49 @@ class Map:
                 ]
                 if covers:
                     hold = covers[(i + lane * 3) % len(covers)]
+            # Validate consecutive orders against this map's active physical
+            # state. A label is a region; its representative centre can be
+            # inside a prop even when adjacent parts of the region are usable.
+            pos = xyz(player)
+            reachable = []
+            for marker in waypoints:
+                nearby = sorted(
+                    self.nearby_areas(marker, 12),
+                    key=lambda j: dist(self.centers[j], marker),
+                )
+                landing = self._reachable(
+                    pos,
+                    [
+                        marker,
+                        *(self.centers[j] for j in nearby if self.centers[j] != marker),
+                    ],
+                )
+                if landing is not None:
+                    reachable.append(landing)
+                    pos = landing
+            waypoints = reachable
+            if side == "T":
+                options = sorted(
+                    self.plants[site], key=lambda j: dist(self.centers[j], plant)
+                )
+                landing = self._reachable(pos, [self.centers[j] for j in options])
+                if landing is None:
+                    # A one-way staging area can disconnect the site. Replan
+                    # from the last reachable earlier stage before issuing a call.
+                    while waypoints and landing is None:
+                        waypoints.pop()
+                        pos = waypoints[-1] if waypoints else xyz(player)
+                        landing = self._reachable(
+                            pos, [self.centers[j] for j in options]
+                        )
+                if landing is not None:
+                    plant = landing
+            hold = (
+                self._reachable(
+                    pos, [hold, *(p for _, p in self.holds[defended]), plant]
+                )
+                or pos
+            )
             slots.append(
                 dict(
                     role=ROLES[i],
@@ -379,7 +423,11 @@ class Map:
         }
 
     def clear(self, a, b):
-        return self.hit(xyz(a), xyz(b), 1, 64) is None
+        # Actor positions are feet. Dropped equipment and landed effects
+        # are close to the surface, including when they are behind low cover.
+        eye_a = 64 if "hp" in a else 5
+        eye_b = 64 if "hp" in b else 5
+        return self.hit(xyz(a), xyz(b), 1, eye_a, eye_b) is None
 
     def _passage(self, start, end, climbing=False):
         # NAV already accounts for hull width. Check the body above the NAV
@@ -450,33 +498,78 @@ class Map:
         return None
 
     def _path(self, area, start, zone, goal, avoided):
-        excluded = set()
-        while True:
-            route = (
-                self.nav.route(area, zone, avoided=avoided, excluded=excluded)
-                if avoided or excluded
-                else self.route(area, zone)
-            )
-            if route is None:
-                return None
-            points = []
-            pos = start
-            here = area
-            for crossing in route:
-                leg = self._gate(here, pos, crossing)
-                if leg is None:
-                    excluded.add((here, crossing.area))
-                    break
-                points.extend(leg)
-                pos, here = leg[-1]
-            else:
+        route = (
+            self.nav.route(area, zone, avoided=avoided)
+            if avoided
+            else self.route(area, zone)
+        )
+        if route is None:
+            return None
+        points = []
+        here, pos = area, start
+        for crossing in route:
+            leg = self.gate(here, pos, crossing)
+            if leg is None:
+                break
+            points.extend(leg)
+            pos, here = leg[-1]
+        else:
+            end = self.inside(zone, pos, goal)
+            if end is not None:
+                return tuple((*p, i) for p, i in points + end)
+
+        # The same NAV polygon can be entered on either side of a placed prop.
+        # Preserve the entry point in the search state, including for one-way links.
+        initial = (area, start)
+        queue = [(dist(start, goal), 0.0, initial)]
+        costs = {initial: 0.0}
+        parents = {}
+        while queue:
+            _, length, key = heappop(queue)
+            if length != costs[key]:
+                continue
+            here, pos = key
+            if here == zone:
                 end = self.inside(zone, pos, goal)
                 if end is not None:
-                    return tuple((*p, i) for p, i in points + end)
-                if not route:
-                    return None
-                previous = route[-2].area if len(route) > 1 else area
-                excluded.add((previous, zone))
+                    legs = [end]
+                    while key != initial:
+                        key, leg = parents[key]
+                        legs.append(leg)
+                    return tuple((*q, i) for chain in reversed(legs) for q, i in chain)
+            for cross in self.nav.links[here]:
+                if cross.area in avoided:
+                    continue
+                leg = self.gate(here, pos, cross)
+                if leg is None:
+                    continue
+                tip, other = leg[-1]
+                target = (other, tip)
+                traveled = length
+                prev = pos
+                for q, _ in leg:
+                    traveled += dist(prev, q)
+                    prev = q
+                if traveled >= costs.get(target, float("inf")):
+                    continue
+                parents[target] = (key, leg)
+                costs[target] = traveled
+                heappush(queue, (traveled + dist(tip, goal), traveled, target))
+        return None
+
+    def _reachable(self, origin, points):
+        start = self.locate(origin)
+        if start is None:
+            return None
+        for point in points:
+            point = tuple(point)
+            target = self.locate(point)
+            if (
+                target is not None
+                and self.path(start, origin, target, point, frozenset()) is not None
+            ):
+                return point
+        return None
 
     def walk(self, a, goal, pace, hazards):
         here = a["navArea"]

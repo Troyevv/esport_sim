@@ -87,7 +87,20 @@ def exit_goal(space, w, a, allies, bomb):
         ):
             return
     _, goals = routes.route(area)
-    return space.centers[goals[-1]]
+    chosen = space.centers[goals[-1]]
+    position = xyz(a)
+    if space.path(area, position, goals[-1], chosen, frozenset()) is not None:
+        return chosen
+    # The closest safe NAV centre can lie beyond a closed prop. Check
+    # other safe surfaces before committing the player's remaining time.
+    from .match_rules import BLAST_RADIUS
+
+    safe = (
+        space.centers[i]
+        for i in space.nearby_areas(pos, BLAST_RADIUS * 1.8)
+        if dist(space.centers[i], pos) > BLAST_RADIUS + 2
+    )
+    return space._reachable(position, sorted(safe, key=lambda q: dist(position, q)))
 
 
 def spatial_intent(space, w, a, allies, bomb, fire, travel):
@@ -201,11 +214,30 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         a["status"] = "Проверяет центр"
     if (
         latest
+        and w["phase"] == "live"
         and (side == "CT" or not bomb or bomb["carrier"] != a["id"])
         and not w["action"]
     ):
         if dist(goal, xyz(latest)) < 40 and dist(pos, xyz(latest)) > 6:
-            goal = xyz(latest)
+            contact = xyz(latest)
+            if space.hit(pos, contact, 1, 64) is None:
+                goal = pos
+            else:
+                # Check an angle from a nearby walkable surface. Radio and
+                # sound do not give the observer a path to a live enemy.
+                key = [latest["id"], latest["tick"]]
+                if a.get("checkContact") != key:
+                    near = space.nearby_areas(contact, 24)
+                    positions = sorted(
+                        (space.centers[i] for i in near),
+                        key=lambda q: dist(pos, q) + abs(15 - dist(q, contact)),
+                    )
+                    peek = space._reachable(
+                        pos,
+                        (q for q in positions if space.hit(q, contact, 1, 64) is None),
+                    )
+                    a.update(checkContact=key, checkPosition=peek)
+                goal = a["checkPosition"] or goal
             a["status"] = "Проверяет сообщение о контакте"
     if (
         w["phase"] == "live"

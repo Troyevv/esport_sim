@@ -219,7 +219,7 @@ def next_round(w):
         slot = a["slot"]
         if space:
             (x,y,z),heading,area = space.spawn(side,slot,(w["seed"]+n) % len(space.spawns[side]))
-            a.update(z=z,navArea=area,waypoint=0,blockedTicks=0,inspectedSites={})
+            a.update(z=z,navArea=area,waypoint=0,blockedTicks=0,inspectedSites={},routeReports={},lastRouteReport=-100)
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
@@ -758,6 +758,7 @@ def advance(w):
                 and not bomb["carrier"]
                 and not bomb["site"]
                 and ai.distance(a, bomb) <= 7
+                and (space is None or space.clear(a, bomb))
             ):
                 bomb["carrier"] = a["id"]
                 emit(w, "pickup", f"{a['name']} поднял C4", "T", player=a["id"])
@@ -786,6 +787,13 @@ def advance(w):
             previous = a["status"]
             step_index = a.get("stepIndex", 0)
             intents.append((a, *ai.act(observation, a, squad, known_bomb, fire)))
+            if (space and side=="T" and w["phase"]=="live" and a.get("blockedTicks",0)>=20
+                    and now-a.get("lastRouteReport",-100)>=60):
+                site=w["plans"][side]["site"]
+                a["lastRouteReport"]=now
+                a.setdefault("routeReports",{})[a["id"]]=[site,now]
+                w["messages"].append(dict(team=side,sender=a["id"],blockedSite=site,
+                                          due=now+ai.radio_delay(profile(w,a)["skills"])))
             if intents[-1][1] == "move":
                 a["lastMove"] = now
                 a["movingTicks"] += 1
