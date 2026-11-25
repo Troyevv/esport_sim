@@ -618,9 +618,10 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             return "throw", dict(latest, utility="Дым")
     if side == "T" and w["phase"] == "live" and a["status"].startswith("Выход на "):
         repair = a.get("revisedApproach")
-        if repair and repair["from"] == list(goal) and repair["site"] == site:
+        original_goal = list(goal)
+        if repair and repair["from"] == original_goal and repair["site"] == site:
             goal = repair["to"]
-        elif a.get("blockedTicks", 0) >= 8 and a.get("blockedGoal") == list(goal):
+        if a.get("blockedTicks", 0) >= 8 and a.get("blockedGoal") == list(goal):
             # A contact, recovery or one-way drop can disconnect the original
             # intermediate point. Continue from the player's actual position.
             carrier = bomb and bomb.get("carrier") == a["id"]
@@ -628,11 +629,13 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             points = sorted(
                 (space.centers[i] for i in areas), key=lambda q: dist(q, goal)
             )
-            replacement = space._reachable(pos, points)
+            if not carrier:
+                points.extend(space.centers[i] for i in space.plants[site])
+            replacement = space._reachable(pos, points, a["navArea"])
             if replacement is not None and replacement != tuple(goal):
                 a["revisedApproach"] = {
                     "site": site,
-                    "from": list(goal),
+                    "from": original_goal,
                     "to": list(replacement),
                 }
                 if (

@@ -312,3 +312,16 @@ def test_use_sound_does_not_reveal_a_defuser_through_distant_geometry():
     assert actors[0]["heardUse"] == 220
     assert all("heardUse" not in a for a in actors[1:])
     assert "target" not in actors[0]
+
+
+def test_replan_from_a_portal_between_nav_polygons():
+    from types import SimpleNamespace
+    from backend.cs2_maps import Map
+
+    start, goal = (142.32, 107.50, 988.48), (140.75, 108.04, 989.83)
+    def path(area, origin, target, point, avoided):
+        assert (area, origin, target, point) == (1618, start, 1834, goal)
+        return (goal,)
+
+    space = SimpleNamespace(locate=lambda p: 1834 if p == goal else None, path=path)
+    assert Map._reachable(space, start, [goal], 1618) == goal

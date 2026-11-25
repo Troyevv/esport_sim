@@ -7,8 +7,7 @@ from weakref import proxy
 from math import sqrt
 
 import numpy as np
-from embreex.mesh_construction import TriangleMesh
-from embreex.rtcore_scene import EmbreeScene
+from .cs2_rays import TriangleScene
 
 SIGHT, MOVEMENT, PROJECTILE, THROW, CLIMB = 1, 2, 4, 8, 16
 
@@ -187,8 +186,7 @@ class Collision:
             self.mask[f : f + nf] = masks[key][material]
             v += nv
             f += nf
-        self.scene = EmbreeScene()
-        self.mesh = TriangleMesh(self.scene, vertices, faces)
+        self.scene = TriangleScene(vertices, faces)
         self.shapes = [
             Primitive(p, self.materials[materials[p["material"]]])
             for p in data["primitives"]
@@ -200,10 +198,10 @@ class Collision:
         self.trace = lru_cache(maxsize=32768)(partial(Collision._trace, proxy(self)))
 
     def sight_many(self, segments):
-        # Exact cached eye segments. Resolve the first triangle of all new
-        # pairs in one native call; only transparent hits require further rays.
+        # Trace the same directed segment even when the other observer asks first.
+        # On an edge, reversing a float ray can select a different coplanar face.
         result = {}
-        missing = []
+        missing = {}
         for a, b in segments:
             key = (a, b) if a <= b else (b, a)
             if key in self.sight_cache:
@@ -211,14 +209,12 @@ class Collision:
             elif a == b:
                 result[(a, b)] = True
             else:
-                missing.append((a, b))
+                missing.setdefault(key, []).append((a, b))
         if not missing:
             return result
         starts = np.asarray([a for a, _ in missing], dtype=np.float32)
         delta = np.asarray([b for _, b in missing], dtype=np.float32) - starts
-        rays = self.scene.run(
-            starts, delta, dists=np.ones(len(missing), dtype=np.float32)
-        )
+        rays, _, _ = self.scene.first_many(starts, delta, 1.0)
         for idx, ((a, b), face) in enumerate(zip(missing, rays)):
             if face >= 0:
                 visible = (
@@ -234,9 +230,9 @@ class Collision:
                     p.hit(starts[idx], delta[idx]) is not None
                     for p in self.bounds.candidates(a, inverse, SIGHT)
                 )
-            result[(a, b)] = visible
-            key = (a, b) if a <= b else (b, a)
-            self.sight_cache[key] = visible
+            self.sight_cache[(a, b)] = visible
+            for pair in missing[(a, b)]:
+                result[pair] = visible
         while len(self.sight_cache) > 32768:
             self.sight_cache.popitem(last=False)
         return result
@@ -250,18 +246,13 @@ class Collision:
         offset = 0.0
         best = None
         while offset < 1:
-            hit = self.scene.run(
-                current,
-                delta,
-                dists=np.array([1 - offset], dtype=np.float32),
-                output=True,
-            )
-            face = int(hit["primID"][0])
+            faces, distances, normals = self.scene.first_many(current, delta, 1 - offset)
+            face = int(faces[0])
             if face < 0:
                 break
-            t = offset + float(hit["tfar"][0])
+            t = offset + float(distances[0])
             if self.mask[face] & channel:
-                best = (t, self.materials[self.material[face]], hit["Ng"][0])
+                best = (t, self.materials[self.material[face]], normals[0])
                 break
             offset = t + max(1e-6, 0.01 / max(0.01, float(abs(delta).max())))
             current = start + offset * delta

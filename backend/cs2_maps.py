@@ -624,8 +624,9 @@ class Map:
                 heappush(queue, (traveled + dist(tip, goal), traveled, target))
         return None
 
-    def _reachable(self, origin, points):
-        start = self.locate(origin)
+    def _reachable(self, origin, points, start_area=None):
+        # A point partway across a portal or ladder can lie outside both polygons.
+        start = self.locate(origin) if start_area is None else start_area
         if start is None:
             return None
         for point in points:
@@ -664,7 +665,7 @@ class Map:
                     and self.hit(point, goal, 1, 64, 5) is None
                 ):
                     points.append(point)
-        return self._reachable(origin, sorted(points, key=lambda q: dist(q, origin)))
+        return self._reachable(origin, sorted(points, key=lambda q: dist(q, origin)), player["navArea"])
 
     def walk(self, a, goal, pace, hazards):
         here = a["navArea"]
