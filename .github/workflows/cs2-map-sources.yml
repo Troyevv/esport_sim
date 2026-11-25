@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'backend/cs2_*.py'
+      - backend/data/maps_202611_tactics.json
       - tests/test_cs2_spatial.py
       - tools/check_cs2_playable_areas.py
       - tools/cs2_ci_shared_models.py

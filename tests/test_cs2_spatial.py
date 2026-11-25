@@ -72,3 +72,14 @@ def test_floor_probe_reads_face_materials_and_transformed_primitives(tmp_path):
     assert [(hit["surface"], hit["z"]) for hit in rays[0]["physicalHits"]] == [
         ("wood", [2, 2]), ("metal", [10, 20]), ("wood", [26, 29])]
     assert rays[1]["physicalHits"] == []
+
+
+def test_tactical_route_requires_a_single_ordered_path():
+    from collections import defaultdict
+    from tools.check_cs2_playable_areas import approaches
+
+    # Spawn 1 can visit either copy of the first landmark. Only copy 3
+    # leads through landmark 4 to the target. Spawn 2 is a dead end.
+    previous = defaultdict(set, {2: {1}, 3: {1}, 4: {3}, 5: {4}})
+    assert approaches(previous, [{2, 3}, {4}, {5}]) == {1, 3}
+    assert approaches(previous, [{4}, {3}, {5}]) == set()
