@@ -4,7 +4,7 @@ from collections import Counter
 from copy import deepcopy
 from math import atan2
 
-from . import cs2_maps, checkpoints, engine, match_inventory, match_score, tactics, world
+from . import cs2_economy, cs2_maps, checkpoints, engine, match_inventory, match_score, tactics, world
 from . import match_performance as perf
 from .world import match_player as profile
 from . import match_ai as ai
@@ -210,7 +210,9 @@ def next_round(w):
         roundStart=w["tick"],
     )
     if reset:
-        w["streak"] = [0, 0]
+        w["streak"] = [1, 1] if w.get("mapId") else [0, 0]
+        if w.get("mapId"):
+            w["opponentEconomy"] = {}
     space = cs2_maps.for_match(w)
     for a in w["agents"]:
         side = (
@@ -314,6 +316,8 @@ def purchase(w, a, item, give=None):
 
 
 def buy_context(w, squad, call=None):
+    if w.get("mapId"):
+        return cs2_economy.decision(w, squad, call, profile=cs2_maps.PROFILES[w["mapId"]])["scenario"]
     average = sum(a["cash"] for a in squad) / len(squad)
     if call == "Экономить":
         return "Эко"
@@ -324,6 +328,12 @@ def buy_context(w, squad, call=None):
 
 def board_buy(buy):
     return "Оружейная" if buy in ("Полная", "Форс") else buy
+
+
+def board_categories(w, buy):
+    if w.get("mapId"):
+        return (buy,) if buy in ("Эко","Пистолетная") else (buy,"Оружейная")
+    return (board_buy(buy),)
 
 
 def next_buy(w, squad):
@@ -340,7 +350,7 @@ def assign(w, board):
     side, buy = board["side"], board["buy"]
     if w["phase"] == "timeout":
         squad = [a for a in w["agents"] if a["teamId"] == w["coachTeamId"]]
-        if side != squad[0]["team"] or buy != board_buy(next_buy(w, squad)):
+        if side != squad[0]["team"] or buy not in board_categories(w, next_buy(w, squad)):
             raise ValueError(
                 "Тактика не соответствует стороне или закупке ближайшего раунда"
             )
@@ -379,12 +389,15 @@ def begin_live(w):
             if board:
                 call = "Экономить" if board["buy"] == "Эко" else None
         buy = buy_context(w, squad, call)
+        if space and board and w.get("previewBuy"):
+            buy = w["previewBuy"]
         if (
             igl["teamId"] == w["coachTeamId"]
             and not board
             and call in (None, "Экономить")
         ):
-            board = w.get("playbook", {}).get(side + "/" + board_buy(buy))
+            book = w.get("playbook", {})
+            board = next((book[side + "/" + key] for key in board_categories(w,buy) if side + "/" + key in book),None)
         site = "AB"[(engine._draw(igl) >> 16) % 2]
         if call in ("Выход A", "Выход B"):
             site = call[-1]
@@ -456,11 +469,20 @@ def begin_live(w):
                 a.update(stepIndex=0, stepUntil=None)
                 if any(s["kind"] == "plant" for s in steps):
                     w["bomb"]["carrier"] = a["id"]
+                if space:
+                    continue
                 for item in (
                     tactics.equipment(steps) - Counter(a["utility"])
                 ).elements():
                     if len(a["utility"]) < 2:
                         purchase(w, a, item)
+        if space:
+            requested = w.get("previewBuy") if board else None
+            strategy = cs2_economy.decision(w, squad, call, site=site, profile=space.profile,
+                                            board=board, requested=requested)
+            w["plans"][side].update(economy=strategy, buy=strategy["scenario"])
+            cs2_economy.buy(w, squad, strategy, purchase, board)
+            continue
         rifle = "AK-47" if side == "T" else "M4A1-S"
         smg = "MAC-10" if side == "T" else "MP9"
         for a in squad:
@@ -622,7 +644,15 @@ def finish_round(w, side, reason):
             )
             money(w, a, bonus, "Поражение")
             if a["team"] == "T" and w["bomb"]["site"]:
-                money(w, a, RULES["plantBonus"], "Установка в проигранном раунде")
+                money(w, a, 600 if w.get("mapId") else RULES["plantBonus"], "Установка в проигранном раунде")
+    if w.get("mapId"):
+        ct_ids = {p["id"] for p in w["agents"] if p["team"]=="CT"}
+        bonus = 50 * sum(k["enemy"] and k["player"] in ct_ids for k in kills)
+        if bonus:
+            for p in w["agents"]:
+                if p["id"] in ct_ids:
+                    money(w,p,bonus,"Командная награда за устранения CT")
+        cs2_economy.update_opponents(w,side,reason)
     if side in w["clutch"]:
         w["stats"][w["clutch"][side]]["clutches"] += 1
     w["history"].append(
@@ -641,8 +671,12 @@ def finish_round(w, side, reason):
     for plan in w["plans"].values():
         if plan.get("board"):
             w["history"][-1]["tactic"] = tactics.reference(plan["board"])
-    w["streak"][winner] = 0
-    w["streak"][1 - winner] += 1
+    if w.get("mapId"):
+        w["streak"][winner] = max(0,w["streak"][winner]-1)
+        w["streak"][1-winner] = min(4,w["streak"][1-winner]+1)
+    else:
+        w["streak"][winner] = 0
+        w["streak"][1 - winner] += 1
     n = w["round"]
     half, ot = RULES["half"], RULES["overtimeHalf"]
     target = (
@@ -1183,11 +1217,11 @@ def project(w, view="full"):
             and w["phase"] == "freeze"
             and w["remaining"] == RULES["timeouts"],
             nextBuy=(
-                board_buy(
+                board_categories(w,
                     next_buy(
                         w, [a for a in w["agents"] if a["teamId"] == w["coachTeamId"]]
                     )
-                )
+                )[0]
                 if coach_view
                 else None
             ),

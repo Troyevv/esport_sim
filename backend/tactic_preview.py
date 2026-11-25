@@ -1,6 +1,6 @@
 """A private one-round sparring simulation, isolated from the authoritative game."""
 
-from . import match, tactics
+from . import cs2_economy, match, match_inventory, tactics
 from .match_rules import RULES
 
 
@@ -14,6 +14,17 @@ def simulate(draft):
         world["round"] += 1
         for player in world["agents"]:
             player["cash"] = 1100 if board["buy"] == "Эко" else 5400
+    if world.get("mapId"):
+        scenario = "Полная" if board["buy"] == "Оружейная" else board["buy"]
+        world.update(previewBuy=scenario,nextBoard=board)
+        wallets = {"Эко":900, "Частичная":2900, "Форс":2300, "Полная":5600,
+                   "Антиэко":3950, "Бонусная":2700, "Пистолетная":800}
+        for a in world["agents"]:
+            if a["team"] == board["side"]:
+                a["cash"] = wallets[scenario]
+                if scenario == "Бонусная" and a["slot"] < 3:
+                    match_inventory.equip(a,match_inventory.stocked(cs2_economy.SMG[a["team"]]))
+                    a["armor"] = 75
     world["playbook"] = {board["side"] + "/" + board["buy"]: board}
     match.begin_live(world)
     frames = []

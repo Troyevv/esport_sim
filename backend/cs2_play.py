@@ -28,7 +28,12 @@ def opening(space, w, squad, captain, player, buy, site, style, call):
         ):
             site = "B" if site == "A" else "A"
     if captain["team"] == "T" and call not in ("Ускориться", "Выход A", "Выход B"):
-        if buy in ("Эко", "Форс"):
+        if buy == "Антиэко":
+            # Hold wider lines so the group need not challenge stacked pistols at arm's length.
+            label = space.profile["probe"][site]
+            lane = min(range(2), key=lambda j: label in space.profile[site][j])
+            style = "Контроль карты"
+        elif buy in ("Эко", "Частичная", "Форс", "Бонусная"):
             # A shorter approach keeps teammates with pistols close enough to trade.
             area = captain["navArea"]
             options = [

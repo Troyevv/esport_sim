@@ -4,10 +4,11 @@ from collections import Counter
 from random import Random
 
 from math import isfinite
-from . import cs2_maps, engine
+from . import cs2_economy, cs2_maps, engine
 from .match_rules import APPROACH, MAP, POSITIONS, PRICES, STAGING, UTILITY
 
-BUYS = ("Пистолетная", "Эко", "Оружейная")
+LEGACY_BUYS = ("Пистолетная", "Эко", "Оружейная")
+BUYS = (*LEGACY_BUYS, *(b for b in cs2_economy.SCENARIOS if b not in LEGACY_BUYS))
 MOVES = ("move", "hold", "exit", "plant", "retreat", "wait")
 ACTIONS = (*MOVES, "face", "throw")
 LABELS = dict(
@@ -96,11 +97,12 @@ def validate(plan):
                 grenades.append(item)
                 if (
                     buy == "Эко"
-                    or len(grenades) > 2
+                    or len(grenades) > (4 if space else 2)
+                    or (space and grenades.count(item) > (2 if item == "Свет" else 1))
                     or (buy == BUYS[0] and sum(PRICES[g] for g in grenades) > 800)
                 ):
                     raise ValueError(
-                        f"{prefix}: граната недоступна при этой закупке (две ячейки)"
+                        f"{prefix}: граната недоступна при этой закупке"
                     )
                 if not space and not engine.clear_line(*origin, x, y):
                     raise ValueError(f"{prefix}: стена на линии броска")
@@ -194,7 +196,7 @@ def standards():
             standard=True,
         )
         for side in ("T", "CT")
-        for index, buy in enumerate(BUYS)
+        for index, buy in enumerate(LEGACY_BUYS)
         for site in [("A", "B", "A")[index]]
     ]
 

@@ -180,6 +180,13 @@ def captain(w, squad, space=None):
             leader["team"],
             player=leader["id"],
         )
+    if space:
+        reported = plan.setdefault("economicSightings", {})
+        for report in leader["knowledge"].values():
+            weapon = report.get("weapon")
+            previous = reported.get(report["id"])
+            if weapon and (not previous or previous["tick"] < report["tick"]):
+                reported[report["id"]] = dict(weapon=weapon,tick=report["tick"])
     if now < plan["review"]:
         return
     plan["review"] = now + 18 + (100 - s["calling"]) // 2

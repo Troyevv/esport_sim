@@ -69,8 +69,14 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install pyarrow pandas demoparser2==0.42.0
+      - name: Read published Cache replay catalogue
+        if: matrix.map == 'de_cache'
+        run: |
+          mkdir -p build/historic
+          curl -fsSL --max-time 45 'https://cs2replays.com/library/?map=de_cache' -o build/historic/cache-catalogue.html
       - run: python -m tools.cs2_archive_reference --map "${{ matrix.map }}" --out build/historic
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: historic-utility-${{ matrix.map }}
-          path: build/historic/*-utility.json
+          path: build/historic/*

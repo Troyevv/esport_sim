@@ -193,7 +193,7 @@ export default function TacticEditor({
     ((match.pregame && !frame.running) ||
       (match.phase === "timeout" &&
         coachSide === plan.side &&
-        match.nextBuy === plan.buy));
+        (match.nextBuy === plan.buy || (plan.buy === "Оружейная" && !!match.nextBuy && !["Эко", "Пистолетная"].includes(match.nextBuy)))));
   const stale =
     plan.revision > 0 &&
     !library.plans.some(
@@ -668,7 +668,7 @@ export default function TacticEditor({
                   value={plan.buy}
                   onChange={(e) => edit({ ...plan, buy: e.target.value })}
                 >
-                  {library.buys.map((b) => (
+                  {library.buys.filter((b) => plan.map !== "depo" || ["Пистолетная","Эко","Оружейная"].includes(b)).map((b) => (
                     <option key={b}>{b}</option>
                   ))}
                 </select>

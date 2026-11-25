@@ -8,7 +8,7 @@ from pathlib import Path
 import random
 from time import perf_counter
 
-from backend import career, cs2_maps, database, match
+from backend import career, cs2_maps, database, match, match_inventory
 from backend.match_rules import equipment_value
 
 
@@ -20,6 +20,8 @@ def run(name, seed, order, pack, replay):
     started = perf_counter()
     while game["phase"] != "finished":
         phase = game["phase"]
+        if phase=="freeze" and game["tick"]+1>=game["deadline"]:
+            before={a["id"]:(a["cash"],match_inventory.slots(a)[0],equipment_value(a)) for a in game["agents"]}
         match.advance(game)
         tick = game["tick"]
         if phase == "freeze" and game["phase"] == "live":
@@ -29,6 +31,21 @@ def run(name, seed, order, pack, replay):
             reached, saves, retakers = {}, set(), set()
             row = dict(round=game["round"], equip={s:sum(equipment_value(a) for a in game["agents"] if a["team"] == s) for s in ("T","CT")},
                        opening=game["plans"]["T"]["site"], buy={s:game["plans"][s].get("buy") for s in ("T","CT")})
+            row["economy"] = {}
+            purchases = [e for e in game["events"] if e["kind"]=="buy"]
+            for side in ("T","CT"):
+                members = [a for a in game["agents"] if a["team"]==side]
+                plan = game["plans"][side]["economy"]
+                spent = {a["id"]:before[a["id"]][0]-a["cash"] for a in members}
+                if any(v < 0 or v > plan["limit"][pid] for pid,v in spent.items()):
+                    raise ValueError((name,seed,side,plan,spent))
+                row["economy"][side] = dict(budget=plan["budget"],context=plan["context"],
+                    scenario=plan["scenario"],lossIncome=plan["lossIncome"],opponentGuns=plan["opponentGuns"],
+                    before=sum(before[a["id"]][2] for a in members),spend=sum(spent.values()),
+                    retained=sum(before[a["id"]][1] is not None for a in members),
+                    primary=sum(match_inventory.slots(a)[0] is not None for a in members),
+                    drops=sum(e["team"]==side and e["recipient"]!=e["player"] for e in purchases),
+                    pocket=sum(a["cash"] for a in members), nades=sum(len(a["utility"]) for a in members))
             if replay:
                 row["holds"] = [[slot["site"],slot["hold"],slot["watch"]] for slot in holds]
         if game["phase"] in ("live","planted"):
