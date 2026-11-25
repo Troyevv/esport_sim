@@ -3,8 +3,10 @@
 import gzip
 import json
 from copy import deepcopy
+from time import perf_counter
 from uuid import uuid4
 
+import psutil
 import pytest
 
 from backend import (
@@ -84,9 +86,15 @@ def test_background_and_observed_share_report_across_the_map_pool(tmp_path):
     for name in cs2_maps.NAMES:
         fixture = dict(event, mapId=name)
         frozen = dict(state, queue=[fixture], history=[])
+        started = perf_counter()
         game = career.initial(pack, frozen, fixture)
+        initialized = perf_counter() - started
         observed = deepcopy(game)
+        started = perf_counter()
         expected = career.simulate(game)
+        elapsed = perf_counter() - started
+        rss = psutil.Process().memory_info().rss / 2**20
+        print(f"CAREER {name} init={initialized:.2f}s BO1={elapsed:.2f}s RSS_after={rss:.1f}MiB")
         for _ in range(80):
             match.advance(observed)
         saved = json.loads(json.dumps(observed))

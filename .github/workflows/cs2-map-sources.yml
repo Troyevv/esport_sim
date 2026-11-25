@@ -68,7 +68,7 @@ jobs:
           path: runtime-data/maps/26879581
       - run: python -m pip install -r requirements-test.txt
       - name: Check saves, careers and tactic previews with installed geometry
-        run: python -m pytest -vq tests/test_installed_maps.py
+        run: python -m pytest -vq --capture=tee-sys tests/test_installed_maps.py
       - working-directory: frontend
         run: |
           npm ci

@@ -268,3 +268,20 @@ def test_utility_is_selected_for_a_call_and_a_contact():
     assert cs2_play.contact_utility(actor,[enemy],allies,enemy) == "HE"
     actor["utility"] = ["Ложная"]
     assert cs2_play.contact_utility(actor,[enemy],allies,enemy) is None
+
+
+def test_only_corridor_reopens_after_fire_without_a_navigation_failure():
+    from types import SimpleNamespace
+    from backend.cs2_maps import Map
+
+    def path(here, pos, zone, goal, avoided):
+        return None if avoided else ((12, 0, 0, 3),)
+
+    space = SimpleNamespace(locate=lambda _: 3, nearby_areas=lambda *_: [2], path=path)
+    actor = dict(x=0, y=0, z=0, navArea=1, path=[], dest=None)
+    fire = dict(x=6, y=0, z=0, radius=2)
+    # Both ends of the requested stride are outside this fire.
+    assert not Map.walk(space, actor, (12, 0, 0), 12, [fire])
+    assert actor["blockedTicks"] == 0 and actor["status"].startswith("Пережидает")
+    assert Map.walk(space, actor, (12, 0, 0), 12, [])
+    assert actor["x"] == 12 and actor["navArea"] == 3

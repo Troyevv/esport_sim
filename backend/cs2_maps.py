@@ -643,6 +643,7 @@ class Map:
         if (
             self.path(player["navArea"], origin, self.locate(goal), goal, frozenset())
             is not None
+            and self.hit(goal, goal, 1, 64, 5) is None
         ):
             return goal
         # A dropped item can be on a portal, a ladder, or the other side of
@@ -688,6 +689,10 @@ class Map:
         crossing = bool(a["path"] and a["path"][0][3] != here)
         if (a["dest"] != dest and not crossing) or not a["path"]:
             path = self.path(here, pos, zone, goal, avoided)
+            if path is None and avoided:
+                # A visible fire may cut the only route for a few seconds.
+                # Approach its boundary and wait there until it burns out.
+                path = self.path(here, pos, zone, goal, frozenset())
             if path is None:
                 a["blockedTicks"] = a.get("blockedTicks", 0) + 1
                 return False
@@ -698,12 +703,6 @@ class Map:
             node = a["path"][0]
             endpoint = tuple(node[:3])
             length = dist(pos, endpoint)
-            if any(
-                dist(endpoint, xyz(f)) < f["radius"] <= dist(pos, xyz(f))
-                for f in hazards
-            ):
-                a["status"] = "Пережидает огонь за укрытием"
-                return moved
             if length > 0:
                 fraction = min(1, pace / length)
                 nxt = (
@@ -711,6 +710,28 @@ class Map:
                     if fraction < 1
                     else endpoint
                 )
+                for f in hazards:
+                    center = xyz(f)
+                    if dist(pos, center) < f["radius"]:
+                        continue
+                    delta = tuple(b - a for a, b in zip(pos, nxt))
+                    span = sum(v * v for v in delta)
+                    t = (
+                        min(
+                            1,
+                            max(
+                                0,
+                                sum((c - a) * v for c, a, v in zip(center, pos, delta))
+                                / span,
+                            ),
+                        )
+                        if span
+                        else 0
+                    )
+                    nearest = tuple(a + t * v for a, v in zip(pos, delta))
+                    if dist(nearest, center) < f["radius"]:
+                        a["status"] = "Пережидает огонь за укрытием"
+                        return moved
                 if hypot(nxt[0] - pos[0], nxt[1] - pos[1]) > 1e-6:
                     a["heading"] = atan2(nxt[1] - pos[1], nxt[0] - pos[0])
                 a["x"], a["y"], a["z"] = nxt

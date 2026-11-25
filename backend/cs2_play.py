@@ -247,7 +247,10 @@ def rescue(space, squad, bomb):
     if (
         assigned
         and assigned["drop"] == goal
-        and any(a["id"] == assigned["player"] for a in squad)
+        and any(
+            a["id"] == assigned["player"] and a.get("blockedTicks", 0) < 20
+            for a in squad
+        )
     ):
         return assigned
     # The team knows its dropped C4. Compare accessible routes, including
@@ -366,11 +369,31 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             if bomb and a.get("useTarget") == list(goal) and a.get("useFloor"):
                 goal = a["useFloor"]
             if other:
-                goal = (
-                    space.holds[site][slot][1]
-                    if len(space.holds[site]) > slot
-                    else (order["hold"] if order["site"] == site else pos)
-                )
+                # The defuser's teammates choose separate reachable angles,
+                # including when the cover list contains another storey.
+                who = w["action"]["player"]
+                if a.get("coveredDefuser") != who:
+                    center = next((xyz(p) for p in allies if p["id"] == who), pos)
+                    reserved = [
+                        p["coverPoint"]
+                        for p in allies
+                        if p is not a
+                        and p.get("coveredDefuser") == who
+                        and p.get("coverPoint")
+                    ]
+                    candidates = [p for _, p in space.holds[site]]
+                    candidates.sort(
+                        key=lambda p: (
+                            any(dist(p, q) < 5 for q in [center, *reserved]),
+                            abs(p[2] - center[2]),
+                            dist(p, pos),
+                        )
+                    )
+                    cover = space._reachable(pos, candidates)
+                    a.update(coveredDefuser=who, coverPoint=list(cover or pos))
+                goal = a["coverPoint"]
+            else:
+                a.pop("coveredDefuser", None)
             a["status"] = "Прикрывает разминирование" if other else "Идёт на ретейк"
         else:
             site = bomb["site"]
@@ -493,6 +516,31 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         if engaged and dist(pos, xyz(latest)) > 25 and smoke:
             a["status"] = "Закрывает дымом контакт партнёра"
             return "throw", dict(latest, utility="Дым")
+    if side == "T" and w["phase"] == "live" and a["status"].startswith("Выход на "):
+        repair = a.get("revisedApproach")
+        if repair and repair["from"] == list(goal) and repair["site"] == site:
+            goal = repair["to"]
+        elif a.get("blockedTicks", 0) >= 8 and a.get("blockedGoal") == list(goal):
+            # A contact, recovery or one-way drop can disconnect the original
+            # intermediate point. Continue from the player's actual position.
+            carrier = bomb and bomb.get("carrier") == a["id"]
+            areas = space.plants[site] if carrier else space.nearby_areas(goal, 22)
+            points = sorted(
+                (space.centers[i] for i in areas), key=lambda q: dist(q, goal)
+            )
+            replacement = space._reachable(pos, points)
+            if replacement is not None and replacement != tuple(goal):
+                a["revisedApproach"] = {
+                    "site": site,
+                    "from": list(goal),
+                    "to": list(replacement),
+                }
+                if (
+                    a["waypoint"] < len(order["via"])
+                    and list(goal) == order["via"][a["waypoint"]]
+                ):
+                    a["waypoint"] += 1
+                goal = replacement
     moved = travel(
         a,
         goal,

@@ -221,7 +221,7 @@ def next_round(w):
             (x,y,z),heading,area = space.spawn(side,slot,(w["seed"]+n) % len(space.spawns[side]))
             a.update(z=z,navArea=area,waypoint=0,blockedTicks=0,inspectedSites={},routeReports={},lastRouteReport=-100,
                      useTarget=None,useFloor=None,checkContact=None,checkPosition=None,
-                     shelter=None,coverUntil=0,coverReview=0,bombSearch=None)
+                     shelter=None,coverUntil=0,coverReview=0,bombSearch=None,coveredDefuser=None,coverPoint=None,revisedApproach=None)
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
