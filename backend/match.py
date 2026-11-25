@@ -4,7 +4,7 @@ from collections import Counter
 from copy import deepcopy
 from math import atan2
 
-from . import checkpoints, engine, match_score, tactics, world
+from . import checkpoints, engine, match_inventory, match_score, tactics, world
 from . import match_performance as perf
 from .world import match_player as profile
 from . import match_ai as ai
@@ -18,6 +18,7 @@ from .match_rules import (
     RULES,
     VERSION,
     PREVIOUS_VERSION,
+    SIDEARMS,
     WEAPONS,
     role_orders,
 )
@@ -144,6 +145,7 @@ def validate_bindings(w):
     ):
         raise ValueError("Некорректный состав BO1")
     match_score.validate(w)
+    match_inventory.validate(w)
     by_slot = {(a["teamId"], a["slot"]): a for a in w["agents"]}
     for club, roster in enumerate(w["rosterIds"]):
         for slot, m in enumerate(world.validate_five(data, roster)):
@@ -197,6 +199,7 @@ def next_round(w):
         traces=[],
         messages=[],
         kills=[],
+        groundWeapons=[],
         plans={},
         clutch={},
         roundStart=w["tick"],
@@ -212,11 +215,18 @@ def next_round(w):
         if reset or not a["hp"]:
             a.update(
                 weapon="Glock" if side == "T" else "USP",
+                holster=None,
                 armor=0,
                 helmet=False,
                 kit=False,
                 utility=[],
             )
+        elif a["holster"]:
+            spare = a["holster"]["weapon"]
+            if spare not in SIDEARMS:
+                a.update(holster=match_inventory.stocked(a["weapon"]), weapon=spare)
+            else:
+                a["holster"] = match_inventory.stocked(spare)
         if reset:
             a["team"] = side
             money(
@@ -266,8 +276,7 @@ def purchase(w, a, item, give=None):
     money(w, a, -price, f"Покупка · {item}")
     recipient = give or a
     if item in WEAPONS:
-        weapon = WEAPONS[item]
-        recipient.update(weapon=item, ammo=weapon.mag, reserve=weapon.mag * 3)
+        match_inventory.equip(recipient, match_inventory.stocked(item))
     elif item == "Броня":
         a["armor"] = 100
     elif item == "Шлем":
@@ -427,7 +436,7 @@ def begin_live(w):
         rifle = "AK-47" if side == "T" else "M4A1-S"
         smg = "MAC-10" if side == "T" else "MP9"
         for a in squad:
-            if buy in ("Полная", "Форс") and not WEAPONS[a["weapon"]].price:
+            if buy in ("Полная", "Форс") and a["weapon"] in SIDEARMS:
                 s = profile(w, a)["skills"]
                 best = rifle
                 if a["playingRole"] == "awper" and a["cash"] >= 5400:
@@ -440,13 +449,15 @@ def begin_live(w):
                 if not purchase(w, a, best):
                     purchase(w, a, smg)
         for a in squad:
-            if buy != "Эко" and not WEAPONS[a["weapon"]].price:
+            if buy != "Эко" and a["weapon"] in SIDEARMS:
                 donor = max(squad, key=lambda p: p["cash"])
                 if (
-                    WEAPONS[donor["weapon"]].price
+                    donor["weapon"] not in SIDEARMS
                     and donor["cash"] >= WEAPONS[rifle].price + 650
                 ):
                     purchase(w, donor, rifle, a)
+            if buy == "Форс" and a["weapon"] in ("USP", "Glock"):
+                purchase(w, a, "Desert Eagle")
             if buy != "Эко":
                 if a["armor"] < 45 and (buy != "Пистолетная" or a["slot"] < 3):
                     purchase(w, a, "Броня")
@@ -682,6 +693,17 @@ def advance(w):
             continue
         ai.captain(w, squad)
         for a in squad:
+            picked = match_inventory.take_nearby(w, a)
+            if picked:
+                emit(
+                    w,
+                    "weapon_pickup",
+                    f"{a['name']} подобрал {picked['weapon']}",
+                    side,
+                    player=a["id"],
+                    weapon=picked["weapon"],
+                    dropId=picked["id"],
+                )
             known_bomb = bomb if side == "T" else None
             if side == "CT" and bomb["site"] and ai.distance(a, bomb) < 72:
                 if not a["heardSite"]:
@@ -758,6 +780,7 @@ def advance(w):
                     "reload",
                     f"{a['name']} перезаряжает {a['weapon']}",
                     side,
+                    weapon=a["weapon"],
                     player=a["id"],
                 )
     # Alternate initiative on a tick. A dead or newly occluded target cannot be hit.
@@ -879,6 +902,8 @@ def project(w, view="full"):
             knowledge=list(a["knowledge"].values()) if friendly else [],
         )
         if friendly:
+            primary, secondary = match_inventory.slots(a) if a["hp"] else (None, None)
+            marker.update(primary=primary, secondary=secondary)
             marker.update(
                 playerId=a["playerId"],
                 equipmentValue=equipment_value(a) if a["hp"] else 0,
@@ -1055,7 +1080,12 @@ def project(w, view="full"):
                 for e in w["traces"]
                 if audience(e)
             ],
-            kills=w["kills"][-8:],
+            kills=w["kills"],
+            groundWeapons=[
+                {k: g[k] for k in ("id", "weapon", "x", "y")}
+                for g in w["groundWeapons"]
+                if view == "full" or observable(g)
+            ],
             plans={
                 s: {k: v for k, v in p.items() if k != "board"}
                 | ({"tactic": tactics.reference(p["board"])} if "board" in p else {})

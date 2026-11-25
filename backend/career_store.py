@@ -100,7 +100,7 @@ class CareerStore:
         # Upgrade parked careers, manual slots and their backups in the same transaction as active.
         rows = self.db.execute(
             """SELECT career,slot,body,digest FROM career_slot
-            WHERE CASE WHEN json_valid(body) THEN json_extract(body,'$.world.checkpointVersion') END=4"""
+            WHERE CASE WHEN json_valid(body) THEN json_extract(body,'$.world.checkpointVersion') END IN (4,5)"""
         )
         for cid, slot, body, digest in rows:
             if checksum(body) != digest:

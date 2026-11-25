@@ -9,6 +9,7 @@ from datetime import date
 from pathlib import Path
 
 from . import club_art, match, skills, world
+from .match_rules import SCOREBOT_VERSION
 
 GROUPS = ("players", "teams", "organizations", "staff", "rosters")
 VERSIONS = dict(
@@ -215,7 +216,11 @@ def _validate(p):
     )
     require(
         encode(p["versions"])
-        in (encode(VERSIONS), encode(dict(VERSIONS, rules=match.PREVIOUS_VERSION))),
+        in (
+            encode(VERSIONS),
+            encode(dict(VERSIONS, rules=SCOREBOT_VERSION)),
+            encode(dict(VERSIONS, rules=match.PREVIOUS_VERSION)),
+        ),
         "Несовместимые версии пакета, мира, карты или правил",
     )
     valid_id(p["id"])

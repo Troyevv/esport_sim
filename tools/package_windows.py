@@ -85,6 +85,7 @@ def main():
         guide.replace("../SOURCES.md", "SOURCES.md"), encoding="utf-8"
     )
     for name in (
+        "BO1.md",
         "CAREER_R33.md",
         "SCENE_202611.md",
         "PORTRAITS_R32.md",
@@ -100,7 +101,10 @@ def main():
     ):
         doc = (ROOT / "docs" / name).read_text(encoding="utf-8")
         (output / name).write_text(
-            doc.replace("../backend/data/", "_internal/backend/data/"), encoding="utf-8"
+            doc.replace("../backend/data/", "_internal/backend/data/").replace(
+                "../frontend/public/scorebot/", "_internal/frontend/dist/scorebot/"
+            ),
+            encoding="utf-8",
         )
     screenshots = output / "screenshots"
     screenshots.mkdir(exist_ok=True)

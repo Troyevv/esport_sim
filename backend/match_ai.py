@@ -4,7 +4,7 @@ from collections import deque
 from functools import lru_cache
 from math import atan2, ceil, hypot, pi, sin
 
-from . import engine, tactic_execution, world
+from . import engine, match_inventory, tactic_execution, world
 from . import match_performance as perf
 from .match_events import impact, emit
 from .match_rules import (
@@ -334,12 +334,11 @@ def act(w, a, allies, bomb, visible_fire):
         )
     else:
         contact = visible[0] if visible else None
+    match_inventory.switch_if_empty(a)
     spec = WEAPONS[a["weapon"]]
     if a["reloadAt"] and now >= a["reloadAt"]:
         count = min(spec.mag - a["ammo"], a["reserve"])
         a.update(ammo=a["ammo"] + count, reserve=a["reserve"] - count, reloadAt=0)
-    if not a["ammo"] and not a["reserve"] and a["weapon"] not in ("USP", "Glock"):
-        a.update(weapon="USP" if side == "CT" else "Glock", ammo=12, reserve=24)
     if not a["ammo"] and a["reserve"] and not a["reloadAt"]:
         a["reloadAt"] = now + spec.reload
     if (

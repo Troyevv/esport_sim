@@ -3,7 +3,7 @@ import { Application, Container, Graphics, Text } from "pixi.js";
 import type { RadarPlayback } from "./playback";
 import type { Frame } from "./session";
 import "./radar.css";
-import { drawEvents } from "./matchRadar";
+import { drawEvents, RadarEquipment } from "./matchRadar";
 
 type Point = { x: number; y: number };
 type Rect = Point & { w: number; h: number };
@@ -25,6 +25,7 @@ export interface Agent extends Point {
   team: Team;
   heading: number;
   hp?: number; armor?: number; cash?: number; ammo?: number; reserve?: number; weapon?: string;
+  primary?: string | null; secondary?: string | null;
   utility?: string[]; kit?: boolean; helmet?: boolean; equipmentValue?: number; alive?: boolean;
   visible: string[];
   knowledge: (Point & { id: string; tick: number })[];
@@ -194,7 +195,8 @@ function setupScene(
   const playback = props.playback;
   app.stage.addChild(world);
   const effects = new Graphics();
-  world.addChild(plan, effects, players);
+  const items = new RadarEquipment(schedule);
+  world.addChild(plan, effects, items, players);
   let dirty = true;
   let request = 0;
   function present(now: number) {
@@ -221,7 +223,9 @@ function setupScene(
       const tick = playback.displayTick(now);
       const id = match.bomb?.carrier;
       const carrier = id && playback.has(id) ? playback.sample(id, now) : undefined;
-      drawEvents(effects, match, tick, carrier);
+      items.begin();
+      drawEvents(effects, match, tick, items, carrier);
+      items.end();
       changed = true;
     }
     if (changed) app.render();

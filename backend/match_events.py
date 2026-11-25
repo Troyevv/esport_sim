@@ -1,5 +1,6 @@
 """The match ledger and its incremental scoreboard projection."""
 
+from . import match_inventory
 from .match_rules import RULES, WEAPONS
 
 
@@ -125,6 +126,7 @@ def damage(w, shooter, target, amount, weapon, head=False, group=None, armor_los
         opening=enemy and not any(k["enemy"] for k in kills),
     )
     kills.append(event)
+    match_inventory.drop_on_death(w, target, event["id"])
     if enemy:
         # The kill feed identifies the killer, never their position.
         for mate in ids.values():

@@ -1,4 +1,5 @@
-import { Graphics } from "pixi.js";
+import { Assets, Container, Graphics, Sprite, Texture } from "pixi.js";
+import { iconURL } from "./scorebotIcons";
 import type { MatchView } from "./MatchCenter";
 
 const colors: Record<string, number> = {
@@ -8,13 +9,65 @@ const colors: Record<string, number> = {
   Ложная: 0xc8aaff,
   HE: 0xff5b51,
 };
+// Reuse sprites and textures across animation frames. Coordinates come only from the current view.
+export class RadarEquipment extends Container {
+  private used = 0;
+  private textures = new Map<string, Texture | null>();
+  constructor(private redraw: () => void) {
+    super();
+  }
+  begin() {
+    this.used = 0;
+  }
+  show(
+    item: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    tint: number,
+    side?: string,
+  ) {
+    const url = iconURL(item, side);
+    if (!url) return;
+    if (!this.textures.has(url)) {
+      this.textures.set(url, null);
+      void Assets.load<Texture>(url)
+        .then((texture) => {
+          if (this.destroyed) return;
+          this.textures.set(url, texture);
+          this.redraw();
+        })
+        .catch((error) => console.error("Загрузка значка радара", url, error));
+    }
+    const texture = this.textures.get(url);
+    if (!texture) return;
+    const sprite =
+      (this.children[this.used] as Sprite | undefined) ??
+      this.addChild(new Sprite());
+    ++this.used;
+    sprite.texture = texture;
+    sprite.anchor.set(0.5);
+    sprite.position.set(x, y);
+    sprite.scale.set(Math.min(width / texture.width, height / texture.height));
+    sprite.tint = tint;
+    sprite.visible = true;
+  }
+  end() {
+    for (let i = this.used; i < this.children.length; i++)
+      this.children[i].visible = false;
+  }
+}
 export function drawEvents(
   g: Graphics,
   m: MatchView,
   tick: number,
+  items: RadarEquipment,
   carrier?: { x: number; y: number },
 ) {
   g.clear();
+  for (const gun of m.groundWeapons)
+    items.show(gun.weapon, gun.x, gun.y, 8, 4, 0xacbfc3);
   for (const f of m.effects) {
     if (tick < f.start || tick >= f.end + 3) continue;
     const color = colors[f.kind];
@@ -25,9 +78,10 @@ export function drawEvents(
       g.moveTo(f.sx, f.sy)
         .lineTo(x, y)
         .stroke({ color, width: 0.7, alpha: 0.7 });
-      g.circle(x, y, 1.6).fill(color);
+      items.show(f.kind, x, y, 5, 6, color, f.team);
     } else {
       const fade = Math.min(1, (f.end + 3 - tick) / 4);
+      items.show(f.kind, f.x, f.y, 4.5, 5.5, color, f.team);
       const radius = f.radius * Math.min(1, 0.35 + (tick - f.land) * 0.25);
       g.circle(f.x, f.y, radius)
         .fill({ color, alpha: fade * 0.34 })
@@ -57,9 +111,14 @@ export function drawEvents(
       });
       return;
     }
-    g.roundRect(p.x - 2, p.y - 6, 4, 4, 0.7)
-      .fill(0xffd66d)
-      .stroke({ color: 0x342714, width: 0.7 });
+    items.show(
+      "C4",
+      p.x + (carrier ? 4 : 0),
+      p.y - (carrier ? 6 : 0),
+      7,
+      7,
+      0xffdc7b,
+    );
     if (m.phase === "planted")
       g.circle(p.x, p.y, 4 + (tick % 10) * 0.4).stroke({
         color: 0xffd66d,

@@ -5,6 +5,8 @@ import type { Frame, View } from "./session";
 import type { RadarPlayback } from "./playback";
 import "./match.css";
 import { Avatar, Identity, type Visual } from "./SceneIdentity";
+import { itemLabel } from "./scorebotIcons";
+import { Gear, ItemIcon, WeaponSlots } from "./MatchEquipment";
 import { RoleRatings } from "./SceneProfiles";
 
 type Side = "CT" | "T";
@@ -66,6 +68,7 @@ export interface MatchView {
   bomb: (Point & { carrier: string | null; site: string | null }) | null;
   action: { player: string; kind: string; start: number; end: number } | null;
   effects: (Point & {
+    team?: Side;
     kind: string;
     sx: number;
     sy: number;
@@ -75,6 +78,7 @@ export interface MatchView {
     radius: number;
   })[];
   resolution: { kind: string; tick: number } | null;
+  groundWeapons: (Point & { id: number; weapon: string })[];
   shots: (Point & { tx: number; ty: number; tick: number })[];
   kills: {
     id: number;
@@ -82,6 +86,10 @@ export interface MatchView {
     target: string;
     weapon: string;
     head: boolean;
+    assists: string[];
+    opening: boolean;
+    trade: string | null;
+    enemy: boolean;
   }[];
   plans: Partial<
     Record<Side, { site: string; style: string; buy: string; tactic?: PlanRef }>
@@ -118,13 +126,6 @@ type Props = {
 };
 
 const money = (amount: number) => "$" + amount.toLocaleString("ru-RU");
-const utilities: Record<string, string> = {
-  Свет: "Flash",
-  Дым: "Smoke",
-  Огонь: "Fire",
-  Ложная: "Decoy",
-};
-
 function RosterPanel({
   club,
   frame,
@@ -159,11 +160,11 @@ function RosterPanel({
         const dead =
           a?.alive === false || m!.kills.some((k) => k.target === row.id);
         const hp = dead ? 0 : a?.hp;
-        const equipped = a?.equipmentValue !== undefined && !dead;
         return (
           <button
             key={row.id}
             className="player-card"
+            data-player={row.id}
             data-dead={dead}
             aria-pressed={selected === row.id}
             disabled={!a}
@@ -191,19 +192,10 @@ function RosterPanel({
               <i style={{ width: (hp ?? 0) + "%" }} />
             </span>
             <span className="hud-loadout">
-              <strong>{dead ? "Выбыл" : a?.weapon || "Вне обзора"}</strong>
+              <WeaponSlots a={a} dead={dead} />
               <span>{a?.cash !== undefined ? money(a.cash) : "—"}</span>
             </span>
-            <span className="hud-kit">
-              {equipped
-                ? [
-                    "Броня " + a!.armor,
-                    ...(a!.helmet ? ["Шлем"] : []),
-                    ...(a!.kit ? ["Набор"] : []),
-                    ...(a!.utility || []).map((g) => utilities[g] || g),
-                  ].join(" · ")
-                : "Снаряжение —"}
-            </span>
+            <Gear a={a} dead={dead} carrier={m!.bomb?.carrier === row.id} />
             <span className="hud-figures">
               <span title="Убийства / смерти / передачи">
                 K/D/A{" "}
@@ -380,7 +372,9 @@ export default function MatchCenter({
           </div>
           {m.phase === "planted" && (
             <div className="hud-bomb">
-              <strong>C4 · {m.bomb?.site || "Установлена"}</strong>
+              <strong>
+                <ItemIcon name="C4" /> · {m.bomb?.site || "Установлена"}
+              </strong>
               <span>
                 {m.action?.kind === "defuse" ? "Обезвреживание" : "До взрыва"} ·{" "}
                 {clock(m.clock)}
@@ -402,7 +396,9 @@ export default function MatchCenter({
           <div className="match-legend">
             <span>● CT</span>
             <span>◆ T</span>
-            <span>▣ C4</span>
+            <span>
+              <ItemIcon name="C4" /> C4
+            </span>
             <span>
               {selectedAgent
                 ? selectedAgent.name + " · " + selectedAgent.status
@@ -433,12 +429,13 @@ export default function MatchCenter({
                   }
                 >
                   <b>{r.round}</b>
-                  {{
-                    "Взрыв C4": "C4",
-                    Обезвреживание: "KIT",
-                    Время: "◷",
-                    Устранение: "×",
-                  }[r.reason] || r.side}
+                  <ItemIcon
+                    name={
+                      { "Взрыв C4": "C4", Обезвреживание: "Набор" }[r.reason] ||
+                      r.reason
+                    }
+                    label={r.reason}
+                  />
                 </button>
               ))}
             </div>
@@ -450,11 +447,58 @@ export default function MatchCenter({
               .slice()
               .reverse()
               .map((k) => (
-                <div key={k.id}>
-                  <b>{k.weapon === "C4" ? "C4" : name(k.player)}</b>
-                  <span>
-                    {k.weapon}
-                    {k.head ? " · HS" : ""}
+                <div key={k.id} className="kill-row" data-kill={k.id}>
+                  <span className="kill-attacker">
+                    {k.weapon !== "C4" && <b>{name(k.player)}</b>}
+                    {k.assists?.length > 0 && (
+                      <span className="assist">
+                        <ItemIcon name="Помощь" />
+                        {k.assists.map(name).join(", ")}
+                      </span>
+                    )}
+                  </span>
+                  <span className="kill-method">
+                    <ItemIcon
+                      name={k.weapon}
+                      side={m.stats.find((p) => p.id === k.player)?.team}
+                      label={
+                        ["HE", "Огонь"].includes(k.weapon)
+                          ? "Убийство гранатой · " +
+                            itemLabel(
+                              k.weapon,
+                              m.stats.find((p) => p.id === k.player)?.team,
+                            )
+                          : undefined
+                      }
+                      className="kill-weapon"
+                    />
+                    {k.head && <ItemIcon name="В голову" />}
+                    {k.opening && (
+                      <abbr
+                        title="Первое убийство раунда"
+                        aria-label="Первое убийство раунда"
+                      >
+                        1K
+                      </abbr>
+                    )}
+                    {k.trade && (
+                      <ItemIcon
+                        name="Размен"
+                        label={"Размен за " + name(k.trade)}
+                      />
+                    )}
+                    {!k.enemy &&
+                      k.weapon !== "C4" &&
+                      (k.player === k.target ? (
+                        <ItemIcon name="Самоустранение" />
+                      ) : (
+                        <abbr
+                          title="Убийство союзника"
+                          aria-label="Убийство союзника"
+                        >
+                          TK
+                        </abbr>
+                      ))}
                   </span>
                   <b>{name(k.target)}</b>
                 </div>
@@ -492,15 +536,22 @@ export default function MatchCenter({
                     compact
                   />
                 )}
-                {selectedAgent.hp !== undefined && (
-                  <>
-                    {" "}
-                    · Броня {selectedAgent.armor} · Патроны {selectedAgent.ammo}
-                    /{selectedAgent.reserve}
-                    {selectedAgent.kit && " · Набор обезвреживания"} · Гранаты{" "}
-                    {selectedAgent.utility?.join(", ") || "—"}
-                  </>
-                )}
+                <div className="selected-loadout">
+                  <WeaponSlots
+                    a={selectedAgent}
+                    dead={selectedAgent.alive === false}
+                  />
+                  <Gear
+                    a={selectedAgent}
+                    dead={selectedAgent.alive === false}
+                    carrier={m.bomb?.carrier === selectedAgent.id}
+                  />
+                  {selectedAgent.alive && selectedAgent.ammo !== undefined && (
+                    <span>
+                      Патроны {selectedAgent.ammo}/{selectedAgent.reserve}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
             {tab === "Статистика" && (
@@ -620,7 +671,27 @@ export default function MatchCenter({
                   .map((e, i) => (
                     <li key={e.tick + "-" + i}>
                       <time>{clock(e.tick)}</time>
-                      {e.text}
+                      {e.kind === "kill" && e.weapon && e.target && e.player ? (
+                        <span className="journal-event">
+                          {e.weapon !== "C4" && name(e.player)}
+                          <ItemIcon
+                            name={e.weapon}
+                            side={m.stats.find((p) => p.id === e.player)?.team}
+                          />
+                          {e.head && <ItemIcon name="В голову" />}
+                          {name(e.target)}
+                        </span>
+                      ) : (
+                        <span className="journal-event">
+                          {(e.weapon || e.utility) && (
+                            <ItemIcon
+                              name={(e.weapon || e.utility)!}
+                              side={e.team ?? undefined}
+                            />
+                          )}
+                          {e.text}
+                        </span>
+                      )}
                     </li>
                   ))}
               </ol>

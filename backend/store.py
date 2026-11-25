@@ -10,8 +10,8 @@ from uuid import uuid4
 
 from . import database, checkpoints, engine, match, tactic_library
 from . import career, career_store
-from .match_rules import LEGACY_VERSION, PREVIOUS_VERSION
-from . import match_score
+from .match_rules import LEGACY_VERSION, PREVIOUS_VERSION, SCOREBOT_VERSION
+from . import match_inventory, match_score
 
 
 class Conflict(ValueError):
@@ -26,18 +26,27 @@ def validate_snapshot(state):
         (2, match.MAP["version"], match.VERSION),
         (2, match.MAP["version"], LEGACY_VERSION),
         (2, match.MAP["version"], PREVIOUS_VERSION),
+        (2, match.MAP["version"], SCOREBOT_VERSION),
     )
     if state.get("version") != 1 or model not in supported:
         raise Conflict("Несовместимая версия снимка, ядра или геометрии")
     if world.get("version") == 2:
         version = world.get("checkpointVersion", 1)
-        if type(version) is not int or version not in (1, 2, 3, 4, checkpoints.VERSION):
-            raise Conflict(f"Неподдерживаемая версия сохранения BO1: {version}")
-        if world["rules"] != (
-            match.VERSION
-            if version == checkpoints.VERSION
-            else PREVIOUS_VERSION if version == 4 else LEGACY_VERSION
+        if type(version) is not int or version not in (
+            1,
+            2,
+            3,
+            4,
+            5,
+            checkpoints.VERSION,
         ):
+            raise Conflict(f"Неподдерживаемая версия сохранения BO1: {version}")
+        rules = {
+            4: PREVIOUS_VERSION,
+            5: SCOREBOT_VERSION,
+            checkpoints.VERSION: match.VERSION,
+        }
+        if world["rules"] != rules.get(version, LEGACY_VERSION):
             raise Conflict("Несовместимая пара версий правил и контрольной точки")
 
 
@@ -129,7 +138,9 @@ class Store:
                 game["rulesTransition"] = dict(
                     previous=game["rules"], tick=game["tick"], lastEvent=game["serial"]
                 )
-            match_score.upgrade(game)
+            if old_version < 5:
+                match_score.upgrade(game)
+            match_inventory.upgrade(game)
             game.update(rules=match.VERSION, checkpointVersion=checkpoints.VERSION)
         checkpoints.validate_current(game)
         match.validate_bindings(game)

@@ -5,6 +5,7 @@ from math import pi
 WEAPON_CLASS = {
     "Glock": "pistols",
     "USP": "pistols",
+    "Desert Eagle": "pistols",
     "MP9": "smgs",
     "MAC-10": "smgs",
     "AK-47": "rifles",

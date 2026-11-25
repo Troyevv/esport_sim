@@ -816,3 +816,153 @@ th small {
     min-width: 29px;
   }
 }
+
+.sb-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  vertical-align: middle;
+  flex: none;
+}
+.hud-loadout {
+  min-height: 25px;
+}
+.gun-slots,
+.gun-slot,
+.gear-item,
+.kill-method,
+.kill-attacker,
+.assist,
+.selected-loadout {
+  display: inline-flex;
+  align-items: center;
+}
+.gun-slots {
+  gap: 7px;
+  min-width: 0;
+}
+.gun-slot {
+  justify-content: center;
+  opacity: 0.62;
+  border-bottom: 2px solid transparent;
+  height: 26px;
+}
+.gun-slot[data-equipped="true"] {
+  border-color: var(--side, var(--accent));
+  opacity: 1;
+}
+.gun-slot.primary-gun,
+.visible-gun {
+  width: clamp(45px, 4.4vw, 70px);
+}
+.gun-slot.secondary {
+  width: 32px;
+}
+.gun-slot .sb-icon {
+  width: 100%;
+  height: 22px;
+}
+.sb-icon.visible-gun {
+  width: clamp(40px, 6vw, 70px);
+  height: 22px;
+}
+.journal-event {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.journal-event .sb-icon {
+  max-width: 49px;
+  height: 16px;
+}
+.hud-team .hud-kit,
+.selected-loadout .hud-kit {
+  display: flex;
+  align-items: center;
+  gap: 3px 6px;
+  min-height: 18px;
+  flex-wrap: wrap;
+}
+.hud-kit .sb-icon {
+  width: 18px;
+  height: 17px;
+}
+.gear-item {
+  gap: 2px;
+}
+.gear-item b {
+  font: 10px var(--mono);
+  color: #d6e1e2;
+}
+.carried-c4 {
+  background: #6c512d;
+  border-radius: 3px;
+  padding: 1px;
+}
+.selected-loadout {
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-block: 6px;
+}
+.hud-map .live-feed .kill-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  min-height: 29px;
+  gap: 6px;
+}
+.kill-row > b:last-child {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.kill-attacker {
+  gap: 4px;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.live-feed .kill-attacker b,
+.live-feed .kill-row > b {
+  font: 600 13px var(--sans, sans-serif);
+  color: var(--ink);
+}
+.kill-method,
+.assist {
+  gap: 4px;
+}
+.kill-method .kill-weapon {
+  width: 48px;
+  height: 22px;
+}
+.kill-method .sb-icon:not(.kill-weapon),
+.assist .sb-icon {
+  width: 15px;
+  height: 15px;
+}
+.kill-method abbr {
+  color: #ffce93;
+  text-decoration: none;
+  font: 10px var(--mono);
+}
+.hud-history .sb-icon {
+  width: 18px;
+  height: 14px;
+}
+@media (max-width: 580px) {
+  .gun-slots {
+    gap: 4px;
+  }
+  .gun-slot.secondary {
+    width: 24px;
+  }
+  .hud-loadout {
+    gap: 3px;
+  }
+  .hud-team .hud-kit {
+    gap: 3px;
+  }
+  .kill-method .kill-weapon {
+    width: 41px;
+  }
+}

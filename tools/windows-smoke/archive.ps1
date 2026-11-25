@@ -251,9 +251,18 @@ $plan = $library.plans | Where-Object { $_.id -eq 'std-T-0' }
 if ($plan.slots.Count -ne 5) { throw 'Packaged board has no five-slot plan.' }
 Command $origin 'match' 705177
 $projection = (Invoke-RestMethod "$origin/api/state").world
-if ($projection.match.rules -ne 'depo-bo1.3' -or $null -eq $projection.match.teamRating -or
+if ($projection.match.rules -ne 'depo-bo1.4' -or $null -eq $projection.match.teamRating -or
     $projection.match.roleRatings.T1.PSObject.Properties.Name.Count -ne 6 -or $projection.domain) {
     throw 'R3.1 match projection is missing or exposes the private world.'
+}
+if (@($projection.agents | Where-Object { $_.secondary -in @('Glock', 'USP') -and !$_.primary }).Count -ne 10) {
+    throw 'Starting BO1 loadouts do not contain ten secondary weapons.'
+}
+foreach ($icon in @('ak47', 'm4a1_silencer', 'awp', 'deagle', 'flashbang', 'c4', 'icon_headshot')) {
+    $asset = Invoke-WebRequest -UseBasicParsing -Uri "$origin/scorebot/$icon.svg" -TimeoutSec 8
+    if ($asset.Headers['Content-Type'] -notmatch 'image/svg\+xml' -or $asset.RawContentLength -lt 50) {
+        throw "Packaged Scorebot icon missing: $icon"
+    }
 }
 Command $origin 'tactic-assign' @{id=$plan.id; revision=$plan.revision}
 Command $origin 'timeout'

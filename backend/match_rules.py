@@ -6,7 +6,8 @@ from . import engine
 
 LEGACY_VERSION = "depo-bo1.1"
 PREVIOUS_VERSION = "depo-bo1.2"
-VERSION = "depo-bo1.3"
+SCOREBOT_VERSION = "depo-bo1.3"
+VERSION = "depo-bo1.4"
 RULES = dict(
     half=12,
     overtimeHalf=3,
@@ -89,7 +90,10 @@ class Weapon:
     pellets: int = 1
 
 
+SIDEARMS = frozenset(("Glock", "USP", "Desert Eagle"))
+
 WEAPONS = {
+    "Desert Eagle": Weapon(700, 7, 53, 4, 23, 70, 300, 0.93, 0.81),
     "Glock": Weapon(0, 20, 30, 3, 23, 66, 300, 0.47, 0.85),
     "USP": Weapon(0, 12, 35, 3, 22, 70, 300, 0.505, 0.91),
     "MP9": Weapon(1250, 30, 26, 1, 21, 65, 600, 0.60, 0.87),
@@ -123,6 +127,7 @@ CALLS = ("Капитану", "Выход A", "Выход B", "Ускоритьс
 def equipment_value(a):
     return (
         WEAPONS[a["weapon"]].price
+        + (WEAPONS[a["holster"]["weapon"]].price if a.get("holster") else 0)
         + (PRICES["Броня"] if a["armor"] else 0)
         + (PRICES["Шлем"] if a["helmet"] else 0)
         + (PRICES["Набор"] if a["kit"] else 0)

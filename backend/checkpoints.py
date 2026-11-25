@@ -6,7 +6,7 @@ import json
 from .match_rules import role_orders
 from . import tactics
 
-VERSION = 5
+VERSION = 6
 
 
 class CheckpointError(ValueError):

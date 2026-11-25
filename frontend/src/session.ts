@@ -23,7 +23,7 @@ export interface Frame {
     tick: number;
     time: number;
     view: View;
-    events: { tick: number; team: string | null; text: string }[];
+    events: { kind?: string; weapon?: string; utility?: string; player?: string; target?: string; head?: boolean; tick: number; team: string | null; text: string }[];
   };
 }
 type Intent = {
