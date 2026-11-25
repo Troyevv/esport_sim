@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
-from . import database
+from starlette.concurrency import run_in_threadpool
+
+from . import database, personal_portraits
 
 
 def portrait_router(app):
@@ -20,6 +22,25 @@ def portrait_router(app):
         try:
             return store.portraits.start(
                 database.get(store.db, key, revision), body.get("mode")
+            )
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @routes.post("/{key}/{revision}/offline")
+    async def offline(key: str, revision: int, request: Request):
+        store = app.state.store
+        try:
+            pack = database.get(store.db, key, revision)
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        content = bytearray()
+        async for chunk in request.stream():
+            if len(content) + len(chunk) > personal_portraits.MAX_PACK:
+                raise HTTPException(413, "Личный пакет превышает 96 МиБ")
+            content.extend(chunk)
+        try:
+            return await run_in_threadpool(
+                personal_portraits.install, store.portraits, pack, content
             )
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc

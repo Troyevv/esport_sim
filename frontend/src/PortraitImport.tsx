@@ -76,6 +76,31 @@ export function PortraitImport({
       clearTimeout(timer);
     };
   }, [open, pack.id, pack.revision]);
+  const [installed, setInstalled] = useState<number | null>(null);
+  async function installFile(file: File) {
+    setError("");
+    setInstalled(null);
+    setBusy(true);
+    try {
+      const response = await fetch(
+        serverURL("/api/portraits/" + refKey(pack) + "/offline"),
+        {
+          method: "POST",
+          credentials: "include",
+          body: file,
+        },
+      );
+      const result = await response.json();
+      if (!response.ok)
+        throw Error(result.detail || "Не удалось установить личные портреты");
+      await onRefresh();
+      setInstalled(result.installed);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
   async function command(mode: string) {
     setBusy(true);
     try {
@@ -104,9 +129,30 @@ export function PortraitImport({
       <summary>Студийные портреты</summary>
       <div>
         <p>
-          Домашний сервер ищет лицензированные студийные снимки, сверяет данные
-          игрока и выделяет голову и шею. Для остальных игроков сохраняется
-          нейтральная внешность.
+          Готовые портреты устанавливаются на домашний сервер. В профилях,
+          составах и матчах внешность игрока сохраняется при смене клубной
+          формы.
+        </p>
+        <label>
+          Личный пакет портретов (.esportraits)
+          <input
+            type="file"
+            accept=".esportraits"
+            disabled={busy || running}
+            onChange={(e) => {
+              const file = e.currentTarget.files?.[0];
+              e.currentTarget.value = "";
+              if (file) void installFile(file);
+            }}
+          />
+        </label>
+        {installed !== null && (
+          <p role="status">Подключено студийных портретов: {installed}</p>
+        )}
+        <p>
+          Для дальнейших обновлений можно запустить поиск и обработку
+          фотографий. Игроки без подходящего портрета отображаются с нейтральной
+          внешностью.
         </p>
         <div className="db-actions">
           <button

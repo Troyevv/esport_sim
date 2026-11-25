@@ -1,0 +1,102 @@
+{
+  "portraits": {
+    "p-4baf8d1be5c687f9575a": {
+      "frame": [
+        159,
+        30,
+        1068,
+        737
+      ],
+      "height": 1281,
+      "identitySource": "https://www.hltv.org/player/8528/hobbit",
+      "name": "HObbit",
+      "originalSha256": "c5d50519578fbeb84c1a13a4286c5be44409ef4d15eeedf65868d6f3b3278311",
+      "publisher": "NoScope Assets · HObbit",
+      "sha256": "c5d405eb3e3c07ed2ba5d1dc40e013bb055cddfbfd300dff2a26b3a49930a361",
+      "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/HObbit.png",
+      "width": 1228
+    },
+    "steam-76561197995178481": {
+      "frame": [
+        91,
+        0,
+        615,
+        497
+      ],
+      "height": 922,
+      "identitySource": "https://www.hltv.org/player/23397/poiii",
+      "name": "poiii",
+      "originalSha256": "53938645d2183a57a9bb71ae2e2637dc87b73354982deef9f3e5c59f7ab377e8",
+      "publisher": "NoScope Assets · poiii",
+      "sha256": "692ba4c0521642fc98ec8c3e55100ee6a68bad54c92ebe2ede98d04dc0b64878",
+      "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/poiii.png",
+      "width": 707
+    },
+    "steam-76561198120491311": {
+      "frame": [
+        163,
+        4,
+        1090,
+        697
+      ],
+      "height": 1254,
+      "identitySource": "https://www.hltv.org/player/18865/dav1deus",
+      "name": "dav1deuS",
+      "originalSha256": "69e5ee75ec0df11d6f99f8ac2533721ea76fd0f1806215874fcc49667b0d3b5b",
+      "publisher": "NoScope Assets · dav1deuS",
+      "sha256": "bf9fb778070f051af3612b3c730985fe547e1b79bdd1ef4eb5c179910da8de1c",
+      "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/dav1deuS.png",
+      "width": 1254
+    },
+    "steam-76561198317464800": {
+      "frame": [
+        144,
+        38,
+        969,
+        815
+      ],
+      "height": 1411,
+      "identitySource": "https://liquipedia.net/counterstrike/Divine_%28Brazilian_player%29",
+      "name": "divine",
+      "originalSha256": "0231a53890e21dcee74c2836913d6bcebad387fc69bfab86e8012bc393776193",
+      "publisher": "NoScope Assets · divine",
+      "sha256": "e6949500ba791da63478546afb2c70b9dc12eb635bc775875b1ebe65297c8bb2",
+      "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/divine.png",
+      "width": 1114
+    },
+    "steam-76561198370183186": {
+      "frame": [
+        145,
+        28,
+        976,
+        801
+      ],
+      "height": 1402,
+      "identitySource": "https://liquipedia.net/counterstrike/Nardes",
+      "name": "nardes",
+      "originalSha256": "9aba7169d00068b1dab7353f053b268a19868c587ea005be5c2dd255cf5b720a",
+      "publisher": "NoScope Assets · nardes",
+      "sha256": "fa8096f980f6a52935a5d38feb053187a0c63ca89fe835741291cbec5c56ce17",
+      "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/nardes.png",
+      "width": 1122
+    },
+    "steam-76561199043122605": {
+      "frame": [
+        145,
+        40,
+        974,
+        814
+      ],
+      "height": 1404,
+      "identitySource": "https://www.hltv.org/player/22777/diozera",
+      "name": "diozera",
+      "originalSha256": "8a0322bf01fd72b842a8ddee49f6dce6e0e668b7b09f2bce4a6e9cc332d59e52",
+      "publisher": "NoScope Assets · diozera",
+      "sha256": "e013f7d41a9ee7606aec0b7244b6a1ace2e1d7d718867a9d05e34100af450920",
+      "source": "https://github.com/phantzzy/NoScope-Assets/blob/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/diozera.png",
+      "width": 1120
+    }
+  },
+  "processor": "studio-v1",
+  "version": 1
+}

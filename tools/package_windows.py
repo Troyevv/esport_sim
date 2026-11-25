@@ -89,6 +89,7 @@ def main():
         "PORTRAITS_R32.md",
         "SCENE_ART_R32.md",
         "PERSONAL_BADGES_R32.md",
+        "PRIVATE_STUDIO_R32.md",
         "CLUB_BADGE_SOURCES.md",
     ):
         doc = (ROOT / "docs" / name).read_text(encoding="utf-8")
