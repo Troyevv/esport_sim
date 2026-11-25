@@ -217,6 +217,13 @@ def captain(w, squad, space=None):
             contacts=[p["id"] for p in contacts],
         )
     if leader["team"] == "CT":
+        if space:
+            # A contact on the upper site must not also count as pressure below it.
+            counts = dict.fromkeys(("A", "B"), 0)
+            for contact in contacts:
+                threatened = space.reported_site(xyz(contact))
+                if threatened:
+                    counts[threatened] += 1
         if counts["A"] != counts["B"] and max(counts.values()) >= 2:
             plan["reinforce"] = max(counts, key=counts.get)
         if space and w["phase"] == "live":
@@ -500,6 +507,7 @@ def act(w, a, allies, bomb, visible_fire):
         and not reinforce
         and len(alive) < 5
         and a["playingRole"] == "support"
+        and (side == "T" or not w.get("space"))
         and w["phase"] == "live"
         and not (bomb and bomb.get("carrier") == a["id"])
     ):

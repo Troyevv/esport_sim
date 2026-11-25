@@ -249,15 +249,16 @@
     ],
     "guards": {
       "A": [
-        "Heaven",
+        "Rafters",
         "Mini"
       ],
       "B": [
         "Decon",
-        "Control"
+        "Ramp"
       ]
     },
-    "middle": "Outside"
+    "middle": "Outside",
+    "overwatch": ["Garage", "Outside"]
   },
   "de_train": {
     "A": [

@@ -5,6 +5,7 @@ on:
     paths:
       - .github/workflows/cs2-pro-reference.yml
       - tools/cs2_pro_reference.py
+      - tools/cs2_pro_demo.py
 permissions:
   contents: read
 jobs:
@@ -21,3 +22,25 @@ jobs:
         with:
           name: cs2-pro-reference
           path: build/pro-reference/
+  demos:
+    needs: economy
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        map: [de_ancient, de_anubis, de_dust2, de_inferno, de_mirage, de_nuke]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: cs2-pro-reference
+          path: build/pro-reference
+      - run: python -m pip install pyarrow pandas demoparser2==0.42.0
+      - run: python -m tools.cs2_pro_demo --map "${{ matrix.map }}" --dir build/pro-reference
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pro-utility-${{ matrix.map }}
+          path: build/pro-reference/*-utility.json

@@ -154,6 +154,7 @@ class Map:
             self.holds[site] = sorted(self.cover, key=lambda item: dist(item[1], mean))[
                 :16
             ]
+        self.site_costs = {site: self.nav.routes_through([areas]).costs for site, areas in self.plants.items()}
         self.passage = lru_cache(maxsize=32768)(partial(Map._passage, proxy(self)))
         self.gate = lru_cache(maxsize=32768)(partial(Map._gate, proxy(self)))
         self.inside = lru_cache(maxsize=32768)(partial(Map._inside, proxy(self)))
@@ -243,7 +244,10 @@ class Map:
             else:
                 variant = (lane + i // 2) % 2
                 guards = self.profile["guards"][defended]
-                choices = self.places[guards[(i // 2) % len(guards)]]
+                guard = guards[(i // 2) % len(guards)]
+                if i == 4 and "overwatch" in self.profile:
+                    guard = self.profile["overwatch"][0]
+                choices = self.places[guard]
                 usable = [
                     j for j in sorted(choices) if self.route(start, j) is not None
                 ]
@@ -262,7 +266,10 @@ class Map:
             hold = waypoints[-1] if side == "CT" and waypoints else plant
             guards_view = {}
             if side == "CT" and waypoints:
-                options = self.angles(defended, variant, hold)
+                duty = "site" if i in (0, 1) else "approach"
+                if i == 4 and "overwatch" in self.profile:
+                    duty = "junction"
+                options = self.angles(defended, variant, hold, duty)
                 guards_view = dict(options)
                 # A second anchor or the rotator can share a callout. Take a
                 # separate reachable position before falling back to that spot.
@@ -360,33 +367,61 @@ class Map:
                     samples.append(p)
         return samples
 
-    def _angles(self, site, variant, anchor):
+    def reported_site(self, point):
+        """Attribute a sighting by its accessible approach, including stacked sites."""
+        area = self.locate(point)
+        distances = sorted((costs.get(area, float("inf")), site)
+                           for site, costs in self.site_costs.items())
+        (near, site), (other, _) = distances
+        if near <= 80 * UNIT and other - near > 8 * UNIT:
+            return site
+        return None
+
+    def _angles(self, site, variant, anchor, duty="approach"):
         # Rank positions around this player's assigned guard area by what an
         # observer can actually see. Other levels and props can obscure a label.
         ingress = self.ingress(site, variant)
-        covers = {p for _, p in self.cover if dist(p, anchor) <= 20}
+        if duty == "junction":
+            ingress = [self.centers[i] for i in sorted(self.places[self.profile["overwatch"][1]])]
+        objectives = []
+        plant = self.site_points[site]
+        if duty == "site":
+            # Sample the spatial extent, including legal positions behind different boxes.
+            remaining = [self.centers[i] for i in sorted(self.plants[site])]
+            objectives = [plant]
+            while len(objectives) < 12:
+                q = max(remaining, key=lambda p: min(dist(p, other) for other in objectives))
+                if min(dist(q, other) for other in objectives) < 3:
+                    break
+                objectives.append(q)
+        covers = {p for _, p in self.cover if dist(p, anchor) <= 20
+                  or (objectives and dist(p, plant) <= 27)}
         nearby = [self.centers[i] for i in self.nearby_areas(anchor, 15)]
-        positions = sorted(
-            {anchor, *covers, *nearby}, key=lambda p: (dist(p, anchor), p)
-        )
+        if objectives:
+            nearby.extend(self.centers[i] for i in self.nearby_areas(plant, 26))
+        positions = sorted({anchor, *covers, *nearby})
+        targets = sorted(set([*objectives, *ingress]))
+
+        def eye(p):
+            x, y, z = self.world(p)
+            return x, y, z + 64
+
+        eyes = {p: eye(p) for p in [*positions, *targets]}
+        rays = [(eyes[p], eyes[q]) for p in positions for q in targets if 5 <= dist(p, q) <= 100]
+        sights = self.collision.sight_many(rays)
         ranked = []
         for pos in positions:
-            visible = [
-                q
-                for q in ingress
-                if 8 <= dist(pos, q) <= 90 and self.hit(pos, q, 1, 64) is None
-            ]
-            watch = visible[0] if visible else self._watch(site, pos, variant)
-            ranked.append(
-                (
-                    not bool(visible),
-                    -min(6, len(visible)),
-                    pos not in covers,
-                    dist(pos, anchor),
-                    pos,
-                    watch,
-                )
-            )
+            seen = {q for q in targets if sights.get((eyes[pos], eyes[q]))}
+            plant_views = [q for q in objectives if q in seen]
+            entries = [q for q in ingress if q in seen]
+            if plant_views:
+                # Hold towards the objective with a known entry in the same field of view.
+                watch = min(plant_views, key=lambda q: min((dist(q, e) for e in entries), default=dist(q, plant)))
+            else:
+                watch = entries[0] if entries else self._watch(site, pos, variant)
+            ranked.append((not bool(plant_views) if objectives else False,
+                           not bool(entries), -len(plant_views), -min(6, len(entries)),
+                           pos not in covers, dist(pos, anchor), pos, watch))
         return [(pos, watch) for *_, pos, watch in sorted(ranked)]
 
     def _watch(self, site, pos, variant):

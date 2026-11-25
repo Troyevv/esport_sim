@@ -90,7 +90,14 @@ def assign_backup(space, plan, squad, site, pressure):
         return
     slots = plan["orders"]["slots"]
     other = [a for a in squad if slots[a["slot"]]["site"] != site]
-    if not other or (len(other) == 1 and pressure < 3):
+    # Release the mobile defender before the only player watching the other plant.
+    reserves = [a for a in other if a["slot"] >= 2]
+    if reserves:
+        other = reserves
+    elif len(other) == 1:
+        plan.pop("backup", None)
+        return
+    if not other:
         plan.pop("backup", None)
         return
     current = plan.get("backup")
@@ -471,7 +478,12 @@ def search_site(space, actor, site, now, allies=()):
 def spatial_intent(space, w, a, allies, bomb, fire, travel):
     now, plan = w["tick"], w["plan"]
     side, slot = a["team"], a["slot"]
-    order = plan["orders"]["slots"][slot]
+    orders = plan["orders"]["slots"]
+    order = orders[slot]
+    if side == "CT" and w["phase"] == "live" and slot in (2, 3):
+        anchor = slot - 2
+        if not any(p["slot"] == anchor for p in allies):
+            order = orders[anchor]
     site = plan["site"]
     pos = xyz(a)
     recent = [p for p in a["knowledge"].values() if now - p["tick"] < 35]
@@ -639,7 +651,20 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         and (side == "CT" or not bomb or bomb["carrier"] != a["id"])
         and not w["action"]
     ):
-        if dist(goal, xyz(latest)) < 40 and dist(pos, xyz(latest)) > 6:
+        anchor = side == "CT" and order in orders[:2]
+        if anchor and latest["source"] != "Слух" and a["utility"] and now >= a["throwAt"]:
+            # Use a reported push to delay a crossing while the anchor still holds the site.
+            if now - latest["tick"] < 18 and 20 < dist(pos, xyz(latest)) < 80:
+                for crossing in space.ingress(site, plan["lane"]):
+                    if dist(crossing, xyz(latest)) > 12 or space.hit(pos, crossing, 1, 64):
+                        continue
+                    if any(dist(xyz(p), crossing) < 21 for p in allies):
+                        continue
+                    grenade = next((g for g in ("Огонь", "Дым") if g in a["utility"]), None)
+                    if grenade:
+                        a["status"] = "Сдерживает выход на плент"
+                        return "throw", dict(zip(("x","y","z"),crossing), utility=grenade)
+        if not anchor and dist(goal, xyz(latest)) < 40 and dist(pos, xyz(latest)) > 6:
             contact = xyz(latest)
             if space.hit(pos, contact, 1, 64) is None:
                 goal = pos
