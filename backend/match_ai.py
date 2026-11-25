@@ -464,7 +464,11 @@ def act(w, a, allies, bomb, visible_fire):
         return ("objective", None)
     board = plan.get("board")
     recover = side == "T" and bomb and not bomb["carrier"] and not bomb["site"]
-    rescuer = recover and min(alive, key=lambda p: (distance(p, bomb), p["id"])) is a
+    if w.get("space"):
+        assignment = w.get("recovery")
+        rescuer = recover and assignment and assignment["player"] == a["id"]
+    else:
+        rescuer = recover and min(alive, key=lambda p: (distance(p, bomb), p["id"])) is a
     reinforce = side == "CT" and (
         w["phase"] == "planted" or (plan["reinforce"] and slot in (1, 4))
     )

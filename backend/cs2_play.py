@@ -103,6 +103,43 @@ def exit_goal(space, w, a, allies, bomb):
     return space._reachable(position, sorted(safe, key=lambda q: dist(position, q)))
 
 
+def rescue(space, squad, bomb):
+    if bomb["carrier"] or bomb["site"]:
+        bomb.pop("recovery", None)
+        return None
+    goal = list(xyz(bomb))
+    assigned = bomb.get("recovery")
+    if (
+        assigned
+        and assigned["drop"] == goal
+        and any(a["id"] == assigned["player"] for a in squad)
+    ):
+        return assigned
+    # The team knows its dropped C4. Compare accessible routes, including
+    # floors and one-way links, before deciding who leaves cover to fetch it.
+    choices = []
+    for actor in squad:
+        point = space.use_position(actor, bomb, 7)
+        if point is None:
+            continue
+        pos = xyz(actor)
+        path = space.path(
+            actor["navArea"], pos, space.locate(point), point, frozenset()
+        )
+        if path is None:
+            continue
+        length = 0
+        for node in path:
+            length += dist(pos, node[:3])
+            pos = node[:3]
+        choices.append((length, actor["slot"], actor["id"], point))
+    if not choices:
+        return None
+    _, _, who, point = min(choices)
+    bomb["recovery"] = dict(player=who, drop=goal, point=list(point))
+    return bomb["recovery"]
+
+
 def spatial_intent(space, w, a, allies, bomb, fire, travel):
     now, plan = w["tick"], w["plan"]
     side, slot = a["team"], a["slot"]
@@ -140,6 +177,12 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             other = w["action"] and w["action"]["player"] != a["id"]
             if bomb and dist(pos, goal) <= 6 and not other and space.clear(a, bomb):
                 return "defuse", None
+            if bomb and not other and a.get("blockedTicks", 0) >= 5:
+                if a.get("useTarget") != list(goal):
+                    a["useTarget"] = list(goal)
+                    a["useFloor"] = space.use_position(a, bomb, 6)
+            if bomb and a.get("useTarget") == list(goal) and a.get("useFloor"):
+                goal = a["useFloor"]
             if other:
                 goal = (
                     space.holds[site][slot][1]
@@ -156,9 +199,10 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         if (
             bomb
             and not bomb["carrier"]
-            and min(allies, key=lambda p: (dist(xyz(p), xyz(bomb)), p["slot"])) is a
+            and w.get("recovery")
+            and w["recovery"]["player"] == a["id"]
         ):
-            goal = xyz(bomb)
+            goal = w["recovery"]["point"]
             a["status"] = "Подбирает C4"
         else:
             carrier = bomb and bomb["carrier"] == a["id"]

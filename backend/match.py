@@ -219,7 +219,8 @@ def next_round(w):
         slot = a["slot"]
         if space:
             (x,y,z),heading,area = space.spawn(side,slot,(w["seed"]+n) % len(space.spawns[side]))
-            a.update(z=z,navArea=area,waypoint=0,blockedTicks=0,inspectedSites={},routeReports={},lastRouteReport=-100)
+            a.update(z=z,navArea=area,waypoint=0,blockedTicks=0,inspectedSites={},routeReports={},lastRouteReport=-100,
+                     useTarget=None,useFloor=None,checkContact=None,checkPosition=None)
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
@@ -727,6 +728,7 @@ def advance(w):
         if not squad:
             continue
         ai.captain(w, squad, space)
+        recovery = ai.cs2_play.rescue(space, squad, bomb) if space and side == "T" else None
         for a in squad:
             picked = match_inventory.take_nearby(w, a, space)
             if picked:
@@ -772,6 +774,7 @@ def advance(w):
             ]
             observation = dict(
                 space=space,
+                recovery=recovery,
                 tick=now,
                 player=profile(w, a),
                 chemistry=w["domain"]["chemistry"],

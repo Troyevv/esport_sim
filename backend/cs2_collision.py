@@ -50,6 +50,9 @@ class Primitive:
         self.inv = np.linalg.inv(matrix[:3])
         self.translation = matrix[3]
         self.centers = np.array(desc["centers"])
+        delta = self.centers[-1] - self.centers[0]
+        self.length = np.linalg.norm(delta)
+        self.axis = delta / self.length if self.length else delta
         self.radius = desc["radius"]
         centers = self.centers @ matrix[:3] + matrix[3]
         pad = self.radius * np.linalg.norm(matrix[:3], axis=0)
@@ -60,11 +63,9 @@ class Primitive:
     def hit(self, start, delta):
         origin = (start - self.translation) @ self.inv
         ray = delta @ self.inv
-        axis = self.centers[-1] - self.centers[0]
-        length = np.linalg.norm(axis)
+        axis, length = self.axis, self.length
         hits = []
         if length > 0:
-            axis = axis / length
             offset = origin - self.centers[0]
             along, speed = offset @ axis, ray @ axis
             radial, velo = offset - along * axis, ray - speed * axis
@@ -103,6 +104,9 @@ class Bounds:
     def __init__(self, shapes):
         self.lo = np.min([p.lo for p in shapes], axis=0).tolist()
         self.hi = np.max([p.hi for p in shapes], axis=0).tolist()
+        self.mask = 0
+        for shape in shapes:
+            self.mask |= shape.mask
         self.children = []
         self.shapes = shapes
         if len(shapes) > 6:
@@ -112,12 +116,29 @@ class Bounds:
             self.children = [Bounds(ordered[:m]), Bounds(ordered[m:])]
             self.shapes = []
 
-    def candidates(self, lo, hi):
-        if any(b < c or d < a for a, b, c, d in zip(self.lo, self.hi, lo, hi)):
+    def candidates(self, origin, inverse, channel, limit=1.0):
+        if not self.mask & channel:
             return
-        yield from self.shapes
+        near, far = 0.0, limit
+        for x, inv, low, high in zip(origin, inverse, self.lo, self.hi):
+            if inv is None:
+                if not low <= x <= high:
+                    return
+            else:
+                a, b = (low - x) * inv, (high - x) * inv
+                if a > b:
+                    a, b = b, a
+                near, far = max(near, a), min(far, b)
+                if near > far:
+                    return
+        if self.shapes:
+            yield from (p for p in self.shapes if p.mask & channel)
         for child in self.children:
-            yield from child.candidates(lo, hi)
+            yield from child.candidates(origin, inverse, channel, far)
+
+
+def inverse_direction(a, b):
+    return tuple(1.0 / (y - x) if x != y else None for x, y in zip(a, b))
 
 
 class Collision:
@@ -207,11 +228,11 @@ class Collision:
                 )
             else:
                 visible = True
-            if visible and self.bounds:
-                lo, hi = tuple(map(min, a, b)), tuple(map(max, a, b))
+            if visible and self.bounds and face < 0:
+                inverse = inverse_direction(a, b)
                 visible = not any(
-                    p.mask & SIGHT and p.hit(starts[idx], delta[idx]) is not None
-                    for p in self.bounds.candidates(lo, hi)
+                    p.hit(starts[idx], delta[idx]) is not None
+                    for p in self.bounds.candidates(a, inverse, SIGHT)
                 )
             result[(a, b)] = visible
             key = (a, b) if a <= b else (b, a)
@@ -245,13 +266,13 @@ class Collision:
             offset = t + max(1e-6, 0.01 / max(0.01, float(abs(delta).max())))
             current = start + offset * delta
         if self.bounds:
-            lo = tuple(map(min, source, target))
-            hi = tuple(map(max, source, target))
-            for p in self.bounds.candidates(lo, hi):
-                if p.mask & channel:
-                    hit = p.hit(start[0], delta[0])
-                    if hit is not None and (best is None or hit[0] < best[0]):
-                        best = (hit[0], p.material, hit[1])
+            inverse = inverse_direction(source, target)
+            for p in self.bounds.candidates(
+                source, inverse, channel, best[0] if best else 1
+            ):
+                hit = p.hit(start[0], delta[0])
+                if hit is not None and (best is None or hit[0] < best[0]):
+                    best = (hit[0], p.material, hit[1])
         if best is None:
             return None
         if channel != THROW:

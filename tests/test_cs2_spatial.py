@@ -153,3 +153,42 @@ def test_disabled_source_entity_does_not_block_runtime_rays(tmp_path):
     (tmp_path/"collision.json").write_text(json.dumps(data))
     scene=Collision(tmp_path)
     assert scene.trace((1,1,-3),(1,1,3),MOVEMENT) is None
+
+
+def test_guard_selects_a_position_with_sight_of_the_approach():
+    from types import SimpleNamespace
+    from backend.cs2_maps import Map
+
+    anchor = (0, 0, 0)
+    cover = (0, 5, 0)
+    portal = (20, 10, 0)
+    space = SimpleNamespace(
+        ingress=lambda *args: [portal],
+        cover=[(2, cover)],
+        nearby_areas=lambda *args: [1, 2],
+        centers={1: anchor, 2: cover},
+        hit=lambda start, *_: None if start == cover else (0.1, "stone", None),
+        _watch=lambda *_: portal,
+    )
+    assert Map._angles(space, "A", 0, anchor)[0] == (cover, portal)
+
+
+def test_squad_reassigns_dropped_c4_by_accessible_route():
+    from types import SimpleNamespace
+    from backend.cs2_play import rescue
+
+    goal = (7, 1, 0)
+    bomb = dict(x=7, y=1, z=0, carrier=None, site=None)
+    squad = [
+        dict(id=i, slot=i, navArea=i, x=x, y=1, z=0)
+        for i, x in enumerate((8, 2, 0))
+    ]
+    space = SimpleNamespace(
+        use_position=lambda actor, *_: goal if actor["slot"] else None,
+        locate=lambda _: 3,
+        path=lambda *_: [(*goal, 3)],
+    )
+    assert rescue(space, squad, bomb)["player"] == 1
+    assert rescue(space, squad[2:], bomb)["player"] == 2
+    bomb["carrier"] = 2
+    assert rescue(space, squad, bomb) is None and "recovery" not in bomb

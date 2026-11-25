@@ -5,7 +5,7 @@ import os
 import sys
 from functools import cached_property, lru_cache, partial
 from weakref import proxy
-from math import atan2, dist, hypot
+from math import atan2, cos, dist, hypot, sin, tau
 from heapq import heappop, heappush
 from pathlib import Path
 
@@ -160,6 +160,8 @@ class Map:
         self.path = lru_cache(maxsize=4096)(partial(Map._path, proxy(self)))
         self.route = lru_cache(maxsize=8192)(self.nav.route)
         self.approach = lru_cache(maxsize=32)(partial(Map._approach, proxy(self)))
+        self.ingress = lru_cache(maxsize=4)(partial(Map._ingress, proxy(self)))
+        self.angles = lru_cache(maxsize=128)(partial(Map._angles, proxy(self)))
         self.escape = lru_cache(maxsize=16)(partial(Map._escape, proxy(self)))
         self.locate = lru_cache(maxsize=8192)(partial(Map._locate, proxy(self)))
 
@@ -238,6 +240,7 @@ class Map:
                     else self.site_points[site]
                 )
             else:
+                variant = (lane + i // 2) % 2
                 guards = self.profile["guards"][defended]
                 choices = self.places[guards[(i // 2) % len(guards)]]
                 usable = [
@@ -256,7 +259,13 @@ class Map:
                 )
                 plant = self.site_points[defended]
             hold = waypoints[-1] if side == "CT" and waypoints else plant
-            if side == "T" or i == 4:
+            guards_view = {}
+            if side == "CT" and waypoints:
+                options = self.angles(defended, variant, hold)
+                guards_view = dict(options)
+                hold = self._reachable(xyz(player), guards_view) or hold
+                waypoints = [hold]
+            if side == "T":
                 covers = [
                     p
                     for j, p in self.holds[defended]
@@ -316,10 +325,61 @@ class Map:
                     hold=list(hold),
                     plant=list(plant),
                     site=defended,
-                    watch=list(self._watch(defended, hold, variant)),
+                    watch=list(
+                        guards_view.get(hold) or self._watch(defended, hold, variant)
+                    ),
                 )
             )
         return dict(version=1, map=self.name, geometry=BUILD, slots=slots)
+
+    def _ingress(self, site, variant):
+        # A defender knows the map entrances, not the opponents' live route.
+        # Sample navigable approaches behind the final named entry as well as
+        # the approach to the plant, so an anchor can see a crossing in time.
+        _, _, start = self.spawn("T", 0)
+        route = self.approach(site, variant).route(start)
+        samples = []
+        if route:
+            crossings, stages = route
+            entrance = (
+                self.centers[stages[-2]] if len(stages) > 1 else self.site_points[site]
+            )
+            for cross in crossings:
+                p = self.to_sim(cross.enter)
+                if (
+                    dist(p, entrance) < 65 or dist(p, self.site_points[site]) < 55
+                ) and (not samples or dist(p, samples[-1]) >= 6):
+                    samples.append(p)
+        return samples
+
+    def _angles(self, site, variant, anchor):
+        # Rank positions around this player's assigned guard area by what an
+        # observer can actually see. Other levels and props can obscure a label.
+        ingress = self.ingress(site, variant)
+        covers = {p for _, p in self.cover if dist(p, anchor) <= 20}
+        nearby = [self.centers[i] for i in self.nearby_areas(anchor, 15)]
+        positions = sorted(
+            {anchor, *covers, *nearby}, key=lambda p: (dist(p, anchor), p)
+        )
+        ranked = []
+        for pos in positions:
+            visible = [
+                q
+                for q in ingress
+                if 8 <= dist(pos, q) <= 90 and self.hit(pos, q, 1, 64) is None
+            ]
+            watch = visible[0] if visible else self._watch(site, pos, variant)
+            ranked.append(
+                (
+                    not bool(visible),
+                    -min(6, len(visible)),
+                    pos not in covers,
+                    dist(pos, anchor),
+                    pos,
+                    watch,
+                )
+            )
+        return [(pos, watch) for *_, pos, watch in sorted(ranked)]
 
     def _watch(self, site, pos, variant):
         label = self.profile[site][variant][-1]
@@ -570,6 +630,33 @@ class Map:
             ):
                 return point
         return None
+
+    def use_position(self, player, item, radius):
+        origin, goal = xyz(player), xyz(item)
+        if (
+            self.path(player["navArea"], origin, self.locate(goal), goal, frozenset())
+            is not None
+        ):
+            return goal
+        # A dropped item can be on a portal, a ladder, or the other side of
+        # a short ledge. Use requires both reachable floor and line of sight.
+        points = []
+        for step in (radius * 0.85, radius * 0.4):
+            for index in range(12):
+                angle = tau * index / 12
+                x, y = goal[0] + step * cos(angle), goal[1] + step * sin(angle)
+                wx, wy, wz = self.world((x, y, goal[2]))
+                area = self.nav.locate((wx, wy, wz), radius * UNIT)
+                if area is None:
+                    continue
+                z = surface_height(self.nav.areas[area]["corners"], wx, wy)
+                point = x, y, z / UNIT
+                if (
+                    dist(point, goal) <= radius
+                    and self.hit(point, goal, 1, 64, 5) is None
+                ):
+                    points.append(point)
+        return self._reachable(origin, sorted(points, key=lambda q: dist(q, origin)))
 
     def walk(self, a, goal, pace, hazards):
         here = a["navArea"]
