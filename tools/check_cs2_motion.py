@@ -57,11 +57,12 @@ def inspect(name):
                             delta = np.array([q], dtype=np.float32) - np.array(
                                 [p], dtype=np.float32
                             )
-                            face = space.collision.scene.run(
+                            faces, _, _ = space.collision.scene.first_many(
                                 start_world + delta * max(0, hit[0] - 0.0005),
                                 delta,
-                                dists=np.array([0.002], dtype=np.float32),
-                            )[0]
+                                0.002,
+                            )
+                            face = faces[0]
                             block = (
                                 space.collision.blocks[bisect_right(limits, int(face))]
                                 if face >= 0

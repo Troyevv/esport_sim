@@ -19,15 +19,27 @@ def main():
         ("de_nuke", 190, 1, (313.44, 329.70, -32.36), 100),
         ("de_dust2", 1450, 0, (323.29, 146.12, -0.54), 81),
     )
+    failures = []
     for name, tick, slot, point, hp in samples:
         state = match.initial(seed, database.match_input(pack, pair), pair, map_id=name)
+        trace = []
         for _ in range(tick):
             match.advance(state)
+            actor = state["agents"][slot]
+            if state["tick"] % 10 == 0:
+                trace.append([state["tick"], actor["navArea"], actor["status"],
+                              *[round(v, 4) for v in cs2_maps.xyz(actor)], actor["hp"],
+                              actor["dest"], actor["visible"]])
         actor = state["agents"][slot]
         position = cs2_maps.xyz(actor)
         if dist(position, point) > 0.02 or actor["hp"] != hp:
-            raise ValueError(f"{name}, tick={tick}, {actor['id']}: XYZ={position}, HP={actor['hp']}")
+            failures.append(f"{name}, tick={tick}, {actor['id']}: XYZ={position}, HP={actor['hp']}")
+            for snap in trace:
+                print("TRACE", name, json.dumps(snap, ensure_ascii=False))
+            continue
         print(f"{name}: tick {tick}, {actor['id']}, XYZ={point}, HP={hp}")
+    if failures:
+        raise ValueError("\n".join(failures))
 
 
 if __name__ == "__main__":
