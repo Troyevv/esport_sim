@@ -29,7 +29,7 @@ def validate_snapshot(state):
         (2, match.MAP["version"], SCOREBOT_VERSION),
     )
     if world.get("mapId") is not None:
-        if (model[:2] != (2, cs2_maps.BUILD) or model[2] not in (cs2_maps.RULES, cs2_maps.PREVIOUS_RULES)) or world.get("checkpointVersion")!=7 or world["mapId"] not in cs2_maps.NAMES or state.get("version")!=1:
+        if (model[:2] != (2, cs2_maps.BUILD) or model[2] not in cs2_maps.SUPPORTED_RULES) or world.get("checkpointVersion")!=7 or world["mapId"] not in cs2_maps.NAMES or state.get("version")!=1:
             raise Conflict("Несовместимая версия сохранения реальной карты")
         return
     if state.get("version") != 1 or model not in supported:

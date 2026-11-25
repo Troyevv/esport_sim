@@ -11,6 +11,7 @@ def named_stages(data, nav, profile):
     names.update(name for guards in profile["guards"].values() for name in guards)
     names.add(profile["middle"])
     names.update(profile.get("overwatch", ()))
+    names.update(profile.get("probe", {}).values())
     markers = defaultdict(list)
     for place in data["places"]:
         name = place["name"]

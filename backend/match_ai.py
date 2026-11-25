@@ -19,7 +19,7 @@ from .match_rules import (
 )
 
 
-from . import cs2_play
+from . import cs2_intel, cs2_play
 from .cs2_maps import xyz
 
 
@@ -123,18 +123,23 @@ def observe(w, players, space=None):
         }
         if a["blind"] > now:
             continue
-        for b in players:
-            if b["team"] == a["team"] or not ((a["id"],b["id"]) in visible if space else engine.sees(a,b)):
-                continue
-            if any(near_line(a, b, fog, fog["radius"]) for fog in smoke):
-                continue
+        observed = [b for b in players if b["team"] != a["team"]
+                    and ((a["id"], b["id"]) in visible if space else engine.sees(a, b))
+                    and not any(near_line(a, b, fog, fog["radius"]) for fog in smoke)]
+        for b in observed:
             sight = dict(id=b["id"], **at(point(b)), tick=now, source="Зрение")
             prior = a["knowledge"].get(b["id"])
             if prior and b["id"] in previous and prior["tick"] == now - 1:
                 sight["speed"] = distance(prior, sight)
+            if space:
+                nearby = [p for p in observed if distance(p, b) <= 28 and abs(p["z"] - b["z"]) < 8]
+                cs2_intel.observe_contact(sight, b, prior, nearby, "speed" in sight)
             a["visible"].append(b["id"])
             a["knowledge"][b["id"]] = sight
-            if b["id"] not in previous or now % 10 == 0:
+            changed = space and prior and (prior.get("weapon") != sight["weapon"]
+                                              or prior.get("groupSize") != sight["groupSize"]
+                                              or ("direction" in sight and "direction" not in prior))
+            if b["id"] not in previous or now % 10 == 0 or changed:
                 w["messages"].append(
                     dict(
                         team=a["team"],
@@ -182,17 +187,27 @@ def captain(w, squad, space=None):
     contacts = [
         p
         for p in leader["knowledge"].values()
-        if p["source"] != "Слух" and now - p["tick"] <= 74 - s["game_reading"] // 2
+        if p["source"] != "Слух" and now - p["tick"] <= (74 if space else 74 - s["game_reading"] // 2)
     ]
-    counts = {
-        s: sum(distance(at(space.site_points[s] if space else POSITIONS[s][0]), p) < 80 for p in contacts)
-        for s in POSITIONS
-    }
+    if space:
+        counts = cs2_intel.pressure(space, contacts, now)
+    else:
+        counts = {site: sum(distance(at(POSITIONS[site][0]), p) < 80 for p in contacts)
+                  for site in POSITIONS}
+    probe = plan.get("probe")
+    if probe and not probe.get("released") and (contacts or now >= probe.get("reportDue", probe["until"])
+                                                or len(squad) < 4 or now >= probe["until"]):
+        probe["released"] = now
     site = plan["site"]
     obstructed=space and any(s==site and now-t<60 for s,t in leader.get("routeReports",{}).values())
+    if space and leader["team"] == "T" and not plan.get("board") and not plan["rotated"] and w["phase"] == "live":
+        order = plan["orders"]["slots"][leader["slot"]]
+        # With little utility a reported sniper covering our approach can warrant a new route.
+        if not any("Дым" in mate["utility"] for mate in squad) and cs2_intel.sniper_lane(space, contacts, order, now):
+            obstructed = True
     if (
         leader["team"] == "T"
-        and (obstructed or (counts[site] >= (max(2,min(3,len(squad))) if space else 3)
+        and (obstructed or (counts[site] >= (min(2.5, max(1.5, len(squad) - 0.5)) if space else 3)
              and (not space or counts[site] > counts["B" if site=="A" else "A"])))
         and now - plan["start"] >= (100 - s["adaptability"]) // 2
         and not plan["rotated"]
@@ -219,12 +234,6 @@ def captain(w, squad, space=None):
     if leader["team"] == "CT":
         last_report = max((p["tick"] for p in contacts), default=plan["start"])
         if space:
-            # A contact on the upper site must not also count as pressure below it.
-            counts = dict.fromkeys(("A", "B"), 0)
-            for contact in contacts:
-                threatened = space.reported_site(xyz(contact))
-                if threatened:
-                    counts[threatened] += 1
             # Friendly casualties and their last positions are known on the squad radar.
             # A lost site calls for a response without inventing any enemy position.
             if w["phase"] == "live":
@@ -237,10 +246,10 @@ def captain(w, squad, space=None):
                     if lost:
                         counts[site] += len(lost)
                         last_report = max(last_report, max(lost))
-        if counts["A"] != counts["B"] and max(counts.values()) >= 2:
+        if counts["A"] != counts["B"] and max(counts.values()) >= (1.65 if space else 2):
             plan["reinforce"] = max(counts, key=counts.get)
         if space and w["phase"] == "live":
-            if max(counts.values()) >= 2 and counts["A"] != counts["B"]:
+            if max(counts.values()) >= (1.65 if space else 2) and counts["A"] != counts["B"]:
                 plan["reinforceUntil"] = last_report + 75
             elif now > plan.get("reinforceUntil", plan["start"] + 75):
                 plan["reinforce"] = None

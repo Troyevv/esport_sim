@@ -30,7 +30,15 @@
         "House"
       ]
     },
-    "middle": "Middle"
+    "middle": "Middle",
+    "overwatch": [
+      "TopofMid",
+      "Middle"
+    ],
+    "probe": {
+      "A": "MainHall",
+      "B": "Tunnel"
+    }
   },
   "de_anubis": {
     "A": [
@@ -63,7 +71,15 @@
         "Connector"
       ]
     },
-    "middle": "Bridge"
+    "middle": "Bridge",
+    "overwatch": [
+      "MidDoors",
+      "Bridge"
+    ],
+    "probe": {
+      "A": "Canal",
+      "B": "Ruins"
+    }
   },
   "de_cache": {
     "A": [
@@ -109,6 +125,14 @@
           2198
         ]
       }
+    },
+    "overwatch": [
+      "Connector",
+      "Middle"
+    ],
+    "probe": {
+      "A": "AHalls",
+      "B": "BHalls"
     }
   },
   "de_dust2": {
@@ -153,6 +177,14 @@
           70
         ]
       }
+    },
+    "overwatch": [
+      "MidDoors",
+      "Middle"
+    ],
+    "probe": {
+      "A": "OutsideLong",
+      "B": "LowerTunnel"
     }
   },
   "de_inferno": {
@@ -188,7 +220,15 @@
         "Banana"
       ]
     },
-    "middle": "TopofMid"
+    "middle": "TopofMid",
+    "overwatch": [
+      "Arch",
+      "TopofMid"
+    ],
+    "probe": {
+      "A": "SecondMid",
+      "B": "Banana"
+    }
   },
   "de_mirage": {
     "A": [
@@ -222,7 +262,15 @@
         "Truck"
       ]
     },
-    "middle": "Middle"
+    "middle": "Middle",
+    "overwatch": [
+      "SnipersNest",
+      "Middle"
+    ],
+    "probe": {
+      "A": "PalaceAlley",
+      "B": "BackAlley"
+    }
   },
   "de_nuke": {
     "A": [
@@ -258,7 +306,14 @@
       ]
     },
     "middle": "Outside",
-    "overwatch": ["Garage", "Outside"]
+    "overwatch": [
+      "Garage",
+      "Outside"
+    ],
+    "probe": {
+      "A": "Lobby",
+      "B": "Outside"
+    }
   },
   "de_train": {
     "A": [
@@ -290,7 +345,15 @@
         "Connector"
       ]
     },
-    "middle": "Connector"
+    "middle": "Connector",
+    "overwatch": [
+      "Connector",
+      "TMain"
+    ],
+    "probe": {
+      "A": "Alley",
+      "B": "TStairs"
+    }
   },
   "de_vertigo": {
     "A": [
@@ -323,6 +386,14 @@
         "BackofB"
       ]
     },
-    "middle": "Mid"
+    "middle": "Mid",
+    "overwatch": [
+      "TopofMid",
+      "Mid"
+    ],
+    "probe": {
+      "A": "Pit",
+      "B": "TCorridorUp"
+    }
   }
 }

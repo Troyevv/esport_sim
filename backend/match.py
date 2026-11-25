@@ -419,7 +419,10 @@ def begin_live(w):
             reinforce=site if side == "CT" and call in ("Выход A", "Выход B") else None,
         )
         if space:
-            w["plans"][side]["lane"]=lane
+            plan = w["plans"][side]
+            plan["lane"] = lane
+            if side == "T" and not board and style in ("Сбор", "Контроль карты"):
+                plan["probe"] = ai.cs2_play.default_probe(space, squad, w["bomb"]["carrier"], plan, now)
         emit(
             w,
             "plan",
@@ -713,7 +716,7 @@ def objective(w, a, kind, site=None):
 def advance(w):
     if w["phase"] in ("finished", "timeout"):
         return
-    if w["rules"] == cs2_maps.PREVIOUS_RULES:
+    if w["rules"] in cs2_maps.SUPPORTED_RULES[1:]:
         w["rulesTransition"] = dict(previous=w["rules"], tick=w["tick"], lastEvent=w["serial"])
         w["rules"] = cs2_maps.RULES
     # Preserve the initiative and utility ordering after restoring a reordered collection.

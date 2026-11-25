@@ -174,7 +174,7 @@ class CareerStore:
             event["kind"] == "match"
             and report["seed"] == event["seed"]
             and report.get("mapId") == event.get("mapId")
-            and report["rules"] in ((cs2_maps.RULES, cs2_maps.PREVIOUS_RULES) if event.get("mapId") else (match.VERSION,))
+            and report["rules"] in (cs2_maps.SUPPORTED_RULES if event.get("mapId") else (match.VERSION,))
             and report["map"] == (cs2_maps.BUILD if event.get("mapId") else match.MAP["version"])
             and len(report["stats"]) == len(expected)
             and {row["player"]: row["teamId"] for row in report["stats"]} == expected

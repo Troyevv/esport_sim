@@ -41,6 +41,46 @@ def opening(space, w, squad, captain, player, buy, site, style, call):
     return site, style, lane
 
 
+def default_probe(space, squad, carrier, plan, now):
+    """One player takes information on the other approach while the core stages."""
+    other = "B" if plan["site"] == "A" else "A"
+    label = space.profile["probe"][other]
+    choices = [a for a in squad if a["id"] != carrier and a["playingRole"] not in ("entry", "support")]
+    for scout in sorted(choices, key=lambda a: (a["playingRole"] != "lurker", a["slot"])):
+        pos = xyz(scout)
+        candidates = sorted((space.centers[i] for i in space.places[label]), key=lambda p: dist(pos, p))
+        goal = space._reachable(pos, candidates, scout["navArea"])
+        if goal is not None:
+            return dict(scout=scout["id"], goal=list(goal), label=label, until=now+340)
+    return None
+
+
+def probe_intent(space, w, a, allies, goal, watch):
+    plan, now = w["plan"], w["tick"]
+    probe = plan.get("probe")
+    if not probe or probe.get("released") or plan["rotated"] or len(allies) < 4 or now >= probe["until"]:
+        return goal, watch
+    pos = xyz(a)
+    if a["id"] == probe["scout"]:
+        if dist(pos, probe["goal"]) > 5:
+            a["status"] = "Проверяет второй подход"
+            return probe["goal"], space.site_points["B" if plan["site"] == "A" else "A"]
+        if "reportDue" not in probe:
+            # Report reaching the landmark. It does not certify that the lane is empty.
+            probe["reportDue"] = now + 1 + (100 - w["player"]["skills"]["communication"]) // 12
+        a["status"] = "Наблюдает второй подход"
+        return pos, space.site_points["B" if plan["site"] == "A" else "A"]
+    # The core can take its own lane. Stop before the final crossing if the
+    # scout is still working; keep watching the site during the short wait.
+    site = plan["site"]
+    costs = space.site_costs[site]
+    remaining = costs.get(a["navArea"], float("inf")) / UNIT
+    if 20 < remaining < 50 and a["status"].startswith("Выход на "):
+        a["status"] = "Ждёт сведений со второго подхода"
+        return pos, space.site_points[site]
+    return goal, watch
+
+
 def utility_buy(actor, squad, plan, skills):
     """Reserve grenades for the current call and complement teammates' equipment."""
     role = actor["playingRole"]
@@ -663,8 +703,16 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         if cue["peek"] is not None:
             goal, watch = cue["peek"], cue["watch"]
             a["status"] = "Проверяет звук установки"
+    if side == "T" and w["phase"] == "live" and plan.get("probe") and not latest and not w["action"] and bomb and bomb["carrier"]:
+        goal, watch = probe_intent(space, w, a, allies, goal, watch)
+        if a["status"] == "Наблюдает второй подход" and "Ложная" in a["utility"] and now >= a["throwAt"]:
+            other = "B" if site == "A" else "A"
+            points = [p for p in space.ingress(other, plan["lane"]) if 12 < dist(pos, p) < 48]
+            if points:
+                return "throw", dict(zip(("x", "y", "z"), points[0]), utility="Ложная")
     if (
         side == "T"
+        and not plan.get("probe")
         and plan["style"] == "Контроль карты"
         and a["playingRole"] == "lurker"
         and w["phase"] == "live"
