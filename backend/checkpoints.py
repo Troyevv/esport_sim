@@ -123,7 +123,11 @@ def validate_current(world):
             raise CheckpointError("Неизвестная точка маршрута игрока")
     for side, plan in world["plans"].items():
         orders = plan["orders"]
-        if orders != role_orders(side, plan["site"]):
+        if world.get("mapId"):
+            if (orders["map"]!=world["mapId"] or orders["geometry"]!=world["map_version"]
+                    or len(orders["slots"])!=5):
+                raise CheckpointError("Версия карты в тактическом приказе не совпадает")
+        elif orders != role_orders(side, plan["site"]):
             raise CheckpointError("Приказы игроков не соответствуют сохранённому плану")
         if not any(
             p["id"] == plan["captain"] and p["team"] == side for p in world["agents"]

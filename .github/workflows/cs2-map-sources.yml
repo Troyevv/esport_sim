@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'backend/cs2_*.py'
+      - 'backend/match*.py'
+      - tools/check_cs2_matches.py
       - backend/data/maps_202611_tactics.json
       - tests/test_cs2_spatial.py
       - tools/check_cs2_playable_areas.py
@@ -87,3 +89,27 @@ jobs:
           path: build/runtime-maps/
           retention-days: 3
           if-no-files-found: error
+
+  matches:
+    needs: inspect
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        map: [de_ancient, de_anubis, de_cache, de_dust2, de_inferno, de_mirage, de_nuke, de_train, de_vertigo]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: cs2-runtime-26879581
+          path: runtime-data/maps/26879581
+      - run: python -m pip install -r requirements.txt
+      - run: python -m tools.check_cs2_matches --map "${{ matrix.map }}" --games 12 --out build/match-qa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: match-qa-${{ matrix.map }}
+          path: build/match-qa/

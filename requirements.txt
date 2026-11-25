@@ -88,3 +88,4 @@ uvicorn==0.52.1
     # via -r requirements.in
 websockets==16.0
     # via -r requirements.in
+embreex==4.4.0.post1

@@ -5,15 +5,15 @@ from math import atan2, pi, sin
 from . import engine, tactics
 
 
-def execute(a, steps, now, bomb, fire, walk):
+def execute(a, steps, now, bomb, fire, walk, space=None):
     index = a["stepIndex"]
     if index >= len(steps):
         return None
     step = steps[index]
     kind = step["kind"]
-    goal = step["x"], step["y"]
+    goal = tuple(step[k] for k in ("x","y","z") if k in step)
     a["status"] = tactics.LABELS[kind] + f" · точка {index + 1}"
-    if kind in tactics.MOVES and (a["x"], a["y"]) != goal:
+    if kind in tactics.MOVES and tuple(a[k] for k in ("x","y","z") if k in a) != goal:
         if walk(
             a, goal, 2 if kind in ("exit", "retreat") else 1, fire, allow_detour=True
         ):
@@ -34,9 +34,9 @@ def execute(a, steps, now, bomb, fire, walk):
             return ("hold", None)
     a.update(stepIndex=index + 1, stepUntil=None)
     if kind == "plant" and bomb and bomb["carrier"] == a["id"]:
-        return ("plant", tactics.zone_at(*goal))
+        return ("plant", space.site_at(goal) if space else tactics.zone_at(*goal))
     if kind == "throw":
-        if not engine.clear_line(a["x"], a["y"], *goal):
+        if not space and not engine.clear_line(a["x"], a["y"], *goal):
             a["status"] = "Пропускает бросок · путь перекрыт"
             return ("hold", None)
         if step["utility"] in a["utility"]:

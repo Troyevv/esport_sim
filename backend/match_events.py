@@ -143,7 +143,7 @@ def damage(w, shooter, target, amount, weapon, head=False, group=None, armor_los
     for ident in assists:
         stats[ident]["a"] += 1
     if w["bomb"]["carrier"] == target["id"]:
-        w["bomb"].update(carrier=None, x=target["x"], y=target["y"])
+        w["bomb"].update(carrier=None, **{k:target[k] for k in ("x","y","z") if k in target})
         emit(
             w, "drop", f"{target['name']} потерял C4", "T", x=target["x"], y=target["y"]
         )

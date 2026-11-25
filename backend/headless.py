@@ -17,13 +17,14 @@ def main():
     parser.add_argument(
         "--bo1", action="store_true", help="Сыграть полный выставочный BO1 на Депо"
     )
+    parser.add_argument("--map",default="depo",help="Идентификатор установленной карты BO1")
     args = parser.parse_args()
     if args.ticks < 0:
         parser.error("--ticks must be non-negative")
     tracemalloc.start()
     started = time.perf_counter()
     if args.bo1:
-        state = match.initial(args.seed)
+        state = match.initial(args.seed,map_id=args.map)
         while state["phase"] != "finished":
             match.advance(state)
     else:
@@ -43,6 +44,7 @@ def main():
                 ticks=state["tick"],
                 **(
                     {
+                        "map": state.get("mapId","depo"),
                         "rules": state["rules"],
                         "score": state["score"],
                         "events": state["serial"],

@@ -2,7 +2,7 @@
 
 from collections import deque
 from functools import lru_cache
-from math import atan2, ceil, hypot, pi, sin
+from math import cos, dist, atan2, ceil, hypot, pi, sin
 
 from . import engine, match_inventory, tactic_execution, world
 from . import match_performance as perf
@@ -19,23 +19,47 @@ from .match_rules import (
 )
 
 
+from . import cs2_play
+from .cs2_maps import xyz
+
+
+def point(a):
+    return xyz(a) if "z" in a else (a["x"], a["y"])
+
+
+def clear(space, a, b):
+    return space.clear(a,b) if space else engine.clear_line(a["x"],a["y"],b["x"],b["y"])
+
+
+def sees(space,a,b):
+    if not space:
+        return engine.sees(a,b)
+    dx,dy=b["x"]-a["x"],b["y"]-a["y"]
+    d2=dx*dx+dy*dy
+    dot=dx*cos(a["heading"])+dy*sin(a["heading"])
+    return dot>=0 and 4*dot*dot >= d2 and space.clear(a,b)
+
+
 def distance(a, b):
+    if "z" in a and "z" in b:
+        return dist(xyz(a),xyz(b))
     return hypot(a["x"] - b["x"], a["y"] - b["y"])
 
 
 def at(xy):
-    return dict(x=xy[0], y=xy[1])
+    return dict(zip(("x","y","z"),xy))
 
 
 def near_line(a, b, p, radius):
     dx, dy = b["x"] - a["x"], b["y"] - a["y"]
-    length = dx * dx + dy * dy
+    dz = b.get("z",0)-a.get("z",0)
+    length = dx * dx + dy * dy + dz*dz
     ratio = (
-        max(0, min(1, ((p["x"] - a["x"]) * dx + (p["y"] - a["y"]) * dy) / length))
+        max(0, min(1, ((p["x"] - a["x"]) * dx + (p["y"] - a["y"]) * dy + (p.get("z",0)-a.get("z",0))*dz) / length))
         if length
         else 0
     )
-    return hypot(a["x"] + ratio * dx - p["x"], a["y"] + ratio * dy - p["y"]) <= radius
+    return hypot(a["x"] + ratio * dx - p["x"], a["y"] + ratio * dy - p["y"], a.get("z",0)+ratio*dz-p.get("z",0)) <= radius
 
 
 @lru_cache(maxsize=256)
@@ -47,11 +71,21 @@ def audible_sector(col, row):
     return at(engine._center(floor))
 
 
+def sound_position(space, source):
+    if space:
+        # Report a NAV sector, keeping the floor and discarding exact enemy XY.
+        i=space.locate(xyz(source))
+        if i is not None:
+            return at(space.centers[i])
+        return at(tuple(round(v/8)*8 for v in xyz(source)))
+    return audible_sector(source["x"]//30,source["y"]//30)
+
+
 def radio_delay(skills):
     return 1 + (100 - skills["communication"]) // 12
 
 
-def observe(w, players):
+def observe(w, players, space=None):
     now = w["tick"]
     for message in w["messages"][:]:
         if message["due"] > now:
@@ -77,11 +111,11 @@ def observe(w, players):
         if a["blind"] > now:
             continue
         for b in players:
-            if b["team"] == a["team"] or not engine.sees(a, b):
+            if b["team"] == a["team"] or not sees(space,a,b):
                 continue
             if any(near_line(a, b, fog, fog["radius"]) for fog in smoke):
                 continue
-            sight = dict(id=b["id"], x=b["x"], y=b["y"], tick=now, source="Зрение")
+            sight = dict(id=b["id"], **at(point(b)), tick=now, source="Зрение")
             prior = a["knowledge"].get(b["id"])
             if prior and b["id"] in previous and prior["tick"] == now - 1:
                 sight["speed"] = distance(prior, sight)
@@ -114,7 +148,7 @@ def observe(w, players):
                 )
 
 
-def captain(w, squad):
+def captain(w, squad, space=None):
     leader = min(squad, key=lambda a: (not a["appointed"], a["slot"]))
     plan = w["plans"][leader["team"]]
     now = w["tick"]
@@ -138,20 +172,27 @@ def captain(w, squad):
         if p["source"] != "Слух" and now - p["tick"] <= 74 - s["game_reading"] // 2
     ]
     counts = {
-        s: sum(distance(at(POSITIONS[s][0]), p) < 80 for p in contacts)
+        s: sum(distance(at(space.site_points[s] if space else POSITIONS[s][0]), p) < 80 for p in contacts)
         for s in POSITIONS
     }
     site = plan["site"]
     if (
         leader["team"] == "T"
-        and counts[site] >= 3
+        and counts[site] >= (max(2,min(3,len(squad))) if space else 3)
+        and (not space or counts[site] > counts["B" if site=="A" else "A"])
         and now - plan["start"] >= (100 - s["adaptability"]) // 2
         and not plan["rotated"]
         and w["deadline"] - now > 250
         and w["phase"] == "live"
     ):
         plan.update(site="B" if site == "A" else "A", rotated=True)
-        plan["orders"] = role_orders("T", plan["site"])
+        if space:
+            members = [a for a in w["agents"] if a["team"]=="T"]
+            plan["orders"] = space.orders("T",plan["site"],members,1-plan["lane"])
+            for a in squad:
+                a["waypoint"]=0
+        else:
+            plan["orders"] = role_orders("T", plan["site"])
         emit(
             w,
             "rotate",
@@ -262,6 +303,8 @@ def escape_routes(x, y):
 
 def postplant_exit(w, a, allies, bomb):
     """Only public fuse, own inventory, allied radio and recent observations."""
+    if w.get("space"):
+        return cs2_play.exit_goal(w["space"],w,a,allies,bomb)
     site = (bomb and bomb["site"]) or a["heardSite"] or w["plan"]["reinforce"]
     if not site:
         return None
@@ -312,6 +355,8 @@ def act(w, a, allies, bomb, visible_fire):
     side, slot = a["team"], a["slot"]
 
     def travel(agent, goal, pace, fire, **options):
+        if w.get("space"):
+            return w["space"].walk(agent,goal,pace*perf.move_speed(player),fire)
         return walk(agent, goal, pace * perf.move_speed(player), fire, **options)
 
     site = plan["site"]
@@ -324,7 +369,7 @@ def act(w, a, allies, bomb, visible_fire):
             for mate in allies
             if mate is not a
             and distance(a, mate) < 25
-            and engine.clear_line(a["x"], a["y"], mate["x"], mate["y"])
+            and clear(w.get("space"),a,mate)
         }
         contact = min(
             visible,
@@ -419,7 +464,7 @@ def act(w, a, allies, bomb, visible_fire):
         pair = w["chemistry"].get(world.pair_key(a["playerId"], partner["playerId"]), 0)
         if distance(a, partner) > 75 - s["support"] * 0.45 - pair * 0.15:
             a["status"] = "К капитану после потери союзника"
-            moved = travel(a, (partner["x"], partner["y"]), 2, visible_fire)
+            moved = travel(a, point(partner), 2, visible_fire)
             return ("move" if moved else "hold", None)
     if (
         board
@@ -433,7 +478,7 @@ def act(w, a, allies, bomb, visible_fire):
             return ("hold", None)
         before = a["stepIndex"]
         intent = tactic_execution.execute(
-            a, board["slots"][slot], now, bomb, visible_fire, travel
+            a, board["slots"][slot], now, bomb, visible_fire, travel, w.get("space")
         )
         if a["stepIndex"] != before:
             mastery = player["roleMastery"].get(a["playingRole"], 0)
@@ -442,6 +487,8 @@ def act(w, a, allies, bomb, visible_fire):
             )
         if intent:
             return intent
+    if w.get("space"):
+        return cs2_play.spatial_intent(w["space"],w,a,allies,bomb,visible_fire,travel)
     if w["phase"] == "planted":
         if side == "CT":
             site = (
@@ -539,7 +586,7 @@ def act(w, a, allies, bomb, visible_fire):
     return ("hold", None)
 
 
-def shoot(w, a, sight, b):
+def shoot(w, a, sight, b, space=None):
     """Commit the shot toward the observed point, then resolve the collision."""
 
     spec = WEAPONS[a["weapon"]]
@@ -574,8 +621,22 @@ def shoot(w, a, sight, b):
     intersects = (
         b["hp"]
         and near_line(a, sight, b, 3)
-        and engine.clear_line(a["x"], a["y"], b["x"], b["y"])
+        and (space or engine.clear_line(a["x"], a["y"], b["x"], b["y"]))
     )
+    transmission=1.
+    if space and intersects:
+        hit=space.hit(xyz(a),xyz(b),4,56)
+        if hit:
+            # Game material classes and weapon stats only. A stale observed
+            # target can also move behind an opaque wall before this tick resolves.
+            t,material=hit
+            if material not in ("wood","wood_panel","glass","cardboard","plastic","metalgrate"):
+                return
+            reverse=space.hit(xyz(b),xyz(a),4,56)
+            thickness=max(0,1-t-reverse[0])*dist if reverse else dist
+            transmission=max(0.,spec.penetration - thickness/(4 if "wood" in material else 6))
+            if not transmission:
+                return
     for _ in range(spec.pellets):
         if (engine._draw(a) >> 16) % 100 >= accuracy or not intersects or not b["hp"]:
             continue
@@ -589,10 +650,10 @@ def shoot(w, a, sight, b):
                 else "stomach" if location < 78 else "arm" if location < 89 else "leg"
             )
         )
-        impact(w, a, b, spec.damage * spec.falloff ** (dist / 100), a["weapon"], group)
+        impact(w, a, b, transmission * spec.damage * spec.falloff ** (dist / 100), a["weapon"], group)
 
 
-def throw(w, a, target):
+def throw(w, a, target, space=None):
     name = target.get("utility") or a["utility"][0]
     a["utility"].remove(name)
     now = w["tick"]
@@ -600,7 +661,20 @@ def throw(w, a, target):
     flight = max(3, round(distance(a, target) / 7))
     mastery = world.match_player(w, a)["skills"][perf.GRENADE_SKILL[name]]
     x, y = perf.grenade_landing(a, target, mastery, engine._draw(a) >> 16)
-    if not engine.clear_line(a["x"], a["y"], x, y):
+    if space:
+        z=target["z"]
+        previous=(a["x"],a["y"],a["z"]+4)
+        for step in range(1,flight+1):
+            t=step/flight
+            nxt=(a["x"]+(x-a["x"])*t,a["y"]+(y-a["y"])*t,
+                 (a["z"]+4)*(1-t)+(z+0.2)*t+min(18,flight)*4*t*(1-t))
+            hit=space.hit(previous,nxt,8)
+            if hit:
+                x,y,z=(p+(q-p)*max(0,hit[0]-.005) for p,q in zip(previous,nxt))
+                flight=step
+                break
+            previous=nxt
+    elif not engine.clear_line(a["x"], a["y"], x, y):
         x, y = a["x"], a["y"]
     effect = dict(
         kind=name,
@@ -615,6 +689,8 @@ def throw(w, a, target):
         end=now + flight + duration,
         radius=radius,
     )
+    if space:
+        effect.update(z=z,sz=a["z"])
     w["effects"].append(effect)
     w["recentEffects"].append(effect)
     emit(
@@ -628,7 +704,7 @@ def throw(w, a, target):
     a.update(throwAt=now + 45, ready=now + 5, status="Бросает гранату")
 
 
-def apply_effects(w, ids):
+def apply_effects(w, ids, space=None):
     now = w["tick"]
     w["recentEffects"] = [f for f in w["recentEffects"] if f["end"] + 42 > now]
     w["effects"] = [f for f in w["effects"] if f["end"] > now]
@@ -637,7 +713,7 @@ def apply_effects(w, ids):
             continue
         if f["kind"] == "Ложная":
             if (now - f["land"]) % 10 == 0:
-                sector = audible_sector(f["x"] // 30, f["y"] // 30)
+                sector = sound_position(space,f)
                 for a in ids.values():
                     if (
                         a["hp"]
@@ -655,7 +731,7 @@ def apply_effects(w, ids):
             if (
                 not a["hp"]
                 or dist > f["radius"]
-                or not engine.clear_line(f["x"], f["y"], a["x"], a["y"])
+                or not clear(space,f,a)
             ):
                 continue
             if f["kind"] == "Свет":
