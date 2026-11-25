@@ -164,6 +164,7 @@ class Map:
         self.angles = lru_cache(maxsize=128)(partial(Map._angles, proxy(self)))
         self.escape = lru_cache(maxsize=16)(partial(Map._escape, proxy(self)))
         self.locate = lru_cache(maxsize=8192)(partial(Map._locate, proxy(self)))
+        self.use_floors = lru_cache(maxsize=256)(partial(Map._use_floors, proxy(self)))
 
     @cached_property
     def collision(self):
@@ -647,8 +648,12 @@ class Map:
             and self.hit(goal, goal, 1, 64, 5) is None
         ):
             return goal
-        # A dropped item can be on a portal, a ladder, or the other side of
-        # a short ledge. Use requires both reachable floor and line of sight.
+        points = sorted(self.use_floors(goal, radius), key=lambda q: dist(q, origin))
+        return self._reachable(origin, points, player["navArea"])
+
+    def _use_floors(self, goal, radius):
+        # The usable surfaces and their sight of a stationary item are static.
+        # Accessibility and preference still depend on the player's current position.
         points = []
         for step in (radius * 0.85, radius * 0.4):
             for index in range(12):
@@ -665,7 +670,7 @@ class Map:
                     and self.hit(point, goal, 1, 64, 5) is None
                 ):
                     points.append(point)
-        return self._reachable(origin, sorted(points, key=lambda q: dist(q, origin)), player["navArea"])
+        return tuple(points)
 
     def walk(self, a, goal, pace, hazards):
         here = a["navArea"]
