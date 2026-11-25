@@ -50,7 +50,7 @@ jobs:
           python -m pip install -r requirements-package.txt
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           $env:ESPORT_SIM_MAPS = (Resolve-Path build/runtime-maps).Path
-          python -m tools.check_cs2_replay
+          python -X utf8 -m tools.check_cs2_replay
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python tools/package_windows.py
       - uses: actions/upload-artifact@v7
