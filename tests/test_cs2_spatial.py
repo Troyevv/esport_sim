@@ -250,7 +250,7 @@ def test_retaker_checks_obscured_plant_surfaces_after_hearing_the_beep():
         site_points={"B": center}, plants={"B": [1, 2]},
         centers={1: center, 2: behind_cover},
         hit=lambda a,b,*_: None if b == center else (0.5, "crate", None),
-        _reachable=lambda _, points: next(iter(points), None),
+        _reachable=lambda _, points, area=None: next(iter(points), None),
     )
     assert search_site(space, actor, "B", 100) == behind_cover
     assert actor["bombSearch"]["seen"] == [1]
@@ -345,3 +345,32 @@ def test_coplanar_playerclip_cannot_hide_a_solid_wall(tmp_path):
         for mask in (SIGHT, MOVEMENT):
             assert scene.trace(above, below, mask)[0] == 0.5
         assert not any(scene.sight_many([(above, below), (below, above)]).values())
+
+
+def test_retaker_leaves_checked_but_occluded_floor_and_respects_partner():
+    from types import SimpleNamespace
+    from backend.cs2_play import search_site
+
+    here, nearby, other = (0, 0, 0), (10, 0, 0), (0, 14, 0)
+    actor = dict(x=0, y=0, z=0, slot=2, navArea=1, bombSearch=dict(
+        site="A", seen=[], goal=list(here), area=1, next=0))
+    mate = dict(x=4, y=0, z=0, bombSearch=dict(site="A", seen=[], goal=list(nearby)))
+    space = SimpleNamespace(site_points={"A": here}, plants={"A": [1, 2, 3]},
+        centers={1: here, 2: nearby, 3: other}, hit=lambda *args: (0.5, "crate", None),
+        _reachable=lambda pos, points, area: next(iter(points)))
+    assert search_site(space, actor, "A", 100, [actor, mate]) == other
+    assert actor["bombSearch"]["visited"] == [1]
+
+
+def test_beep_shares_only_a_sector_and_obeys_its_interval():
+    from backend.cs2_play import hear_device, outside_bearing
+
+    actor = dict(x=10, y=10, z=0)
+    hear_device(actor, dict(x=20, y=10, z=0), 10)
+    other = dict(x=10, y=10, z=0)
+    hear_device(other, dict(x=52, y=13, z=8), 10)
+    assert actor["beepBearing"] == other["beepBearing"]
+    assert outside_bearing((0, 12, 9), actor["beepBearing"])
+    assert not outside_bearing((30, 12, 9), actor["beepBearing"])
+    hear_device(other, dict(x=0, y=1, z=8), 11)
+    assert other["beepBearing"] == actor["beepBearing"]

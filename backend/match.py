@@ -222,7 +222,8 @@ def next_round(w):
             a.update(z=z,navArea=area,waypoint=0,blockedTicks=0,inspectedSites={},routeReports={},lastRouteReport=-100,
                      useTarget=None,useFloor=None,checkContact=None,checkPosition=None,
                      shelter=None,coverUntil=0,coverReview=0,bombSearch=None,coveredDefuser=None,coverPoint=None,revisedApproach=None,
-                     rendezvous=None,plantCover=None,watchDevice=None,heardUse=-1000)
+                     rendezvous=None,plantCover=None,watchDevice=None,heardUse=-1000,
+                     seenDevice=None,beepBearing=None)
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
@@ -749,7 +750,7 @@ def advance(w):
                     weapon=picked["weapon"],
                     dropId=picked["id"],
                 )
-            known_bomb = bomb if side == "T" else None
+            known_bomb = bomb if side == "T" else a.get("seenDevice")
             if side == "CT" and bomb["site"] and ai.distance(a, bomb) < 72:
                 if not a["heardSite"]:
                     a["heardSite"] = bomb["site"]
@@ -761,8 +762,22 @@ def advance(w):
                             due=now + ai.radio_delay(profile(w, a)["skills"]),
                         )
                     )
-                if ai.distance(a, bomb) < 30 and ai.clear(space,a,bomb):
-                    known_bomb = bomb
+                if space:
+                    ai.cs2_play.hear_device(a, bomb, now)
+                if (known_bomb is None and ai.distance(a, bomb) < 30 and ai.clear(space, a, bomb)):
+                    if space is None:
+                        known_bomb = bomb
+                    elif a["blind"] <= now and not any(
+                        fog["kind"] == "Дым" and fog["land"] <= now < fog["end"]
+                        and ai.near_line(a, bomb, fog, fog["radius"])
+                        for fog in w["effects"]
+                    ):
+                        known_bomb = {k: bomb[k] for k in ("x", "y", "z", "site", "carrier")}
+                        a["seenDevice"] = known_bomb
+                        w["messages"].append(dict(
+                            team=side, sender=a["id"], device=known_bomb,
+                            due=now + ai.radio_delay(profile(w, a)["skills"]),
+                        ))
             if (
                 side == "T"
                 and not bomb["carrier"]

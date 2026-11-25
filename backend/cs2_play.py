@@ -1,6 +1,6 @@
 """Map-dependent choices for the shared BO1 agents, using squad observations."""
 
-from math import atan2, dist, sin
+from math import atan2, dist, sin, tau
 from .cs2_maps import UNIT, xyz
 from . import match_performance as perf
 from .match_rules import RULES, equipment_value
@@ -235,21 +235,38 @@ def exit_goal(space, w, a, allies, bomb):
     else:
         if w["action"]:
             return
-        to = space.locate(pos)
-        path = space.route(area, to)
+        # A device on the far lip of a one-way NAV edge can be used from
+        # an adjacent surface. Estimate the walk to that usable floor.
+        origin = xyz(a)
+        use_ticks = RULES["kitDefuse"] if a["kit"] else RULES["defuse"]
+        if bomb and dist(origin, pos) <= 6 and space.clear(a, bomb) and remaining > use_ticks:
+            return
+        if bomb:
+            if a.get("useTarget") != list(pos) or a.get("blockedTicks", 0) >= 5:
+                a["useFloor"] = space.use_position(a, bomb, 6)
+                a["useTarget"] = list(pos)
+            floor = a.get("useFloor")
+        else:
+            search = a.get("bombSearch") or {}
+            floor = search.get("goal") or pos
+        path = None
         length = 0.0
-        prev = xyz(a)
-        if path is not None:
-            for cross in path:
-                exit, entry = space.to_sim(cross.leave), space.to_sim(cross.enter)
-                length += dist(prev, exit) + dist(exit, entry)
-                prev = entry
-            length += dist(prev, pos)
+        if floor:
+            goal = tuple(floor)
+            if a["path"] and tuple(a["path"][-1][:3]) == goal:
+                path = a["path"]
+            else:
+                path = space.path(area, origin, space.locate(goal), goal, frozenset())
+            prev = origin
+            for node in path or ():
+                point = node[:3]
+                length += dist(prev, point)
+                prev = point
         if (
             path is not None
             and remaining
             > max(0, length - 6) / speed
-            + (RULES["kitDefuse"] if a["kit"] else RULES["defuse"])
+            + use_ticks
             + max(0, threats - len(allies) + 1) * 8
         ):
             return
@@ -364,19 +381,40 @@ def plant_guard(space, actor, allies, bomb, order, direct, check):
     return actor["plantCover"]
 
 
-def search_site(space, actor, site, now):
+def hear_device(actor, device, tick):
+    # A beep gives a listener a coarse bearing. It carries neither range
+    # nor the height or exact coordinates of a plant behind an obstacle.
+    if tick % 10 == 0:
+        dx, dy = device["x"] - actor["x"], device["y"] - actor["y"]
+        sector = round(atan2(dy, dx) * 8 / tau) % 8
+        directions = ((1, 0), (1, 1), (0, 1), (-1, 1),
+                      (-1, 0), (-1, -1), (0, -1), (1, -1))
+        actor["beepBearing"] = [actor["x"], actor["y"], *directions[sector]]
+
+
+def outside_bearing(point, cue):
+    if not cue:
+        return False
+    x, y, dx, dy = cue
+    vx, vy = point[0] - x, point[1] - y
+    return vx * dx + vy * dy < abs(vx * dy - vy * dx)
+
+
+def search_site(space, actor, site, now, allies=()):
     # A beep identifies the site, but a crate or raised platform can hide
     # the device from the site's centre. Clear the actual plant surfaces.
     pos = xyz(actor)
     center = space.site_points[site]
+    cue = actor.get("beepBearing")
     state = actor.get("bombSearch")
     if not state or state["site"] != site:
-        if dist(pos, center) > 25 and actor.get("blockedTicks", 0) < 5:
+        if not cue and dist(pos, center) > 25 and actor.get("blockedTicks", 0) < 5:
             return center
         state = actor["bombSearch"] = dict(site=site, seen=[], goal=None, next=0)
     if (
         state["goal"]
         and dist(pos, state["goal"]) > 2
+        and (now < state["next"] or not outside_bearing(state["goal"], cue))
         and actor.get("blockedTicks", 0) < 5
     ):
         return state["goal"]
@@ -389,18 +427,43 @@ def search_site(space, actor, site, now):
         p = space.centers[i]
         if i not in seen and dist(pos, p) < 26 and space.hit(pos, p, 1, 64, 5) is None:
             seen.add(i)
-    unsearched = [i for i in candidates if i not in seen]
+    visited = set(state.get("visited", []))
+    if state["goal"] and dist(pos, state["goal"]) <= 2 and state.get("area") is not None:
+        # Standing at an obstructed polygon centre is a completed visit even
+        # when a crate prevents the eye-to-floor ray from clearing that centre.
+        visited.add(state["area"])
+    reserved = []
+    for mate in allies:
+        report = mate.get("bombSearch")
+        if mate is actor or not report or report["site"] != site or dist(pos, xyz(mate)) > 20:
+            continue
+        if report.get("sweep", 0) == state.get("sweep", 0):
+            seen.update(report["seen"])
+            visited.update(report.get("visited", []))
+        if report["goal"]:
+            reserved.append(report["goal"])
+    unsearched = [i for i in candidates if i not in seen and i not in visited]
     if not unsearched:
-        # The centre of each polygon is only one sample of a legal plant.
-        # Inspect it from a different position as the retake develops.
+        # After a full sweep inspect the site from a different part of each
+        # polygon. A hidden plant need not coincide with the polygon centre.
+        sweep = state.get("sweep", 0) + 1
+        state["sweep"] = sweep
         seen.clear()
-        unsearched = sorted(candidates)
-        offset = (actor["slot"] + now // 8) % len(unsearched)
-        unsearched = unsearched[offset:] + unsearched[:offset]
-    else:
-        unsearched.sort(key=lambda i: (dist(pos, space.centers[i]), i))
-    state["seen"] = sorted(seen)
-    goal = space._reachable(pos, (space.centers[i] for i in unsearched))
+        visited.clear()
+        unsearched = list(candidates)
+    points = {}
+    for i in unsearched:
+        point = space.centers[i]
+        if state.get("sweep"):
+            corners = space.nav.areas[i]["corners"]
+            corner = space.to_sim(corners[(actor["slot"] + state["sweep"]) % len(corners)])
+            point = tuple((v + c) / 2 for v, c in zip(point, corner))
+        points[point] = i
+    choices = sorted(points, key=lambda p: (outside_bearing(p, cue),
+                                             any(dist(p, g) < 7 for g in reserved), dist(pos, p), p))
+    state["seen"], state["visited"] = sorted(seen), sorted(visited)
+    goal = space._reachable(pos, choices, actor.get("navArea"))
+    state["area"] = points.get(goal)
     state["goal"] = list(goal) if goal else None
     return goal or center
 
@@ -442,7 +505,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             if bomb:
                 goal = xyz(bomb)
             elif a["heardSite"]:
-                goal = search_site(space, a, site, now)
+                goal = search_site(space, a, site, now, allies)
             else:
                 goal = space.site_points[site]
             other = w["action"] and w["action"]["player"] != a["id"]

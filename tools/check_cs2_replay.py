@@ -1,4 +1,4 @@
-"""Check four observed cross-CPU divergences on the same dated teams and map inputs."""
+"""Replay four cross-CPU checkpoints and an observed Train retake with a hidden plant."""
 
 import gzip
 import json
@@ -38,6 +38,13 @@ def main():
                 print("TRACE", name, json.dumps(snap, ensure_ascii=False))
             continue
         print(f"{name}: tick {tick}, {actor['id']}, XYZ={point}, HP={hp}")
+    train = match.initial(seed, database.match_input(pack, pair), pair, map_id="de_train")
+    while not train["history"] and train["tick"] < 1400:
+        match.advance(train)
+    if not train["history"] or train["history"][0]["reason"] != "Обезвреживание":
+        failures.append("Train: защита не завершила ретейк из воспроизводимого эпизода")
+    else:
+        print("de_train: доступная позиция для разминирования, первый раунд выиграла защита")
     if failures:
         raise ValueError("\n".join(failures))
 

@@ -98,6 +98,10 @@ def observe(w, players, space=None):
                 if "blockedSite" in message:
                     a.setdefault("routeReports",{})[message["sender"]]=[message["blockedSite"],now]
                     continue
+                if "device" in message:
+                    a["seenDevice"] = message["device"]
+                    a["heardSite"] = message["device"]["site"]
+                    continue
                 if "site" in message:
                     a["heardSite"] = message["site"]
                     continue
