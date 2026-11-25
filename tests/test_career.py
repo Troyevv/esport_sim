@@ -203,3 +203,31 @@ def test_background_opponents_rotate_over_the_cycle():
         assert len({t for e in games for t in e["teams"]}) == len(c["teams"])
         encountered.update(tuple(sorted(e["teams"])) for e in games)
     assert encountered == set(combinations(sorted(c["teams"]), 2))
+
+
+def test_career_scene_contains_public_links_without_private_ratings(tmp_path):
+    from backend.career_scene import directory
+
+    store = Store(tmp_path / "scene.sqlite")
+    try:
+        start(store)
+        state = store.read()
+        pack = store.careers.pack(state["career"]["source"])
+        result = directory(pack, store.badges.index(pack), store.portraits)
+        own = state["career"]["team"]
+        for player_id in result["teams"][own]["members"]:
+            player = result["players"][player_id]
+            assert own in player["teams"]
+            assert set(player).isdisjoint({"potential", "skills", "mapKnowledge", "roleMastery", "ratings"})
+        for staff in result["staff"].values():
+            assert "preparation" not in staff
+        active = store.careers.detail(state)["active"]
+        assert all(skills.HIDDEN.isdisjoint(p["skills"]) for p in active["roster"])
+        assert 0 <= active["teamRating"] <= 100
+        # A prior registration does not give a free agent a current team or kit.
+        pid = result["teams"][own]["members"][0]
+        pack["players"][pid]["contract"] = "free"
+        free_agent = directory(pack, {}, store.portraits)["players"][pid]
+        assert free_agent["teams"] == [] and "kit" not in free_agent["visual"]
+    finally:
+        store.db.close()

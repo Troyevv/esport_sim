@@ -28,7 +28,9 @@ test("полный BO1, колл, сохранение и итог матча", 
   await expect(page.locator(".scoreboard")).toContainText("РАУНД 1");
   await expect(page.getByTestId("radar")).toHaveAttribute("data-ready", "true");
   await expect(page.locator(".lineups")).toContainText(/Север.*OVR/s);
+  if (await page.locator(".touch-lineup").isVisible()) await press("Север");
   await page.getByRole("button", { name: /Sable/ }).click();
+  if (await page.locator(".touch-lineup").isVisible()) await press("Радар");
   await expect(page.locator(".role-ratings")).toContainText(/Рифлер.*Снайпер.*Капитан/);
   await page.screenshot({ path: info.outputPath("r31-ratings.png"), fullPage: true });
   if (hasTouch) {

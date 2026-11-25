@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
-from . import career, tactic_library, tactic_preview, tactics
+from . import career, career_scene, tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
@@ -285,6 +285,15 @@ def create_app(
         store = app.state.store
         return store.careers.detail(store.read())
 
+    @app.get("/api/career/{career_id}/scene")
+    async def scene_directory(career_id: str):
+        store = app.state.store
+        active = store.read().get("career")
+        if not active or active["id"] != career_id:
+            raise HTTPException(404, "Карьера уже сменилась")
+        pack = store.careers.pack(active["source"])
+        return career_scene.directory(pack, store.badges.index(pack), store.portraits)
+
     @app.get("/api/career/options/{key}/{revision}")
     async def career_options(key: str, revision: int):
         try:
@@ -303,7 +312,15 @@ def create_app(
 
     @app.get("/api/tactics")
     async def library():
-        return tactic_library.catalog(app.state.store.db)
+        store = app.state.store
+        result = tactic_library.catalog(store.db)
+        state = store.read()
+        c = state.get("career")
+        if c:
+            pack = store.careers.pack(c["source"])
+            ids = pack["rosters"][c["teams"][c["team"]]]["players"]
+            result["players"] = [pack["players"][pid]["name"] for pid in ids]
+        return result
 
     @app.get("/api/tactics/proposal")
     async def proposal(side: Literal["T", "CT"], buy: str):

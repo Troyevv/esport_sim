@@ -234,6 +234,7 @@ export default function MatchCenter({
   const world = frame.world,
     m = world.match!;
   const [tab, setTab] = useState<(typeof tabs)[number]>("Статистика");
+  const [pane, setPane] = useState(0);
   const [selected, select] = useState<string | null>(null);
   const [seed, setSeed] = useState(String(world.seed));
   const [nextCall, setNextCall] = useState(m.calls[0]);
@@ -275,9 +276,7 @@ export default function MatchCenter({
       <header className="match-title">
         <div>
           <span className="eyebrow">МАТЧ-ЦЕНТР</span>
-          <h1>
-            Депо <small>/ BO1</small>
-          </h1>
+          <h1>{m.clubs.map((c) => c.name).join(" — ")}</h1>
         </div>
         <button onClick={openBoard}>Редактор тактик</button>
         <span
@@ -292,6 +291,10 @@ export default function MatchCenter({
             : "Тестовые составы"}
         </span>
       </header>
+      <div className="match-meta-strip">
+        <span>{world.map.name} · BO1</span>
+        <span>{phases[m.phase]}</span>
+      </div>
       <section className="scoreboard" aria-label="Счёт матча">
         {m.clubs.map((club, i) => (
           <div
@@ -329,28 +332,50 @@ export default function MatchCenter({
           Победитель матча — <strong>{clubName(m.winnerTeamId!)}</strong>
         </p>
       )}
-      <section className="hud-controls" aria-label="Управление просмотром">
-        <button
-          className="primary"
-          disabled={!enabled || finished || timeout}
-          onClick={() => act(frame.running ? "pause" : "start")}
-        >
-          {frame.running ? "Пауза просмотра" : "Запустить"}
-        </button>
-        <div className="speed-list">
-          {[1, 2, 4, 8, 128].map((n) => (
+      {rounds > 0 && (
+        <div className="hud-history" aria-label="Последние раунды">
+          <strong>Раунды</strong>
+          {m.history.slice(-12).map((r) => (
             <button
-              key={n}
-              disabled={!enabled}
-              aria-pressed={frame.speed === n}
-              onClick={() => act("speed", n)}
+              data-side={r.side}
+              key={r.round}
+              onClick={() => {
+                setTab("Раунды");
+                document
+                  .querySelector(".match-data")
+                  ?.scrollIntoView({ block: "start" });
+              }}
+              title={clubName(r.winnerTeamId) + " · " + r.reason}
+              aria-label={
+                "Раунд " +
+                r.round +
+                " · " +
+                clubName(r.winnerTeamId) +
+                " · " +
+                r.reason
+              }
             >
-              {n === 128 ? "Быстро" : n + "×"}
+              <b>{r.round}</b>
+              <ItemIcon
+                name={
+                  { "Взрыв C4": "C4", Обезвреживание: "Набор" }[r.reason] ||
+                  r.reason
+                }
+                label={r.reason}
+              />
             </button>
           ))}
         </div>
-      </section>
-      <div className="lineups">
+      )}
+
+      <nav className="touch-lineup" aria-label="Панель матча">
+        {["Радар", ...m.clubs.map((c) => c.name)].map((label, i) => (
+          <button key={i} aria-pressed={pane === i} onClick={() => setPane(i)}>
+            {label}
+          </button>
+        ))}
+      </nav>
+      <div className="lineups" data-pane={pane}>
         {roster(m.clubs[0])}
         <section className="panel hud-map">
           <div className="maphead">
@@ -386,13 +411,77 @@ export default function MatchCenter({
               />
             </div>
           )}
-          <Radar
-            frame={frame}
-            playback={playback}
-            connected={connected}
-            selected={selectedAgent?.id ?? null}
-            onSelect={select}
-          />
+          <div className="radar-broadcast">
+            <Radar
+              frame={frame}
+              playback={playback}
+              connected={connected}
+              selected={selectedAgent?.id ?? null}
+              onSelect={select}
+            />
+            <section className="live-feed" aria-label="Лента убийств">
+              {m.kills
+                .slice()
+                .reverse()
+                .map((k) => (
+                  <div key={k.id} className="kill-row" data-kill={k.id}>
+                    <span className="kill-attacker">
+                      {k.weapon !== "C4" && <b>{name(k.player)}</b>}
+                      {k.assists?.length > 0 && (
+                        <span className="assist">
+                          <ItemIcon name="Помощь" />
+                          {k.assists.map(name).join(", ")}
+                        </span>
+                      )}
+                    </span>
+                    <span className="kill-method">
+                      <ItemIcon
+                        name={k.weapon}
+                        side={m.stats.find((p) => p.id === k.player)?.team}
+                        label={
+                          ["HE", "Огонь"].includes(k.weapon)
+                            ? "Убийство гранатой · " +
+                              itemLabel(
+                                k.weapon,
+                                m.stats.find((p) => p.id === k.player)?.team,
+                              )
+                            : undefined
+                        }
+                        className="kill-weapon"
+                      />
+                      {k.head && <ItemIcon name="В голову" />}
+                      {k.opening && (
+                        <abbr
+                          title="Первое убийство раунда"
+                          aria-label="Первое убийство раунда"
+                        >
+                          1K
+                        </abbr>
+                      )}
+                      {k.trade && (
+                        <ItemIcon
+                          name="Размен"
+                          label={"Размен за " + name(k.trade)}
+                        />
+                      )}
+                      {!k.enemy &&
+                        k.weapon !== "C4" &&
+                        (k.player === k.target ? (
+                          <ItemIcon name="Самоустранение" />
+                        ) : (
+                          <abbr
+                            title="Убийство союзника"
+                            aria-label="Убийство союзника"
+                          >
+                            TK
+                          </abbr>
+                        ))}
+                    </span>
+                    <b>{name(k.target)}</b>
+                  </div>
+                ))}
+            </section>
+          </div>
           <div className="match-legend">
             <span>● CT</span>
             <span>◆ T</span>
@@ -405,108 +494,30 @@ export default function MatchCenter({
                 : "Выберите игрока на карте"}
             </span>
           </div>
-          {rounds > 0 && (
-            <div className="hud-history" aria-label="Последние раунды">
-              <strong>Раунды</strong>
-              {m.history.slice(-12).map((r) => (
-                <button
-                  data-side={r.side}
-                  key={r.round}
-                  onClick={() => {
-                    setTab("Раунды");
-                    document
-                      .querySelector(".match-data")
-                      ?.scrollIntoView({ block: "start" });
-                  }}
-                  title={clubName(r.winnerTeamId) + " · " + r.reason}
-                  aria-label={
-                    "Раунд " +
-                    r.round +
-                    " · " +
-                    clubName(r.winnerTeamId) +
-                    " · " +
-                    r.reason
-                  }
-                >
-                  <b>{r.round}</b>
-                  <ItemIcon
-                    name={
-                      { "Взрыв C4": "C4", Обезвреживание: "Набор" }[r.reason] ||
-                      r.reason
-                    }
-                    label={r.reason}
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-          <section className="live-feed">
-            <h2>Лента убийств</h2>
-            {!m.kills.length && <p>В этом раунде ещё нет фрагов.</p>}
-            {m.kills
-              .slice()
-              .reverse()
-              .map((k) => (
-                <div key={k.id} className="kill-row" data-kill={k.id}>
-                  <span className="kill-attacker">
-                    {k.weapon !== "C4" && <b>{name(k.player)}</b>}
-                    {k.assists?.length > 0 && (
-                      <span className="assist">
-                        <ItemIcon name="Помощь" />
-                        {k.assists.map(name).join(", ")}
-                      </span>
-                    )}
-                  </span>
-                  <span className="kill-method">
-                    <ItemIcon
-                      name={k.weapon}
-                      side={m.stats.find((p) => p.id === k.player)?.team}
-                      label={
-                        ["HE", "Огонь"].includes(k.weapon)
-                          ? "Убийство гранатой · " +
-                            itemLabel(
-                              k.weapon,
-                              m.stats.find((p) => p.id === k.player)?.team,
-                            )
-                          : undefined
-                      }
-                      className="kill-weapon"
-                    />
-                    {k.head && <ItemIcon name="В голову" />}
-                    {k.opening && (
-                      <abbr
-                        title="Первое убийство раунда"
-                        aria-label="Первое убийство раунда"
-                      >
-                        1K
-                      </abbr>
-                    )}
-                    {k.trade && (
-                      <ItemIcon
-                        name="Размен"
-                        label={"Размен за " + name(k.trade)}
-                      />
-                    )}
-                    {!k.enemy &&
-                      k.weapon !== "C4" &&
-                      (k.player === k.target ? (
-                        <ItemIcon name="Самоустранение" />
-                      ) : (
-                        <abbr
-                          title="Убийство союзника"
-                          aria-label="Убийство союзника"
-                        >
-                          TK
-                        </abbr>
-                      ))}
-                  </span>
-                  <b>{name(k.target)}</b>
-                </div>
-              ))}
-          </section>
         </section>
         {roster(m.clubs[1])}
       </div>
+      <section className="hud-controls" aria-label="Управление просмотром">
+        <button
+          className="primary"
+          disabled={!enabled || finished || timeout}
+          onClick={() => act(frame.running ? "pause" : "start")}
+        >
+          {frame.running ? "Пауза просмотра" : "Запустить"}
+        </button>
+        <div className="speed-list">
+          {[1, 2, 4, 8, 128].map((n) => (
+            <button
+              key={n}
+              disabled={!enabled}
+              aria-pressed={frame.speed === n}
+              onClick={() => act("speed", n)}
+            >
+              {n === 128 ? "Быстро" : n + "×"}
+            </button>
+          ))}
+        </div>
+      </section>
       <div className="match-grid">
         <div className="match-main">
           <section className="panel match-data">

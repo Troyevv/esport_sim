@@ -1,3 +1,4 @@
+import { Brand } from "./GameUI";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import TacticEditor from "./TacticEditor";
@@ -8,6 +9,8 @@ import Radar from "./Radar";
 import HostSettings from "./HostSettings";
 import { useSession, type View } from "./session";
 import "./style.css";
+import "./reference.css";
+import "./manager.css";
 
 const formatTime = (seconds: number) =>
   [
@@ -61,12 +64,20 @@ function takePairingCode() {
   if (!value) return "";
   params.delete("pair");
   const rest = params.toString();
-  history.replaceState(history.state, "", location.pathname + location.search + (rest ? "#" + rest : ""));
+  history.replaceState(
+    history.state,
+    "",
+    location.pathname + location.search + (rest ? "#" + rest : ""),
+  );
   return value;
 }
 
 function App() {
-  const [screen,go] = useState<"menu"|"hub"|"lab"|"match">(()=>new URLSearchParams(location.search).get("screen")==="lab"?"lab":"menu");
+  const [screen, go] = useState<"menu" | "hub" | "lab" | "match">(() =>
+    new URLSearchParams(location.search).get("screen") === "lab"
+      ? "lab"
+      : "menu",
+  );
   const [database, showDatabase] = useState(false);
   const [board, showBoard] = useState(false);
   const [view, setView] = useState<View>("full");
@@ -77,65 +88,194 @@ function App() {
     const platform = navigator.userAgent.match(/iPhone|iPad|Android/i)?.[0];
     return platform || "Мой браузер";
   });
-  const { frame, playback, connection, loadError, resync, busy, notice, clearNotice, act, pair } = useSession(view);
+  const {
+    frame,
+    playback,
+    connection,
+    loadError,
+    resync,
+    busy,
+    notice,
+    clearNotice,
+    act,
+    pair,
+  } = useSession(view);
   useEffect(() => {
     if (connection === "На связи") setCode("");
   }, [connection]);
   const world = frame?.world;
-  const playingLab = screen==="lab" && !frame?.careerId;
+  const playingLab = screen === "lab" && !frame?.careerId;
   const workspace = !board && !database;
-  const showMatch = playingLab || (screen==="match" && !!frame?.careerId);
+  const showMatch = playingLab || (screen === "match" && !!frame?.careerId);
   const agent = world?.agents.find((item) => item.id === selected);
   const enabled = !!frame && connection === "На связи" && !busy;
   const validSeed = /^\d+$/.test(seed) && Number(seed) <= 2147483647;
   useEffect(() => {
     if (world) setSeed(String(world.seed));
   }, [world?.seed]);
+  const inCareer = !!frame?.careerId && screen !== "menu" && !playingLab;
+  const showManager =
+    !!frame && !playingLab && ((!database && !board) || inCareer);
+  const status = (
+    <span
+      className={"connection " + (connection === "На связи" ? "up" : "")}
+      data-testid="connection"
+    >
+      <i />
+      {connection}
+    </span>
+  );
+  const settings = <HostSettings connected={connection === "На связи"} />;
+  const leaveTool = () => {
+    clearNotice();
+    showBoard(false);
+    showDatabase(false);
+    if (screen === "match") go("hub");
+  };
+  const tactics = board && frame && (
+    <TacticEditor
+      frame={frame}
+      enabled={enabled}
+      act={act}
+      commandNotice={notice}
+      clearNotice={clearNotice}
+      onClose={() => {
+        clearNotice();
+        showBoard(false);
+      }}
+    />
+  );
+  const match = showMatch && !board && world?.match && frame && (
+    <MatchCenter
+      openBoard={() => showBoard(true)}
+      key={frame.context}
+      frame={frame}
+      playback={playback}
+      connected={connection === "На связи"}
+      enabled={enabled}
+      act={act}
+      setView={setView}
+    />
+  );
+  const editor = database && world && (
+    <DatabaseEditor
+      onClose={() => showDatabase(false)}
+      enabled={enabled}
+      start={async (value) => {
+        const ok = await act(
+          frame?.careerId ? "career-exhibition" : "database-match",
+          value,
+        );
+        if (ok) {
+          showDatabase(false);
+          go("lab");
+        }
+        return ok;
+      }}
+    />
+  );
+  const tool =
+    editor ||
+    tactics ||
+    (match && (
+      <>
+        <button
+          className="cr-return"
+          onClick={() => go(frame?.careerId ? "hub" : "menu")}
+        >
+          {frame?.careerId ? "← Карьера" : "← Главное меню"}
+        </button>
+        {world?.match?.phase === "finished" && frame?.careerId && (
+          <button
+            className="primary"
+            disabled={!enabled}
+            onClick={async () => {
+              if (await act("career-finish")) go("hub");
+            }}
+          >
+            Вернуться к календарю
+          </button>
+        )}
+        {match}
+      </>
+    ));
   return (
     <>
-      <header className="mast">
-        <div className="identity">
-          <i className="brandmark">
-            <b />
-            <b />
-            <b />
-          </i>
-          esport<span>_sim</span>
-        </div>
-        <div className="mastline" />
-        <span className="masttitle">{playingLab ? "Лаборатория симуляции" : "Менеджер команды"}</span>
-        <span
-          className={"connection " + (connection === "На связи" ? "up" : "")}
-          data-testid="connection"
-        >
-          <i />
-          {connection}
-        </span>
-        <HostSettings connected={connection === "На связи"}/>
-      </header>
-      <main>
-        {workspace && frame && !playingLab && !(showMatch && world?.match) &&
-          <CareerScreen key={frame.context} frame={frame} act={act} enabled={enabled} screen={screen==="menu"?"menu":"hub"} go={go} database={()=>showDatabase(true)} board={()=>showBoard(true)}/>}
-        {workspace && showMatch && frame && <button className="cr-return" onClick={()=>go(frame.careerId?"hub":"menu")}>{frame.careerId?"← Карьера":"← Главное меню"}</button>}
-        {workspace && screen==="match" && frame?.careerId && world?.match?.phase==="finished" &&
-          <button className="primary" disabled={!enabled} onClick={async()=>{if(await act("career-finish"))go("hub");}}>Вернуться к календарю</button>}
-        {world && playingLab && !database && !board && <button className="database-entry" onClick={()=>showDatabase(true)}>База сцены</button>}
-        {database && world && <DatabaseEditor onClose={()=>showDatabase(false)} enabled={enabled} start={async value=>{const ok=await act(frame?.careerId?"career-exhibition":"database-match",value);if(ok)go("lab");return ok;}}/>}
-        {playingLab && !database && !board && !world?.match && <div className="intro">
-          <div>
-            <div className="eyebrow">
-              <i /> СТЕНД СИМУЛЯЦИИ <span>/ R0</span>
+      {!showManager && (
+        <header className="mast">
+          <Brand />
+          <div className="mastline" />
+          <span className="masttitle">
+            {playingLab ? "Лаборатория симуляции" : "База сцены"}
+          </span>
+          {status}
+          {settings}
+        </header>
+      )}
+      <main className={showManager ? "manager-root" : ""}>
+        {showManager && frame && (
+          <CareerScreen
+            frame={frame}
+            act={act}
+            enabled={enabled}
+            screen={screen === "menu" ? "menu" : "hub"}
+            go={go}
+            database={() => showDatabase(true)}
+            board={() => showBoard(true)}
+            status={status}
+            settings={settings}
+            leaveTool={leaveTool}
+            tool={tool}
+            toolName={
+              tool
+                ? board
+                  ? "Тактики"
+                  : database
+                    ? "Редактор базы"
+                    : "Матч-центр"
+                : undefined
+            }
+          />
+        )}
+        {!showManager && tool}
+        {playingLab && workspace && !match && (
+          <button className="cr-return" onClick={() => go("menu")}>
+            ← Главное меню
+          </button>
+        )}
+        {world && playingLab && !database && !board && (
+          <button className="database-entry" onClick={() => showDatabase(true)}>
+            База сцены
+          </button>
+        )}
+        {playingLab && !database && !board && !world?.match && (
+          <div className="intro">
+            <div>
+              <div className="eyebrow">
+                <i /> СТЕНД СИМУЛЯЦИИ <span>/ R0</span>
+              </div>
+              <h1>Тактический радар</h1>
             </div>
-            <h1>Тактический радар</h1>
+            {world && (
+              <div className="board-buttons">
+                <button onClick={() => showBoard(true)}>Редактор тактик</button>
+                <button
+                  className="primary"
+                  disabled={!enabled || !validSeed}
+                  onClick={() => act("match", Number(seed))}
+                >
+                  Открыть матч BO1
+                </button>
+              </div>
+            )}
+            {world && (
+              <div className="clock">
+                <span>МОДЕЛЬНОЕ ВРЕМЯ</span>
+                <strong>{formatTime(world.time)}</strong>
+              </div>
+            )}
           </div>
-          {world && <div className="board-buttons"><button onClick={()=>showBoard(true)}>Редактор тактик</button><button className="primary" disabled={!enabled || !validSeed} onClick={()=>act("match",Number(seed))}>Открыть матч BO1</button></div>}
-          {world && (
-            <div className="clock">
-              <span>МОДЕЛЬНОЕ ВРЕМЯ</span>
-              <strong>{formatTime(world.time)}</strong>
-            </div>
-          )}
-        </div>}
+        )}
         {connection === "Требуется код" && (
           <form
             className="panel pair"
@@ -145,7 +285,16 @@ function App() {
             }}
           >
             <h2>Подключение устройства</h2>
-            <label>Название устройства<input value={deviceName} onChange={e => setDeviceName(e.target.value)} maxLength={48} required autoComplete="off"/></label>
+            <label>
+              Название устройства
+              <input
+                value={deviceName}
+                onChange={(e) => setDeviceName(e.target.value)}
+                maxLength={48}
+                required
+                autoComplete="off"
+              />
+            </label>
             <label>
               Одноразовый код с домашнего ПК{" "}
               <input
@@ -172,217 +321,227 @@ function App() {
             {notice}
           </p>
         )}
-        {!database && board && frame && <TacticEditor frame={frame} enabled={enabled} act={act} commandNotice={notice} clearNotice={clearNotice} onClose={()=>{clearNotice();showBoard(false);}}/>}
-        {showMatch && !database && !board && world?.match && frame && <MatchCenter openBoard={()=>showBoard(true)} key={frame.context} frame={frame} playback={playback} connected={connection==="На связи"} enabled={enabled} act={act} setView={setView}/>}
-        {playingLab && !database && !board && world && !world.match && frame && (
-          <div className="dashboard">
-            <div className="column">
-              <section className="panel mapcard">
-                <div className="maphead">
-                  <div className="mapname">
-                    <s>
-                      <Icon name="layers" />
-                    </s>
-                    <div>
-                      <small>ТЕСТОВАЯ КАРТА</small>
-                      <h2>{world.map.name}</h2>
+        {playingLab &&
+          !database &&
+          !board &&
+          world &&
+          !world.match &&
+          frame && (
+            <div className="dashboard">
+              <div className="column">
+                <section className="panel mapcard">
+                  <div className="maphead">
+                    <div className="mapname">
+                      <s>
+                        <Icon name="layers" />
+                      </s>
+                      <div>
+                        <small>ТЕСТОВАЯ КАРТА</small>
+                        <h2>{world.map.name}</h2>
+                      </div>
                     </div>
+                    <label className="view">
+                      <span>Режим обзора</span>
+                      <select
+                        aria-label="Режим обзора"
+                        value={view}
+                        disabled={busy}
+                        onChange={(e) => {
+                          setView(e.target.value as View);
+                          setSelected(null);
+                        }}
+                      >
+                        <option value="full">Полный · отладка</option>
+                        <option value="CT">Видимость CT</option>
+                        <option value="T">Видимость T</option>
+                      </select>
+                    </label>
                   </div>
-                  <label className="view">
-                    <span>Режим обзора</span>
-                    <select
-                      aria-label="Режим обзора"
-                      value={view}
-                      disabled={busy}
-                      onChange={(e) => {
-                        setView(e.target.value as View);
-                        setSelected(null);
-                      }}
-                    >
-                      <option value="full">Полный · отладка</option>
-                      <option value="CT">Видимость CT</option>
-                      <option value="T">Видимость T</option>
-                    </select>
-                  </label>
-                </div>
-                <Radar
-                  frame={frame}
-                  playback={playback}
-                  connected={connection === "На связи"}
-                  selected={agent?.id ?? null}
-                  onSelect={setSelected}
-                />
-                <div className="mapfoot">
-                  <span>
-                    <i className="legend ct" />
-                    Спецназ
-                  </span>
-                  <span>
-                    <i className="legend t" />
-                    Атака
-                  </span>
-                  {agent && <span className="selected-agent" aria-label={`Выбран ${agent.id} ${agent.name}`}>
-                    {agent.id} · {agent.name}
-                  </span>}
-                  <span className="tick">
-                    ТИК <b data-testid="tick">{world.tick}</b>
-                  </span>
-                </div>
-              </section>
-              <section className="panel roster">
-                <div className="sectionhead">
-                  <h2>
-                    <Icon name="radar" /> Участники
-                  </h2>
-                  <span>{world.agents.length} в обзоре</span>
-                </div>
-                <div className="teams">
-                  {(["CT", "T"] as const).map((team) => (
-                    <div className={"team " + team} key={team}>
-                      <h3>
-                        <i className={"legend " + team.toLowerCase()} />
-                        {team === "CT" ? "Спецназ" : "Атака"}{" "}
-                        <span>{team}</span>
-                      </h3>
-                      {world.agents
-                        .filter((a) => a.team === team)
-                        .map((a) => (
-                          <button
-                            key={a.id}
-                            aria-pressed={agent?.id === a.id}
-                            onClick={() => setSelected(a.id)}
-                          >
-                            {a.name}
-                            <span>
-                              {Math.round(a.x)} · {Math.round(a.y)}
-                            </span>
-                          </button>
-                        ))}
-                      {!world.agents.some((a) => a.team === team) && (
-                        <small>Вне видимости</small>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                {agent && (
-                  <div className="agentinfo">
-                    <strong>{agent.name}</strong> · {agent.status}{" "}
+                  <Radar
+                    frame={frame}
+                    playback={playback}
+                    connected={connection === "На связи"}
+                    selected={agent?.id ?? null}
+                    onSelect={setSelected}
+                  />
+                  <div className="mapfoot">
                     <span>
-                      Видит: {agent.visible.join(", ") || "—"}. Известные
-                      позиции:{" "}
-                      {agent.knowledge
-                        .map(
-                          (k) =>
-                            k.id +
-                            " (" +
-                            Math.round(k.x) +
-                            ", " +
-                            Math.round(k.y) +
-                            ", тик " +
-                            k.tick +
-                            ")",
-                        )
-                        .join(", ") || "—"}
+                      <i className="legend ct" />
+                      Спецназ
+                    </span>
+                    <span>
+                      <i className="legend t" />
+                      Атака
+                    </span>
+                    {agent && (
+                      <span
+                        className="selected-agent"
+                        aria-label={`Выбран ${agent.id} ${agent.name}`}
+                      >
+                        {agent.id} · {agent.name}
+                      </span>
+                    )}
+                    <span className="tick">
+                      ТИК <b data-testid="tick">{world.tick}</b>
                     </span>
                   </div>
-                )}
-              </section>
-            </div>
-            <div className="column">
-              <aside className="panel control">
-                <h2>
-                  <Icon name="activity" /> Управление
-                </h2>
-                <div className="state">
-                  <i className={frame.running ? "moving" : ""} />
-                  {frame.running ? "Симуляция идёт" : "На паузе"}
-                </div>
-                <button
-                  className="primary"
-                  disabled={!enabled}
-                  onClick={() => act(frame.running ? "pause" : "start")}
-                >
-                  <Icon name={frame.running ? "pause" : "play"} />
-                  {frame.running ? "Пауза" : "Запустить"}
-                </button>
-                <div className="field">
-                  <label>Скорость симуляции</label>
-                  <div className="speeds">
-                    {[1, 2, 4, 8].map((x) => (
-                      <button
-                        key={x}
-                        aria-pressed={frame.speed === x}
-                        disabled={!enabled}
-                        onClick={() => act("speed", x)}
-                      >
-                        {x}×
-                      </button>
+                </section>
+                <section className="panel roster">
+                  <div className="sectionhead">
+                    <h2>
+                      <Icon name="radar" /> Участники
+                    </h2>
+                    <span>{world.agents.length} в обзоре</span>
+                  </div>
+                  <div className="teams">
+                    {(["CT", "T"] as const).map((team) => (
+                      <div className={"team " + team} key={team}>
+                        <h3>
+                          <i className={"legend " + team.toLowerCase()} />
+                          {team === "CT" ? "Спецназ" : "Атака"}{" "}
+                          <span>{team}</span>
+                        </h3>
+                        {world.agents
+                          .filter((a) => a.team === team)
+                          .map((a) => (
+                            <button
+                              key={a.id}
+                              aria-pressed={agent?.id === a.id}
+                              onClick={() => setSelected(a.id)}
+                            >
+                              {a.name}
+                              <span>
+                                {Math.round(a.x)} · {Math.round(a.y)}
+                              </span>
+                            </button>
+                          ))}
+                        {!world.agents.some((a) => a.team === team) && (
+                          <small>Вне видимости</small>
+                        )}
+                      </div>
                     ))}
                   </div>
-                </div>
-                <div className="field scenario">
-                  <label htmlFor="seed">Seed</label>
-                  <div className="seedrow">
-                    <input
-                      id="seed"
-                      type="text"
-                      inputMode="numeric"
-                      value={seed}
-                      onChange={(e) => setSeed(e.target.value)}
-                    />
-                    <button
-                      disabled={!enabled || !validSeed}
-                      onClick={() => act("reset", Number(seed))}
-                    >
-                      <Icon name="reset" />
-                      Сбросить
-                    </button>
-                  </div>
-                  {!validSeed && <small>Целое число от 0 до 2147483647</small>}
-                </div>
-                <div className="field">
-                  <label>Снимок состояния</label>
-                  <div className="slots">
-                    <button disabled={!enabled} onClick={() => act("save")}>
-                      <Icon name="save" />
-                      Сохранить
-                    </button>
-                    <button
-                      disabled={!enabled || !frame.hasSave}
-                      onClick={() => act("load")}
-                    >
-                      <Icon name="load" />
-                      Загрузить
-                    </button>
-                  </div>
-                </div>
-                <div className="metadata">
-                  <span>Текущий seed</span>
-                  <b data-testid="current-seed">{world.seed}</b>
-                </div>
-              </aside>
-              <section className="panel journal">
-                <div className="sectionhead">
+                  {agent && (
+                    <div className="agentinfo">
+                      <strong>{agent.name}</strong> · {agent.status}{" "}
+                      <span>
+                        Видит: {agent.visible.join(", ") || "—"}. Известные
+                        позиции:{" "}
+                        {agent.knowledge
+                          .map(
+                            (k) =>
+                              k.id +
+                              " (" +
+                              Math.round(k.x) +
+                              ", " +
+                              Math.round(k.y) +
+                              ", тик " +
+                              k.tick +
+                              ")",
+                          )
+                          .join(", ") || "—"}
+                      </span>
+                    </div>
+                  )}
+                </section>
+              </div>
+              <div className="column">
+                <aside className="panel control">
                   <h2>
-                    <Icon name="log" /> Журнал событий
+                    <Icon name="activity" /> Управление
                   </h2>
-                </div>
-                <ol>
-                  {world.events
-                    .slice()
-                    .reverse()
-                    .map((event, i) => (
-                      <li key={event.tick + "-" + i}>
-                        <time>{formatTime(event.tick / 10).slice(3)}</time>
-                        <span>{event.text}</span>
-                      </li>
-                    ))}
-                </ol>
-                {!world.events.length && <p>Пока нет наблюдений.</p>}
-              </section>
+                  <div className="state">
+                    <i className={frame.running ? "moving" : ""} />
+                    {frame.running ? "Симуляция идёт" : "На паузе"}
+                  </div>
+                  <button
+                    className="primary"
+                    disabled={!enabled}
+                    onClick={() => act(frame.running ? "pause" : "start")}
+                  >
+                    <Icon name={frame.running ? "pause" : "play"} />
+                    {frame.running ? "Пауза" : "Запустить"}
+                  </button>
+                  <div className="field">
+                    <label>Скорость симуляции</label>
+                    <div className="speeds">
+                      {[1, 2, 4, 8].map((x) => (
+                        <button
+                          key={x}
+                          aria-pressed={frame.speed === x}
+                          disabled={!enabled}
+                          onClick={() => act("speed", x)}
+                        >
+                          {x}×
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="field scenario">
+                    <label htmlFor="seed">Seed</label>
+                    <div className="seedrow">
+                      <input
+                        id="seed"
+                        type="text"
+                        inputMode="numeric"
+                        value={seed}
+                        onChange={(e) => setSeed(e.target.value)}
+                      />
+                      <button
+                        disabled={!enabled || !validSeed}
+                        onClick={() => act("reset", Number(seed))}
+                      >
+                        <Icon name="reset" />
+                        Сбросить
+                      </button>
+                    </div>
+                    {!validSeed && (
+                      <small>Целое число от 0 до 2147483647</small>
+                    )}
+                  </div>
+                  <div className="field">
+                    <label>Снимок состояния</label>
+                    <div className="slots">
+                      <button disabled={!enabled} onClick={() => act("save")}>
+                        <Icon name="save" />
+                        Сохранить
+                      </button>
+                      <button
+                        disabled={!enabled || !frame.hasSave}
+                        onClick={() => act("load")}
+                      >
+                        <Icon name="load" />
+                        Загрузить
+                      </button>
+                    </div>
+                  </div>
+                  <div className="metadata">
+                    <span>Текущий seed</span>
+                    <b data-testid="current-seed">{world.seed}</b>
+                  </div>
+                </aside>
+                <section className="panel journal">
+                  <div className="sectionhead">
+                    <h2>
+                      <Icon name="log" /> Журнал событий
+                    </h2>
+                  </div>
+                  <ol>
+                    {world.events
+                      .slice()
+                      .reverse()
+                      .map((event, i) => (
+                        <li key={event.tick + "-" + i}>
+                          <time>{formatTime(event.tick / 10).slice(3)}</time>
+                          <span>{event.text}</span>
+                        </li>
+                      ))}
+                  </ol>
+                  {!world.events.length && <p>Пока нет наблюдений.</p>}
+                </section>
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </main>
     </>
   );

@@ -212,7 +212,7 @@ export function Facts({ rows }: { rows: ProfileFact[] }) {
     </dl>
   );
 }
-function Familiarity({
+export function Familiarity({
   title,
   values,
   names,

@@ -7,15 +7,22 @@ test("Карьера от выбора базы до общей сохранён
   await page.goto("/");
   const button = (name: string) =>
     page.getByRole("button", { name, exact: true });
-  const press = async (name: string) =>
-    info.project.use.hasTouch ? button(name).tap() : button(name).click();
+  const press = async (name: string) => {
+    const drawer = button("Открыть навигацию");
+    if ((await drawer.isVisible()) && !(await button(name).isVisible()))
+      await drawer.click();
+    if (info.project.use.hasTouch) await button(name).tap();
+    else await button(name).click();
+  };
   const capture = async (name: string) => {
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
+    await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({
+      animations: "disabled",
       path: info.outputPath(name + ".png"),
       fullPage: true,
     });
@@ -23,6 +30,7 @@ test("Карьера от выбора базы до общей сохранён
   await expect(
     page.getByRole("heading", { name: "Главное меню" }),
   ).toBeVisible();
+  await capture("menu");
   await press("Новая карьера");
   await page.getByLabel("Редакция базы").selectOption("austin-registration/1");
   await page.getByLabel("Имя персонажа").fill("Алексей");
@@ -33,15 +41,35 @@ test("Карьера от выбора базы до общей сохранён
   await capture("creation");
   await press("Создать карьеру");
   await expect(
-    page.getByRole("heading", { name: "Vitality", exact: true }),
+    page.getByRole("heading", { name: "Кабинет менеджера", exact: true }),
   ).toBeVisible();
   await capture("career");
   await press("Состав");
-  await page.getByRole("button", { name: /ZywOo/ }).click();
+  await capture("roster");
+  await press("Действия · ZywOo");
+  await press("Открыть профиль");
   await expect(page.locator(".pf-heading h2")).toHaveText("ZywOo");
-  await capture("squad");
+  await capture("profile");
+  await press("Характеристики · 58");
+  await expect(page.locator(".attribute-row")).toHaveCount(58);
+  await capture("skills");
+  await press("Глобальный поиск");
+  await page
+    .getByPlaceholder("Игрок, команда, организация или раздел")
+    .fill("ZywOo");
+  await page.locator(".search-result").filter({ hasText: "ZywOo" }).click();
+  await press("Кабинет");
+  await press("Открыть письмо");
+  await capture("inbox");
+  await press("Организация");
+  await capture("organization");
+  await press("База сцены");
+  await capture("scene");
+  await press("Настройки");
+  await capture("preferences");
   await press("Сохранения");
   await press("Сохранить карьеру");
+  await capture("saves");
   await expect(
     page.locator(".cr-save").filter({ hasText: "Слот 1" }),
   ).toBeVisible();
@@ -55,14 +83,17 @@ test("Карьера от выбора базы до общей сохранён
     ).toBeVisible();
     await press("Календарь");
     await page.getByLabel("Показать").selectOption("all");
+    await capture("calendar");
     await page
       .getByRole("button", { name: /Протокол/ })
       .first()
       .click();
     await expect(page.getByRole("table").locator("tbody tr")).toHaveCount(10);
-    await capture("calendar");
+    await capture("report");
+    await press("Закрыть протокол");
     await press("В матч-центр");
     await expect(page.locator("canvas").first()).toBeVisible();
+    await capture("match");
     await press("← Карьера");
     await press("Сохранения");
     await page
