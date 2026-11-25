@@ -10,7 +10,7 @@ from awpy import NavMesh, VisibilityChecker
 from backend.cs2_navigation import surface_height
 
 
-def measure(folder):
+def measure(folder, world=None):
     nav = NavMesh(folder / f"{folder.name}.nav")
     mesh = folder / f"{folder.name}.mesh"
     visibility = VisibilityChecker(mesh) if mesh.is_file() else None
@@ -40,6 +40,7 @@ def measure(folder):
 
     # Probe two physical surfaces at the same XY. Projecting to a higher
     # query point alone does not establish the presence of an upper floor.
+    open_probes = []
     upper_lower = set()
     blocked = 0 if visibility is not None else None
     for ident, area in areas.items():
@@ -58,7 +59,14 @@ def measure(folder):
                 continue
             upper_lower.add(pair)
             if visibility is not None:
-                blocked += visibility.is_occluded((x, y, z + 64), (x, y, top + 64))
+                if visibility.is_occluded((x, y, z + 64), (x, y, top + 64)):
+                    blocked += 1
+                else:
+                    open_probes.append(dict(lowerArea=ident, upperArea=other, x=x, y=y,
+                                            bottom=z + 64, top=top + 64))
+    if world is not None and open_probes:
+        from tools.cs2_floor_probe import trace_probes
+        trace_probes(world, open_probes)
     return {
         "playerHullAreas": len(areas),
         "reachableFromFirstArea": len(seen),
@@ -68,6 +76,7 @@ def measure(folder):
         ),
         "sameXYAreaPairsSampled": len(upper_lower),
         "sameXYOccluded": blocked,
+        "openFloorProbes": open_probes if visibility is not None else None,
         "staticOccluderTriangles": visibility.triangle_count if visibility else None,
     }
 
@@ -76,6 +85,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", type=Path)
     parser.add_argument("--require-all-meshes", action="store_true")
+    parser.add_argument("--worlds", type=Path, help="Каталог исходных коллизий cs2_world_sources")
     args = parser.parse_args()
     inventory = json.loads((args.root / "inventory.json").read_bytes())
     failures = []
@@ -84,7 +94,7 @@ def main():
                 and f"{map_id}.png" in source["radars"]):
             failures.append(f"{map_id}: не хватает исходных данных")
             continue
-        counts = measure(args.root / map_id)
+        counts = measure(args.root / map_id, args.worlds / map_id if args.worlds else None)
         print(map_id, json.dumps(counts, ensure_ascii=False), flush=True)
         if args.require_all_meshes and counts["staticOccluderTriangles"] is None:
             failures.append(f"{map_id}: отсутствует сетка видимости")

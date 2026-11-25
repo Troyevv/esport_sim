@@ -48,3 +48,27 @@ def test_plant_uses_the_brush_volume_including_boundaries():
     assert sites.at((1, 1, 64)) is None
     assert sites.at((8, 8, 1)) is None
     assert Solid(tetrahedron(0)).contains((5, 5, 0))
+
+
+def test_floor_probe_reads_face_materials_and_transformed_primitives(tmp_path):
+    import json
+    import struct
+    from tools.cs2_floor_probe import trace_probes
+
+    # Two faces share a mesh. The second is vertical and overlaps the probe.
+    points = [(0, 0, 0), (8, 0, 8), (0, 8, 0),
+              (2, 0, 10), (2, 4, 10), (2, 2, 20)]
+    (tmp_path / "collision.bin").write_bytes(b"".join(struct.pack("<3f", *p) for p in points)
+                                            + struct.pack("<6i2I", *range(6), 9, 10))
+    primitive = dict(kind="capsule", centers=[[0, 0, 0], [2, 0, 0]], radius=1,
+                     transform=[0, 1, 0, -1, 0, 0, 0, 0, 2, 2, 1, 28],
+                     material=9, tags=["solid"], entity="prop_dynamic")
+    metadata = dict(format=1, missingModels=[], primitives=[primitive], surfaces={9: "wood", 10: "metal"},
+                    blocks=[dict(offset=0, vertices=6, triangles=2, perFace=True, material=10,
+                                 group="default", tags=["solid"], entity="world")])
+    (tmp_path / "collision.json").write_text(json.dumps(metadata))
+    rays = [dict(x=2, y=2, bottom=1, top=29), dict(x=8, y=8, bottom=0, top=29)]
+    trace_probes(tmp_path, rays)
+    assert [(hit["surface"], hit["z"]) for hit in rays[0]["physicalHits"]] == [
+        ("wood", [2, 2]), ("metal", [10, 20]), ("wood", [26, 29])]
+    assert rays[1]["physicalHits"] == []

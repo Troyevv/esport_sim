@@ -10,6 +10,7 @@ on:
       - tools/cs2_world_sources.py
       - 'tools/cs2_export/**'
       - tools/check_cs2_navigation.py
+      - tools/cs2_floor_probe.py
       - .github/workflows/cs2-map-sources.yml
   workflow_dispatch:
 permissions:
@@ -62,4 +63,4 @@ jobs:
           persist-credentials: false
       - run: |
           python build/awpy-data/scripts/process_geometry.py --input build/cs2-worlds/de_inferno/world_physics.glb --output build/cs2/de_inferno/de_inferno.mesh --no-decimate
-          python -m tools.check_cs2_navigation build/cs2 --require-all-meshes
+          python -m tools.check_cs2_navigation build/cs2 --require-all-meshes --worlds build/cs2-worlds
