@@ -86,6 +86,7 @@ def main():
     )
     for name in (
         "BO1.md",
+        "MAPS_R4.md",
         "CAREER_R33.md",
         "INTERFACE_R34.md",
         "INTERFACE_R34_QA.md",
@@ -108,6 +109,10 @@ def main():
             ),
             encoding="utf-8",
         )
+    source_tools = output / "tools"
+    source_tools.mkdir(exist_ok=True)
+    for script in ("cs2_map_sources.py", "cs2_world_sources.py", "check_cs2_navigation.py"):
+        shutil.copyfile(ROOT / "tools" / script, source_tools / script)
     screenshots = output / "screenshots"
     screenshots.mkdir(exist_ok=True)
     shutil.copytree(ROOT / "docs" / "screenshots" / "r34", screenshots / "r34", dirs_exist_ok=True)
