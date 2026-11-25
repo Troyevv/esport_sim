@@ -49,6 +49,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: python -m pip install playwright
+      - run: python -m playwright install --with-deps chromium
       - run: python -m tools.cs2_tournament_reference
       - uses: actions/upload-artifact@v4
         if: always()

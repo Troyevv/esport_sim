@@ -1,7 +1,8 @@
-"""Preserve the public per-map BO3.gg scorecards for three historical tournaments."""
-import gzip
+"""Read the three public tournament scorecards through their ordinary rendered pages."""
+import json
 from pathlib import Path
-from urllib.request import Request, urlopen
+from urllib.parse import urlsplit
+from playwright.sync_api import sync_playwright
 
 MATCHES = {
     "vertigo": "furia-vs-pain-gaming-07-12-2024",
@@ -13,16 +14,33 @@ MATCHES = {
 def main():
     out = Path("build/pro-tournaments")
     out.mkdir(parents=True, exist_ok=True)
-    for name, slug in MATCHES.items():
-        for tab in ("", "/grenades", "/economy"):
-            url = f"https://bo3.gg/matches/{slug}/{name}{tab}"
-            request = Request(url, headers={"User-Agent": "EsportSim/1.0 (public research scorecards)"})
-            with urlopen(request, timeout=60) as response:
-                page = response.read()
-            if len(page) < 2000:
-                raise ValueError(f"Empty scorecard at {url}")
-            (out / (name + (tab or "/score").replace("/", "-") + ".html.gz")).write_bytes(gzip.compress(page))
-            print(url, len(page), flush=True)
+    with sync_playwright() as web:
+        browser = web.chromium.launch()
+        for name, slug in MATCHES.items():
+            pg = browser.new_page()
+            public = []
+            def response(item):
+                url = urlsplit(item.url)
+                if url.hostname == "api.bo3.gg" and item.ok and any(
+                    key in url.path for key in ("match-games", "games/", "rounds", "player-stats")
+                ) and "json" in item.headers.get("content-type", ""):
+                    try:
+                        public.append({"path":url.path, "data":item.json()})
+                    except Exception:
+                        pass  # a navigation can cancel an outstanding page request
+            pg.on("response", response)
+            for tab in ("", "/grenades", "/economy"):
+                url = f"https://bo3.gg/matches/{slug}/{name}{tab}"
+                pg.goto(url, wait_until="domcontentloaded",timeout=90000)
+                pg.get_by_text("FURIA",exact=False).first.wait_for(timeout=90000)
+                pg.wait_for_timeout(2500)
+                body = pg.locator("body").inner_text()
+                (out / (name + (tab or "/score").replace("/", "-") + ".txt")).write_text(body)
+                print(url,len(body),flush=True)
+            (out / (name+"-round-data.json")).write_text(json.dumps(public))
+            print(name, [(r["path"], len(str(r["data"]))) for r in public], flush=True)
+            pg.close()
+        browser.close()
 
 
 if __name__ == "__main__":
