@@ -10,7 +10,7 @@ from PIL import Image
 
 from backend.portrait_library import PortraitLibrary
 from backend.portrait_processing import Unsuitable, PortraitProcessor
-from backend.portrait_sources import commons_candidate, commons_search
+from backend.portrait_sources import commons_candidate, commons_search, previously_rejected
 from tools.import_scene import starter
 
 SAMPLES = Path(__file__).with_name("portrait_samples")
@@ -55,6 +55,12 @@ def test_source_and_metadata_guards():
     info = metadata(p)
     info["imageinfo"][0]["url"] = "https://unverified.example/photo.jpg"
     assert not commons_candidate(info, p)
+
+
+def test_excluded_portraits_stay_excluded_across_commons_crop_aliases():
+    assert previously_rejected("https://commons.wikimedia.org/wiki/File:Astralis_dev1ce_2020_interview_(cropped).jpg")
+    assert previously_rejected("https://upload.wikimedia.org/wikipedia/commons/d/d1/Astralis_dev1ce_2020_interview_%28cropped_2%29.jpg")
+    assert not previously_rejected("https://commons.wikimedia.org/wiki/File:Dev1ce_studio_portrait_2026.jpg")
 
 
 def wait(lib):

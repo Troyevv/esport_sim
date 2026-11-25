@@ -7,9 +7,11 @@ from email.utils import parsedate_to_datetime
 import re
 import time
 import unicodedata
+from functools import lru_cache
+from pathlib import Path
 from html.parser import HTMLParser
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote, urlencode, urlsplit
+from urllib.parse import quote, unquote, urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 AGENT = "EsportSim/1.0 (https://github.com/Troyevv/esport_sim; studio portraits)"
@@ -36,6 +38,25 @@ UNSUITABLE = re.compile(
     r"interview|backstage|screens?hot|with (?:a |the )?troph|crowd|headset|full.length|full.body|playing at|интервью|в полный рост|скриншот|наушник|за монитором",
     re.I,
 )
+
+
+def media_title(value):
+    value = unquote(value).replace("_", " ").casefold()
+    return re.sub(r"\s*\(cropped(?:\s*\d+)?\)", "", value).strip()
+
+
+@lru_cache(maxsize=1)
+def excluded_titles():
+    file = Path(__file__).with_name("data") / "excluded-player-photos.json"
+    return {
+        media_title(title) for title in json.loads(file.read_text(encoding="utf-8"))
+    }
+
+
+def previously_rejected(source):
+    path = media_title(urlsplit(source).path)
+    parts = {p.removeprefix("file:") for p in path.split("/")}
+    return bool(parts & excluded_titles()) or "19.01.202531303" in path
 
 
 class Unavailable(RuntimeError):
@@ -394,6 +415,10 @@ def discover(person, read=fetch, pause=time.sleep):
     for provider in providers:
         try:
             for candidate in provider():
+                if previously_rejected(candidate["source"]) or previously_rejected(
+                    candidate["image"]
+                ):
+                    continue
                 if candidate["assetKey"] not in seen:
                     seen.add(candidate["assetKey"])
                     yield candidate

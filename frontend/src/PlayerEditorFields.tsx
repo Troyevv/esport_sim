@@ -60,7 +60,11 @@ export default function PlayerEditorFields({
         value={r.appearance}
         change={(v) => patch({ appearance: resolvePortrait(v) })}
       />
-      <PortraitEditor value={r.photo} change={(photo) => patch({ photo })} />
+      <PortraitEditor
+        playerSource
+        value={r.photo}
+        change={(photo) => patch({ photo })}
+      />
       <details className="db-editor-extra">
         <summary>Знание карт и освоение ролей</summary>
         <div className="db-form">

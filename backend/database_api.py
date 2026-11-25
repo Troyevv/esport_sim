@@ -2,11 +2,13 @@
 
 from uuid import uuid4
 import base64
+import re
 from fastapi.responses import Response, RedirectResponse
 
 from fastapi import APIRouter, HTTPException, Request
 
-from . import database as data, valve_import
+from . import club_art, database as data, valve_import
+from .portrait_sources import previously_rejected
 
 
 def editor_router(app):
@@ -16,6 +18,19 @@ def editor_router(app):
     async def catalog():
         return data.installed(app.state.store.db)
 
+    @router.get("/club-art/{filename}")
+    async def club_image(filename: str):
+        if not re.fullmatch(r"[0-9a-f]{64}\.png", filename):
+            raise HTTPException(404)
+        file = club_art.ROOT / filename
+        if not file.is_file():
+            raise HTTPException(404)
+        return Response(
+            file.read_bytes(),
+            media_type="image/png",
+            headers={"Cache-Control": "private, max-age=31536000, immutable"},
+        )
+
     @router.get("/{key}/{revision}")
     async def package(key: str, revision: int):
         try:
@@ -23,6 +38,7 @@ def editor_router(app):
             return dict(
                 data.envelope(p),
                 portraits=app.state.store.portraits.index(p["players"]),
+                clubArt=club_art.archive_index(p),
             )
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
@@ -30,7 +46,7 @@ def editor_router(app):
     @router.get("/{key}/{revision}/ratings/{player}")
     async def ratings(key: str, revision: int, player: str):
         try:
-            p = data.get(app.state.store.db, key, revision)["players"][player]
+            p = data.get_record(app.state.store.db, key, revision, "players", player)
         except (KeyError, ValueError) as exc:
             raise HTTPException(404, "Игрок или редакция не найдены") from exc
         values = {
@@ -43,18 +59,28 @@ def editor_router(app):
         if group not in ("teams", "players", "organizations", "staff", "appearance"):
             raise HTTPException(404)
         try:
-            record = data.get(app.state.store.db, key, revision)[
-                "players" if group == "appearance" else group
-            ][ident]
+            record = data.get_record(
+                app.state.store.db,
+                key,
+                revision,
+                "players" if group == "appearance" else group,
+                ident,
+            )
             asset = (
                 record.get("appearance")
                 if group == "appearance"
                 else record.get("logo") or record.get("photo")
             )
-            if asset == "zywoo-chicago-2019":
-                return RedirectResponse(
-                    "https://commons.wikimedia.org/wiki/Special:FilePath/IEM_Chicago_Final_Edits-9731_ZywOo_%2848353577846%29_%28cropped%29.jpg?width=250"
-                )
+            if group in ("teams", "organizations"):
+                fallback = club_art.archive_badge(key, record)
+                if fallback:
+                    return RedirectResponse(fallback["image"])
+            if asset == "zywoo-chicago-2019" or (
+                group in ("players", "appearance")
+                and isinstance(asset, dict)
+                and previously_rejected(asset.get("source", ""))
+            ):
+                raise HTTPException(404)
             if not asset:
                 raise HTTPException(404)
             image = asset["image"]

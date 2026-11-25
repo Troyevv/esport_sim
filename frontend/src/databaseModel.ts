@@ -309,6 +309,19 @@ export function evidence(
   );
 }
 
+const archiveClubs = new WeakMap<Pack, Record<string, PhotoAsset>>();
+export function attachArchiveClubs(
+  pack: Pack,
+  clubs: Record<string, PhotoAsset>,
+) {
+  archiveClubs.set(pack, clubs);
+}
+export function archiveClubsFor(pack: Pack) {
+  return archiveClubs.get(pack) || {};
+}
+function clubBadge(pack: Pack, group: "teams" | "organizations", id: string) {
+  return archiveClubs.get(pack)?.[group + "/" + id] || pack[group][id]?.logo;
+}
 const studioCache = new WeakMap<Pack, Record<string, PhotoAsset>>();
 export function attachPortraitCache(
   pack: Pack,
@@ -343,11 +356,13 @@ function latestTeam(p: Pack, player: string) {
 export function teamKit(p: Pack, id?: string | null): ClubKit | null {
   if (!id || !p.teams[id]) return null;
   const t = p.teams[id];
+  const badge = resolvePortrait(clubBadge(p, "teams", id));
   return {
     id,
     name: t.name,
     design: t.kit,
-    badge: resolvePortrait(t.logo)?.image,
+    badge: badge?.image,
+    badgeLicense: badge?.license,
   };
 }
 export function entityVisual(p: Pack, g: Group, id: string) {
@@ -359,7 +374,13 @@ export function entityVisual(p: Pack, g: Group, id: string) {
     player: g === "players",
     head: g === "players" ? playerAppearance(p, id)?.image : null,
     kit: g === "players" ? teamKit(p, latestTeam(p, id)) : null,
-    photo: club ? team.logo : r.photo,
+    photo: club
+      ? clubBadge(
+          p,
+          g === "organizations" ? "organizations" : "teams",
+          g === "rosters" && r.team ? r.team : id,
+        )
+      : r.photo,
     flag: club ? team.nationality || team.region : r.nationality,
   };
 }

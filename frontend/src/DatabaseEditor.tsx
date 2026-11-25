@@ -20,7 +20,12 @@ import {
 import "./database.css";
 import { PortraitImport } from "./PortraitImport";
 import type { PhotoAsset } from "./portraits";
-import { attachPortraitCache, playerAppearance } from "./databaseModel";
+import {
+  attachArchiveClubs,
+  archiveClubsFor,
+  attachPortraitCache,
+  playerAppearance,
+} from "./databaseModel";
 import { KitEditor, KitPreview } from "./KitStudio";
 import { Identity } from "./SceneIdentity";
 import { entityVisual } from "./databaseModel";
@@ -260,11 +265,17 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
     setQuery("");
     const list = (await request("")) as (Ref & { title: string })[];
     const target = ref || list[0];
-    const { package: p, portraits } = (await request("/" + refKey(target))) as {
+    const {
+      package: p,
+      portraits,
+      clubArt,
+    } = (await request("/" + refKey(target))) as {
       package: Pack;
       portraits?: Record<string, PhotoAsset>;
+      clubArt?: Record<string, PhotoAsset>;
     };
     attachPortraitCache(p, portraits || {});
+    attachArchiveClubs(p, clubArt || {});
     setCatalog(list);
     setPack(p);
     setDraft(null);
@@ -612,6 +623,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
             if (!previous || refKey(previous) !== refKey(pack)) return previous;
             const next = { ...previous };
             attachPortraitCache(next, cache);
+            attachArchiveClubs(next, archiveClubsFor(previous));
             return next;
           });
         }}

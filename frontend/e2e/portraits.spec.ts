@@ -9,7 +9,7 @@ test("Ноябрьский срез, доступный флаг и клубна
   await page.goto("/");
   await page.getByRole("button", { name: "База сцены", exact: true }).click();
   await expect(page.getByLabel("Пакет и редакция")).toHaveValue(
-    "scene-20261124/1",
+    "scene-20261125/1",
   );
   await page.getByLabel("Поиск", { exact: true }).fill("ZywOo");
   await page.locator(".db-list").getByRole("button", { name: /ZywOo/ }).click();
@@ -25,6 +25,8 @@ test("Ноябрьский срез, доступный флаг и клубна
   await expect(
     page.getByText("Rating 3.0", { exact: true }).first(),
   ).toBeVisible();
+  await page.locator(".pf-heading").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: info.outputPath("zywoo-profile.png") });
   await page.getByText("Примерочная формы", { exact: true }).click();
   await page.getByLabel("Комплект формы").selectOption({ label: "Astralis" });
   await expect(
@@ -37,6 +39,44 @@ test("Ноябрьский срез, доступный флаг и клубна
   ).toBeTruthy();
   await page.locator(".kit-preview").scrollIntoViewIfNeeded();
   await page.screenshot({ path: info.outputPath("scene-november.png") });
+  await page.getByRole("button", { name: "Сравнить комплекты" }).click();
+  for (const [i, name] of [
+    "Team Vitality",
+    "Astralis",
+    "Team Falcons",
+  ].entries()) {
+    await page
+      .getByLabel("Команда комплекта " + (i + 1))
+      .selectOption({ label: name });
+  }
+  const comparison = page.getByRole("region", {
+    name: "Сравнение формы · ZywOo",
+  });
+  await expect(comparison.locator('[data-layer="placeholder"]')).toHaveCount(3);
+  for (const name of ["Team Vitality", "Astralis", "Team Falcons"]) {
+    await expect(
+      comparison.getByRole("img", { name: "ZywOo · форма " + name }),
+    ).toBeVisible();
+  }
+  await comparison.screenshot({ path: info.outputPath("zywoo-kits.png") });
+  await page.getByRole("button", { name: "Один комплект" }).click();
+  const organizations = page.getByRole("navigation", { name: "Раздел базы" });
+  await organizations.getByRole("button", { name: /^Команды/ }).click();
+  await page.getByLabel("Поиск", { exact: true }).fill("Team Vitality");
+  await page
+    .locator(".db-list")
+    .getByRole("button", { name: /Team Vitality/ })
+    .click();
+  await expect(page.locator(".pf-heading")).toContainText("Игровая эмблема");
+  await page.locator(".pf-heading").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: info.outputPath("vitality-profile.png") });
+  await page.getByLabel("Поиск", { exact: true }).fill("Acend");
+  await page.locator(".db-list").getByRole("button", { name: /Acend/ }).click();
+  await expect(page.locator(".pf-heading")).toContainText(
+    "Оригинальная эмблема",
+  );
+  await page.locator(".pf-heading").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: info.outputPath("acend-profile.png") });
 });
 
 test("Одна внешность в двух командах и у свободного агента", async ({
@@ -48,7 +88,7 @@ test("Одна внешность в двух командах и у свобо�
     await (await page.request.get("/api/database/austin-registration/1")).json()
   ).package;
   const seasonal = (
-    await (await page.request.get("/api/database/scene-20261124/1")).json()
+    await (await page.request.get("/api/database/scene-20261125/1")).json()
   ).package;
   for (const [k, team] of Object.entries(seasonal.teams) as [string, any][]) {
     if (team.name === "Astralis")
@@ -226,13 +266,11 @@ test("Однокнопочный импорт сохраняет уже подг
   const sha256 = createHash("sha256")
     .update(JSON.stringify(ordered(p)))
     .digest("hex");
-  await page
-    .getByLabel("Файл пакета")
-    .setInputFiles({
-      name: "studio.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify({ package: p, sha256 })),
-    });
+  await page.getByLabel("Файл пакета").setInputFiles({
+    name: "studio.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({ package: p, sha256 })),
+  });
   await expect(page.getByLabel("Пакет и редакция")).toHaveValue(p.id + "/1");
   await page.getByText("Студийные портреты", { exact: true }).click();
   await page.getByRole("button", { name: "Пилот · 3 игрока" }).click();

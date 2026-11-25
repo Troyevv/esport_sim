@@ -303,6 +303,14 @@
   border-radius: 5px;
   background: #233738;
 }
+.scene-avatar.club-mark {
+  object-fit: contain;
+}
+.scene-avatar.club-mark[data-spirit] {
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: 0;
+}
 .scene-identity {
   display: inline-flex;
   align-items: center;
@@ -425,4 +433,79 @@
 }
 .db-import-studio ul {
   padding-left: 1rem;
+}
+
+.kit-tools {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.5rem 0.7rem 0;
+}
+.kit-tools button {
+  min-height: 2.5rem;
+}
+.kit-comparison {
+  margin: 0.65rem;
+  padding: clamp(0.65rem, 2vw, 1.2rem);
+  background: #172727;
+  border: 1px solid #385051;
+  border-radius: 0.65rem;
+  container-type: inline-size;
+}
+.kit-comparison header h3 {
+  margin: 0;
+  font-size: 1.45rem;
+}
+.kit-comparison header p {
+  margin: 0.15rem 0 0.85rem;
+  color: #bed1ce;
+}
+.kit-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+.kit-card {
+  min-width: 0;
+  border: 1px solid;
+  border-bottom-width: 3px;
+  border-radius: 0.45rem;
+  overflow: hidden;
+  background: #233436;
+}
+.kit-card .game-portrait {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 240 / 280;
+  max-height: 220px;
+  border-radius: 0;
+  background: radial-gradient(ellipse at 50% 25%, #415654, #233436 75%);
+}
+.kit-card label {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.45rem;
+  color: #bcd0ce;
+  font-size: 0.78rem;
+}
+.kit-card select {
+  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+}
+@container (max-width:460px) {
+  .kit-cards {
+    grid-template-columns: 1fr;
+  }
+  .kit-card {
+    display: grid;
+    grid-template-columns: 5.8rem minmax(0, 1fr);
+    align-items: center;
+    border-bottom-width: 1px;
+    border-left-width: 3px;
+  }
+  .kit-card .game-portrait {
+    height: 6.6rem;
+  }
 }

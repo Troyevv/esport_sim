@@ -72,3 +72,38 @@ def test_november_bo1_finishes_without_ovr(release, home, away, seed, monkeypatc
     ]
     assert w["phase"] == "finished" and len(rounds) == sum(w["score"])
     print(home, away, seed, w["score"], w["serial"], w["tick"])
+
+
+def test_every_release_club_has_a_local_distinct_badge(release):
+    import base64
+    import hashlib
+    from io import BytesIO
+    from PIL import Image
+    from backend import club_art
+
+    pack = release["package"]
+    marks = {}
+    for group in ("teams", "organizations"):
+        for row in pack[group].values():
+            logo = row["logo"]
+            header, payload = logo["image"].split(",", 1)
+            assert header == "data:image/png;base64"
+            raw = base64.b64decode(payload, validate=True)
+            checksum = hashlib.sha256(raw).hexdigest()
+            info = club_art.catalog()[row["name"]]
+            assert checksum == info["sha256"]
+            assert (club_art.ROOT / (checksum + ".png")).read_bytes() == raw
+            image = Image.open(BytesIO(raw)).convert("RGBA")
+            assert image.size == (192, 192) and image.getchannel("A").getextrema() == (
+                0,
+                255,
+            )
+            status = pack["origins"][row["fields"]["logo"]]["status"]
+            assert status == ("modeled" if info["kind"] == "game" else "confirmed")
+            assert marks.setdefault(row["name"], checksum) == checksum
+    assert len(marks) == len(pack["teams"])
+    modeled = [sha for name, sha in marks.items() if club_art.catalog()[name]["kind"] == "game"]
+    assert len(set(modeled)) == len(modeled)
+    assert set(modeled).isdisjoint(sha for name, sha in marks.items() if club_art.catalog()[name]["kind"] == "original")
+    assert set(marks.values()) == {p.stem for p in club_art.ROOT.glob("*.png")}
+    assert all(r["decision"] and r.get("checked") is not None for r in club_art.catalog().values())

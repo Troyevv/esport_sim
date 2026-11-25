@@ -220,7 +220,7 @@ Wait-Check 'secondary launcher exit' { @(Get-Process -Name EsportSim -ErrorActio
 $origin = "http://127.0.0.1:$($first.port)"
 if ($DesktopBrowser) { Test-Lan $origin }
 if (!(Test-Path (Join-Path $install 'EsportSim\TACTICS.md'))) { throw 'Tactics guide missing from archive.' }
-$scene = (Invoke-RestMethod "$origin/api/database/scene-20261124/1").package
+$scene = (Invoke-RestMethod "$origin/api/database/scene-20261125/1").package
 if ($scene.players.PSObject.Properties.Name.Count -lt 1500) { throw 'Offline player database missing from Windows distribution.' }
 $lineups = @($scene.rosters.PSObject.Properties | Where-Object { $_.Value.name -in @('Team Vitality','Team Falcons') } | ForEach-Object { $_.Name })
 Command $origin 'database-match' @{id=$scene.id;revision=1;seed=42;rosters=$lineups}

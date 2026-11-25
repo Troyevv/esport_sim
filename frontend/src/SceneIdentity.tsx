@@ -1,4 +1,4 @@
-import { GamePortrait, type ClubKit } from "./GamePortrait";
+import { badgeSurface, GamePortrait, type ClubKit } from "./GamePortrait";
 import { useState } from "react";
 import { resolvePortrait, type PhotoRef } from "./portraits";
 
@@ -63,6 +63,8 @@ export type Visual = {
   url?: string | null;
   flag?: string | null;
   club?: boolean;
+  badgeLicense?: string | null;
+  gameBadge?: boolean;
   player?: boolean;
   head?: string | null;
   kit?: ClubKit | null;
@@ -72,6 +74,8 @@ export function Avatar({
   photo,
   url,
   club = false,
+  badgeLicense,
+  gameBadge,
   player = false,
   head,
   kit,
@@ -83,8 +87,29 @@ export function Avatar({
   if (src && failed !== src)
     return (
       <img
-        className="scene-avatar"
-        alt={(club ? "Эмблема · " : "Фотография · ") + name}
+        className={club ? "scene-avatar club-mark" : "scene-avatar"}
+        data-spirit={
+          (club &&
+            (asset?.license ?? badgeLicense) === "Условия Team Spirit") ||
+          undefined
+        }
+        style={
+          club
+            ? {
+                backgroundColor: badgeSurface(
+                  name,
+                  asset?.license ?? badgeLicense,
+                ),
+              }
+            : undefined
+        }
+        alt={
+          (club
+            ? gameBadge || asset?.changes.startsWith("Игровая эмблема")
+              ? "Игровая эмблема · "
+              : "Эмблема · "
+            : "Фотография · ") + name
+        }
         src={src}
         referrerPolicy="no-referrer"
         onError={() => setFailed(src)}

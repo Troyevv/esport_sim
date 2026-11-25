@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useRef, useEffect, useState } from "react";
 
 export type KitDesign = {
   primary: string;
@@ -9,8 +9,18 @@ export type ClubKit = {
   id: string;
   name: string;
   badge?: string | null;
+  badgeLicense?: string | null;
   design?: KitDesign | null;
 };
+export function badgeSurface(name: string, license?: string | null) {
+  if (license === "Условия Team Spirit") return "#000";
+  if (
+    license === "PD-textlogo" &&
+    ["ENVY", "100 Thieves", "MIBR Academy"].includes(name)
+  )
+    return "#dae0de";
+  return undefined;
+}
 export const neutralKit: KitDesign = {
   primary: "#555f69",
   accent: "#808992",
@@ -67,6 +77,26 @@ export function GamePortrait({
   const [badHead, setBadHead] = useState("");
   const [badBadge, setBadBadge] = useState("");
   const design = kitDesign(kit);
+  const portrait = useRef<SVGSVGElement>(null);
+  const spirit = kit?.badgeLicense === "Условия Team Spirit";
+  const [largePatch, setLargePatch] = useState(false);
+  useEffect(() => {
+    if (!spirit || !portrait.current) return;
+    const svg = portrait.current;
+    const measure = () => {
+      const { width, height } = svg.getBoundingClientRect();
+      // The mark occupies 2/3 of its 40-unit patch. Keep the 18px brand minimum.
+      setLargePatch(Math.min(width / 240, height / 280) * 40 * (2 / 3) >= 18);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, [spirit]);
+  const patch = spirit
+    ? { x: 144, y: 187, width: 40, height: 40 }
+    : { x: 150, y: 192, width: 24, height: 24 };
+  const surface = kit && badgeSurface(kit.name, kit.badgeLicense);
   const paths = {
     plain: "",
     sash: "M29 174l18-18 163 106-19 23z",
@@ -104,6 +134,7 @@ export function GamePortrait({
   );
   return (
     <svg
+      ref={portrait}
       className="scene-avatar game-portrait"
       viewBox="0 0 240 280"
       role="img"
@@ -151,15 +182,15 @@ export function GamePortrait({
             <g filter={href("trim")}>{cloth}</g>
           </g>
         )}
-        {kit?.badge && badBadge !== kit.badge && (
-          <image
-            href={kit.badge}
-            x="152"
-            y="193"
-            width="20"
-            height="23"
-            onError={() => setBadBadge(kit.badge!)}
-          />
+        {kit?.badge && badBadge !== kit.badge && (!spirit || largePatch) && (
+          <g>
+            {surface && <rect {...patch} fill={surface} rx={spirit ? 0 : 4} />}
+            <image
+              href={kit.badge}
+              {...patch}
+              onError={() => setBadBadge(kit.badge!)}
+            />
+          </g>
         )}
       </g>
     </svg>

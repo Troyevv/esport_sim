@@ -9,9 +9,11 @@ export default function PortraitEditor({
   value,
   change,
   layer = false,
+  playerSource = false,
 }: {
   value?: PhotoRef;
   layer?: boolean;
+  playerSource?: boolean;
   change: (v: PhotoRef) => void;
 }) {
   const p = resolvePortrait(value);
@@ -105,7 +107,7 @@ export default function PortraitEditor({
               onChange={(e) => set({ changes: e.target.value })}
             />
           </label>
-          {p.image && (
+          {p.image && (!playerSource || p.image.startsWith("data:")) && (
             <img
               src={p.image}
               alt="Портрет в пакете"

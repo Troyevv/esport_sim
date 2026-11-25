@@ -6,6 +6,10 @@ export const photoLicenses: Record<string, string> = {
   "CC BY-SA 4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
   "CC BY 3.0": "https://creativecommons.org/licenses/by/3.0/",
   "PD-textlogo": "https://commons.wikimedia.org/wiki/Template:PD-textlogo",
+  "Условия G2 Esports": "https://g2esports.com/pages/brand-guidelines",
+  "Условия 3DMAX": "https://3dmax.gg/kits-medias/",
+  "Условия Team Spirit": "https://teamspirit.gg/press-kit_EN.pdf",
+  MIT: "https://opensource.org/license/mit",
   CC0: "https://creativecommons.org/publicdomain/zero/1.0/",
 };
 export type PhotoAsset = {

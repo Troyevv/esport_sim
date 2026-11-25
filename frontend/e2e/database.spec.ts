@@ -5,7 +5,7 @@ test("Пакет, поиск, правка, перенос и BO1", async ({ pag
   if (info.project.use.hasTouch) await open.tap();
   else await open.click();
   await expect(page.getByLabel("Пакет и редакция")).toHaveValue(
-    "scene-20261124/1",
+    "scene-20261125/1",
   );
   const catalog = page.getByLabel("Пакет и редакция");
   const target = (await catalog

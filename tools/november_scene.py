@@ -1,6 +1,5 @@
 """Build the redistributable scene from pinned, offline sporting observations."""
 
-import base64
 import csv
 from collections import Counter, defaultdict
 import gzip
@@ -9,13 +8,14 @@ import json
 from pathlib import Path
 from urllib.parse import quote
 
-from backend import database as db
+from backend import club_art, database as db
 from backend.valve_import import blank, ident, origin, row, person
 from tools.scene_model import assign
 from tools.import_scene import starter
 
 DIR = Path(__file__).with_name("scene_sources")
 DAY = "2026-11-24"
+ART_DATE = "2026-11-25"
 DEMO = "https://huggingface.co/datasets/sneakyzero/cs2-pro-round-economy"
 SKIN = "https://skinory.io/en/pro-teams-cs2"
 PGL = "https://news.pglesports.com/news/1794219566606-pgl-major-singapore-2026-team-rosters"
@@ -23,6 +23,9 @@ WIKI = "https://en.wikipedia.org/wiki/PGL_Major_Singapore_2026"
 STYLE = "https://github.com/Jamie-Packer/cs2-playstyle-dataset-2024/tree/3b398f2c29cf2359dec1c09d85b632799d1977b4"
 FREE = "https://www.fpshub.com/1126595/ecstatic-release-entire-cs2-roster-five-players-become-free-agents/"
 ALIASES = {
+    "Nemesis": "Team Nemesis",
+    "5star": "5star eSports",
+    "SINNERS": "SINNERS Esports",
     "THE ONE": "1w Team",
     "BB Team": "BetBoom Team",
     "PVISION": "PARIVISION",
@@ -156,7 +159,7 @@ def corroborated_accounts(sample):
 def build():
     sample = json.loads(gzip.decompress((DIR / "round-sample.json.gz").read_bytes()))
     ranks = read("skinory-202611.json")
-    p = blank(db.RELEASE_ID, "Профессиональная сцена · ноябрь 2026", DAY)
+    p = blank(db.RELEASE_ID, "Профессиональная сцена · ноябрь 2026", ART_DATE)
     src = p["origins"]
     src.update(
         demo=origin("confirmed", "2026-04-20", DEMO),
@@ -303,7 +306,7 @@ def build():
     selected += sorted(
         (k for k in latest if k not in known_rank),
         key=lambda k: (k not in continuity, -counts[k], k),
-    )[: 290 - len(selected)]
+    )[: 287 - len(selected)]
     selected = set(selected)
     for k in sorted(selected):
         source = "skin" if k in known_rank else "demo"
@@ -546,29 +549,26 @@ def enrich_bios(p, lookup):
 
 def attach_images(p):
     media = read("media.json")
-    for group, field, assets in [
-        ("staff", "photo", media["staff"]),
-        ("teams", "logo", media["teams"]),
-        ("organizations", "logo", media["teams"]),
-    ]:
-        by_name = {n.casefold(): value for n, value in assets.items()}
-        for r in p[group].values():
-            entry = by_name.get(r["name"].casefold())
-            if entry:
-                r[field] = photo_asset(entry)
-                badge = {"Astralis": "astralis", "100 Thieves": "100-thieves"}.get(
-                    r["name"]
-                )
-                if field == "logo" and badge:
-                    data = (DIR / "badges" / (badge + ".png")).read_bytes()
-                    r[field].update(
-                        image="data:image/png;base64,"
-                        + base64.b64encode(data).decode(),
-                        source=f"https://github.com/lootmarket/esport-team-logos/blob/6dcc356a2100385517101e11a07f8a5a0d5dbe9e/cs/{badge}/{badge}-logo.png",
-                    )
-                key = ident("asset", entry[0])
-                p["origins"][key] = origin("confirmed", DAY, r[field]["source"])
-                r["fields"][field] = key
+    for staff in p["staff"].values():
+        entry = media["staff"].get(staff["name"])
+        if entry:
+            staff["photo"] = photo_asset(entry)
+            key = ident("asset", entry[0])
+            p["origins"][key] = origin("confirmed", DAY, staff["photo"]["source"])
+            staff["fields"]["photo"] = key
+    for group in ("teams", "organizations"):
+        for record in p[group].values():
+            name = record["name"]
+            asset = club_art.embedded(name)
+            record["logo"] = asset
+            status = (
+                "confirmed"
+                if club_art.catalog()[name]["kind"] == "original"
+                else "modeled"
+            )
+            key = ident("badge", name)
+            p["origins"][key] = origin(status, ART_DATE, asset["source"])
+            record["fields"]["logo"] = key
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ from copy import deepcopy
 from datetime import date
 from pathlib import Path
 
-from . import match, skills, world
+from . import club_art, match, skills, world
 
 GROUPS = ("players", "teams", "organizations", "staff", "rosters")
 VERSIONS = dict(
@@ -20,7 +20,7 @@ VERSIONS = dict(
     map=match.MAP["version"],
 )
 STARTER = Path(__file__).with_name("data") / "austin.json"
-RELEASE_ID = "scene-20261124"
+RELEASE_ID = "scene-20261125"
 RELEASE = STARTER.with_name("scene-202611.json.gz")
 MAPS = (
     "depo",
@@ -140,6 +140,10 @@ def validate_photo(photo):
         in (
             "CC0",
             "PD-textlogo",
+            "Условия G2 Esports",
+            "Условия 3DMAX",
+            "Условия Team Spirit",
+            "MIT",
             "CC BY 2.0",
             "CC BY 3.0",
             "CC BY 4.0",
@@ -547,6 +551,18 @@ def get(db, key, rev):
     return json.loads(row[0])
 
 
+def get_record(db, key, rev, group, ident):
+    require(group in GROUPS, "Неизвестный раздел пакета")
+    valid_id(ident)
+    path = f'$."{group}"."{ident}"'
+    row = db.execute(
+        "SELECT json_extract(body, ?) FROM data_pack WHERE id=? AND revision=?",
+        (path, key, rev),
+    ).fetchone()
+    require(row and row[0], "Запись не найдена")
+    return json.loads(row[0])
+
+
 def install(db, raw):
     obj = read_json(raw)
     p = validate(obj["package"])
@@ -629,14 +645,18 @@ def match_input(p, roster_ids):
         require(len(r["players"]) == 5, "Для BO1 нужны пять игроков в каждом составе")
         org = t["organization"] or "@team-" + tid
         domain["organizations"][org] = dict(name=p["organizations"].get(org, t)["name"])
+        badge = club_art.archive_badge(p["id"], t) or t.get("logo")
+        badge_meta = badge if isinstance(badge, dict) else {}
         media_root = f"/api/database/{p['id']}/{p['revision']}/media/"
         domain["teams"][tid] = dict(
             name=t["name"],
             organization=org,
             visual=dict(
                 club=True,
+                badgeLicense=badge_meta.get("license"),
+                gameBadge=badge_meta.get("changes", "").startswith("Игровая эмблема"),
                 flag=t.get("nationality") or t["region"],
-                url=media_root + "teams/" + tid if t.get("logo") else None,
+                url=media_root + "teams/" + tid if badge else None,
             ),
         )
         members = []
@@ -656,7 +676,8 @@ def match_input(p, roster_ids):
                         id=tid,
                         name=t["name"],
                         design=t.get("kit"),
-                        badge=media_root + "teams/" + tid if t.get("logo") else None,
+                        badgeLicense=badge_meta.get("license"),
+                        badge=media_root + "teams/" + tid if badge else None,
                     ),
                 ),
                 skills=deepcopy(player["skills"]),
