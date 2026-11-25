@@ -87,6 +87,7 @@ def main():
     for name in (
         "BO1.md",
         "MAPS_R4.md",
+        "MAPS_R4_QA.md",
         "CAREER_R33.md",
         "INTERFACE_R34.md",
         "INTERFACE_R34_QA.md",

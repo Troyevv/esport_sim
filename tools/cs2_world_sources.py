@@ -12,6 +12,19 @@ from pathlib import Path
 from cs2_map_sources import ACTIVE, ADDITIONAL, BUILD, VERSION
 
 
+VPK_SHA256 = {
+    "de_ancient": "6e54d22ff86709d71843b52febbfe6fcd48633a20b6a2b25c6ffbdf0b796d712",
+    "de_anubis": "bca91cee11592c65c2869c599769232f29335458376ed90431a013b58c938e07",
+    "de_cache": "a53d4294883fb2c51025cfa3d4208fa396494f9492ebd51ea7138e8a231aefcd",
+    "de_dust2": "51d6bb432b6553bfae6c38219a527c5de2464a2b107080f2b8be7d8427ebb885",
+    "de_inferno": "21b8b4f47b267a31904c628f3b6e444c0cbc52e6fc1fde82a09104c82a9c6bc1",
+    "de_mirage": "e66cdf1ae6a976f6f6ba510a2addd04b25a4c1cfd811f51f1ef13f0954e6e350",
+    "de_nuke": "ab56860b13c86ead3f0f17f1488e4cec44ac0208dbfdda9f1fecb5d5e769d4a7",
+    "de_train": "25ce48e473486bd7057b297cc1b6bf9ff239dc08fd161ddb1fd7e5f7aab47732",
+    "de_vertigo": "77b0afd6d2f3332255cc5bceb9377e6ce8413ae0955106242ee2927e734cdac4",
+}
+
+
 def sha256(path):
     with path.open("rb") as source:
         return hashlib.file_digest(source, "sha256").hexdigest()
@@ -21,6 +34,9 @@ def extract_map(csgo, map_id, viewer, exporter, reference, output):
     archive = csgo / "maps" / f"{map_id}.vpk"
     if output.exists():
         raise FileExistsError(f"Каталог назначения уже существует: {output}")
+    archive_hash = sha256(archive)
+    if archive_hash != VPK_SHA256[map_id]:
+        raise ValueError(f"{map_id}: SHA-256 VPK отличается от закреплённого манифеста Steam")
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output.parent) as tmp:
         stage = Path(tmp) / map_id
@@ -63,7 +79,7 @@ def extract_map(csgo, map_id, viewer, exporter, reference, output):
             shutil.copyfile(reference / map_id / png, stage / png)
         report = {
             "map": map_id, "clientVersion": VERSION, "steamBuild": BUILD,
-            "vpkSha256": sha256(archive), "navSha256": nav_hash,
+            "vpkSha256": archive_hash, "navSha256": nav_hash,
             "worldPhysicsSha256": sha256(exported),
             "overview": atlas["overview"], "radars": atlas["radars"],
             "surfaceCount": len(geometry["surfaces"]),
