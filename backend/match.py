@@ -81,7 +81,9 @@ def init_performance(a, now):
 
 def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, *, map_id="depo"):
     space = None if map_id=="depo" else cs2_maps.get(map_id)
-    w = engine.initial(seed)
+    agents = [engine.spawn_slot(seed, side, slot, side_index*5+slot)
+              for side_index,side in enumerate(("T","CT")) for slot in range(5)]
+    w = dict(seed=seed,tick=0,agents=agents)
     w.update(
         version=2,
         checkpointVersion=checkpoints.VERSION,
@@ -102,7 +104,7 @@ def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, 
     )
     if space:
         w.update(mapId=space.name,map_version=cs2_maps.BUILD,rules="cs2-bo1.1",checkpointVersion=7)
-    # R0 creates named spawn slots. Bind them once when creating the match.
+    # Slot identity survives side switches and loading a saved round.
     for a in w["agents"]:
         slot = int(a["id"][len(a["team"]) :]) - 1
         a.update(
@@ -217,7 +219,7 @@ def next_round(w):
         slot = a["slot"]
         if space:
             (x,y,z),heading,area = space.spawn(side,slot,(w["seed"]+n) % len(space.spawns[side]))
-            a.update(z=z,navArea=area,waypoint=0)
+            a.update(z=z,navArea=area,waypoint=0,blockedTicks=0,inspectedSites={})
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
@@ -396,7 +398,11 @@ def begin_live(w):
             )
             if plant:
                 site = space.site_at(ai.point(plant)) if space else tactics.zone_at(plant["x"], plant["y"])
-        lane=(engine._draw(igl)>>16)%2 if space else 0
+        lane=0
+        if space:
+            site,style,lane=ai.cs2_play.opening(space,w,squad,igl,profile(w,igl),buy,site,style,call)
+            if board and plant:
+                site=space.site_at(ai.point(plant))
         w["plans"][side] = dict(
             site=site,
             style=style,
@@ -404,7 +410,7 @@ def begin_live(w):
             start=now,
             review=now,
             rotated=False,
-            orders=space.orders(side,site,squad,lane) if space else role_orders(side, site),
+            orders=space.orders(side,site,squad,lane,style) if space else role_orders(side, site),
             captain=igl["id"],
             reinforce=site if side == "CT" and call in ("Выход A", "Выход B") else None,
         )
@@ -570,6 +576,11 @@ def finish_round(w, side, reason):
         side=side,
         reason=reason,
     )
+    if w.get("mapId") and "T" in w["plans"]:
+        attack = next(a["teamId"] for a in w["agents"] if a["team"]=="T")
+        history=w.setdefault("siteHistory",{}).setdefault(attack,[])
+        history.append([w["plans"]["T"]["site"],side=="T"])
+        del history[:-6]
     kills = w["kills"]
     for a in w["agents"]:
         player = profile(w, a)
@@ -983,7 +994,7 @@ def project(w, view="full"):
     ]
     # Do not reveal an unseen thrower's origin via the trajectory of a landed grenade.
     effects = [
-        f if view in ("full", f["team"]) else dict(f, sx=f["x"], sy=f["y"], player=None)
+        f if view in ("full", f["team"]) else dict({k:v for k,v in f.items() if k not in ("trajectory","sz")}, sx=f["x"], sy=f["y"], player=None)
         for f in effects
     ]
     stats = []
@@ -1108,7 +1119,7 @@ def project(w, view="full"):
             ],
             kills=w["kills"],
             groundWeapons=[
-                {k: g[k] for k in ("id", "weapon", "x", "y")}
+                {k: g[k] for k in ("id", "weapon", "x", "y","z") if k in g}
                 for g in w["groundWeapons"]
                 if view == "full" or observable(g)
             ],

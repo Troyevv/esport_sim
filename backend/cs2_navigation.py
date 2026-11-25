@@ -143,7 +143,7 @@ class Navigation:
                 candidates.append((abs(z - height), ident))
         return min(candidates)[1] if candidates else None
 
-    def route(self, start, goal, *, avoided=frozenset()):
+    def route(self, start, goal, *, avoided=frozenset(), excluded=frozenset()):
         """Return directed crossings to a goal, or None for an unreachable area."""
         if start not in self.areas or goal not in self.areas or goal in avoided:
             return None
@@ -162,7 +162,7 @@ class Navigation:
                 return path[::-1]
             for crossing in self.links[here]:
                 target = crossing.area
-                if target in avoided:
+                if target in avoided or (here, target) in excluded:
                     continue
                 next_cost = cost + self._cost(here, crossing)
                 if next_cost >= costs.get(target, float("inf")):

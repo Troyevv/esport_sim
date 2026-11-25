@@ -43,7 +43,7 @@ def simulate(draft):
             )
         ],
         effects=[
-            {k: e[k] for k in ("utility", "x", "y", "land", "end", "radius")}
+            {k: e[k] for k in ("utility", "x", "y", "z", "land", "end", "radius") if k in e}
             for e in world["events"]
             if e["kind"] == "throw"
         ],

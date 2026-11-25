@@ -315,7 +315,7 @@ def create_app(
         return [{"id":"depo","name":"Депо"}, *[
             {"id":m,"name":cs2_maps.NAMES[m]} for m in cs2_maps.installed()]]
 
-    @app.get("/api/maps/{name}/radar")
+    @app.get("/api/maps/{name}/radar.png")
     def radar_image(name: str, layer: Literal["default","lower"]="default"):
         if name not in cs2_maps.NAMES:
             raise HTTPException(404,"Неизвестная карта")
@@ -366,13 +366,10 @@ def create_app(
                         legs.append([])
                         continue
                     target = space.locate(goal)
-                    path = space.route(area, target)
+                    path = space.path(area,tuple(pos),target,tuple(goal),frozenset())
                     if path is None:
                         raise ValueError("Между точками отсутствует проход NAV")
-                    points = [pos]
-                    for crossing in path:
-                        points.extend((space.to_sim(crossing.leave), space.to_sim(crossing.enter)))
-                    legs.append([dict(zip(("x","y","z"), p)) for p in [*points, goal]])
+                    legs.append([dict(zip(("x","y","z"),p)) for p in (pos,*path)])
                     pos, area = goal, target
                 result.append(legs)
             return result

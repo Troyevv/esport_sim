@@ -319,7 +319,9 @@ class CareerStore:
             queue=c["queue"],
             history=c["history"],
             roster=members,
-            teamRating=world.team_rating(domain, c["teams"][own], match.MAP["id"]),
+            teamRating=world.team_rating(domain,c["teams"][own],next(
+                (event.get("mapId","depo").removeprefix("de_") for event in c["queue"]
+                 if event["kind"]=="match" and own in event["teams"]), "depo")) ,
             slots=self.slots(c["id"]),
         )
         return dict(careers=list(menu.values()), active=info)

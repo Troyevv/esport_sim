@@ -243,9 +243,19 @@ Command $origin 'career-load' @{slot='2'}
 $c = (Invoke-RestMethod "$origin/api/career").active
 if ($c.date -ne $c.start -or $c.history.Count -ne 0 -or $c.roster.Count -ne 5) { throw 'Career slot did not restore.' }
 Command $origin 'career-lab'
-Command $origin 'database-match' @{id=$scene.id;revision=1;seed=42;rosters=$lineups}
+$maps = @(Invoke-RestMethod "$origin/api/maps")
+if ($maps.Count -ne 10) { throw 'Expected nine CS2 maps plus the lab.' }
+Command $origin 'database-match' @{id=$scene.id;revision=1;seed=42;rosters=$lineups;map='de_nuke'}
 $realMatch = (Invoke-RestMethod "$origin/api/state").world.match
 if ($realMatch.source.id -ne $scene.id -or 'Team Vitality' -notin $realMatch.teams) { throw 'Packaged real BO1 did not load.' }
+if ((Invoke-RestMethod "$origin/api/state").world.map.id -ne 'de_nuke') { throw 'Wrong BO1 map.' }
+Command $origin 'speed' 8
+Command $origin 'start'
+Wait-Check 'native XYZ simulation' { (Invoke-RestMethod "$origin/api/state").world.match.phase -eq 'live' }
+Command $origin 'pause'
+Command $origin 'save'
+Command $origin 'load'
+if ((Invoke-RestMethod "$origin/api/state").world.map.id -ne 'de_nuke') { throw 'Map lost after save/load.' }
 $library = Invoke-RestMethod "$origin/api/tactics"
 $plan = $library.plans | Where-Object { $_.id -eq 'std-T-0' }
 if ($plan.slots.Count -ne 5) { throw 'Packaged board has no five-slot plan.' }

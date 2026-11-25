@@ -15,7 +15,7 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--ticks", type=int, default=1200)
     parser.add_argument(
-        "--bo1", action="store_true", help="Сыграть полный выставочный BO1 на Депо"
+        "--bo1", action="store_true", help="Сыграть полный выставочный BO1 на выбранной карте"
     )
     parser.add_argument("--map",default="depo",help="Идентификатор установленной карты BO1")
     args = parser.parse_args()

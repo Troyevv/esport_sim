@@ -120,7 +120,9 @@ export default function TacticEditor({
             (p) =>
               p.standard && p.side === coachSide && p.buy === match?.nextBuy,
           ) || data.plans.find((p) => p.standard)!;
-        setPlan((old) => old || initial);
+        const arena=data.maps.find(m=>m.id===frame.world.map.id);
+        setPlan(old => old && data.maps.some(m=>m.id===old.map && Number(m.version)===old.geometry)
+          ? old : arena?.radar ? newPlan(arena,coachSide || "T",match?.nextBuy || data.buys[0]) : initial);
       })
       .catch((e) => {
         if (live) setError(errorText(e));

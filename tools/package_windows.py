@@ -1,6 +1,7 @@
 """Build from a clean locked frontend dist and the installed packaging environment."""
 
 import hashlib
+from importlib.metadata import distribution
 import os
 import platform
 import shutil
@@ -61,6 +62,8 @@ def main():
             f"{ROOT / 'backend' / 'data'}:backend/data",
             "--collect-all",
             "embreex",
+            "--add-binary",
+            f"{distribution('embreex').locate_file('embreex.libs')}/*.dll:embreex.libs",
             "--collect-data",
             "mediapipe",
             "--collect-binaries",

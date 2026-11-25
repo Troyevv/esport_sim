@@ -109,6 +109,8 @@ def create(pack, options):
 
 
 def schedule(c):
+    if not c.get("mapPool"):
+        c["mapPool"] = cs2_maps.installed()
     week = c["week"]
     start = database.day(c["start"]) + timedelta(days=7 * week)
     # Rotate opponents without allocating a season or creating a competition.

@@ -73,6 +73,15 @@ def test_floor_probe_reads_face_materials_and_transformed_primitives(tmp_path):
         ("wood", [2, 2]), ("metal", [10, 20]), ("wood", [26, 29])]
     assert rays[1]["physicalHits"] == []
 
+    from backend.cs2_collision import Collision, SIGHT, THROW
+    runtime = Collision(tmp_path)
+    segments = [((2,2,25),(2,2,31)), ((8,8,-2),(8,8,24)), ((2,2,21),(2,2,22))]
+    bulk = runtime.sight_many(segments)
+    assert bulk == {segment: runtime.trace(*segment,SIGHT) is None for segment in segments}
+    assert [bulk[s] for s in segments] == [False, True, True]
+    hit = runtime.trace(*segments[0],THROW)
+    assert hit[1] == "wood" and abs(hit[0]-1/6)<1e-6
+
 
 def test_tactical_route_requires_a_single_ordered_path():
     areas = [area(i, (i - 1) * 20, 0, 0) for i in range(1, 6)]

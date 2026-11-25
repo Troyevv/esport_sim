@@ -237,7 +237,7 @@ export default function TacticMap(props: Props) {
       const frame = preview.frames[n],
         next = preview.frames[n + 1] || frame;
       for (const f of preview.effects.filter(
-        (f) => f.land <= tick && f.end > tick,
+        (f) => onLayer(map,layerId,f.z) && f.land <= tick && f.end > tick,
       )) {
         ctx.beginPath();
         ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);

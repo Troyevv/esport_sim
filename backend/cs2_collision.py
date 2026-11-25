@@ -1,6 +1,7 @@
 """BVH segment queries on the pinned CS2 collision export, in Hammer XYZ."""
 
 import json
+from collections import OrderedDict
 from functools import lru_cache
 from math import sqrt
 
@@ -15,8 +16,13 @@ def channels(tags, group, material):
     tags = set(tags)
     clip = tags & {"playerclip", "npcclip", "csgo_grenadeclip", "navclip"}
     if clip and not tags & {"solid", "window", "passbullets"}:
-        return (MOVEMENT if "playerclip" in tags else 0) | (THROW if "csgo_grenadeclip" in tags else 0)
-    if not (group in ("Default", "default", "", None) or tags & {"solid", "window", "passbullets", "sky", "blocklos"}):
+        return (MOVEMENT if "playerclip" in tags else 0) | (
+            THROW if "csgo_grenadeclip" in tags else 0
+        )
+    if not (
+        group in ("Default", "default", "", None)
+        or tags & {"solid", "window", "passbullets", "sky", "blocklos"}
+    ):
         return 0
     mask = MOVEMENT | THROW
     if "passbullets" not in tags:
@@ -58,14 +64,56 @@ class Primitive:
             offset = origin - self.centers[0]
             along, speed = offset @ axis, ray @ axis
             radial, velo = offset - along * axis, ray - speed * axis
-            hits.extend(t for t in _roots(velo @ velo, radial @ velo, radial @ radial - self.radius**2)
-                        if 0 <= along + t * speed <= length)
-        for center in self.centers:
+            hits.extend(
+                t
+                for t in _roots(
+                    velo @ velo, radial @ velo, radial @ radial - self.radius**2
+                )
+                if 0 <= along + t * speed <= length
+            )
+        for index, center in enumerate(self.centers):
             offset = origin - center
-            hits.extend(_roots(ray @ ray, offset @ ray, offset @ offset - self.radius**2))
-        if not hits or max(hits) < 0 or min(hits) > 1:
+            for t in _roots(ray @ ray, offset @ ray, offset @ offset - self.radius**2):
+                projection = (
+                    ((origin + t * ray - self.centers[0]) @ axis) if length else 0
+                )
+                if not length or (
+                    projection <= 0 if index == 0 else projection >= length
+                ):
+                    hits.append(t)
+        inside = [t for t in hits if 0 <= t <= 1]
+        if not inside:
             return None
-        return max(0., min(hits))
+        t = min(inside)
+        position = origin + t * ray
+        center = self.centers[0]
+        if length:
+            center = center + axis * np.clip((position - center) @ axis, 0, length)
+        normal = (position - center) @ self.inv.T
+        return t, normal
+
+
+class Bounds:
+    """AABB hierarchy for transformed sphere and capsule instances."""
+
+    def __init__(self, shapes):
+        self.lo = np.min([p.lo for p in shapes], axis=0).tolist()
+        self.hi = np.max([p.hi for p in shapes], axis=0).tolist()
+        self.children = []
+        self.shapes = shapes
+        if len(shapes) > 6:
+            axis = max(range(3), key=lambda i: self.hi[i] - self.lo[i])
+            ordered = sorted(shapes, key=lambda p: p.lo[axis] + p.hi[axis])
+            m = len(ordered) // 2
+            self.children = [Bounds(ordered[:m]), Bounds(ordered[m:])]
+            self.shapes = []
+
+    def candidates(self, lo, hi):
+        if any(b < c or d < a for a, b, c, d in zip(self.lo, self.hi, lo, hi)):
+            return
+        yield from self.shapes
+        for child in self.children:
+            yield from child.candidates(lo, hi)
 
 
 class Collision:
@@ -76,7 +124,7 @@ class Collision:
         raw = np.memmap(folder / "collision.bin", mode="r", dtype="u1")
         blocks = data["blocks"]
         self.materials = list(data["surfaces"].values())
-        materials = {int(k): i for i,k in enumerate(data["surfaces"])}
+        materials = {int(k): i for i, k in enumerate(data["surfaces"])}
         ordered = np.array(sorted(materials), dtype=np.uint32)
         indices = np.array([materials[h] for h in ordered], dtype=np.uint16)
         vertices = np.empty((sum(b["vertices"] for b in blocks), 3), np.float32)
@@ -87,26 +135,78 @@ class Collision:
         masks = {}
         for b in blocks:
             nv, nf, offset = b["vertices"], b["triangles"], b["offset"]
-            vertices[v:v+nv] = np.frombuffer(raw, "<f4", nv*3, offset).reshape(-1, 3)
-            faces[f:f+nf] = np.frombuffer(raw, "<i4", nf*3, offset+12*nv).reshape(-1, 3) + v
-            material = self.material[f:f+nf]
+            vertices[v : v + nv] = np.frombuffer(raw, "<f4", nv * 3, offset).reshape(
+                -1, 3
+            )
+            faces[f : f + nf] = (
+                np.frombuffer(raw, "<i4", nf * 3, offset + 12 * nv).reshape(-1, 3) + v
+            )
+            material = self.material[f : f + nf]
             if b["perFace"]:
-                hashes = np.frombuffer(raw, "<u4", nf, offset+12*(nv+nf))
+                hashes = np.frombuffer(raw, "<u4", nf, offset + 12 * (nv + nf))
                 material[:] = indices[np.searchsorted(ordered, hashes)]
             else:
                 material[:] = materials[b["material"]]
             key = tuple(b["tags"]), b["group"]
             if key not in masks:
-                masks[key] = np.array([channels(*key, m) for m in self.materials], dtype=np.uint8)
-            self.mask[f:f+nf] = masks[key][material]
+                masks[key] = np.array(
+                    [channels(*key, m) for m in self.materials], dtype=np.uint8
+                )
+            self.mask[f : f + nf] = masks[key][material]
             v += nv
             f += nf
         self.scene = EmbreeScene()
         self.mesh = TriangleMesh(self.scene, vertices, faces)
-        self.shapes = [Primitive(p, self.materials[materials[p["material"]]]) for p in data["primitives"]]
-        self.bounds = [(p.lo.tolist(), p.hi.tolist()) for p in self.shapes]
+        self.shapes = [
+            Primitive(p, self.materials[materials[p["material"]]])
+            for p in data["primitives"]
+        ]
+        self.bounds = Bounds(self.shapes) if self.shapes else None
         # Cache only exact segments and bound retention to this map.
+        self.sight_cache = OrderedDict()
         self.trace = lru_cache(maxsize=32768)(self._trace)
+
+    def sight_many(self, segments):
+        # Exact cached eye segments. Resolve the first triangle of all new
+        # pairs in one native call; only transparent hits require further rays.
+        result = {}
+        missing = []
+        for a, b in segments:
+            key = (a, b) if a <= b else (b, a)
+            if key in self.sight_cache:
+                result[(a, b)] = self.sight_cache[key]
+            elif a == b:
+                result[(a, b)] = True
+            else:
+                missing.append((a, b))
+        if not missing:
+            return result
+        starts = np.asarray([a for a, _ in missing], dtype=np.float32)
+        delta = np.asarray([b for _, b in missing], dtype=np.float32) - starts
+        rays = self.scene.run(
+            starts, delta, dists=np.ones(len(missing), dtype=np.float32)
+        )
+        for idx, ((a, b), face) in enumerate(zip(missing, rays)):
+            if face >= 0:
+                visible = (
+                    False
+                    if self.mask[face] & SIGHT
+                    else self.trace(a, b, SIGHT) is None
+                )
+            else:
+                visible = True
+            if visible and self.bounds:
+                lo, hi = tuple(map(min, a, b)), tuple(map(max, a, b))
+                visible = not any(
+                    p.mask & SIGHT and p.hit(starts[idx], delta[idx]) is not None
+                    for p in self.bounds.candidates(lo, hi)
+                )
+            result[(a, b)] = visible
+            key = (a, b) if a <= b else (b, a)
+            self.sight_cache[key] = visible
+        while len(self.sight_cache) > 32768:
+            self.sight_cache.popitem(last=False)
+        return result
 
     def _trace(self, source, target, channel):
         if source == target:
@@ -114,23 +214,38 @@ class Collision:
         start = np.array([source], dtype=np.float32)
         delta = np.array([target], dtype=np.float32) - start
         current = start
-        offset = 0.
+        offset = 0.0
         best = None
         while offset < 1:
-            hit = self.scene.run(current, delta, dists=np.array([1-offset], dtype=np.float32), output=True)
+            hit = self.scene.run(
+                current,
+                delta,
+                dists=np.array([1 - offset], dtype=np.float32),
+                output=True,
+            )
             face = int(hit["primID"][0])
             if face < 0:
                 break
             t = offset + float(hit["tfar"][0])
             if self.mask[face] & channel:
-                best = (t, self.materials[self.material[face]])
+                best = (t, self.materials[self.material[face]], hit["Ng"][0])
                 break
-            offset = t + max(1e-6, 0.01/max(0.01, float(abs(delta).max())))
+            offset = t + max(1e-6, 0.01 / max(0.01, float(abs(delta).max())))
             current = start + offset * delta
-        for p, (lo, hi) in zip(self.shapes, self.bounds):
-            if p.mask & channel and all(min(a,b) <= upper and max(a,b) >= lower
-                                         for a,b,lower,upper in zip(source,target,lo,hi)):
-                t = p.hit(start[0], delta[0])
-                if t is not None and (best is None or t < best[0]):
-                    best = (t, p.material)
-        return best
+        if self.bounds:
+            lo = tuple(map(min, source, target))
+            hi = tuple(map(max, source, target))
+            for p in self.bounds.candidates(lo, hi):
+                if p.mask & channel:
+                    hit = p.hit(start[0], delta[0])
+                    if hit is not None and (best is None or hit[0] < best[0]):
+                        best = (hit[0], p.material, hit[1])
+        if best is None:
+            return None
+        if channel != THROW:
+            return best[0], best[1], None
+        normal = best[2]
+        size = float(np.linalg.norm(normal))
+        # The map adapter flips Hammer Y when converting to simulation axes.
+        n = tuple(float(x) / size for x in normal) if size else (0.0, 0.0, 1.0)
+        return best[0], best[1], (n[0], -n[1], n[2])

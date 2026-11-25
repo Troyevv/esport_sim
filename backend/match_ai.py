@@ -1,4 +1,4 @@
-"""Perception, captain decisions and execution on Depo's navigation grid."""
+"""Perception, captain decisions and execution in the common BO1 simulation."""
 
 from collections import deque
 from functools import lru_cache
@@ -31,13 +31,15 @@ def clear(space, a, b):
     return space.clear(a,b) if space else engine.clear_line(a["x"],a["y"],b["x"],b["y"])
 
 
-def sees(space,a,b):
-    if not space:
-        return engine.sees(a,b)
+def in_view(a,b):
     dx,dy=b["x"]-a["x"],b["y"]-a["y"]
     d2=dx*dx+dy*dy
     dot=dx*cos(a["heading"])+dy*sin(a["heading"])
-    return dot>=0 and 4*dot*dot >= d2 and space.clear(a,b)
+    return dot>=0 and 4*dot*dot >= d2
+
+
+def sees(space,a,b):
+    return in_view(a,b) and space.clear(a,b) if space else engine.sees(a,b)
 
 
 def distance(a, b):
@@ -102,6 +104,10 @@ def observe(w, players, space=None):
     smoke = [
         f for f in w["effects"] if f["kind"] == "Дым" and f["land"] <= now < f["end"]
     ]
+    if space:
+        pairs=[(a,b) for a in players if a["blind"]<=now for b in players
+               if b["team"]!=a["team"] and in_view(a,b)]
+        visible=space.visible_pairs(pairs)
     for a in players:
         previous = a["visible"]
         a["visible"] = []
@@ -111,7 +117,7 @@ def observe(w, players, space=None):
         if a["blind"] > now:
             continue
         for b in players:
-            if b["team"] == a["team"] or not sees(space,a,b):
+            if b["team"] == a["team"] or not ((a["id"],b["id"]) in visible if space else engine.sees(a,b)):
                 continue
             if any(near_line(a, b, fog, fog["radius"]) for fog in smoke):
                 continue
@@ -188,7 +194,7 @@ def captain(w, squad, space=None):
         plan.update(site="B" if site == "A" else "A", rotated=True)
         if space:
             members = [a for a in w["agents"] if a["team"]=="T"]
-            plan["orders"] = space.orders("T",plan["site"],members,1-plan["lane"])
+            plan["orders"] = space.orders("T",plan["site"],members,1-plan["lane"],plan["style"])
             for a in squad:
                 a["waypoint"]=0
         else:
@@ -441,6 +447,13 @@ def act(w, a, allies, bomb, visible_fire):
         if not a["reloadAt"] and a["ammo"] and now >= a["ready"]:
             return ("shoot", contact)
         return ("hold", None)
+    if w.get("space") and a["target"] and a["ammo"] > spec.mag//2 and not a["reloadAt"]:
+        seen=a["knowledge"].get(a["target"])
+        if (seen and seen["source"]=="Зрение" and now-seen["tick"]<=3 and now>=a["ready"]
+                and a["blind"]<=now and not w["action"] and s["game_reading"]>=50
+                and not any(m is not a and near_line(a,seen,m,2) for m in allies)):
+            a["status"]="Продолжает очередь по последнему контакту"
+            return ("shoot", seen)
     a["target"] = None
     if w["action"] and w["action"]["player"] == a["id"]:
         return ("objective", None)
@@ -614,6 +627,7 @@ def shoot(w, a, sight, b, space=None):
         y=a["y"],
         tx=sight["x"],
         ty=sight["y"],
+        **({"z":a["z"],"tz":sight["z"]} if space else {}),
         accuracy=accuracy,
         burst=burst,
     )
@@ -629,7 +643,7 @@ def shoot(w, a, sight, b, space=None):
         if hit:
             # Game material classes and weapon stats only. A stale observed
             # target can also move behind an opaque wall before this tick resolves.
-            t,material=hit
+            t,material,_=hit
             if material not in ("wood","wood_panel","glass","cardboard","plastic","metalgrate"):
                 return
             reverse=space.hit(xyz(b),xyz(a),4,56)
@@ -662,18 +676,8 @@ def throw(w, a, target, space=None):
     mastery = world.match_player(w, a)["skills"][perf.GRENADE_SKILL[name]]
     x, y = perf.grenade_landing(a, target, mastery, engine._draw(a) >> 16)
     if space:
-        z=target["z"]
-        previous=(a["x"],a["y"],a["z"]+4)
-        for step in range(1,flight+1):
-            t=step/flight
-            nxt=(a["x"]+(x-a["x"])*t,a["y"]+(y-a["y"])*t,
-                 (a["z"]+4)*(1-t)+(z+0.2)*t+min(18,flight)*4*t*(1-t))
-            hit=space.hit(previous,nxt,8)
-            if hit:
-                x,y,z=(p+(q-p)*max(0,hit[0]-.005) for p,q in zip(previous,nxt))
-                flight=step
-                break
-            previous=nxt
+        x,y,z,trajectory=space.grenade(xyz(a),(x,y,target["z"]),flight)
+        flight=len(trajectory)-1
     elif not engine.clear_line(a["x"], a["y"], x, y):
         x, y = a["x"], a["y"]
     effect = dict(
@@ -690,7 +694,7 @@ def throw(w, a, target, space=None):
         radius=radius,
     )
     if space:
-        effect.update(z=z,sz=a["z"])
+        effect.update(z=z,sz=a["z"],trajectory=trajectory)
     w["effects"].append(effect)
     w["recentEffects"].append(effect)
     emit(

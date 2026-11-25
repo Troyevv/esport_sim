@@ -84,6 +84,16 @@ def upgrade_match(db, world):
 
 
 def validate_current(world):
+    if world.get("mapId"):
+        from math import isfinite
+        from . import cs2_maps
+        space=cs2_maps.get(world["mapId"])
+        for player in world["agents"]:
+            if (player.get("navArea") not in space.nav.areas or
+                    not all(type(v) in (int,float) and isfinite(v) for v in cs2_maps.xyz(player)) or
+                    any(len(p)!=4 or p[3] not in space.nav.areas or not all(
+                        type(v) in (int,float) and isfinite(v) for v in p[:3]) for p in player["path"])):
+                raise CheckpointError("Недействительный маршрут или высота в сохранении карты")
     playbook = world.get("playbook", {})
     for key, board in playbook.items():
         if key != board["side"] + "/" + board["buy"]:
@@ -106,6 +116,8 @@ def validate_current(world):
                     raise CheckpointError("Повреждён прогресс маршрута")
     for board in boards:
         tactics.validate(board)
+        if board["map"]!=world.get("mapId","depo") or board["geometry"]!=world["map_version"]:
+            raise CheckpointError("Тактика относится к другой карте")
         if (
             not isinstance(board.get("id"), str)
             or type(board.get("revision")) is not int

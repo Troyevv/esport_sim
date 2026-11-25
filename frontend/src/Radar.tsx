@@ -73,7 +73,7 @@ export function drawPlan(map: RadarMap, layer = "default", redraw = () => {}, fa
   if (map.radar) {
     const url = serverURL(map.radar);
     url.searchParams.set("layer", layer);
-    void Assets.load<Texture>({src: url.href, parser: "loadTextures", data: {loadParser: "loadImageBitmap"}})
+    void Assets.load<Texture>(url.href)
       .then(texture => {
         if (plan.destroyed) return;
         const background = plan.addChild(new Sprite(texture));
@@ -246,7 +246,7 @@ function setupScene(
       const id = match.bomb?.carrier;
       const carrier = id && playback.has(id) ? playback.sample(id, now) : undefined;
       items.begin();
-      drawEvents(effects, match, tick, items, carrier);
+      drawEvents(effects, match, tick, items, carrier, z => onLayer(current.frame.world.map, current.layer || "default", z));
       items.end();
       changed = true;
     }

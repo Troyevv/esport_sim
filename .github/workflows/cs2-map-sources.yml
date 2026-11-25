@@ -41,7 +41,7 @@ jobs:
           name: cs2-runtime-26879581
           path: runtime-data/maps/26879581
       - run: python -m pip install -r requirements.txt
-      - run: python -m tools.check_cs2_matches --map "${{ matrix.map }}" --games 12 --out build/match-qa
+      - run: python -m tools.check_cs2_matches --map "${{ matrix.map }}" --games 24 --out build/match-qa
       - uses: actions/upload-artifact@v4
         with:
           name: match-qa-${{ matrix.map }}

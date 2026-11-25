@@ -64,14 +64,24 @@ export function drawEvents(
   tick: number,
   items: RadarEquipment,
   carrier?: { x: number; y: number },
+  visible: (z?: number) => boolean = () => true,
 ) {
   g.clear();
   for (const gun of m.groundWeapons)
-    items.show(gun.weapon, gun.x, gun.y, 8, 4, 0xacbfc3);
+    if (visible(gun.z)) items.show(gun.weapon, gun.x, gun.y, 8, 4, 0xacbfc3);
   for (const f of m.effects) {
     if (tick < f.start || tick >= f.end + 3) continue;
     const color = colors[f.kind];
     if (tick < f.land) {
+      const path = f.trajectory;
+      if (path) {
+        const span = Math.max(0,tick-f.start);
+        const from = path[Math.min(path.length-1,Math.floor(span))];
+        const to = path[Math.min(path.length-1,Math.floor(span)+1)];
+        const t = span%1;
+        if (visible(from[2]+(to[2]-from[2])*t)) items.show(f.kind,from[0]+(to[0]-from[0])*t,from[1]+(to[1]-from[1])*t,5,6,color,f.team);
+        continue;
+      }
       const t = Math.min(1, (tick - f.start) / (f.land - f.start)),
         x = f.sx + (f.x - f.sx) * t,
         y = f.sy + (f.y - f.sy) * t;
@@ -80,6 +90,7 @@ export function drawEvents(
         .stroke({ color, width: 0.7, alpha: 0.7 });
       items.show(f.kind, x, y, 5, 6, color, f.team);
     } else {
+      if (!visible(f.z)) continue;
       const fade = Math.min(1, (f.end + 3 - tick) / 4);
       items.show(f.kind, f.x, f.y, 4.5, 5.5, color, f.team);
       const radius = f.radius * Math.min(1, 0.35 + (tick - f.land) * 0.25);
@@ -90,12 +101,12 @@ export function drawEvents(
   }
   for (const s of m.shots) {
     const age = tick - s.tick;
-    if (age < 0 || age >= 4) continue;
+    if (!visible(s.z) || age < 0 || age >= 4) continue;
     g.moveTo(s.x, s.y)
       .lineTo(s.tx, s.ty)
       .stroke({ color: 0xfce7ae, width: 0.85, alpha: 1 - age / 4 });
   }
-  if (m.bomb) {
+  if (m.bomb && visible(m.bomb.z)) {
     const p = carrier ?? m.bomb;
     if (m.resolution && tick >= m.resolution.tick) {
       const progress = Math.min(1, (tick - m.resolution.tick + 1) / 13);
@@ -125,7 +136,7 @@ export function drawEvents(
         width: 0.8,
       });
   }
-  if (m.action && m.bomb) {
+  if (m.action && m.bomb && visible(m.bomb.z)) {
     const t = Math.max(
       0,
       Math.min(1, (tick - m.action.start) / (m.action.end - m.action.start)),

@@ -114,7 +114,7 @@ def validate(plan):
                 raise ValueError(f"{prefix}: лишний параметр действия")
             if kind in MOVES:
                 if space:
-                    if space.route(space.locate(origin),area) is None:
+                    if space.path(space.locate(origin),tuple(origin),area,(x,y,z),frozenset()) is None:
                         raise ValueError(f"{prefix}: нет пути по NAV с предыдущей позиции")
                     origin=(x,y,z)
                 else:
