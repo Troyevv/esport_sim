@@ -119,6 +119,15 @@ def main():
         comparison = world / "world_visibility.mesh" if map_id in args.compare_source else None
         counts = measure(args.root / map_id, world, comparison)
         print(map_id, json.dumps(counts, ensure_ascii=False), flush=True)
+        if comparison is not None and map_id == "de_cache":
+            # Pinned NAV 2000950: the upper surfaces at 1082 include world faces,
+            # while the ray to 708 intersects only a player clip.
+            observed = {(p["lowerArea"], p["upperArea"]): p["sourceOccluded"]
+                        for p in counts["openFloorProbes"]}
+            expected = {(766, 1082): True, (833, 1082): True, (439, 708): False}
+            for pair, occluded in expected.items():
+                if observed.get(pair) != occluded:
+                    failures.append(f"{map_id}: пара NAV {pair}, ожидалось перекрытие {occluded}")
         if args.require_all_meshes and counts["staticOccluderTriangles"] is None:
             failures.append(f"{map_id}: отсутствует сетка видимости")
         if map_id in ("de_nuke", "de_vertigo") and not counts["sameXYOccluded"]:
