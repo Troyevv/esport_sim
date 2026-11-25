@@ -103,7 +103,7 @@ def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, 
         feedback=[],
     )
     if space:
-        w.update(mapId=space.name,map_version=cs2_maps.BUILD,rules="cs2-bo1.1",checkpointVersion=7)
+        w.update(mapId=space.name,map_version=cs2_maps.BUILD,rules=cs2_maps.RULES,checkpointVersion=7)
     # Slot identity survives side switches and loading a saved round.
     for a in w["agents"]:
         slot = int(a["id"][len(a["team"]) :]) - 1
@@ -711,6 +711,9 @@ def objective(w, a, kind, site=None):
 def advance(w):
     if w["phase"] in ("finished", "timeout"):
         return
+    if w["rules"] == cs2_maps.PREVIOUS_RULES:
+        w["rulesTransition"] = dict(previous=w["rules"], tick=w["tick"], lastEvent=w["serial"])
+        w["rules"] = cs2_maps.RULES
     # Preserve the initiative and utility ordering after restoring a reordered collection.
     w["agents"].sort(key=lambda a: (a["teamId"] != w["firstAttackTeamId"], a["slot"]))
     w["started"] = True

@@ -103,3 +103,21 @@ def test_background_and_observed_share_report_across_the_map_pool(tmp_path):
         store.careers.record(frozen, expected)
         assert store.careers.report(frozen["history"][-1]["result"]) == expected
     store.db.close()
+
+def test_nuke_anchors_and_floor_reports_before_contact():
+    game = match.initial(41000, map_id="de_nuke")
+    # A checkpoint from the earlier PR keeps its ledger and marks the first new tick.
+    game["rules"] = cs2_maps.PREVIOUS_RULES
+    serial = game["serial"]
+    while game["phase"] == "freeze":
+        match.advance(game)
+    assert game["rulesTransition"] == dict(previous=cs2_maps.PREVIOUS_RULES, tick=0, lastEvent=serial)
+    assert game["rules"] == cs2_maps.RULES
+    space = cs2_maps.get("de_nuke")
+    orders = game["plans"]["CT"]["orders"]["slots"]
+    for i, site in enumerate(("A", "B")):
+        assert space.reported_site(space.site_points[site]) == site
+        hold = orders[i]["hold"]
+        assert orders[i]["site"] == site
+        assert any(space.hit(hold, space.centers[area], 1, 64) is None for area in space.plants[site])
+    assert orders[4]["hold"] != orders[0]["hold"]
