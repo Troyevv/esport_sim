@@ -122,6 +122,7 @@ def allowed_url(url, hosts):
 
 
 _backoff = {}
+_NS_PER_SECOND = 1_000_000_000
 
 
 def retry_delay(hint, default):
@@ -136,8 +137,9 @@ def retry_delay(hint, default):
 def check_host(url):
     host = urlsplit(url).hostname
     until, message = _backoff.get(host, (0, ""))
-    if until > time.monotonic():
-        raise Unavailable(message, math.ceil(until - time.monotonic()))
+    remaining = until - time.monotonic_ns()
+    if remaining > 0:
+        raise Unavailable(message, (remaining + _NS_PER_SECOND - 1) // _NS_PER_SECOND)
 
 
 def fetch(url, hosts, limit):
@@ -167,12 +169,12 @@ def fetch(url, hosts, limit):
             exc.headers.get("Retry-After", ""), 3600 if exc.code in (401, 403) else 60
         )
         if exc.code in (401, 403, 429, 503) or exc.headers.get("Retry-After"):
-            _backoff[host] = time.monotonic() + delay, message
+            _backoff[host] = time.monotonic_ns() + delay * _NS_PER_SECOND, message
         raise Unavailable(message, delay) from exc
     except (OSError, URLError) as exc:
         host = urlsplit(url).hostname
         message = f"{host} временно недоступен"
-        _backoff[host] = time.monotonic() + 30, message
+        _backoff[host] = time.monotonic_ns() + 30 * _NS_PER_SECOND, message
         raise Unavailable(message) from exc
     if len(data) > limit:
         raise ValueError("Файл превышает лимит загрузки")

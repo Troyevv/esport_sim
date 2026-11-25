@@ -200,10 +200,18 @@ def test_rate_limit_applies_to_later_players_on_same_host(monkeypatch):
             headers["Retry-After"] = "90"
             raise HTTPError(request.full_url, 429, "Rate limit", headers, None)
 
+    now_ns = 30_920_100_000_001
+    monkeypatch.setattr(sources.time, "monotonic_ns", lambda: now_ns)
     monkeypatch.setattr(sources, "_backoff", {})
     monkeypatch.setattr(sources, "build_opener", lambda *_: Opener())
     for path in ("/one", "/two"):
         with pytest.raises(sources.Unavailable, match="429") as exc:
             sources.fetch("https://" + host + path, {host}, 1000)
-        assert 89 <= exc.value.delay <= 90
+        assert exc.value.delay == 90
+    now_ns += 89_999_999_999
+    with pytest.raises(sources.Unavailable) as exc:
+        sources.check_host("https://" + host)
+    assert exc.value.delay == 1
+    now_ns += 1
+    sources.check_host("https://" + host)
     assert len(calls) == 1
