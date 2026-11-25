@@ -26,7 +26,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: |
-          python -m pip install --only-binary=:all: awpy==3.3.1
+          python -m pip install --only-binary=:all: awpy==3.3.1 numpy==2.5.5
       - run: python tools/cs2_map_sources.py --download build/cs2
       - name: Check reference navigation and visibility
         run: python -m tools.check_cs2_navigation build/cs2
