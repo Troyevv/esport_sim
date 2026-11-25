@@ -167,7 +167,11 @@ def test_guard_selects_a_position_with_sight_of_the_approach():
         cover=[(2, cover)],
         nearby_areas=lambda *args: [1, 2],
         centers={1: anchor, 2: cover},
-        hit=lambda start, *_: None if start == cover else (0.1, "stone", None),
+        site_points={"A": portal},
+        world=lambda pos: pos,
+        collision=SimpleNamespace(sight_many=lambda segments: {
+            (a, b): a[:2] == cover[:2] for a, b in segments
+        }),
         _watch=lambda *_: portal,
     )
     assert Map._angles(space, "A", 0, anchor)[0] == (cover, portal)
@@ -215,7 +219,7 @@ def test_fifth_defender_can_reinforce_without_moving_the_anchor():
         site_points={"A": pos},
     )
     assign_backup(space, plan, squad, "A", 2)
-    assert plan["backup"]["id"] == "p1" and plan["backup"]["hold"] == list(pos)
+    assert plan["backup"]["id"] == "p2" and plan["backup"]["hold"] == list(pos)
     assign_backup(space, plan, squad, None, 0)
     assert "backup" not in plan
 

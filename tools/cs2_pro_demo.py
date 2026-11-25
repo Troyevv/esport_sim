@@ -1,11 +1,11 @@
 """Measure thrown utility and surviving CTs from a fixed sample of professional demos."""
 import argparse
 from collections import Counter
-from hashlib import sha256
+from hashlib import file_digest
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from urllib.request import urlopen, urlretrieve
+from urllib.request import urlretrieve
 
 import pyarrow.parquet as pq
 from demoparser2 import DemoParser
@@ -13,17 +13,21 @@ from demoparser2 import DemoParser
 
 def parse(path, rounds):
     parser = DemoParser(str(path))
-    weapons = parser.parse_event("weapon_fire")
-    grenades = {"flashbang","hegrenade","molotov","incgrenade","decoy","smokegrenade"}
-    throws = weapons[weapons.weapon.isin(grenades)]
-    if not len(throws):
-        raise ValueError("No grenade weapon events in professional demo")
+    # Source 2 reports a detonation per projectile. Inferno damage ticks would
+    # count the same incendiary repeatedly; use only its initial ignition.
+    event_types = {"flashbang_detonate":"flashbang", "hegrenade_detonate":"hegrenade",
+                   "smokegrenade_detonate":"smokegrenade", "inferno_startburn":"fire",
+                   "decoy_started":"decoy"}
+    throws = [(int(tick), kind) for event,kind in event_types.items()
+              for tick in parser.parse_event(event).get("tick", [])]
+    if not throws:
+        raise ValueError("No utility detonations in professional demo")
     ends = [r["end_tick"] for r in rounds]
     players = parser.parse_ticks(["health","team_num"], ticks=ends)
     result = []
     for row in rounds:
         start,end=row["freeze_end_tick"],row["end_tick"]
-        counter=Counter(throws.loc[throws.tick.between(start,end),"weapon"])
+        counter=Counter(kind for tick, kind in throws if start <= tick <= end)
         alive = players[(players.tick == end) & (players.health > 0) & (players.team_num == 3)]
         result.append(dict(round=row["round_num"],winner=row["winner_side"],reason=row["end_reason"],
                            plant=row["bomb_planted"],duration=(end-start)/64,
@@ -48,7 +52,6 @@ def main():
             demo=Path(directory)/"match.dem"
             urlretrieve(url,demo)
             with demo.open("rb") as reader:
-                from hashlib import file_digest
                 assert file_digest(reader,"sha256").hexdigest()==m["source_demo_sha256"]
             rows=parse(demo,rounds)
         output.append(dict(map=m["map_name"],date=str(m["match_date"]),stars=m["hltv_stars"],
