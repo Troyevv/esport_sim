@@ -6,6 +6,7 @@ on:
       - .github/workflows/cs2-pro-reference.yml
       - tools/cs2_pro_reference.py
       - tools/cs2_pro_demo.py
+      - tools/cs2_tournament_reference.py
 permissions:
   contents: read
 jobs:
@@ -44,3 +45,13 @@ jobs:
         with:
           name: pro-utility-${{ matrix.map }}
           path: build/pro-reference/*-utility.json
+  historic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m tools.cs2_tournament_reference
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pro-tournament-rounds
+          path: build/pro-tournaments/
