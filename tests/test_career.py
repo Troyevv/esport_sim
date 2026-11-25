@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from itertools import combinations
 from copy import deepcopy
 from uuid import uuid4
 
@@ -185,3 +186,20 @@ def test_first_profile_migration_is_atomic(tmp_path):
             == db.execute("SELECT * FROM active").fetchall()
         )
     db.close()
+
+
+def test_background_opponents_rotate_over_the_cycle():
+    pack = json.loads(database.STARTER.read_text(encoding="utf-8"))["package"]
+    team = next(iter(career.roster_index(pack)))
+    c = career.create(
+        pack, dict(team=team, name="Тренер", mode="manager", scope="full")
+    )
+    encountered = set()
+    for week in range(len(c["teams"]) - 1):
+        if week:
+            c["queue"].clear()
+            career.schedule(c)
+        games = [e for e in c["queue"] if e["kind"] == "match"]
+        assert len({t for e in games for t in e["teams"]}) == len(c["teams"])
+        encountered.update(tuple(sorted(e["teams"])) for e in games)
+    assert encountered == set(combinations(sorted(c["teams"]), 2))

@@ -115,7 +115,12 @@ def schedule(c):
     offset = week % len(others)
     rotated = others[offset:] + others[:offset]
     pairs = [(c["team"], rotated.pop(0))]
-    pairs.extend(zip(rotated[::2], rotated[1::2]))
+    # Pair opposite positions around the circle. Adjacent pairing would
+    # repeatedly schedule the same neighbours for all background teams.
+    half = len(rotated) // 2
+    pairs.extend(
+        zip(rotated[:half], reversed(rotated[len(rotated) - half :]), strict=True)
+    )
     for i, (home, away) in enumerate(pairs):
         day = start + timedelta(days=4 if i == 0 else 1 + (i - 1) % 6)
         ident = f"{week:08d}-{i:04d}"
