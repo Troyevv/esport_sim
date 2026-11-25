@@ -89,6 +89,7 @@ def main():
         "PORTRAITS_R32.md",
         "SCENE_ART_R32.md",
         "CLUBS_AND_KITS_R32.md",
+        "PORTRAIT_FIT_R32.md",
         "TEAM_KIT_COVERAGE.csv",
         "PERSONAL_BADGES_R32.md",
         "PRIVATE_STUDIO_R32.md",

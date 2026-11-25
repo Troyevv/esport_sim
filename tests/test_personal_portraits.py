@@ -121,3 +121,58 @@ def test_private_garment_rollback_and_offline_registration(tmp_path, monkeypatch
     assert personal_portraits.installed_kits(library)["team-1"]["rig"] == rig
     assert library.image(digest) == raw
     library.close()
+
+
+def test_anatomical_replacement_and_original_pack_share_one_identity(
+    tmp_path, monkeypatch
+):
+    fixtures = Path(__file__).parents[1] / "frontend/e2e/fixtures/portraits"
+    old, new = [(fixtures / n).read_bytes() for n in ("model-a.png", "model-b.png")]
+    original, improved = [sha256(raw).hexdigest() for raw in (old, new)]
+    entry = dict(
+        name="Игрок",
+        sha256=original,
+        publisher="Студия",
+        source="https://example.org/player",
+    )
+    monkeypatch.setattr(personal_portraits, "catalog", lambda: {"player": entry})
+    monkeypatch.setattr(
+        personal_portraits, "anatomical_images", lambda: {original: improved}
+    )
+    library = PortraitLibrary(tmp_path / "home.sqlite")
+    pack = {"players": {"player": {"name": "Игрок"}}}
+    for raw, digest in ((old, original), (new, improved)):
+        assert personal_portraits.install(
+            library, pack, archive((digest + ".png", raw))
+        ) == {"installed": 1}
+        assert digest in library.index(pack["players"])["player"]["image"]
+    with pytest.raises(ValueError):
+        personal_portraits.install(
+            library, pack, archive((original + ".png", old), (improved + ".png", new))
+        )
+    assert improved in library.index(pack["players"])["player"]["image"]
+    library.close()
+
+
+def test_camera_and_body_registration_cover_both_pack_generations():
+    src = Path(__file__).parents[1] / "frontend/src"
+    registrations = json.loads(
+        (src / "portraitAnatomy.json").read_text(encoding="utf-8")
+    )
+    aliases = personal_portraits.anatomical_images()
+    assert set(aliases) == {
+        row["sha256"] for row in personal_portraits.catalog().values()
+    }
+    assert {key: row["image"] for key, row in registrations.items()} == aliases
+    shapes = json.loads((src / "garmentContours.json").read_text(encoding="utf-8"))
+    teams = json.loads((src / "kitArt.json").read_text(encoding="utf-8"))
+    assert set(shapes) == set(teams) | {"neutral"} | {
+        k["sha256"] for k in personal_portraits.kits().values()
+    }
+    for player in registrations.values():
+        assert player["camera"][2] > 0 and player["camera"][3] > 0
+        for generation in ("body", "legacy"):
+            x, y = player[generation]
+            assert len(x) == len(y) == 27
+            assert all(left < right for left, right in zip(x, x[1:]))
+    assert all(len(x) == len(y) == 27 for x, y in shapes.values())

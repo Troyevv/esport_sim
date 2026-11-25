@@ -95,7 +95,12 @@ export function KitPreview({
                   className="kit-card"
                   style={{ borderColor: design.accent }}
                 >
-                  <GamePortrait name={player.name} head={head} kit={kit} />
+                  <GamePortrait
+                    showShoulders
+                    name={player.name}
+                    head={head}
+                    kit={kit}
+                  />
                   <label>
                     Комплект {i + 1}
                     <select
@@ -126,6 +131,7 @@ export function KitPreview({
       ) : (
         <div className="kit-preview">
           <GamePortrait
+            showShoulders
             name={player.name}
             head={head}
             kit={teamKit(pack, current)}

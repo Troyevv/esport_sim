@@ -28,6 +28,13 @@ def kits():
     return json.loads(CATALOG.with_name("team-kits.json").read_text(encoding="utf-8"))
 
 
+@lru_cache(maxsize=1)
+def anatomical_images():
+    return json.loads(
+        CATALOG.with_name("portrait-anatomy.json").read_text(encoding="utf-8")
+    )
+
+
 def installed_kits(library):
     with closing(library.connection()) as db:
         present = {row[0] for row in db.execute("SELECT digest FROM asset")}
@@ -47,6 +54,14 @@ def install(library, pack, content):
         if pid in pack["players"]
         and entry["name"].casefold() == pack["players"][pid]["name"].casefold()
     }
+    alternatives = anatomical_images()
+    known.update(
+        {
+            alternatives[old]: row
+            for old, row in list(known.items())
+            if old in alternatives
+        }
+    )
     approved_kits = {
         "kits/" + e["sha256"] + ".png": e["sha256"]
         for tid, e in kits().items()
@@ -58,6 +73,7 @@ def install(library, pack, content):
             raise ValueError("Сначала приостановите поиск студийных портретов")
         seen = set()
         cloth = set()
+        players = set()
         try:
             with ZipFile(BytesIO(content)) as archive:
                 members = archive.infolist()
@@ -103,6 +119,9 @@ def install(library, pack, content):
                     if digest not in known:
                         raise ValueError("Неверная контрольная сумма архивного слоя")
                     pid, entry = known[digest]
+                    if pid in players:
+                        raise ValueError("Два слоя внешности для одного игрока")
+                    players.add(pid)
                     if sha256(raw).hexdigest() != digest or previously_rejected(
                         entry["source"]
                     ):

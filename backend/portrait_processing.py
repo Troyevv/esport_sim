@@ -72,7 +72,7 @@ class PortraitProcessor:
         """For reviewed studio roster sources, also return the natural display width."""
         return self._render(raw, studio=True)
 
-    def _render(self, raw, studio):
+    def _render(self, raw, studio, register=None):
         import cv2
         import numpy as np
         from PIL import Image, ImageOps, UnidentifiedImageError
@@ -183,6 +183,10 @@ class PortraitProcessor:
             tuple(eyes - [x0, y0]), math.degrees(math.atan2(delta[1], delta[0])), scale
         )
         mat[:, 2] += np.array([240, target_eye_y]) - (eyes - [x0, y0])
+        if register is not None:
+            full_transform = mat.copy()
+            full_transform[:, 2] -= mat[:, :2] @ [x0, y0]
+            register(original, rgb, lm, full_transform)
         color = rgb[y0:y1, x0:x1].astype(np.float32) * alpha[:, :, None]
         output = cv2.warpAffine(
             np.dstack([color, alpha]), mat, (480, 560), flags=cv2.INTER_LINEAR

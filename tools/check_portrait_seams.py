@@ -1,4 +1,4 @@
-"""Measure the neck seam of every private head against every local uniform."""
+"""Archived fixed-seat renderer: measure overlaps in the original club-kits pack."""
 
 import argparse
 import json
