@@ -1,3 +1,6 @@
+import csv
+import gzip
+import json
 from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
@@ -67,7 +70,20 @@ def test_release_portrait_catalog_is_metadata_only():
     from backend.portrait_sources import previously_rejected
 
     catalog = personal_portraits.catalog()
-    assert len(catalog) >= 6
+    from backend.database import RELEASE
+
+    with gzip.open(RELEASE, "rt", encoding="utf-8") as stream:
+        players = json.load(stream)["package"]["players"]
+    coverage = Path(__file__).parents[1] / "docs" / "PRIVATE_STUDIO_COVERAGE.csv"
+    with coverage.open(encoding="utf-8", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    assert len(rows) == len(players)
+    assert {row["player_id"] for row in rows} == players.keys()
+    assert {
+        row["player_id"] for row in rows if row["stage"] == "included"
+    } == catalog.keys()
+    assert len({entry["sha256"] for entry in catalog.values()}) == len(catalog)
+    assert all(players[pid]["name"] == entry["name"] for pid, entry in catalog.items())
     assert all(
         len(v["sha256"]) == len(v["originalSha256"]) == 64
         and v["identitySource"].startswith("https://")
