@@ -166,6 +166,7 @@ class Map:
         self.approach = lru_cache(maxsize=32)(partial(Map._approach, proxy(self)))
         self.contest = lru_cache(maxsize=4)(partial(Map._contest, proxy(self)))
         self.ingress = lru_cache(maxsize=4)(partial(Map._ingress, proxy(self)))
+        self.crossfire = lru_cache(maxsize=64)(partial(Map._crossfire, proxy(self)))
         self.angles = lru_cache(maxsize=128)(partial(Map._angles, proxy(self)))
         self.escape = lru_cache(maxsize=16)(partial(Map._escape, proxy(self)))
         self.locate = lru_cache(maxsize=8192)(partial(Map._locate, proxy(self)))
@@ -282,6 +283,8 @@ class Map:
                 if i == 4 and "overwatch" in self.profile:
                     duty = "junction"
                 options = self.angles(defended, variant, hold, duty)
+                if i in (2,3):
+                    options = self.crossfire(defended,variant,hold,tuple(slots[i-2]["hold"]))
                 guards_view = dict(options)
                 # A second anchor or the rotator can share a callout. Take a
                 # separate reachable position before falling back to that spot.
@@ -435,6 +438,40 @@ class Map:
                            not bool(entries), -len(plant_views), -min(6, len(entries)),
                            pos not in covers, dist(pos, anchor), pos, watch))
         return [(pos, watch) for *_, pos, watch in sorted(ranked)]
+
+    def _crossfire(self, site, variant, wing, anchor):
+        """Rank complementary angles from which a second guard can trade the anchor."""
+        base = self.angles(site,variant,wing,"approach")
+        targets = list(dict.fromkeys([*self.ingress(site,variant), *self.ingress(site,1-variant),
+                                      self.site_points[site]]))
+        targets = [q for q in targets if 5 < dist(q,anchor) < 75 and self.hit(anchor,q,1,64) is None]
+        if not targets:
+            return base
+        candidates = list(dict.fromkeys([p for p,_ in base[:24]] +
+                                         [p for _,p in self.holds[site] if 8<dist(p,anchor)<42]))
+        def eye(p):
+            x,y,z=self.world(p)
+            return x,y,z+64
+        pairs = [(eye(p),eye(q)) for p in candidates for q in targets if 5<dist(p,q)<95]
+        visible = self.collision.sight_many(pairs)
+        ranked = []
+        for p in candidates:
+            if dist(p,anchor)<7:
+                continue
+            for q in targets:
+                if not visible.get((eye(p),eye(q))):
+                    continue
+                # Two near-collinear guns present one angle to the entry player.
+                vectors = [[origin[j]-q[j] for j in range(3)] for origin in (p,anchor)]
+                cosine = sum(a*b for a,b in zip(*vectors)) / (dist(p,q)*dist(anchor,q))
+                if cosine < 0.78:
+                    ranked.append((dist(p,wing),cosine,p,q))
+        best = {}
+        for _,_,p,q in sorted(ranked):
+            best.setdefault(p,q)
+        for p,q in base:
+            best.setdefault(p,q)
+        return list(best.items())
 
     def _watch(self, site, pos, variant):
         label = self.profile[site][variant][-1]

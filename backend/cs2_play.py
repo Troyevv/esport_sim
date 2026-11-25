@@ -141,7 +141,9 @@ def assign_backup(space, plan, squad, site, pressure):
         plan.pop("backup", None)
         return
     slots = plan["orders"]["slots"]
-    other = [a for a in squad if slots[a["slot"]]["site"] != site]
+    # The junction player can have this site's label and still be watching mid.
+    # Count a mobile guard by their actual position, never by the nominal label.
+    other = [a for a in squad if slots[a["slot"]]["site"] != site or a["slot"] == 4]
     # Release the mobile defender before the only player watching the other plant.
     reserves = [a for a in other if a["slot"] >= 2]
     if reserves:
@@ -159,7 +161,7 @@ def assign_backup(space, plan, squad, site, pressure):
         and any(p["id"] == current["id"] for p in other)
     ):
         return
-    guards = [slots[p["slot"]] for p in squad if slots[p["slot"]]["site"] == site]
+    guards = [slots[p["slot"]] for p in squad if p["slot"] != 4 and slots[p["slot"]]["site"] == site]
     candidates = list(space.holds[site])
     if not candidates:
         candidates = [(i, space.centers[i]) for i in space.plants[site]]
@@ -171,7 +173,8 @@ def assign_backup(space, plan, squad, site, pressure):
                 continue
             route = space.route(actor["navArea"], area)
             if route is not None:
-                routes.append((len(route), dist(pos, target), actor["slot"], target))
+                cost = space.site_costs[site].get(actor["navArea"],float("inf")) / UNIT
+                routes.append((cost, dist(pos, target), actor["slot"], target))
     by_slot = {p["slot"]: p for p in other}
     for _, _, index, target in sorted(routes):
         actor = by_slot[index]

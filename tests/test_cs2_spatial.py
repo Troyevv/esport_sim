@@ -211,7 +211,7 @@ def test_fifth_defender_can_reinforce_without_moving_the_anchor():
     squad = [dict(id=f"p{i}", slot=i, navArea=i, x=x, y=0, z=0)
              for i, x in enumerate((0, 50, 60))]
     space = SimpleNamespace(
-        holds={"A": [(0, (0, 0, 0)), (3, pos)]},
+        holds={"A": [(0, (0, 0, 0)), (3, pos)]}, site_costs={"A": {0: 0, 1: 7, 2: 8}},
         route=lambda *args: [3],
         _reachable=lambda origin, goals: goals[0],
         ingress=lambda *args: [(15, 0, 0)],
@@ -222,6 +222,14 @@ def test_fifth_defender_can_reinforce_without_moving_the_anchor():
     assert plan["backup"]["id"] == "p2" and plan["backup"]["hold"] == list(pos)
     assign_backup(space, plan, squad, None, 0)
     assert "backup" not in plan
+    # The fifth player has an A label but is physically the closest available
+    # reserve after A's anchor falls. It must leave the junction to help A.
+    plan["orders"]["slots"] += [dict(site="B",hold=[60,0,0]),dict(site="A",hold=[70,0,0])]
+    mobile = dict(id="mobile",slot=4,navArea=4,x=70,y=0,z=0)
+    space.site_costs["A"][4]=1
+    assign_backup(space,plan,[squad[1],squad[2],mobile],"A",2)
+    assert plan["backup"]["id"]=="mobile"
+
 
 
 def test_visible_contact_can_trigger_a_reachable_reload_shelter():

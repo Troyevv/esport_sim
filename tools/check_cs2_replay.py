@@ -4,6 +4,7 @@ import gzip
 import json
 import random
 from math import dist
+from pathlib import Path
 
 from backend import career, cs2_maps, database, match
 
@@ -17,7 +18,7 @@ def main():
         ("de_vertigo", 100, 4, (135.81, 185.47, 957.67), 100),
         ("de_cache", 250, 0, (164.84, 244.99, 134.33), 100),
         ("de_nuke", 190, 1, (320.58, 315.48, -32.33), 100),
-        ("de_dust2", 1450, 0, (64.08, 177.21, 2.84), 100),
+        ("de_dust2", 1450, 0, (92.25, 94.79, 0.50), 52),
     )
     failures = []
     for name, tick, slot, point, hp in samples:
@@ -38,13 +39,17 @@ def main():
                 print("TRACE", name, json.dumps(snap, ensure_ascii=False))
             continue
         print(f"{name}: tick {tick}, {actor['id']}, XYZ={point}, HP={hp}")
-    train = match.initial(seed, database.match_input(pack, pair), pair, map_id="de_train")
-    while not train["history"] and train["tick"] < 1400:
+    fixture = Path(__file__).resolve().parents[1] / "tests/fixtures/cs2-train-retake.json.gz"
+    train = json.loads(gzip.decompress(fixture.read_bytes()))
+    # Atrix vs Lazer Cats, seed 41000, tick 305 on f3948fe. No living CT
+    # knows the device location at this historical point of the real match.
+    assert train["phase"]=="planted" and all(not a["seenDevice"] for a in train["agents"] if a["team"]=="CT")
+    while train["phase"]=="planted" and train["tick"]<710:
         match.advance(train)
     if not train["history"] or train["history"][0]["reason"] != "Обезвреживание":
         failures.append("Train: защита не завершила ретейк из воспроизводимого эпизода")
     else:
-        print("de_train: доступная позиция для разминирования, первый раунд выиграла защита")
+        print("de_train: защита нашла скрытую C4 и разминировала в записанном эпизоде")
     if failures:
         raise ValueError("\n".join(failures))
 
