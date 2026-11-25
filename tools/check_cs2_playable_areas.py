@@ -10,20 +10,6 @@ from backend.cs2_navigation import Navigation, surface_height
 from backend.cs2_sites import BombSites
 
 
-def approaches(previous, stages):
-    """Areas from which at least one choice in each ordered stage can be visited."""
-    reachable = set()
-    for index, choices in enumerate(reversed(stages)):
-        reachable = set(choices) if index == 0 else reachable.intersection(choices)
-        todo = list(reachable)
-        while todo:
-            for other in previous[todo.pop()]:
-                if other not in reachable:
-                    reachable.add(other)
-                    todo.append(other)
-    return reachable
-
-
 def named_stages(data, nav, profile):
     names = {name for site in ("A", "B") for route in profile[site] for name in route}
     names.update(name for guards in profile["guards"].values() for name in guards)
@@ -61,22 +47,11 @@ def measure(data, profile):
         site = sites.at((x, y, z + 1))
         if site:
             plant_areas[site].add(ident)
-    previous = defaultdict(set)
-    for area, links in nav.links.items():
-        for link in links:
-            previous[link.area].add(area)
-    reached = {site: approaches(previous, [goals]) for site, goals in plant_areas.items()}
+    reached = {site: nav.routes_through([goals]).costs for site, goals in plant_areas.items()}
     markers = named_stages(data, nav, profile)
     places = {name: {row["area"] for row in rows} for name, rows in markers.items()}
     result = {}
     routes = []
-
-    def check(side, kind, labels, final=()):
-        stages = [places[label] for label in labels] + list(final)
-        starts = approaches(previous, stages)
-        routes.append(dict(side=side, kind=kind, via=labels,
-                           reachable=sum(area in starts for area in found),
-                           enabled=len(found)))
 
     for side in ("T", "CT"):
         spawns = [s for s in data["spawns"] if s["side"] == side and s["enabled"]]
@@ -85,14 +60,22 @@ def measure(data, profile):
                             reachableA=sum(i in reached["A"] for i in found),
                             reachableB=sum(i in reached["B"] for i in found),
                             reachableBoth=sum(i in reached["A"] and i in reached["B"] for i in found))
+        orders = []
         for site, goals in plant_areas.items():
             if side == "T":
-                for route in profile[site]:
-                    check(side, "plant" + site, route, [goals])
+                orders.extend(("plant" + site, route, [goals]) for route in profile[site])
             else:
-                for name in profile["guards"][site]:
-                    check(side, "guard" + site, [name])
-        check(side, "middle", [profile["middle"]])
+                orders.extend(("guard" + site, [name], []) for name in profile["guards"][site])
+        orders.append(("middle", [profile["middle"]], []))
+        for kind, labels, final in orders:
+            paths = nav.routes_through([places[label] for label in labels] + final)
+            starts = [i for i in found if i in paths.costs]
+            row = dict(side=side, kind=kind, via=labels, reachable=len(starts), enabled=len(found))
+            if starts:
+                witness, waypoints = paths.route(starts[0])
+                row.update(exampleStart=starts[0], selectedAreas=waypoints, crossings=len(witness),
+                           maxPathUnits=round(max(paths.costs[i] for i in starts)))
+            routes.append(row)
     return {
         "spawnRoutes": result, "sampledPlantAreas": {k: len(v) for k, v in plant_areas.items()},
         "ladders": len(data["ladders"]),

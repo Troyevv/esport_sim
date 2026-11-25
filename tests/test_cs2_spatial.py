@@ -75,11 +75,14 @@ def test_floor_probe_reads_face_materials_and_transformed_primitives(tmp_path):
 
 
 def test_tactical_route_requires_a_single_ordered_path():
-    from collections import defaultdict
-    from tools.check_cs2_playable_areas import approaches
-
-    # Spawn 1 can visit either copy of the first landmark. Only copy 3
-    # leads through landmark 4 to the target. Spawn 2 is a dead end.
-    previous = defaultdict(set, {2: {1}, 3: {1}, 4: {3}, 5: {4}})
-    assert approaches(previous, [{2, 3}, {4}, {5}]) == {1, 3}
-    assert approaches(previous, [{4}, {3}, {5}]) == set()
+    areas = [area(i, (i - 1) * 20, 0, 0) for i in range(1, 6)]
+    for start, end in ((1, 2), (1, 3), (3, 4), (4, 5)):
+        areas[start - 1]["edges"][1].append(dict(to=end, edge=3))
+    nav = Navigation(dict(format=1, space="Hammer XYZ", areas=areas, ladders=[]))
+    routes = nav.routes_through([{2, 3}, {4}, {5}])
+    path, selected = routes.route(1)
+    assert selected == [3, 4, 5]
+    assert path == nav.route(1, 5)
+    assert routes.route(2) is None
+    assert routes.route(3)[1] == selected
+    assert nav.routes_through([{4}, {3}, {5}]).route(1) is None

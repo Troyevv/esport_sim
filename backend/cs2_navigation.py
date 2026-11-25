@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from dataclasses import dataclass
-from heapq import heappop, heappush
+from heapq import heapify, heappop, heappush
 from math import dist, floor
 
 
@@ -97,6 +97,43 @@ class Navigation:
                         if target != ident:
                             self.links[ident].append(Crossing(target, tuple(leave), tuple(enter), ladder_id))
 
+        self._incoming = defaultdict(list)
+        for here, crossings in self.links.items():
+            for crossing in crossings:
+                self._incoming[crossing.area].append((here, crossing, self._cost(here, crossing)))
+
+    def _cost(self, here, crossing):
+        return (dist(self.centers[here], crossing.leave) + dist(crossing.leave, crossing.enter)
+                + dist(crossing.enter, self.centers[crossing.area]))
+
+    def routes_through(self, stages):
+        """Shortest portal paths through ordered sets of alternative NAV areas.
+
+        Plan backwards once for all spawns. Seed each preceding stage with
+        the remaining cost, so a nearby landmark on a dead end cannot win.
+        Costs are Hammer units along the same centre/portal metric as route().
+        """
+        legs = []
+        remaining_costs = dict.fromkeys(self.areas, 0.0)
+        for choices in reversed(stages):
+            costs = {area: remaining_costs[area] for area in choices if area in remaining_costs}
+            queue = [(cost, i) for i, cost in costs.items()]
+            heapify(queue)
+            onward = dict.fromkeys(costs)
+            while queue:
+                remaining, area = heappop(queue)
+                if remaining != costs[area]:
+                    continue
+                for prior, crossing, length in self._incoming[area]:
+                    candidate = remaining + length
+                    if candidate < costs.get(prior, float("inf")):
+                        costs[prior] = candidate
+                        onward[prior] = crossing
+                        heappush(queue, (candidate, prior))
+            legs.append(onward)
+            remaining_costs = costs
+        return OrderedRoutes(remaining_costs, tuple(reversed(legs)))
+
     def locate(self, point, max_vertical):
         x, y, z = point
         candidates = []
@@ -127,10 +164,7 @@ class Navigation:
                 target = crossing.area
                 if target in avoided:
                     continue
-                travel = (dist(self.centers[here], crossing.leave)
-                          + dist(crossing.leave, crossing.enter)
-                          + dist(crossing.enter, self.centers[target]))
-                next_cost = cost + travel
+                next_cost = cost + self._cost(here, crossing)
                 if next_cost >= costs.get(target, float("inf")):
                     continue
                 costs[target] = next_cost
@@ -138,3 +172,22 @@ class Navigation:
                 estimate = dist(self.centers[target], self.centers[goal])
                 heappush(queue, (next_cost + estimate, next_cost, target))
         return None
+
+
+@dataclass
+class OrderedRoutes:
+    costs: dict
+    legs: tuple
+
+    def route(self, start):
+        """Return directed crossings and the selected area at each stage."""
+        if start not in self.costs:
+            return None
+        path, waypoints = [], []
+        here = start
+        for leg in self.legs:
+            while (crossing := leg[here]) is not None:
+                path.append(crossing)
+                here = crossing.area
+            waypoints.append(here)
+        return path, waypoints
