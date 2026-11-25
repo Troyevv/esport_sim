@@ -95,7 +95,7 @@ export function PersonalBadges({ refresh }: { refresh: () => Promise<void> }) {
   }
   return (
     <details
-      className="kit-studio private-badges"
+      className="private-badges"
       open={open}
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >

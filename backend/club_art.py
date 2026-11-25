@@ -1,6 +1,7 @@
 """Local brand library shared by the release builder and historical pack display."""
 
 import base64
+import hashlib
 import json
 from functools import lru_cache
 from pathlib import Path
@@ -8,6 +9,12 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).with_name("data") / "club-art"
 ARCHIVES = {"scene-20261125", "austin-registration", "scene-20261124", "scene-202611"}
+# The immutable first November artwork edition embedded these three game marks.
+PREVIOUS_BIG = {
+    "BIG": "130a1cca935a1bcbedbee08b2e12b95192225659f652bd144cd385c91bfed739",
+    "BIG Academy": "ecca3c6b6ad60492db3fb2975d8033c65c977cbaf17a80cb61f5696f4ab63445",
+    "BIG EQUIPA": "352070a65953e906ace3d3fbb301d6b1293878186ffe086ed03950aae27ebfab",
+}
 ALIASES = {
     "Nemesis": "Team Nemesis",
     "5star": "5star eSports",
@@ -72,6 +79,17 @@ def archive_badge(pack_id, record):
         return None
     custom = record.get("logo")
     if custom is not None:
+        if (
+            pack_id == "scene-20261125"
+            and record["name"] in PREVIOUS_BIG
+            and isinstance(custom, dict)
+            and custom.get("author") == "EsportSim"
+        ):
+            image = custom.get("image", "")
+            if image.startswith("data:image/png;base64,"):
+                raw = base64.b64decode(image.split(",", 1)[1])
+                if hashlib.sha256(raw).hexdigest() == PREVIOUS_BIG[record["name"]]:
+                    return stock(record["name"])
         # Preserve manual/custom assets even when their club has a stock badge.
         if not isinstance(custom, dict) or not custom.get("image", "").startswith(
             "https://upload.wikimedia.org/"

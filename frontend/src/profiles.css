@@ -378,11 +378,13 @@
     height: 84px;
   }
 }
-.kit-studio {
+.kit-studio,
+.private-badges {
   margin: 0.65rem 0;
   color: #c3d6d1;
 }
-.kit-studio summary {
+.kit-studio summary,
+.private-badges summary {
   cursor: pointer;
   font-weight: 600;
 }

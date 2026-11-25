@@ -220,6 +220,8 @@ Wait-Check 'secondary launcher exit' { @(Get-Process -Name EsportSim -ErrorActio
 $origin = "http://127.0.0.1:$($first.port)"
 if ($DesktopBrowser) { Test-Lan $origin }
 if (!(Test-Path (Join-Path $install 'EsportSim\TACTICS.md'))) { throw 'Tactics guide missing from archive.' }
+$personal = Invoke-RestMethod "$origin/api/database/personal-badges/status"
+if ($personal.mode -ne 'off' -or $personal.available -lt 167 -or $personal.ready -ne 0) { throw 'Packaged private logo catalog is missing or contains private files.' }
 $scene = (Invoke-RestMethod "$origin/api/database/scene-20261125-art2/1").package
 if ($scene.players.PSObject.Properties.Name.Count -lt 1500) { throw 'Offline player database missing from Windows distribution.' }
 $lineups = @($scene.rosters.PSObject.Properties | Where-Object { $_.Value.name -in @('Team Vitality','Team Falcons') } | ForEach-Object { $_.Name })
