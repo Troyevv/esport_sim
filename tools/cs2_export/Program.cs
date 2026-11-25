@@ -60,6 +60,7 @@ var spawns = new List<object>();
 var targets = new List<object>();
 var places = new List<object>();
 var classes = new SortedDictionary<string, int>();
+var outputs = new List<object>();
 using var worldFile = loader.LoadFileCompiled($"maps/{map}/world.vwrld");
 var world = worldFile?.DataBlock as World ?? throw new InvalidDataException("Missing world");
 foreach (var name in world.GetEntityLumpNames())
@@ -74,11 +75,33 @@ foreach (var name in world.GetEntityLumpNames())
         classes[kind] = classes.GetValueOrDefault(kind) + 1;
         var pose = EntityTransformHelper.ToTransformationMatrix(entity) * parent;
         var position = Point(pose.Translation);
+        if (entity.Connections is { Count: > 0 } connections)
+        {
+            outputs.Add(new { kind, name = entity.TargetName,
+                eventName = entity.GetStringProperty("eventname"),
+                connections = connections.Select(c => new { output = c.OutputName, input = c.InputName, target = c.TargetName }).ToArray()
+            });
+        }
         if (Dependencies.IsPlacedCollision(kind))
         {
             var nameOfModel = entity.GetStringProperty("model");
             if (!string.IsNullOrEmpty(nameOfModel))
-                collision.Model(loader, nameOfModel, pose, kind);
+            {
+                var id = collision.Instances.Count;
+                var disabled = entity.GetBooleanProperty("startdisabled");
+                var solidity = entity.GetInt32Property("solidity");
+                var solid = entity.GetInt32Property("solid", -1);
+                var active = kind switch
+                {
+                    "func_brush" => solidity == 2 || (solidity == 0 && !disabled),
+                    "prop_dynamic" or "prop_dynamic_override" => solid != 0 && !disabled,
+                    _ => true,
+                };
+                collision.Instances.Add(new { id, kind, name = entity.TargetName, model = nameOfModel,
+                    active, disabled, solidity, solid, position, flags = entity.GetInt32Property("spawnflags"),
+                    health = entity.GetInt32Property("health"), spawnpos = entity.GetInt32Property("spawnpos") });
+                collision.Model(loader, nameOfModel, pose, kind, instance: id);
+            }
         }
         if (kind is "info_player_terrorist" or "info_player_counterterrorist")
         {
@@ -117,7 +140,7 @@ foreach (var name in world.GetEntityLumpNames())
     }
 }
 collision.Finish(Path.Combine(destination, "collision.json"));
-var data = new { format = 1, map, space = "Hammer XYZ", areas, ladders, spawns, targets, places, classes };
+var data = new { format = 1, map, space = "Hammer XYZ", areas, ladders, spawns, targets, places, classes, outputs };
 using (var output = File.Open(args[1], FileMode.CreateNew))
 {
     JsonSerializer.Serialize(output, data);

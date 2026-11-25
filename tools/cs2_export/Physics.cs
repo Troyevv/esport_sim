@@ -14,11 +14,12 @@ sealed class Physics : IDisposable
     private readonly List<object> blocks = [];
     private readonly Dictionary<uint, string> surfaces = [];
     private readonly List<object> primitives = [];
+    public List<object> Instances { get; } = [];
     private readonly SortedSet<string> missing = [];
     public Physics(string path) => output = File.Open(path, FileMode.CreateNew);
 
     public void Model(GameFileLoader loader, string modelName, Matrix4x4 transform,
-                      string entity, bool required = false)
+                      string entity, bool required = false, int instance = -1)
     {
         using var resource = loader.LoadFileCompiled(modelName);
         if (resource?.DataBlock is not Model model)
@@ -28,12 +29,12 @@ sealed class Physics : IDisposable
             return;
         }
         if (model.GetEmbeddedPhys() is {} embedded)
-            AddPhysics(embedded, transform, entity);
+            AddPhysics(embedded, transform, entity, instance);
         foreach (var name in model.GetReferencedPhysNames())
         {
             using var external = loader.LoadFileCompiled(name);
             if (external?.DataBlock is PhysAggregateData phys)
-                AddPhysics(phys, transform, entity);
+                AddPhysics(phys, transform, entity, instance);
             else if (required)
                 throw new InvalidDataException(name);
             else
@@ -41,7 +42,7 @@ sealed class Physics : IDisposable
         }
     }
 
-    private void AddPhysics(PhysAggregateData phys, Matrix4x4 transform, string entity)
+    private void AddPhysics(PhysAggregateData phys, Matrix4x4 transform, string entity, int instance)
     {
         var hashes = phys.SurfacePropertyHashes;
         foreach (var hash in hashes)
@@ -66,7 +67,7 @@ sealed class Physics : IDisposable
                 if (materials.Length != 0 && materials.Length != triangles.Length)
                     throw new InvalidDataException("Triangle/material count mismatch");
                 WriteMesh(mesh.GetVertices(), indices, materials, item.SurfacePropertyIndex,
-                    item.CollisionAttributeIndex, phys, pose, entity);
+                    item.CollisionAttributeIndex, phys, pose, entity, instance);
             }
             foreach (var item in shape.GetAllHulls())
             {
@@ -81,7 +82,7 @@ sealed class Physics : IDisposable
                         indices.Add(triangle.C);
                     }
                 WriteMesh(hull.GetVertexPositions(), CollectionsMarshal.AsSpan(indices), [],
-                    item.SurfacePropertyIndex, item.CollisionAttributeIndex, phys, pose, entity);
+                    item.SurfacePropertyIndex, item.CollisionAttributeIndex, phys, pose, entity, instance);
             }
 
             void Primitive(string kind, Vector3[] centers, float radius, int attribute, int surface)
@@ -90,7 +91,7 @@ sealed class Physics : IDisposable
                 primitives.Add(new { kind, centers = centers.Select(p => new[] {p.X, p.Y, p.Z}),
                     radius, transform = new[]{pose.M11,pose.M12,pose.M13,pose.M21,pose.M22,pose.M23,
                                               pose.M31,pose.M32,pose.M33,pose.M41,pose.M42,pose.M43},
-                    tags = phys.GetInteractAsTags(attribute), material = hashes[surface], entity });
+                    tags = phys.GetInteractAsTags(attribute), material = hashes[surface], entity, instance });
             }
             foreach (var item in shape.GetAllSpheres())
                 Primitive("sphere", [item.Shape.Center], item.Shape.Radius, item.CollisionAttributeIndex, item.SurfacePropertyIndex);
@@ -101,7 +102,7 @@ sealed class Physics : IDisposable
 
     private void WriteMesh(ReadOnlySpan<Vector3> source, ReadOnlySpan<int> indices,
                            int[] faceMaterials, int surface, int attribute, PhysAggregateData phys,
-                           Matrix4x4 pose, string entity)
+                           Matrix4x4 pose, string entity, int instance)
     {
         if (indices.Length == 0) return;
         var vertices = new Vector3[source.Length];
@@ -117,14 +118,14 @@ sealed class Physics : IDisposable
         blocks.Add(new { offset, vertices = vertices.Length, triangles = indices.Length / 3,
             perFace = overrides.Length != 0, material = hashes[surface],
             group = attr.GetStringProperty("m_CollisionGroupString"),
-            tags = phys.GetInteractAsTags(attribute), entity });
+            tags = phys.GetInteractAsTags(attribute), entity, instance });
     }
 
     public void Finish(string json)
     {
         if (blocks.Count == 0) throw new InvalidDataException("Empty world physics");
         File.WriteAllText(json, JsonSerializer.Serialize(new {
-            format = 1, blocks, surfaces, primitives, missingModels = missing
+            format = 1, blocks, surfaces, primitives, instances = Instances, missingModels = missing
         }));
     }
     public void Dispose() => output.Dispose();

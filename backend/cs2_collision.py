@@ -10,22 +10,25 @@ import numpy as np
 from embreex.mesh_construction import TriangleMesh
 from embreex.rtcore_scene import EmbreeScene
 
-SIGHT, MOVEMENT, PROJECTILE, THROW = 1, 2, 4, 8
+SIGHT, MOVEMENT, PROJECTILE, THROW, CLIMB = 1, 2, 4, 8, 16
 
 
 def channels(tags, group, material):
     tags = set(tags)
     clip = tags & {"playerclip", "npcclip", "csgo_grenadeclip", "navclip"}
     if clip and not tags & {"solid", "window", "passbullets"}:
-        return (MOVEMENT if "playerclip" in tags else 0) | (
-            THROW if "csgo_grenadeclip" in tags else 0
+        move = (
+            (MOVEMENT if "ladder" in tags else MOVEMENT | CLIMB)
+            if "playerclip" in tags
+            else 0
         )
+        return move | (THROW if "csgo_grenadeclip" in tags else 0)
     if not (
         group in ("Default", "default", "", None)
         or tags & {"solid", "window", "passbullets", "sky", "blocklos"}
     ):
         return 0
-    mask = MOVEMENT | THROW
+    mask = MOVEMENT | THROW | (0 if "ladder" in tags else CLIMB)
     if "passbullets" not in tags:
         mask |= PROJECTILE
         if not (tags & {"window", "sky"} or "glass" in material):
@@ -123,7 +126,14 @@ class Collision:
         if data["format"] != 1 or data["missingModels"]:
             raise ValueError(f"{folder.name}: неполная физика карты")
         raw = np.memmap(folder / "collision.bin", mode="r", dtype="u1")
-        blocks = data["blocks"]
+        enabled = {i["id"] for i in data.get("instances", []) if i["active"]}
+
+        def active(record):
+            instance = record.get("instance", -1)
+            return instance < 0 or instance in enabled
+
+        blocks = [b for b in data["blocks"] if active(b)]
+        self.blocks = blocks
         self.materials = list(data["surfaces"].values())
         materials = {int(k): i for i, k in enumerate(data["surfaces"])}
         ordered = np.array(sorted(materials), dtype=np.uint32)
@@ -161,6 +171,7 @@ class Collision:
         self.shapes = [
             Primitive(p, self.materials[materials[p["material"]]])
             for p in data["primitives"]
+            if active(p)
         ]
         self.bounds = Bounds(self.shapes) if self.shapes else None
         # Cache only exact segments and bound retention to this map.

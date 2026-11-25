@@ -12,7 +12,21 @@ from backend import cs2_maps
 def inspect(name):
     space = cs2_maps.get(name)
     meta = json.loads((space.folder / "collision.json").read_bytes())
-    limits = np.cumsum([b["triangles"] for b in meta["blocks"]]).tolist()
+    limits = np.cumsum([b["triangles"] for b in space.collision.blocks]).tolist()
+    by_class = Counter((i["kind"], i["active"]) for i in meta.get("instances", []))
+    print("IMPORT", name, dict(by_class), flush=True)
+    if name == "de_vertigo":
+        for i in meta.get("instances", []):
+            if i["kind"] == "func_brush":
+                print(
+                    "BRUSH",
+                    name,
+                    i["name"],
+                    i["disabled"],
+                    i["solidity"],
+                    i["model"],
+                    flush=True,
+                )
     reasons = Counter()
     examples = {}
     for side in ("T", "CT"):
@@ -49,7 +63,7 @@ def inspect(name):
                                 dists=np.array([0.002], dtype=np.float32),
                             )[0]
                             block = (
-                                meta["blocks"][bisect_right(limits, int(face))]
+                                space.collision.blocks[bisect_right(limits, int(face))]
                                 if face >= 0
                                 else {}
                             )

@@ -6,6 +6,7 @@ import sys
 from functools import cached_property, lru_cache, partial
 from weakref import proxy
 from math import atan2, dist, hypot
+from heapq import heappop, heappush
 from pathlib import Path
 
 from .cs2_navigation import Navigation, surface_height
@@ -112,6 +113,11 @@ class Map:
             for s in ("T", "CT")
         }
         self.profile = PROFILES[name]
+        self.ladder_mounts = {
+            self.to_sim(p)
+            for ladder in data["ladders"]
+            for p in (ladder["top"], ladder["bottom"])
+        }
         self.places = resolve_anchors(
             self.profile,
             named_stages(data, self.nav, self.profile),
@@ -149,6 +155,7 @@ class Map:
                 :16
             ]
         self.passage = lru_cache(maxsize=32768)(partial(Map._passage, proxy(self)))
+        self.inside = lru_cache(maxsize=32768)(partial(Map._inside, proxy(self)))
         self.path = lru_cache(maxsize=4096)(partial(Map._path, proxy(self)))
         self.route = lru_cache(maxsize=8192)(self.nav.route)
         self.approach = lru_cache(maxsize=32)(partial(Map._approach, proxy(self)))
@@ -374,24 +381,72 @@ class Map:
     def clear(self, a, b):
         return self.hit(xyz(a), xyz(b), 1, 64) is None
 
-    def _passage(self, start, end):
+    def _passage(self, start, end, climbing=False):
         # NAV already accounts for hull width. Check the body above the NAV
         # step height, including props and player clips absent from NAV.
-        return start == end or self.hit(start, end, 2, 34) is None
+        return start == end or self.hit(start, end, 16 if climbing else 2, 34) is None
 
-    def _inside(self, area, start, end):
-        if self.passage(start, end):
+    def _inside(self, area, start, end, climbing=False):
+        climbing = climbing or start in self.ladder_mounts
+        if self.passage(start, end, climbing):
             return [(end, area)]
-        # Corners and the convex centre give local alternatives around a prop.
-        candidates = [self.centers[area]]
-        for corner in self.nav.areas[area]["corners"]:
-            edge = self.to_sim(corner)
-            candidates.append(
-                tuple(0.25 * c + 0.75 * e for c, e in zip(self.centers[area], edge))
-            )
-        for mid in sorted(candidates, key=lambda q: dist(start, q) + dist(q, end)):
-            if self.passage(start, mid) and self.passage(mid, end):
-                return [(mid, area), (end, area)]
+        # A convex NAV surface can contain a placed prop. Build a small
+        # local visibility graph only when that prop interrupts a straight leg.
+        center = self.centers[area]
+        corners = self.nav.areas[area]["corners"]
+        candidates = [center]
+        for index, corner in enumerate(corners):
+            other = corners[(index + 1) % len(corners)]
+            for t in (0.0, 0.5):
+                edge = self.to_sim(
+                    tuple(a + (b - a) * t for a, b in zip(corner, other))
+                )
+                for fraction in (0.45, 0.9):
+                    point = tuple(c + (e - c) * fraction for c, e in zip(center, edge))
+                    wx, wy, _ = self.world(point)
+                    z = surface_height(corners, wx, wy)
+                    if z is not None:
+                        candidates.append((point[0], point[1], z / UNIT))
+        candidates = list(dict.fromkeys([*candidates, end]))
+        queue = [(dist(start, end), 0.0, start)]
+        cost = {start: 0.0}
+        parent = {}
+        while queue:
+            _, length, pos = heappop(queue)
+            if length != cost[pos]:
+                continue
+            if pos == end:
+                steps = []
+                while pos != start:
+                    steps.append((pos, area))
+                    pos = parent[pos]
+                return steps[::-1]
+            for nex in candidates:
+                n = length + dist(pos, nex)
+                if n >= cost.get(nex, float("inf")) or not self.passage(
+                    pos, nex, climbing
+                ):
+                    continue
+                cost[nex], parent[nex] = n, pos
+                heappush(queue, (n + dist(nex, end), n, nex))
+        return None
+
+    def _gate(self, area, start, cross):
+        for a, b in ((cross.leave, cross.enter), *cross.alternatives):
+            leave, enter = self.to_sim(a), self.to_sim(b)
+            inside = self.inside(area, start, leave, cross.ladder is not None)
+            if inside is None:
+                continue
+            if self.passage(leave, enter, cross.ladder is not None):
+                return [*inside, (enter, cross.area)]
+            # A raised NAV edge is a step or jump. Crossing it on the
+            # diagonal can strike the vertical riser. Test the rise/drop
+            # and the horizontal segment individually against the same body mask.
+            if cross.ladder is None and 1 < abs(a[2] - b[2]) <= 64:
+                high = max(leave[2], enter[2]) + 0.1
+                corner = (*((leave if leave[2] < enter[2] else enter)[:2]), high)
+                if self.passage(leave, corner) and self.passage(corner, enter):
+                    return [*inside, (corner, area), (enter, cross.area)]
         return None
 
     def _path(self, area, start, zone, goal, avoided):
@@ -408,17 +463,14 @@ class Map:
             pos = start
             here = area
             for crossing in route:
-                leave, enter = self.to_sim(crossing.leave), self.to_sim(crossing.enter)
-                inside = self._inside(here, pos, leave)
-                if inside is None or not self.passage(leave, enter):
+                leg = self._gate(here, pos, crossing)
+                if leg is None:
                     excluded.add((here, crossing.area))
                     break
-                points.extend(inside)
-                here = crossing.area
-                points.append((enter, here))
-                pos = enter
+                points.extend(leg)
+                pos, here = leg[-1]
             else:
-                end = self._inside(zone, pos, goal)
+                end = self.inside(zone, pos, goal)
                 if end is not None:
                     return tuple((*p, i) for p, i in points + end)
                 if not route:
@@ -446,7 +498,8 @@ class Map:
                 if i not in (here, zone)
             )
         dest = [zone, *goal, sorted(avoided)]
-        if a["dest"] != dest or not a["path"]:
+        crossing = bool(a["path"] and a["path"][0][3] != here)
+        if (a["dest"] != dest and not crossing) or not a["path"]:
             path = self.path(here, pos, zone, goal, avoided)
             if path is None:
                 a["blockedTicks"] = a.get("blockedTicks", 0) + 1

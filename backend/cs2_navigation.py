@@ -32,27 +32,28 @@ class Crossing:
     leave: tuple
     enter: tuple
     ladder: int | None = None
+    alternatives: tuple = ()
 
 
 def _point(a, b, t):
     return tuple(x + t * (y - x) for x, y in zip(a, b))
 
 
-def _portal(a, b, c, d):
+def _portal(a, b, c, d, fraction=.5):
     """Pair of edge points within the overlapping width of a split NAV edge."""
     dx, dy = b[0] - a[0], b[1] - a[1]
     length2 = dx * dx + dy * dy
     if not length2:
-        return a, min((c, d), key=lambda p: dist(a, p))
+        return tuple(a), tuple(min((c, d), key=lambda p: dist(a, p)))
     cpos = ((c[0] - a[0]) * dx + (c[1] - a[1]) * dy) / length2
     dpos = ((d[0] - a[0]) * dx + (d[1] - a[1]) * dy) / length2
     lo, hi = sorted((cpos, dpos))
     start = min(1, max(0, lo))
     end = min(1, max(0, hi))
-    t = (start + end) / 2
+    t = start+(end-start)*fraction
     if abs(dpos - cpos) < 1e-8:
         midpoint = _point(a, b, t)
-        return midpoint, min((c, d), key=lambda p: dist(midpoint, p))
+        return midpoint, tuple(min((c, d), key=lambda p: dist(midpoint, p)))
     u = min(1, max(0, (t - cpos) / (dpos - cpos)))
     return _point(a, b, t), _point(c, d, u)
 
@@ -85,7 +86,9 @@ class Navigation:
                     if j >= len(other):
                         raise ValueError(f"Некорректное встречное ребро NAV: {ident} → {link['to']} ({j})")
                     leave, enter = _portal(a, b, other[j], other[(j + 1) % len(other)])
-                    self.links[ident].append(Crossing(link["to"], tuple(leave), tuple(enter)))
+                    variants=tuple(dict.fromkeys(_portal(a,b,other[j],other[(j+1)%len(other)],fraction)
+                                   for fraction in (.2,.8,.05,.95)))
+                    self.links[ident].append(Crossing(link["to"], tuple(leave), tuple(enter),alternatives=variants))
             for upward, refs in ((True, area["up"]), (False, area["down"])):
                 for ladder_id in refs:
                     ladder = ladders[ladder_id]
