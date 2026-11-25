@@ -1,15 +1,21 @@
 """Persistent, single-worker portrait import; simulation and browser stay responsive."""
 
-from contextlib import closing
 import hashlib
 import json
-from pathlib import Path
 import sqlite3
-from uuid import uuid4
+from contextlib import closing
+from pathlib import Path
 from threading import Event, Lock, Thread
+from uuid import uuid4
 
-from .portrait_processing import PortraitProcessor, Unsuitable, VERSION
-from .portrait_sources import discover, fetch, Unavailable, PartialSearch
+from .portrait_processing import VERSION, PortraitProcessor, Unsuitable
+from .portrait_sources import (
+    RETIRED_LAYERS,
+    PartialSearch,
+    Unavailable,
+    discover,
+    fetch,
+)
 
 
 def identity(pid, player):
@@ -161,8 +167,11 @@ class PortraitLibrary:
         result = {}
         for pid, p in records.items():
             item = lookup.get(identity(pid, p))
-            if item:
-                result[pid] = dict(item[1], image="/api/portraits/image/" + item[0])
+            if item and item[0] not in RETIRED_LAYERS:
+                url = "/api/portraits/image/" + item[0]
+                if "nativeWidth" in item[1]:
+                    url += "?nativeWidth=" + str(item[1]["nativeWidth"])
+                result[pid] = dict(item[1], image=url)
         return result
 
     def image(self, digest):

@@ -3,13 +3,13 @@
 import html
 import json
 import math
-from email.utils import parsedate_to_datetime
 import re
 import time
 import unicodedata
+from email.utils import parsedate_to_datetime
 from functools import lru_cache
-from pathlib import Path
 from html.parser import HTMLParser
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, unquote, urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -23,6 +23,13 @@ LICENSES = {
     for v in ("2.0", "3.0", "4.0")
 }
 LICENSES["https://creativecommons.org/publicdomain/zero/1.0/"] = "CC0"
+# Superseded layers from the first private pack, excluded at the in-game review.
+RETIRED_LAYERS = frozenset(
+    {
+        "c5d405eb3e3c07ed2ba5d1dc40e013bb055cddfbfd300dff2a26b3a49930a361",
+        "e6949500ba791da63478546afb2c70b9dc12eb635bc775875b1ebe65297c8bb2",
+    }
+)
 TYPES = (
     "headshot",
     "hero shot",
@@ -32,11 +39,11 @@ TYPES = (
 )
 STUDIO = re.compile(
     r"head.?shot|hero shot|roster (?:portrait|photo)|player (?:portrait|headshot)|studio (?:portrait|photo)|press portrait|official portrait|media.?day (?:portrait|photo.?shoot)|медиа.?дн.{0,20}портрет|студийн|портрет состава|joueur.*studio",
-    re.I,
+    re.IGNORECASE,
 )
 UNSUITABLE = re.compile(
     r"interview|backstage|screens?hot|with (?:a |the )?troph|crowd|headset|full.length|full.body|playing at|интервью|в полный рост|скриншот|наушник|за монитором",
-    re.I,
+    re.IGNORECASE,
 )
 
 
@@ -91,7 +98,7 @@ def matches(person, description):
     nick = contains(description, person["name"])
     real = contains(description, person.get("realName"))
     esports = bool(
-        re.search(r"counter.?strike|cs.?2\b|cs:?go|esports?", description, re.I)
+        re.search(r"counter.?strike|cs.?2\b|cs:?go|esports?", description, re.IGNORECASE)
     )
     team = contains(description, person.get("team"))
     return (real and (nick or esports or team)) or (

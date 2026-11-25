@@ -17,8 +17,9 @@ def archive(*members):
     return buffer.getvalue()
 
 
+@pytest.mark.parametrize("native_width", [None, 181])
 def test_private_pack_is_atomic_offline_and_does_not_mutate_players(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, native_width
 ):
     raw = (
         Path(__file__).parents[1] / "frontend/e2e/fixtures/portraits/model-a.png"
@@ -30,6 +31,8 @@ def test_private_pack_is_atomic_offline_and_does_not_mutate_players(
         publisher="Тестовая студия",
         source="https://example.org/player",
     )
+    if native_width:
+        entry["nativeWidth"] = native_width
     monkeypatch.setattr(personal_portraits, "catalog", lambda: {"p-1": entry})
     library = PortraitLibrary(tmp_path / "portraits.sqlite")
     pack = {"players": {"p-1": {"name": "Игрок"}}}
@@ -45,7 +48,10 @@ def test_private_pack_is_atomic_offline_and_does_not_mutate_players(
         "installed": 1
     }
     fresh = PortraitLibrary(library.path)
-    assert fresh.index(pack["players"])["p-1"]["image"].endswith(digest)
+    url = fresh.index(pack["players"])["p-1"]["image"]
+    assert url == "/api/portraits/image/" + digest + (
+        "?nativeWidth=181" if native_width else ""
+    )
     assert fresh.image(digest) == raw
     assert pack["players"] == {"p-1": {"name": "Игрок"}}
     assert personal_portraits.install(fresh, pack, archive((file, raw))) == {

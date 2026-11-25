@@ -12,7 +12,7 @@ from PIL import Image
 
 from .portrait_library import identity
 from .portrait_processing import VERSION
-from .portrait_sources import previously_rejected
+from .portrait_sources import RETIRED_LAYERS, previously_rejected
 
 MAX_PACK = 96 * 1024 * 1024
 CATALOG = Path(__file__).with_name("data") / "personal-portrait-sources.json"
@@ -42,14 +42,14 @@ def install(library, pack, content):
                 members = archive.infolist()
                 if (
                     not members
-                    or len(members) > len(known)
+                    or len(members) > len(known) + len(RETIRED_LAYERS)
                     or sum(m.file_size for m in members) > MAX_PACK
                 ):
                     raise ValueError("Пакет не соответствует выбранной базе игроков")
                 for member in members:
                     digest = member.filename.removesuffix(".png")
                     if (
-                        digest not in known
+                        (digest not in known and digest not in RETIRED_LAYERS)
                         or member.filename != digest + ".png"
                         or digest in seen
                         or not 0 < member.file_size <= 2 * 1024 * 1024
@@ -58,6 +58,11 @@ def install(library, pack, content):
                             "Неизвестный, повторный или слишком большой слой внешности"
                         )
                     raw = archive.read(member)
+                    if digest in RETIRED_LAYERS and sha256(raw).hexdigest() == digest:
+                        seen.add(digest)
+                        continue
+                    if digest not in known:
+                        raise ValueError("Неверная контрольная сумма архивного слоя")
                     pid, entry = known[digest]
                     if sha256(raw).hexdigest() != digest or previously_rejected(
                         entry["source"]
@@ -80,6 +85,8 @@ def install(library, pack, content):
                         "license": "Личная копия",
                         "changes": "Студийный портрет · отделены волосы, голова и шея. Форма зависит от команды.",
                     }
+                    if "nativeWidth" in entry:
+                        credit["nativeWidth"] = entry["nativeWidth"]
                     db.execute("INSERT OR IGNORE INTO asset VALUES(?,?)", (digest, raw))
                     db.execute(
                         "INSERT OR REPLACE INTO portrait VALUES(?,?,?,?)",
@@ -94,4 +101,4 @@ def install(library, pack, content):
         except (BadZipFile, OSError, RuntimeError) as exc:
             raise ValueError("Личный пакет повреждён") from exc
         db.commit()
-    return {"installed": len(seen)}
+    return {"installed": len(seen - RETIRED_LAYERS)}

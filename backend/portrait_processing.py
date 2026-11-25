@@ -5,9 +5,9 @@ from publisher metadata before this module receives pixels.
 """
 
 import hashlib
+import math
 from io import BytesIO
 from pathlib import Path
-import math
 
 
 class Unsuitable(ValueError):
@@ -66,6 +66,13 @@ class PortraitProcessor:
         )
 
     def render(self, raw):
+        return self._render(raw, studio=False)[0]
+
+    def render_roster(self, raw):
+        """For reviewed studio roster sources, also return the natural display width."""
+        return self._render(raw, studio=True)
+
+    def _render(self, raw, studio):
         import cv2
         import numpy as np
         from PIL import Image, ImageOps, UnidentifiedImageError
@@ -84,6 +91,8 @@ class PortraitProcessor:
             raise Unsuitable("Изображение не читается") from e
         if min(original.shape[:2]) < 300:
             raise Unsuitable("Недостаточное разрешение")
+        if studio and original[:, :, 3].min() != 0:
+            raise Unsuitable("Нет прозрачного студийного исходника")
         # Flatten transparent studio backgrounds to middle gray for the two models.
         rgba = original.astype(np.float32) / 255
         rgb = np.uint8(
@@ -100,7 +109,10 @@ class PortraitProcessor:
         delta = right - left
         span = float(np.linalg.norm(delta))
         chin = lm[152]
-        if span < 45 or (chin[1] - lm[10, 1]) / h < 0.25:
+        # The semantic crop below already removes excess torso and margins.
+        # 120 CSS pixels is the largest normal profile header (78 eye pixels at 480).
+        native_width = math.floor(span * 480 / 78)
+        if span < 45 and (not studio or native_width < 160):
             raise Unsuitable("Лицо слишком мало в кадре")
         if (
             abs(math.degrees(math.atan2(delta[1], delta[0]))) > 9
@@ -118,6 +130,17 @@ class PortraitProcessor:
             > 0.78
         ):
             raise Unsuitable("Требуется нейтральное выражение")
+        if studio:
+            # Measure the original face, excluding silhouette edges and jersey detail.
+            face = rgb[
+                max(0, int(eyes[1] - 0.35 * span)) : min(h, int(chin[1] - 0.2 * span)),
+                max(0, int(eyes[0] - 0.75 * span)) : min(w, int(eyes[0] + 0.75 * span)),
+            ]
+            if not face.size:
+                raise Unsuitable("Лицо за границей кадра")
+            gray = cv2.cvtColor(face, cv2.COLOR_RGB2GRAY)
+            if np.std(gray) < 12 or cv2.Laplacian(gray, cv2.CV_64F).var() < 70:
+                raise Unsuitable("Недостаточная детализация лица")
         x0 = max(0, round(eyes[0] - 1.85 * span))
         x1 = min(w, round(eyes[0] + 1.85 * span))
         y0 = max(0, round(eyes[1] - 3.15 * span))
@@ -178,4 +201,4 @@ class PortraitProcessor:
         Image.fromarray(np.uint8(np.clip(output, 0, 255))).save(
             dst, format="PNG", optimize=True
         )
-        return dst.getvalue()
+        return dst.getvalue(), native_width

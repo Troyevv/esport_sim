@@ -90,6 +90,8 @@ def main():
         "SCENE_ART_R32.md",
         "PERSONAL_BADGES_R32.md",
         "PRIVATE_STUDIO_R32.md",
+        "PRIVATE_STUDIO_COVERAGE.csv",
+        "PRIVATE_STUDIO_SEARCH.csv",
         "CLUB_BADGE_SOURCES.md",
     ):
         doc = (ROOT / "docs" / name).read_text(encoding="utf-8")

@@ -77,6 +77,10 @@ export function GamePortrait({
   const [badHead, setBadHead] = useState("");
   const [badBadge, setBadBadge] = useState("");
   const design = kitDesign(kit);
+  const measured = head?.match(
+    /^\/api\/portraits\/image\/[0-9a-f]{64}\?nativeWidth=(\d+)$/,
+  );
+  const naturalWidth = measured ? Number(measured[1]) : undefined;
   const portrait = useRef<SVGSVGElement>(null);
   const spirit = kit?.badgeLicense === "Условия Team Spirit";
   const [largePatch, setLargePatch] = useState(false);
@@ -135,6 +139,11 @@ export function GamePortrait({
   return (
     <svg
       ref={portrait}
+      style={
+        naturalWidth
+          ? { maxWidth: naturalWidth, maxHeight: (naturalWidth * 280) / 240 }
+          : undefined
+      }
       className="scene-avatar game-portrait"
       viewBox="0 0 240 280"
       role="img"
