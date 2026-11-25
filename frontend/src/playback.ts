@@ -1,7 +1,7 @@
 import type { Agent, RadarMap } from "./Radar";
 import type { Frame } from "./session";
 
-export type Pose = Pick<Agent, "x" | "y" | "heading">;
+export type Pose = Pick<Agent, "x" | "y" | "z" | "heading">;
 type Control = { x: number; y: number };
 type Key = Pose & {
   at: number;
@@ -40,7 +40,7 @@ function clearSegment(a: Pose, b: Pose, walls: RadarMap["walls"]) {
 }
 
 function key(p: Pose, at: number, blend: boolean): Key {
-  return { x: p.x, y: p.y, heading: p.heading, at, blend };
+  return { x: p.x, y: p.y, z:p.z, heading: p.heading, at, blend };
 }
 
 function cubic(a: number, c1: number, c2: number, b: number, t: number) {
@@ -222,7 +222,7 @@ export class RadarPlayback {
         track.keys.shift();
       for (let i = 1; i <= ticks; i++) {
         const s = i < ticks ? samples![i] : null;
-        const pose = s ? { x: s[0], y: s[1], heading: s[2] } : agent;
+        const pose = s ? { x: s[0], y: s[1], heading: s[2], z:s[3] } : agent;
         const previous = track.keys[track.keys.length - 1];
         track.keys.push(
           key(
@@ -231,7 +231,7 @@ export class RadarPlayback {
             clearSegment(previous, pose, world.map.walls),
           ),
         );
-        roundCorner(track.keys, this.cursor, world.map);
+        if (!world.map.radar) roundCorner(track.keys, this.cursor, world.map);
       }
     }
     this.received = now;
@@ -257,6 +257,7 @@ export class RadarPlayback {
     const [a, b] = keys;
     const t = b?.blend ? Math.max(0, (this.cursor - a.at) / (b.at - a.at)) : 0;
     pose.x = t ? a.x + (b.x - a.x) * t : a.x;
+    pose.z = t && a.z !== undefined && b.z !== undefined ? a.z + (b.z-a.z)*t : a.z;
     pose.y = t ? a.y + (b.y - a.y) * t : a.y;
     if (t && b.curve) {
       const { c1, c2, lengths } = b.curve;

@@ -40,6 +40,7 @@ def play(name, seed, pair, pack, replay, adjustment=0):
     saves = set()
     retakes = set()
     stalls = set()
+    blocked_areas = Counter()
     team_sides = {}
     outcomes = []
     while game["phase"] != "finished":
@@ -72,6 +73,7 @@ def play(name, seed, pair, pack, replay, adjustment=0):
                     retakes.add(game["round"])
                 if a.get("blockedTicks", 0) >= 20:
                     stalls.add((game["round"], a["id"]))
+                    blocked_areas[a["navArea"]] += 1
             if replay:
                 frames.append(
                     [
@@ -148,6 +150,7 @@ def play(name, seed, pair, pack, replay, adjustment=0):
         rotations=rotations,
         trades=trades,
         stalls=len(stalls),
+        blockedAreas=blocked_areas.most_common(8),
     )
     return results, frames, outcomes
 

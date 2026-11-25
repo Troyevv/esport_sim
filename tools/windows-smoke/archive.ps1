@@ -4,8 +4,8 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 if ($CleanCore.IsPresent -eq $DesktopBrowser.IsPresent) { throw 'Choose exactly one Windows test environment.' }
 
-function Wait-Check([string]$Description, [scriptblock]$Check) {
-    $until = [DateTime]::UtcNow.AddSeconds(60)
+function Wait-Check([string]$Description, [scriptblock]$Check, [int]$Seconds=60) {
+    $until = [DateTime]::UtcNow.AddSeconds($Seconds)
     $lastError = ''
     do {
         try { if (& $Check) { return } } catch { $lastError = $_.Exception.Message }
@@ -234,8 +234,9 @@ Command $origin 'career-save' @{slot='2'}
 Command $origin 'career-advance'
 Wait-Check 'packaged career stops before user match' {
     $c = (Invoke-RestMethod "$origin/api/career").active
+    if ($c.error) { Write-Warning $c.error; throw $c.error }
     $c.date -gt $c.start -and !$c.progress -and $c.history.Count -gt 0
-}
+} 240
 Command $origin 'career-play'
 $careerState = (Invoke-RestMethod "$origin/api/state")
 if (!$careerState.careerId -or $careerState.world.match.teams.Count -ne 2) { throw 'Career match missing.' }

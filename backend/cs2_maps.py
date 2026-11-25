@@ -3,7 +3,8 @@
 import json
 import os
 import sys
-from functools import cached_property, lru_cache
+from functools import cached_property, lru_cache, partial
+from weakref import proxy
 from math import atan2, dist, hypot
 from pathlib import Path
 
@@ -147,12 +148,12 @@ class Map:
             self.holds[site] = sorted(self.cover, key=lambda item: dist(item[1], mean))[
                 :16
             ]
-        self.passage = lru_cache(maxsize=32768)(self._passage)
-        self.path = lru_cache(maxsize=4096)(self._path)
+        self.passage = lru_cache(maxsize=32768)(partial(Map._passage, proxy(self)))
+        self.path = lru_cache(maxsize=4096)(partial(Map._path, proxy(self)))
         self.route = lru_cache(maxsize=8192)(self.nav.route)
-        self.approach = lru_cache(maxsize=32)(self._approach)
-        self.escape = lru_cache(maxsize=16)(self._escape)
-        self.locate = lru_cache(maxsize=8192)(self._locate)
+        self.approach = lru_cache(maxsize=32)(partial(Map._approach, proxy(self)))
+        self.escape = lru_cache(maxsize=16)(partial(Map._escape, proxy(self)))
+        self.locate = lru_cache(maxsize=8192)(partial(Map._locate, proxy(self)))
 
     @cached_property
     def collision(self):
@@ -281,6 +282,44 @@ class Map:
             (*b[:2], b[2] + (up if target_up is None else target_up)),
             channel,
         )
+
+    def shot_transmission(self, start, end, power):
+        length = dist(start, end)
+        if not length:
+            return 1.0
+        # Game surfaces may be open meshes or nested closed hulls. Trace the
+        # whole segment, so a thin pane in front of solid world geometry
+        # cannot make the geometry behind it penetrable.
+        open_layers = {}
+        transmission = 1.0
+        offset = 0.0
+        while offset < 1:
+            origin = tuple(a + (b - a) * offset for a, b in zip(start, end))
+            hit = self.hit(origin, end, 4, 56)
+            if not hit:
+                break
+            t, material, _ = hit
+            at = offset + (1 - offset) * t
+            resistance = {
+                "glass": 0.08,
+                "cardboard": 0.09,
+                "plastic": 0.16,
+                "wood": 0.25,
+                "wood_panel": 0.25,
+                "metalgrate": 0.18,
+            }.get(material)
+            if resistance is None:
+                return 0.0
+            if material in open_layers:
+                width = (at - open_layers.pop(material)) * length
+                transmission -= resistance * width / max(0.1, power)
+            else:
+                open_layers[material] = at
+                transmission -= resistance * 0.5 / max(0.1, power)
+            if transmission <= 0:
+                return 0.0
+            offset = at + max(1e-6, 0.002 / length)
+        return transmission
 
     def grenade(self, origin, target, flight):
         # Tick-integrated game projectile. Resolve the remaining fraction of a

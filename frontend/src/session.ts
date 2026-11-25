@@ -18,7 +18,7 @@ export interface Frame {
     match?: MatchView;
     map: RadarMap;
     agents: Agent[];
-    motion?: { startTick: number; tracks: Record<string, [number, number, number][]> };
+    motion?: { startTick: number; tracks: Record<string, [number, number, number, number?][]> };
     seed: number;
     tick: number;
     time: number;

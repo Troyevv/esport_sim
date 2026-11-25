@@ -637,20 +637,9 @@ def shoot(w, a, sight, b, space=None):
         and near_line(a, sight, b, 3)
         and (space or engine.clear_line(a["x"], a["y"], b["x"], b["y"]))
     )
-    transmission=1.
-    if space and intersects:
-        hit=space.hit(xyz(a),xyz(b),4,56)
-        if hit:
-            # Game material classes and weapon stats only. A stale observed
-            # target can also move behind an opaque wall before this tick resolves.
-            t,material,_=hit
-            if material not in ("wood","wood_panel","glass","cardboard","plastic","metalgrate"):
-                return
-            reverse=space.hit(xyz(b),xyz(a),4,56)
-            thickness=max(0,1-t-reverse[0])*dist if reverse else dist
-            transmission=max(0.,spec.penetration - thickness/(4 if "wood" in material else 6))
-            if not transmission:
-                return
+    transmission = space.shot_transmission(xyz(a),xyz(b),spec.penetration) if space and intersects else 1.
+    if not transmission:
+        return
     for _ in range(spec.pellets):
         if (engine._draw(a) >> 16) % 100 >= accuracy or not intersects or not b["hp"]:
             continue

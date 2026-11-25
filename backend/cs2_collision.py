@@ -2,7 +2,8 @@
 
 import json
 from collections import OrderedDict
-from functools import lru_cache
+from functools import lru_cache, partial
+from weakref import proxy
 from math import sqrt
 
 import numpy as np
@@ -164,7 +165,7 @@ class Collision:
         self.bounds = Bounds(self.shapes) if self.shapes else None
         # Cache only exact segments and bound retention to this map.
         self.sight_cache = OrderedDict()
-        self.trace = lru_cache(maxsize=32768)(self._trace)
+        self.trace = lru_cache(maxsize=32768)(partial(Collision._trace, proxy(self)))
 
     def sight_many(self, segments):
         # Exact cached eye segments. Resolve the first triangle of all new

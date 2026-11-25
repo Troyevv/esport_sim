@@ -226,10 +226,10 @@ function setupScene(
     let changed = dirty;
     for (const a of current.frame.world.agents) {
       const m = markers.get(a.id)!;
-      const visible = playback.has(a.id) && onLayer(current.frame.world.map, current.layer || 'default', a.z);
+      const p = playback.has(a.id) ? playback.sample(a.id, now) : undefined;
+      const visible = !!p && onLayer(current.frame.world.map, current.layer || 'default', p.z);
       if (m.group.visible !== visible) { m.group.visible = visible; changed = true; }
-      if (!visible) continue;
-      const p = playback.sample(a.id, now);
+      if (!visible || !p) continue;
       if (
         m.group.x !== p.x ||
         m.group.y !== p.y ||

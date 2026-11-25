@@ -273,7 +273,7 @@ def motion_sample(state):
     known = {team: {target for a in state["agents"] if a["team"] == team
                     for target in a["visible"]} for team in ("T", "CT")}
     return {
-        a["id"]: ((a["x"], a["y"], a["heading"]),
+        a["id"]: ((a["x"], a["y"], a["heading"], *([a["z"]] if "z" in a else [])),
                   tuple(team for team in known if a["team"] == team or a["id"] in known[team]))
         for a in state["agents"]
     }

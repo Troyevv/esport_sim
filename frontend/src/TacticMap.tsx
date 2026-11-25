@@ -168,8 +168,12 @@ export default function TacticMap(props: Props) {
       if (!ctx || !points.length) return;
       ctx.beginPath();
       ctx.setLineDash(dashed ? [2, 1.8] : []);
-      ctx.moveTo(points[0].x, points[0].y);
-      points.slice(1).forEach((p) => ctx.lineTo(p.x, p.y));
+      let connected=false;
+      for (const p of points) {
+        if (!onLayer(map,layerId,p.z)) { connected=false; continue; }
+        if (connected) ctx.lineTo(p.x,p.y); else ctx.moveTo(p.x,p.y);
+        connected=true;
+      }
       ctx.strokeStyle = color;
       ctx.lineWidth = width;
       ctx.stroke();
@@ -201,7 +205,7 @@ export default function TacticMap(props: Props) {
       plan.slots[i].forEach((s, j) => {
         const moving = walks(s.kind);
         line(
-          moving && !router ? (legs[i]?.[j] || []).filter(p => onLayer(map, layerId, p.z)) : [prev, ...(moving && router ? router(prev, s) : [s])],
+          moving && !router ? (legs[i]?.[j] || []) : [prev, ...(moving && router ? router(prev, s) : [s])],
           colors[i],
           i === slot ? 1.3 : 0.7,
           !moving,
@@ -294,7 +298,7 @@ export default function TacticMap(props: Props) {
         ...steps.map((s, j) => ({ p: s, slot: i, index: j as number | null })),
         { p: spawn(map, plan.side, i), slot: i, index: null },
       ]);
-      const hit = candidates.sort((a, b) => gap(a.p, p) - gap(b.p, p))[0];
+      const hit = candidates.filter(c => onLayer(map,layerId,c.p.z)).sort((a, b) => gap(a.p, p) - gap(b.p, p))[0];
       if (hit && gap(hit.p, p) <= 10) props.onPick(hit.slot, hit.index);
       return;
     }
