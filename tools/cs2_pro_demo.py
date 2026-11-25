@@ -18,8 +18,11 @@ def parse(path, rounds):
     event_types = {"flashbang_detonate":"flashbang", "hegrenade_detonate":"hegrenade",
                    "smokegrenade_detonate":"smokegrenade", "inferno_startburn":"fire",
                    "decoy_started":"decoy"}
-    throws = [(int(tick), kind) for event,kind in event_types.items()
-              for tick in parser.parse_event(event).get("tick", [])]
+    throws = []
+    for event, kind in event_types.items():
+        records = parser.parse_event(event)
+        if len(records):
+            throws.extend((int(tick), kind) for tick in records["tick"])
     if not throws:
         raise ValueError("No utility detonations in professional demo")
     ends = [r["end_tick"] for r in rounds]
