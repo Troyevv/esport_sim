@@ -4,6 +4,7 @@ on:
     paths:
       - tools/cs2_map_sources.py
       - tools/cs2_world_sources.py
+      - 'tools/cs2_export/**'
       - tools/check_cs2_navigation.py
       - .github/workflows/cs2-map-sources.yml
   workflow_dispatch:
@@ -23,6 +24,10 @@ jobs:
       - run: python tools/cs2_map_sources.py --download build/cs2
       - name: Check reference navigation and visibility
         run: python tools/check_cs2_navigation.py build/cs2
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+      - run: dotnet build tools/cs2_export/Cs2Export.csproj -c Release
       - name: Fetch original map packages from the dated public Steam depot
         working-directory: ${{ runner.temp }}
         run: |

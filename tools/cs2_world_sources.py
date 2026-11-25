@@ -16,19 +16,7 @@ def sha256(path):
         return hashlib.file_digest(source, "sha256").hexdigest()
 
 
-def entity_classes(directory):
-    counts = Counter()
-    for path in sorted(directory.rglob("*")):
-        if not path.is_file():
-            continue
-        for line in path.read_text(encoding="utf-8-sig").splitlines():
-            fields = line.split(None, 1)
-            if len(fields) == 2 and fields[0] == "classname":
-                counts[fields[1].strip()] += 1
-    return counts
-
-
-def extract_map(csgo, map_id, viewer, reference, output):
+def extract_map(csgo, map_id, viewer, exporter, reference, output):
     archive = csgo / "maps" / f"{map_id}.vpk"
     if output.exists():
         raise FileExistsError(f"Каталог назначения уже существует: {output}")
@@ -37,9 +25,8 @@ def extract_map(csgo, map_id, viewer, reference, output):
         stage = Path(tmp) / map_id
         stage.mkdir()
         raw = stage / "compiled"
-        dumps = stage / "entities"
         physics = stage / "physics"
-        for folder in (raw, dumps, physics):
+        for folder in (raw, physics):
             folder.mkdir()
         command = [str(viewer), "-i", str(archive)]
         # Preserve embedded physics, auxiliary physics files, node transforms and
@@ -52,7 +39,6 @@ def extract_map(csgo, map_id, viewer, reference, output):
         nav_hash = sha256(nav)
         if nav_hash != sha256(reference / map_id / f"{map_id}.nav"):
             raise ValueError(f"{map_id}: NAV установленной карты отличается от среза")
-        subprocess.run(command + ["-e", "vents_c", "-d", "-o", str(dumps)], check=True)
         world = f"maps/{map_id}/world_physics.vmdl_c"
         subprocess.run(command + [
             "-f", world, "-o", str(physics), "--gltf_export_format", "glb",
@@ -63,9 +49,12 @@ def extract_map(csgo, map_id, viewer, reference, output):
             raise ValueError(f"{map_id}: Source 2 Viewer не экспортировал физическую модель")
         exported = stage / "world_physics.glb"
         glb.rename(exported)
-        counts = entity_classes(dumps)
+        gameplay = stage / "gameplay.json"
+        subprocess.run([*exporter, str(archive), str(gameplay)], check=True)
+        spatial = json.loads(gameplay.read_bytes())
+        counts = spatial["classes"]
         for name in ("info_player_terrorist", "info_player_counterterrorist", "func_bomb_target"):
-            if not counts[name]:
+            if not counts.get(name):
                 raise ValueError(f"{map_id}: в дампе карты отсутствует {name}")
         report = {
             "map": map_id, "clientVersion": VERSION, "steamBuild": BUILD,
@@ -73,6 +62,11 @@ def extract_map(csgo, map_id, viewer, reference, output):
             "worldPhysicsSha256": sha256(exported),
             "compiledFiles": dict(sorted(Counter(p.suffix for p in raw.rglob("*") if p.is_file()).items())),
             "entityClasses": dict(sorted(counts.items())),
+            "spawns": dict(Counter(p["side"] for p in spatial["spawns"] if p["enabled"])),
+            "targets": dict(Counter(t["site"] for t in spatial["targets"])),
+            "places": sorted({p["name"] for p in spatial["places"] if p["name"]}),
+            "ladders": len(spatial["ladders"]),
+            "hidingSpots": sum(len(a["cover"]) for a in spatial["areas"]),
         }
         (stage / "provenance.json").write_text(
             json.dumps(report, indent=2) + "\n", encoding="utf-8",
@@ -85,6 +79,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--game", type=Path, required=True, help="Каталог game/csgo")
     parser.add_argument("--viewer", type=Path, required=True, help="Source2Viewer-CLI")
+    parser.add_argument("--exporter", type=Path, help="Исполняемый файл Cs2Export")
     parser.add_argument("--reference", type=Path, required=True, help="Каталог cs2_map_sources")
     parser.add_argument("--map", choices=(*ACTIVE, *ADDITIONAL), action="append")
     parser.add_argument("output", type=Path)
@@ -93,8 +88,14 @@ def main():
     version = dict(line.strip().split("=", 1) for line in pairs if "=" in line)
     if version.get("ClientVersion") != VERSION:
         raise SystemExit(f"Для стартовой базы требуется ClientVersion {VERSION}")
+    if args.exporter:
+        exporter = [str(args.exporter.resolve())]
+    else:
+        project = Path(__file__).resolve().parent / "cs2_export" / "Cs2Export.csproj"
+        subprocess.run(["dotnet", "build", str(project), "-c", "Release"], check=True)
+        exporter = ["dotnet", str(project.parent / "bin/Release/net11.0/Cs2Export.dll")]
     for map_id in args.map or (*ACTIVE, *ADDITIONAL):
-        result = extract_map(args.game, map_id, args.viewer.resolve(), args.reference,
+        result = extract_map(args.game, map_id, args.viewer.resolve(), exporter, args.reference,
                              args.output / map_id)
         print(map_id, json.dumps(result, sort_keys=True), flush=True)
 

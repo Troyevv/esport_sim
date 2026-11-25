@@ -113,6 +113,10 @@ def main():
     source_tools.mkdir(exist_ok=True)
     for script in ("cs2_map_sources.py", "cs2_world_sources.py", "check_cs2_navigation.py"):
         shutil.copyfile(ROOT / "tools" / script, source_tools / script)
+    exporter_source = source_tools / "cs2_export"
+    exporter_source.mkdir(exist_ok=True)
+    for name in ("Program.cs", "Cs2Export.csproj"):
+        shutil.copyfile(ROOT / "tools" / "cs2_export" / name, exporter_source / name)
     screenshots = output / "screenshots"
     screenshots.mkdir(exist_ok=True)
     shutil.copytree(ROOT / "docs" / "screenshots" / "r34", screenshots / "r34", dirs_exist_ok=True)
