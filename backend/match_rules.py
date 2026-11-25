@@ -5,7 +5,9 @@ from dataclasses import dataclass
 from . import engine
 
 LEGACY_VERSION = "depo-bo1.1"
-VERSION = "depo-bo1.2"
+PREVIOUS_VERSION = "depo-bo1.2"
+SCOREBOT_VERSION = "depo-bo1.3"
+VERSION = "depo-bo1.4"
 RULES = dict(
     half=12,
     overtimeHalf=3,
@@ -82,22 +84,30 @@ class Weapon:
     reload: int
     accuracy: int
     reward: int
+    penetration: float
+    falloff: float
+    head_multiplier: float = 4.0
+    pellets: int = 1
 
+
+SIDEARMS = frozenset(("Glock", "USP", "Desert Eagle"))
 
 WEAPONS = {
-    "Glock": Weapon(0, 20, 25, 3, 23, 66, 300),
-    "USP": Weapon(0, 12, 31, 3, 22, 70, 300),
-    "MP9": Weapon(1250, 30, 26, 1, 21, 65, 600),
-    "MAC-10": Weapon(1050, 30, 26, 1, 23, 63, 600),
-    "AK-47": Weapon(2700, 30, 36, 1, 25, 75, 300),
-    "M4A1-S": Weapon(2900, 20, 35, 1, 31, 79, 300),
-    "Nova": Weapon(1050, 8, 78, 8, 30, 82, 900),
-    "Negev": Weapon(1700, 150, 31, 1, 55, 62, 300),
-    "AWP": Weapon(4750, 5, 115, 15, 36, 87, 100),
+    "Desert Eagle": Weapon(700, 7, 53, 4, 23, 70, 300, 0.93, 0.81),
+    "Glock": Weapon(0, 20, 30, 3, 23, 66, 300, 0.47, 0.85),
+    "USP": Weapon(0, 12, 35, 3, 22, 70, 300, 0.505, 0.91),
+    "MP9": Weapon(1250, 30, 26, 1, 21, 65, 600, 0.60, 0.87),
+    "MAC-10": Weapon(1050, 30, 29, 1, 23, 63, 600, 0.575, 0.80),
+    "AK-47": Weapon(2700, 30, 36, 1, 25, 75, 300, 0.775, 0.98),
+    "M4A1-S": Weapon(2900, 20, 38, 1, 31, 79, 300, 0.70, 0.94, 3.475),
+    "Nova": Weapon(1050, 8, 26, 8, 30, 82, 900, 0.50, 0.70, pellets=9),
+    "Negev": Weapon(1700, 150, 35, 1, 55, 62, 300, 0.71, 0.97),
+    "AWP": Weapon(4750, 5, 115, 15, 36, 87, 100, 0.975, 0.99),
 }
 PRICES = {
     "Ложная": 50,
     "Броня": 650,
+    "Шлем": 350,
     "Набор": 400,
     "Дым": 300,
     "Свет": 200,
@@ -112,3 +122,21 @@ UTILITY = {
     "HE": (35, 1),
 }
 CALLS = ("Капитану", "Выход A", "Выход B", "Ускориться", "Экономить")
+
+
+def equipment_value(a):
+    return (
+        WEAPONS[a["weapon"]].price
+        + (WEAPONS[a["holster"]["weapon"]].price if a.get("holster") else 0)
+        + (PRICES["Броня"] if a["armor"] else 0)
+        + (PRICES["Шлем"] if a["helmet"] else 0)
+        + (PRICES["Набор"] if a["kit"] else 0)
+        + sum(PRICES[item] for item in a["utility"])
+    )
+
+
+BLAST_RADIUS = 80
+
+
+def blast_damage(distance):
+    return max(0, round(370 * (1 - distance / BLAST_RADIUS)))

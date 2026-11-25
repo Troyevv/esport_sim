@@ -63,11 +63,11 @@ def test_excluded_portraits_stay_excluded_across_commons_crop_aliases():
     assert not previously_rejected("https://commons.wikimedia.org/wiki/File:Dev1ce_studio_portrait_2026.jpg")
 
 
-def wait(lib):
+def wait(lib, expected="finished"):
     deadline = time.monotonic() + 60
     while lib.status()["state"] == "running" and time.monotonic() < deadline:
         time.sleep(0.05)
-    assert lib.status()["state"] == "finished", lib.status()
+    assert lib.status()["state"] == expected, lib.status()
 
 
 def test_pipeline_searches_caches_retries_and_normalizes(tmp_path):
@@ -136,8 +136,7 @@ def test_failed_job_can_try_again_and_misses_are_not_free_agents(tmp_path):
 
     lib = PortraitLibrary(tmp_path / "library.sqlite", search)
     lib.start(p, "pilot")
-    lib.thread.join(timeout=10)
-    assert lib.status()["state"] == "blocked"
+    wait(lib, "blocked")
     flag.set()
     lib.start(p, "retry")
     wait(lib)

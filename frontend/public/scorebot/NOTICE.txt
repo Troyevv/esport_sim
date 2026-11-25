@@ -1,0 +1,10 @@
+Counter-Strike 2 Panorama artwork © Valve Corporation.
+Game build 26879581. Community archive and source SVGs:
+https://github.com/Juknum/counter-strike-icons/tree/caf42709069134497d1c2fc15a3105b0b26ca9fb/cs2/panorama/images
+Equipment uses icons/equipment. icon_headshot and icon_suicide use hud/deathnotice.
+clock, elimination, trade and stat_assists use icons/ui. Only SVG serialization was normalized.
+The upstream archive designates the assets for community and educational use.
+Valve artwork is excluded from this project's software license.
+Commercial use requires explicit permission from Valve Corporation.
+https://github.com/Juknum/counter-strike-icons/blob/caf42709069134497d1c2fc15a3105b0b26ca9fb/LICENSE
+https://store.steampowered.com/subscriber_agreement/

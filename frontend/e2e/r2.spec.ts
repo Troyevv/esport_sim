@@ -13,7 +13,7 @@ test("доска, жесты, библиотека, спарринг и назн
     if (hasTouch) await button(s).tap();
     else await button(s).click();
   };
-  await page.goto("/");
+  await page.goto("/?screen=lab");
   await expect(page.getByTestId("connection")).toContainText("На связи");
   if (await page.locator(".scoreboard").count()) {
     await page.getByText("Новый сценарий", { exact: true }).click();
@@ -105,7 +105,7 @@ test("доска, жесты, библиотека, спарринг и назн
   const peer = await browser.newContext({ baseURL: info.project.use.baseURL });
   try {
     const second = await peer.newPage();
-    await second.goto("/");
+    await second.goto("/?screen=lab");
     await second
       .getByRole("button", { name: "Редактор тактик", exact: true })
       .click();

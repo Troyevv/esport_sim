@@ -29,7 +29,7 @@ test('управление стендом, общий снимок, жесты �
   const touch = Boolean(hasTouch);
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/');
+  await page.goto('/?screen=lab');
   await connected(page);
   await changeSeed(page, 1704, touch);
 
@@ -111,12 +111,12 @@ test('после обрыва WebSocket клиент принимает сост
     connection = socket;
     socket.connectToServer();
   });
-  await page.goto('/');
+  await page.goto('/?screen=lab');
   await connected(page);
   const desktop = await browser.newContext({baseURL: testInfo.project.use.baseURL});
   const peer = await desktop.newPage();
   try {
-    await peer.goto('/');
+    await peer.goto('/?screen=lab');
     await connected(peer);
     online = false;
     connection!.close({code: 1012, reason: 'Обрыв тестового маршрута'});
@@ -140,7 +140,7 @@ test('после обрыва WebSocket клиент принимает сост
 });
 
 test('неопределённый результат команды сверяется после потери запроса или ответа', {tag:'@receipts'}, async ({page}) => {
-  await page.goto('/');
+  await page.goto('/?screen=lab');
   await connected(page);
   for (const commitBeforeLoss of [false, true]) {
     const before = await (await page.request.get('/api/state')).json();

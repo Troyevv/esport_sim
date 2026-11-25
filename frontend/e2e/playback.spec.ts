@@ -136,7 +136,7 @@ test("радар показывает промежуточные положен�
       },
     });
   });
-  await page.goto("/");
+  await page.goto("/?screen=lab");
   const radar = page.getByTestId("radar");
   await expect(radar).toHaveAttribute("data-ready", "true");
   const control = (name: string) =>
@@ -224,7 +224,7 @@ test("нажатие выбирает отображаемого игрока п
   // Hold presentation time while delivering two authoritative batches.
   await page.clock.install({ time: new Date("2026-01-01T12:00:00Z") });
   await page.clock.pauseAt(new Date("2026-01-01T12:00:01Z"));
-  await page.goto("/");
+  await page.goto("/?screen=lab");
   await expect.poll(() => Boolean(stream)).toBe(true);
   await page.clock.runFor(32);
   const radar = page.getByTestId("radar");
@@ -361,7 +361,7 @@ test("готовые серверные позы отображаются на �
       return clock.callbacks.length;
     };
   });
-  await page.goto("/");
+  await page.goto("/?screen=lab");
   await expect(page.getByTestId("radar")).toHaveAttribute("data-ready", "true");
   const button = (name: string) =>
     page.getByRole("button", { name, exact: true });

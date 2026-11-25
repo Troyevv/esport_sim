@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
-from . import tactic_library, tactic_preview, tactics
+from . import career, tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
@@ -46,6 +46,15 @@ class Command(BaseModel):
         "tactic-delete",
         "tactic-assign",
         "database-match",
+        "career-create",
+        "career-open",
+        "career-exhibition",
+        "career-lab",
+        "career-save",
+        "career-load",
+        "career-play",
+        "career-finish",
+        "career-advance",
     ]
     value: (
         StrictInt
@@ -77,6 +86,7 @@ def create_app(
     condition, connections = (
         _shared[:2] if _shared else (asyncio.Condition(), Counter())
     )
+    wake_calendar = _shared[3] if _shared else asyncio.Event()
     manages_home = mode == "local" and managed
 
     @asynccontextmanager
@@ -107,6 +117,30 @@ def create_app(
                         if store.tick():
                             condition.notify_all()
 
+            async def calendar():
+                wake_calendar.set()
+                while True:
+                    await wake_calendar.wait()
+                    async with condition:
+                        work = store.careers.work(store.read())
+                        if not work:
+                            wake_calendar.clear()
+                            continue
+                    token, game = work
+                    report, error = None, None
+                    try:
+                        if game:
+                            report = await asyncio.to_thread(career.simulate, game)
+                    except (ValueError, ArithmeticError, KeyError) as exc:
+                        error = f"Не удалось рассчитать встречу: {exc}"
+                    async with condition:
+                        try:
+                            changed = store.careers.commit_work(token, report, error)
+                        except ValueError as exc:
+                            changed = store.careers.commit_work(token, None, str(exc))
+                        if changed:
+                            condition.notify_all()
+
             if manages_home:
 
                 def guest_app(origin):
@@ -115,18 +149,22 @@ def create_app(
                         "lan",
                         [origin],
                         managed=False,
-                        _shared=(condition, connections, store),
+                        _shared=(condition, connections, store, wake_calendar),
                     )
 
                 app.state.lan = LanAccess(db_path.parent, guest_app)
                 await app.state.lan.restore()
 
             task = asyncio.create_task(clock())
+            calendar_task = asyncio.create_task(calendar())
             try:
                 yield
             finally:
                 store.portraits.close()
                 store.badges.close()
+                calendar_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await calendar_task
                 task.cancel()
                 with suppress(asyncio.CancelledError):
                     await task
@@ -242,6 +280,27 @@ def create_app(
     app.include_router(editor_router(app))
     app.include_router(portrait_router(app))
 
+    @app.get("/api/career")
+    async def careers():
+        store = app.state.store
+        return store.careers.detail(store.read())
+
+    @app.get("/api/career/options/{key}/{revision}")
+    async def career_options(key: str, revision: int):
+        try:
+            return career.choices(app.state.store.careers.pack([key, revision]))
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.get("/api/career/report/{event_id}")
+    async def career_report(event_id: str):
+        store = app.state.store
+        c = store.read().get("career")
+        for event in reversed(c["history"] if c else []):
+            if event["id"] == event_id:
+                return store.careers.report(event["result"])
+        raise HTTPException(404, "Отчёт не найден")
+
     @app.get("/api/tactics")
     async def library():
         return tactic_library.catalog(app.state.store.db)
@@ -280,6 +339,8 @@ def create_app(
                 raise HTTPException(409, str(err)) from err
             except ValueError as err:
                 raise HTTPException(422, str(err)) from err
+            if body.kind.startswith("career-") or body.kind == "load":
+                wake_calendar.set()
             condition.notify_all()
             return response
 

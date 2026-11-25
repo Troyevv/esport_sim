@@ -227,6 +227,22 @@ if ($portraits.PSObject.Properties.Name.Count -gt 0) { throw 'Fresh Windows prof
 $scene = (Invoke-RestMethod "$origin/api/database/scene-20261125-clubs/1").package
 if ($scene.players.PSObject.Properties.Name.Count -lt 1500) { throw 'Offline player database missing from Windows distribution.' }
 $lineups = @($scene.rosters.PSObject.Properties | Where-Object { $_.Value.name -in @('Team Vitality','Team Falcons') } | ForEach-Object { $_.Name })
+if (!(Test-Path (Join-Path $install 'EsportSim\CAREER_R33.md'))) { throw 'Career guide missing.' }
+$starter = Invoke-RestMethod "$origin/api/career/options/austin-registration/1"
+Command $origin 'career-create' @{id='austin-registration'; revision=1; team=$starter.teams[0].id; mode='owner'; scope='full'; name='Manager'}
+Command $origin 'career-save' @{slot='2'}
+Command $origin 'career-advance'
+Wait-Check 'packaged career stops before user match' {
+    $c = (Invoke-RestMethod "$origin/api/career").active
+    $c.date -gt $c.start -and !$c.progress -and $c.history.Count -gt 0
+}
+Command $origin 'career-play'
+$careerState = (Invoke-RestMethod "$origin/api/state")
+if (!$careerState.careerId -or $careerState.world.match.teams.Count -ne 2) { throw 'Career match missing.' }
+Command $origin 'career-load' @{slot='2'}
+$c = (Invoke-RestMethod "$origin/api/career").active
+if ($c.date -ne $c.start -or $c.history.Count -ne 0 -or $c.roster.Count -ne 5) { throw 'Career slot did not restore.' }
+Command $origin 'career-lab'
 Command $origin 'database-match' @{id=$scene.id;revision=1;seed=42;rosters=$lineups}
 $realMatch = (Invoke-RestMethod "$origin/api/state").world.match
 if ($realMatch.source.id -ne $scene.id -or 'Team Vitality' -notin $realMatch.teams) { throw 'Packaged real BO1 did not load.' }
@@ -235,9 +251,18 @@ $plan = $library.plans | Where-Object { $_.id -eq 'std-T-0' }
 if ($plan.slots.Count -ne 5) { throw 'Packaged board has no five-slot plan.' }
 Command $origin 'match' 705177
 $projection = (Invoke-RestMethod "$origin/api/state").world
-if ($projection.match.rules -ne 'depo-bo1.2' -or $null -eq $projection.match.teamRating -or
+if ($projection.match.rules -ne 'depo-bo1.4' -or $null -eq $projection.match.teamRating -or
     $projection.match.roleRatings.T1.PSObject.Properties.Name.Count -ne 6 -or $projection.domain) {
     throw 'R3.1 match projection is missing or exposes the private world.'
+}
+if (@($projection.agents | Where-Object { $_.secondary -in @('Glock', 'USP') -and !$_.primary }).Count -ne 10) {
+    throw 'Starting BO1 loadouts do not contain ten secondary weapons.'
+}
+foreach ($icon in @('ak47', 'm4a1_silencer', 'awp', 'deagle', 'flashbang', 'c4', 'icon_headshot')) {
+    $asset = Invoke-WebRequest -UseBasicParsing -Uri "$origin/scorebot/$icon.svg" -TimeoutSec 8
+    if ($asset.Headers['Content-Type'] -notmatch 'image/svg\+xml' -or $asset.RawContentLength -lt 50) {
+        throw "Packaged Scorebot icon missing: $icon"
+    }
 }
 Command $origin 'tactic-assign' @{id=$plan.id; revision=$plan.revision}
 Command $origin 'timeout'
@@ -249,6 +274,11 @@ Wait-Check 'packaged BO1 reaches a final score' {
         ($world.match.score[0] + $world.match.score[1]) -eq $world.match.history.Count
 }
 $world = (Invoke-RestMethod "$origin/api/state").world
+foreach ($club in $world.match.clubs) {
+    $wins = @($world.match.history | Where-Object { $_.winnerTeamId -eq $club.id }).Count
+    if ($club.score -ne $wins) { throw "Packaged BO1 standings do not match the round ledger." }
+}
+if ($world.match.winnerTeamId -ne $world.match.history[-1].winnerTeamId) { throw 'BO1 winner mismatch.' }
 if ($world.match.history[0].tactic.id -ne $plan.id) { throw 'BO1 did not execute the packaged board.' }
 Command $origin 'save'
 Command $origin 'reset' 47

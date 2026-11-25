@@ -190,7 +190,7 @@ test("доставка снимков, движение за кадр и вид�
     }
     requestAnimationFrame(observe);
   });
-  await page.goto("/");
+  await page.goto("/?screen=lab");
   await expect(page.getByTestId("radar")).toHaveAttribute("data-ready", "true");
   const control = (name: string) =>
     page.getByRole("button", { name, exact: true });

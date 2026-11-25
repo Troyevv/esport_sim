@@ -9,7 +9,9 @@ from pathlib import Path
 from uuid import uuid4
 
 from . import database, checkpoints, engine, match, tactic_library
-from .match_rules import LEGACY_VERSION
+from . import career, career_store
+from .match_rules import LEGACY_VERSION, PREVIOUS_VERSION, SCOREBOT_VERSION
+from . import match_inventory, match_score
 
 
 class Conflict(ValueError):
@@ -23,14 +25,28 @@ def validate_snapshot(state):
         (engine.VERSION, engine.MAP["version"], None),
         (2, match.MAP["version"], match.VERSION),
         (2, match.MAP["version"], LEGACY_VERSION),
+        (2, match.MAP["version"], PREVIOUS_VERSION),
+        (2, match.MAP["version"], SCOREBOT_VERSION),
     )
     if state.get("version") != 1 or model not in supported:
         raise Conflict("Несовместимая версия снимка, ядра или геометрии")
     if world.get("version") == 2:
         version = world.get("checkpointVersion", 1)
-        if type(version) is not int or version not in (1, 2, 3, checkpoints.VERSION):
+        if type(version) is not int or version not in (
+            1,
+            2,
+            3,
+            4,
+            5,
+            checkpoints.VERSION,
+        ):
             raise Conflict(f"Неподдерживаемая версия сохранения BO1: {version}")
-        if (version == checkpoints.VERSION) != (world["rules"] == match.VERSION):
+        rules = {
+            4: PREVIOUS_VERSION,
+            5: SCOREBOT_VERSION,
+            checkpoints.VERSION: match.VERSION,
+        }
+        if world["rules"] != rules.get(version, LEGACY_VERSION):
             raise Conflict("Несовместимая пара версий правил и контрольной точки")
 
 
@@ -44,6 +60,8 @@ class Store:
         self.portraits = PortraitLibrary(Path(path).with_suffix(".portraits.sqlite"))
         self.motion = deque(maxlen=6)  # Recent committed poses, never part of a save.
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
+        migrate_profile = career_store.prepare_migration(self.db, path)
+        self.careers = career_store.CareerStore(self)
         self.db.executescript("""
             PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS active (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL);
@@ -63,6 +81,8 @@ class Store:
         """)
         try:
             with self.transaction():
+                if migrate_profile:
+                    career_store.install(self.db)
                 if not self.db.execute(
                     "SELECT 1 FROM data_pack WHERE id=? AND revision=1",
                     ("austin-registration",),
@@ -76,6 +96,7 @@ class Store:
                         self.db, gzip.decompress(database.RELEASE.read_bytes())
                     )
                     database.migrate_club_links(self.db)
+                self.careers.upgrade_slots()
                 for table in ("active", "slot"):
                     row = self.db.execute(
                         f"SELECT body FROM {table} WHERE id=1"
@@ -99,32 +120,47 @@ class Store:
             self.db.close()
             raise
 
+    def upgrade_checkpoint(self, state, source, body):
+        """Validate first, then preserve the exact old payload in the caller's transaction."""
+        validate_snapshot(state)
+        if state.get("career") and state["career"].get("version") != career.VERSION:
+            raise ValueError("Несовместимая версия карьеры")
+        game = state["world"]
+        if game["version"] != 2:
+            return False
+        old_version = game.get("checkpointVersion", 1)
+        if old_version < checkpoints.VERSION:
+            if old_version == 1:
+                checkpoints.upgrade_match(self.db, game)
+            if old_version < 4:
+                match.migrate_legacy(game)
+            else:
+                game["rulesTransition"] = dict(
+                    previous=game["rules"], tick=game["tick"], lastEvent=game["serial"]
+                )
+            if old_version < 5:
+                match_score.upgrade(game)
+            match_inventory.upgrade(game)
+            game.update(rules=match.VERSION, checkpointVersion=checkpoints.VERSION)
+        checkpoints.validate_current(game)
+        match.validate_bindings(game)
+        if old_version == checkpoints.VERSION:
+            return False
+        self.db.execute("""CREATE TABLE IF NOT EXISTS checkpoint_backup (
+            source TEXT NOT NULL, body TEXT NOT NULL, UNIQUE(source, body))""")
+        self.db.execute(
+            "INSERT OR IGNORE INTO checkpoint_backup VALUES(?,?)", (source, body)
+        )
+        return True
+
     def restore_checkpoint(self, table, body):
-        """Caller owns the transaction. Keep original JSON and immutable log blocks."""
         label = "активный сценарий" if table == "active" else "ручное сохранение"
         try:
             state = json.loads(body)
-            validate_snapshot(state)
-            world = state["world"]
-            if (
-                world["version"] == 2
-                and world.get("checkpointVersion", 1) < checkpoints.VERSION
-            ):
-                if world.get("checkpointVersion", 1) == 1:
-                    checkpoints.upgrade_match(self.db, world)
-                match.migrate_legacy(world)
-                world["checkpointVersion"] = checkpoints.VERSION
-                self.db.execute("""CREATE TABLE IF NOT EXISTS checkpoint_backup (
-                    source TEXT NOT NULL, body TEXT NOT NULL, UNIQUE(source, body))""")
-                self.db.execute(
-                    "INSERT OR IGNORE INTO checkpoint_backup VALUES(?,?)", (table, body)
-                )
+            if self.upgrade_checkpoint(state, table, body):
                 self.db.execute(
                     f"UPDATE {table} SET body=? WHERE id=1", (json.dumps(state),)
                 )
-            if world["version"] == 2:
-                checkpoints.validate_current(world)
-                match.validate_bindings(world)
             return state
         except (ValueError, TypeError, AttributeError, KeyError, IndexError) as exc:
             raise Conflict(f"Не удалось прочитать {label}: {exc}") from exc
@@ -175,13 +211,23 @@ class Store:
                 if is_match and world["phase"] in ("finished", "timeout"):
                     state["running"] = False
                     break
+            finished = state.get("career") and world.get("phase") == "finished"
+            if finished:
+                self.careers.record(state["career"], career.result(world))
+                state["careerRevision"] += 1
+                state["revision"] += 1
             state["sequence"] += 1
             self.write(state)
+            if finished:
+                self.careers.save(state, "auto")
         self.motion.append((state["context"], start, world["tick"], samples))
         return True
 
     def snapshot(self, view, previous=None):
         state = self.read()
+        c = state.pop("career", None)
+        if c:
+            state["careerId"] = c["id"]
         model = match if state["world"]["version"] == 2 else engine
         state["world"] = model.project(state["world"], view)
         world = state["world"]
@@ -242,7 +288,22 @@ class Store:
                     "Другое устройство уже изменило состояние. Проверьте данные и повторите действие."
                 )
             kind, value = command["kind"], command.get("value")
-            if kind in ("tactic-save", "tactic-delete", "tactic-assign"):
+            c = state.get("career")
+            if kind == "career-exhibition":
+                # Switching away and validating the editor selection are one command.
+                self.careers.change(state, "career-lab", None)
+                kind, c = "database-match", None
+            if kind.startswith("career-") or (c and kind in ("save", "load")):
+                self.careers.change(state, kind, value)
+            elif c and (
+                kind in ("reset", "match", "database-match")
+                or (
+                    state["world"]["version"] == 1
+                    and kind not in ("tactic-save", "tactic-delete")
+                )
+            ):
+                raise ValueError("Действие недоступно в текущей карьере")
+            elif kind in ("tactic-save", "tactic-delete", "tactic-assign"):
                 try:
                     if kind == "tactic-assign":
                         if state["world"]["version"] != 2:
@@ -341,6 +402,12 @@ class Store:
             state["revision"] += 1
             state["sequence"] += 1
             self.write(state)
+            if state.get("career") and kind in (
+                "career-play",
+                "career-finish",
+                "career-advance",
+            ):
+                self.careers.save(state, "auto")
             result = {key: state[key] for key in ("context", "revision")}
             self.db.execute(
                 "INSERT INTO receipt VALUES(?,?,?)",

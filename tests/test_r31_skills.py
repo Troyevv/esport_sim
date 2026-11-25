@@ -163,7 +163,8 @@ def observed(key, value):
         return a["stepReady"] - 100
     if key in ("retakes", "risk"):
         a.update(team="CT", heardSite="A", x=195, y=35, kit=False)
-        obs.update(phase="planted", deadline=226)
+        # The traversable route is 80 units around a wall. Budget the walk and defuse.
+        obs.update(phase="planted", deadline=247)
         ai.act(obs, a, allies, dict(site="A", x=235, y=35), [])
         return a["status"]
     if key in ("timing", "synchronization"):
