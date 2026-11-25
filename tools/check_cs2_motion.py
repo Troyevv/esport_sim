@@ -60,7 +60,7 @@ def inspect(name):
                             faces, _, _ = space.collision.scene.first_many(
                                 start_world + delta * max(0, hit[0] - 0.0005),
                                 delta,
-                                0.002,
+                                0.002, 2,
                             )
                             face = faces[0]
                             block = (

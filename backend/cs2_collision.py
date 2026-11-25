@@ -186,7 +186,7 @@ class Collision:
             self.mask[f : f + nf] = masks[key][material]
             v += nv
             f += nf
-        self.scene = TriangleScene(vertices, faces)
+        self.scene = TriangleScene(vertices, faces, self.mask)
         self.shapes = [
             Primitive(p, self.materials[materials[p["material"]]])
             for p in data["primitives"]
@@ -214,17 +214,10 @@ class Collision:
             return result
         starts = np.asarray([a for a, _ in missing], dtype=np.float32)
         delta = np.asarray([b for _, b in missing], dtype=np.float32) - starts
-        rays, _, _ = self.scene.first_many(starts, delta, 1.0)
+        rays, _, _ = self.scene.first_many(starts, delta, 1.0, SIGHT)
         for idx, ((a, b), face) in enumerate(zip(missing, rays)):
-            if face >= 0:
-                visible = (
-                    False
-                    if self.mask[face] & SIGHT
-                    else self.trace(a, b, SIGHT) is None
-                )
-            else:
-                visible = True
-            if visible and self.bounds and face < 0:
+            visible = face < 0
+            if visible and self.bounds:
                 inverse = inverse_direction(a, b)
                 visible = not any(
                     p.hit(starts[idx], delta[idx]) is not None
@@ -242,20 +235,9 @@ class Collision:
             return None
         start = np.array([source], dtype=np.float32)
         delta = np.array([target], dtype=np.float32) - start
-        current = start
-        offset = 0.0
-        best = None
-        while offset < 1:
-            faces, distances, normals = self.scene.first_many(current, delta, 1 - offset)
-            face = int(faces[0])
-            if face < 0:
-                break
-            t = offset + float(distances[0])
-            if self.mask[face] & channel:
-                best = (t, self.materials[self.material[face]], normals[0])
-                break
-            offset = t + max(1e-6, 0.01 / max(0.01, float(abs(delta).max())))
-            current = start + offset * delta
+        faces, distances, normals = self.scene.first_many(start, delta, 1.0, channel)
+        face = int(faces[0])
+        best = (float(distances[0]), self.materials[self.material[face]], normals[0]) if face >= 0 else None
         if self.bounds:
             inverse = inverse_direction(source, target)
             for p in self.bounds.candidates(

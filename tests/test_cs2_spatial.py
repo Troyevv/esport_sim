@@ -325,3 +325,23 @@ def test_replan_from_a_portal_between_nav_polygons():
 
     space = SimpleNamespace(locate=lambda p: 1834 if p == goal else None, path=path)
     assert Map._reachable(space, start, [goal], 1618) == goal
+
+
+def test_coplanar_playerclip_cannot_hide_a_solid_wall(tmp_path):
+    import json
+    import struct
+    from backend.cs2_collision import Collision, SIGHT, MOVEMENT
+
+    vertices = b"".join(struct.pack("<3f", *p) for p in ((0, 0, 0), (10, 0, 0), (0, 10, 0)))
+    triangle = vertices + struct.pack("<3i", 0, 1, 2)
+    (tmp_path / "collision.bin").write_bytes(triangle * 2)
+    mesh = dict(vertices=3, triangles=1, perFace=False, group="default", material=1)
+    for tags in (["playerclip", "solid"], ["solid", "playerclip"]):
+        blocks = [dict(mesh, offset=i * len(triangle), tags=[tag]) for i, tag in enumerate(tags)]
+        data = dict(format=1, missingModels=[], primitives=[], surfaces={1:"concrete"}, blocks=blocks)
+        (tmp_path / "collision.json").write_text(json.dumps(data))
+        scene = Collision(tmp_path)
+        above, below = (2, 2, 4), (2, 2, -4)
+        for mask in (SIGHT, MOVEMENT):
+            assert scene.trace(above, below, mask)[0] == 0.5
+        assert not any(scene.sight_many([(above, below), (below, above)]).values())

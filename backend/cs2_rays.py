@@ -40,6 +40,8 @@ def _library():
         "rtcNewScene": (ptr, [ptr]),
         "rtcSetSceneFlags": (None, [ptr, uint]),
         "rtcNewGeometry": (ptr, [ptr, uint]),
+        "rtcSetGeometryMask": (None, [ptr, uint]),
+        "rtcSetSharedGeometryBuffer": (None, [ptr, uint, uint, uint, ptr, size, size, size]),
         "rtcSetNewGeometryBuffer": (ptr, [ptr, uint, uint, uint, size, size]),
         "rtcCommitGeometry": (None, [ptr]),
         "rtcAttachGeometry": (uint, [ptr, ptr]),
@@ -56,7 +58,7 @@ def _library():
 
 
 class TriangleScene:
-    def __init__(self, vertices, faces):
+    def __init__(self, vertices, faces, masks):
         lib = _library()
         # Different CPU kernels resolve rays exactly on a portal edge differently.
         # SSE2 is the x64 baseline. A single builder fixes the order of coplanar faces.
@@ -64,22 +66,44 @@ class TriangleScene:
         if not device:
             raise RuntimeError("Embree не удалось создать воспроизводимое устройство SSE2")
         scene = None
-        geometry = None
         try:
             scene = lib.rtcNewScene(device)
-            geometry = lib.rtcNewGeometry(device, 0)  # RTC_GEOMETRY_TYPE_TRIANGLE
-            if not scene or not geometry:
+            if not scene:
                 raise RuntimeError("Embree не удалось выделить память для геометрии карты")
-            lib.rtcSetSceneFlags(scene, 4)  # RTC_SCENE_FLAG_ROBUST at shared NAV edges.
-            for kind, fmt, array in ((1, 0x9003, vertices), (0, 0x5003, faces)):
-                # RTC_FORMAT_FLOAT3 vertices / RTC_FORMAT_UINT3 triangle indices.
-                buffer = lib.rtcSetNewGeometryBuffer(geometry, kind, 0, fmt, 12, len(array))
-                if len(array):
+            lib.rtcSetSceneFlags(scene, 4)  # RTC_SCENE_FLAG_ROBUST
+            # Native masks exclude playerclip or glass before the closest-hit
+            # comparison, including where a solid triangle shares their plane.
+            # Share a single vertex buffer with the 16-byte tail required by Embree.
+            self.vertices = np.zeros((len(vertices) + 1, 3), dtype=np.float32)
+            self.vertices[:-1] = vertices
+            ordered = np.argsort(masks, kind="stable")
+            self.face_ids = ordered.astype(np.int32)
+            offsets = np.searchsorted(masks[ordered], np.arange(257))
+            self.offsets = []
+            for mask in np.unique(masks):
+                if not mask:
+                    continue
+                lo, hi = offsets[int(mask):int(mask)+2]
+                mesh = lib.rtcNewGeometry(device, 0)  # RTC_GEOMETRY_TYPE_TRIANGLE
+                if not mesh:
+                    raise MemoryError("Не удалось разместить группу поверхностей карты")
+                try:
+                    lib.rtcSetGeometryMask(mesh, int(mask))
+                    lib.rtcSetSharedGeometryBuffer(mesh, 1, 0, 0x9003,
+                                                   self.vertices.ctypes.data, 0, 12, len(vertices))
+                    indices = faces[ordered[lo:hi]]
+                    buffer = lib.rtcSetNewGeometryBuffer(mesh, 0, 0, 0x5003, 12, len(indices))
                     if not buffer:
-                        raise MemoryError("Embree не удалось разместить треугольники карты")
-                    ct.memmove(buffer, array.ctypes.data, array.nbytes)
-            lib.rtcCommitGeometry(geometry)
-            lib.rtcAttachGeometry(scene, geometry)
+                        raise MemoryError("Не удалось разместить грани карты")
+                    ct.memmove(buffer, indices.ctypes.data, indices.nbytes)
+                    lib.rtcCommitGeometry(mesh)
+                    ident = lib.rtcAttachGeometry(scene, mesh)
+                    if ident != len(self.offsets):
+                        raise RuntimeError("Неверный индекс группы поверхностей Embree")
+                    self.offsets.append(lo)
+                finally:
+                    lib.rtcReleaseGeometry(mesh)
+            self.offsets = np.array(self.offsets, dtype=np.int32)
             lib.rtcCommitScene(scene)
             error = lib.rtcGetDeviceError(device)
             if error:
@@ -89,22 +113,23 @@ class TriangleScene:
             finalize(self, lib.rtcReleaseScene, scene)
             scene = None
         finally:
-            if geometry:
-                lib.rtcReleaseGeometry(geometry)
             if scene:
                 lib.rtcReleaseScene(scene)
             lib.rtcReleaseDevice(device)
 
-    def first_many(self, starts, directions, limits):
+    def first_many(self, starts, directions, limits, channel):
         rays = np.zeros(len(starts), dtype=RAY_HIT)
         rays["origin"] = starts
         rays["direction"] = directions
         rays["far"] = limits
-        rays["mask"] = 0xffffffff
+        rays["mask"] = channel
         for field in ("face", "geometry", "instance"):
             rays[field] = -1
         address = rays.ctypes.data
         for _ in range(len(rays)):
             self.intersect(self.handle, address, None)
             address += rays.strides[0]
-        return rays["face"], rays["far"], rays["normal"]
+        faces = rays["face"]
+        hit = rays["geometry"] >= 0
+        faces[hit] = self.face_ids[self.offsets[rays["geometry"][hit]] + faces[hit]]
+        return faces, rays["far"], rays["normal"]

@@ -15,8 +15,8 @@ def main():
     # Each tick is the first different recorded position in independent CI replays.
     samples = (
         ("de_vertigo", 100, 4, (135.81, 185.47, 957.67), 100),
-        ("de_cache", 250, 0, (154.87, 212.60, 136.96), 100),
-        ("de_nuke", 190, 1, (313.44, 329.70, -32.36), 100),
+        ("de_cache", 250, 0, (155.79, 233.47, 134.25), 100),
+        ("de_nuke", 190, 1, (320.58, 315.48, -32.33), 100),
         ("de_dust2", 1450, 0, (323.29, 146.12, -0.54), 81),
     )
     failures = []
