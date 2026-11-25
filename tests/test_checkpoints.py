@@ -198,3 +198,25 @@ def test_r2_board_upgrade_resumes_exact_step_in_both_slots(tmp_path):
     assert dict(db.execute("SELECT source,body FROM checkpoint_backup")) == original
     store.db.close()
     db.close()
+
+
+def test_launcher_releases_descriptor_after_a_windows_reader_closes(tmp_path, monkeypatch):
+    from pathlib import Path
+    from backend.desktop import remove_descriptor
+
+    descriptor = tmp_path / "instance.json"
+    descriptor.write_text("{}")
+    unlink = Path.unlink
+    attempts = []
+
+    def shared_reader(path, *, missing_ok):
+        attempts.append(path)
+        if len(attempts) == 1:
+            error = PermissionError("sharing violation")
+            error.winerror = 32
+            raise error
+        return unlink(path, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", shared_reader)
+    remove_descriptor(descriptor)
+    assert attempts == [descriptor, descriptor] and not descriptor.exists()

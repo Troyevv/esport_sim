@@ -38,6 +38,20 @@ def reserve_listener():
         raise
 
 
+def remove_descriptor(descriptor):
+    # Windows can deny deletion while stop.bat or a second launcher is reading.
+    # Both callers still own launcher.lock throughout this bounded retry.
+    deadline = time.monotonic() + 2
+    while True:
+        try:
+            descriptor.unlink(missing_ok=True)
+            return
+        except PermissionError as error:
+            if getattr(error, "winerror", None) != 32 or time.monotonic() >= deadline:
+                raise
+            time.sleep(0.025)
+
+
 async def serve(data, descriptor, listener, open_url):
     from starlette.responses import PlainTextResponse
 
@@ -121,7 +135,7 @@ async def serve(data, descriptor, listener, open_url):
     finally:
         server.should_exit = True
         await task
-        descriptor.unlink(missing_ok=True)
+        remove_descriptor(descriptor)
 
 
 def launch(data, open_url, legacy_source=None):
@@ -138,7 +152,7 @@ def launch(data, open_url, legacy_source=None):
                     encoding="utf-8",
                 )
                 logging.basicConfig(level=logging.INFO, handlers=[handler])
-                descriptor.unlink(missing_ok=True)
+                remove_descriptor(descriptor)
                 if legacy_source is not None:
                     migrate_legacy(legacy_source, data / "scenario.sqlite")
                 with reserve_listener() as listener:
