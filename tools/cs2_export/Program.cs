@@ -49,6 +49,9 @@ var ladders = navigation.Ladders.Select(l => new {
     above = Ids(l.TopForwardArea, l.TopLeftArea, l.TopRightArea, l.TopBehindArea),
     below = Ids(l.BottomArea, l.BottomLeftArea, l.BottomRightArea)
 });
+var destination = Path.GetDirectoryName(Path.GetFullPath(args[1]))!;
+using var collision = new Physics(Path.Combine(destination, "collision.bin"));
+collision.Model(loader, $"maps/{map}/world_physics.vmdl", Matrix4x4.Identity, "world", true);
 var spawns = new List<object>();
 var targets = new List<object>();
 var places = new List<object>();
@@ -67,6 +70,13 @@ foreach (var name in world.GetEntityLumpNames())
         classes[kind] = classes.GetValueOrDefault(kind) + 1;
         var pose = EntityTransformHelper.ToTransformationMatrix(entity) * parent;
         var position = Point(pose.Translation);
+        if (kind is "func_brush" or "func_breakable" or "prop_door_rotating"
+            or "prop_dynamic" or "prop_dynamic_override" or "prop_physics" or "prop_physics_multiplayer")
+        {
+            var nameOfModel = entity.GetStringProperty("model");
+            if (!string.IsNullOrEmpty(nameOfModel))
+                collision.Model(loader, nameOfModel, pose, kind);
+        }
         if (kind is "info_player_terrorist" or "info_player_counterterrorist")
         {
             var facing = Vector3.Normalize(Vector3.TransformNormal(Vector3.UnitX, pose));
@@ -103,6 +113,7 @@ foreach (var name in world.GetEntityLumpNames())
         }
     }
 }
+collision.Finish(Path.Combine(destination, "collision.json"));
 var data = new { format = 1, map, space = "Hammer XYZ", areas, ladders, spawns, targets, places, classes };
 using (var output = File.Open(args[1], FileMode.CreateNew))
 {

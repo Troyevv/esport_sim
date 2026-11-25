@@ -6,6 +6,7 @@ import json
 import subprocess
 import tempfile
 from collections import Counter
+import shutil
 from pathlib import Path
 
 from cs2_map_sources import ACTIVE, ADDITIONAL, BUILD, VERSION
@@ -56,10 +57,20 @@ def extract_map(csgo, map_id, viewer, exporter, reference, output):
         for name in ("info_player_terrorist", "info_player_counterterrorist", "func_bomb_target"):
             if not counts.get(name):
                 raise ValueError(f"{map_id}: в дампе карты отсутствует {name}")
+        geometry = json.loads((stage / "collision.json").read_bytes())
+        atlas = json.loads((reference / "inventory.json").read_bytes())["maps"][map_id]
+        for png in atlas["radars"]:
+            shutil.copyfile(reference / map_id / png, stage / png)
         report = {
             "map": map_id, "clientVersion": VERSION, "steamBuild": BUILD,
             "vpkSha256": sha256(archive), "navSha256": nav_hash,
             "worldPhysicsSha256": sha256(exported),
+            "overview": atlas["overview"], "radars": atlas["radars"],
+            "surfaceCount": len(geometry["surfaces"]),
+            "physicalTriangles": sum(b["triangles"] for b in geometry["blocks"]),
+            "collisionTags": sorted({tag for b in geometry["blocks"] for tag in b["tags"]}),
+            "analyticPrimitives": len(geometry["primitives"]),
+            "unresolvedModels": geometry["missingModels"],
             "compiledFiles": dict(sorted(Counter(p.suffix for p in raw.rglob("*") if p.is_file()).items())),
             "entityClasses": dict(sorted(counts.items())),
             "spawns": dict(Counter(p["side"] for p in spatial["spawns"] if p["enabled"])),

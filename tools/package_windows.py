@@ -115,7 +115,7 @@ def main():
         shutil.copyfile(ROOT / "tools" / script, source_tools / script)
     exporter_source = source_tools / "cs2_export"
     exporter_source.mkdir(exist_ok=True)
-    for name in ("Program.cs", "Cs2Export.csproj"):
+    for name in ("Program.cs", "Physics.cs", "Cs2Export.csproj"):
         shutil.copyfile(ROOT / "tools" / "cs2_export" / name, exporter_source / name)
     screenshots = output / "screenshots"
     screenshots.mkdir(exist_ok=True)
