@@ -1,0 +1,307 @@
+{
+  "de_ancient": {
+    "A": [
+      [
+        "MainHall",
+        "SideHall"
+      ],
+      [
+        "Middle",
+        "TopofMid"
+      ]
+    ],
+    "B": [
+      [
+        "Tunnel",
+        "Ramp"
+      ],
+      [
+        "Middle",
+        "House"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "SideHall",
+        "TopofMid"
+      ],
+      "B": [
+        "Ramp",
+        "House"
+      ]
+    },
+    "middle": "Middle"
+  },
+  "de_anubis": {
+    "A": [
+      [
+        "Canal",
+        "Main"
+      ],
+      [
+        "Bridge",
+        "Walkway"
+      ]
+    ],
+    "B": [
+      [
+        "Ruins",
+        "OutsideLong"
+      ],
+      [
+        "MidDoors",
+        "Connector"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "Heaven",
+        "Main"
+      ],
+      "B": [
+        "BackofB",
+        "Connector"
+      ]
+    },
+    "middle": "Bridge"
+  },
+  "de_cache": {
+    "A": [
+      [
+        "AHalls",
+        "AMain"
+      ],
+      [
+        "Mid",
+        "Highway"
+      ]
+    ],
+    "B": [
+      [
+        "BHalls",
+        "BMain"
+      ],
+      [
+        "Middle",
+        "Vents",
+        "Checkers"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "ForkLift",
+        "Quad"
+      ],
+      "B": [
+        "Heaven",
+        "Headshot"
+      ]
+    },
+    "middle": "Middle"
+  },
+  "de_dust2": {
+    "A": [
+      [
+        "OutsideLong",
+        "LongDoors",
+        "LongA"
+      ],
+      [
+        "TopofMid",
+        "Catwalk",
+        "ShortStairs"
+      ]
+    ],
+    "B": [
+      [
+        "OutsideTunnel",
+        "UpperTunnel"
+      ],
+      [
+        "LowerTunnel",
+        "MidDoors",
+        "BDoors"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "ExtendedA",
+        "ARamp"
+      ],
+      "B": [
+        "BDoors",
+        "Hole"
+      ]
+    },
+    "middle": "Middle"
+  },
+  "de_inferno": {
+    "A": [
+      [
+        "SecondMid",
+        "Apartments",
+        "Balcony"
+      ],
+      [
+        "LowerMid",
+        "Middle",
+        "TopofMid"
+      ]
+    ],
+    "B": [
+      [
+        "Banana"
+      ],
+      [
+        "Middle",
+        "Arch",
+        "CTSpawn"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "Pit",
+        "Library"
+      ],
+      "B": [
+        "Ruins",
+        "Banana"
+      ]
+    },
+    "middle": "TopofMid"
+  },
+  "de_mirage": {
+    "A": [
+      [
+        "PalaceAlley",
+        "PalaceInterior"
+      ],
+      [
+        "TopofMid",
+        "Middle",
+        "Connector"
+      ]
+    ],
+    "B": [
+      [
+        "BackAlley",
+        "Apartments"
+      ],
+      [
+        "TopofMid",
+        "Catwalk"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "Stairs",
+        "Jungle"
+      ],
+      "B": [
+        "Shop",
+        "Truck"
+      ]
+    },
+    "middle": "Middle"
+  },
+  "de_nuke": {
+    "A": [
+      [
+        "Lobby",
+        "Hut"
+      ],
+      [
+        "Outside",
+        "Mini"
+      ]
+    ],
+    "B": [
+      [
+        "Outside",
+        "Secret",
+        "Tunnels"
+      ],
+      [
+        "Lobby",
+        "Trophy",
+        "Ramp"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "Heaven",
+        "Mini"
+      ],
+      "B": [
+        "Decon",
+        "Control"
+      ]
+    },
+    "middle": "Outside"
+  },
+  "de_train": {
+    "A": [
+      [
+        "TMain"
+      ],
+      [
+        "Alley",
+        "Ivy"
+      ]
+    ],
+    "B": [
+      [
+        "TStairs",
+        "TSideUpper"
+      ],
+      [
+        "Tunnels",
+        "Entrance"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "ElectricalBox",
+        "Dumpster"
+      ],
+      "B": [
+        "BackofB",
+        "Connector"
+      ]
+    },
+    "middle": "Connector"
+  },
+  "de_vertigo": {
+    "A": [
+      [
+        "Pit",
+        "ARamp"
+      ],
+      [
+        "Side",
+        "Scaffolding"
+      ]
+    ],
+    "B": [
+      [
+        "TCorridorUp"
+      ],
+      [
+        "Mid",
+        "TopofMid",
+        "Connector"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "APlatform",
+        "BackofA"
+      ],
+      "B": [
+        "BPlatform",
+        "BackofB"
+      ]
+    },
+    "middle": "Mid"
+  }
+}
