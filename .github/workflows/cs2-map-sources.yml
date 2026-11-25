@@ -2,6 +2,9 @@ name: CS2 source geometry
 on:
   pull_request:
     paths:
+      - 'backend/cs2_*.py'
+      - tests/test_cs2_spatial.py
+      - tools/check_cs2_playable_areas.py
       - tools/cs2_map_sources.py
       - tools/cs2_world_sources.py
       - 'tools/cs2_export/**'
@@ -23,7 +26,7 @@ jobs:
           python -m pip install --only-binary=:all: awpy==3.3.1
       - run: python tools/cs2_map_sources.py --download build/cs2
       - name: Check reference navigation and visibility
-        run: python tools/check_cs2_navigation.py build/cs2
+        run: python -m tools.check_cs2_navigation build/cs2
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '11.0.x'
@@ -46,6 +49,7 @@ jobs:
           echo "6c76b646485977480b9f25bcf5026c30856f70e5d138a1eb127b52d768156843  $RUNNER_TEMP/vrf.zip" | sha256sum -c -
           unzip -q "$RUNNER_TEMP/vrf.zip" -d "$RUNNER_TEMP/vrf"
           python tools/cs2_world_sources.py --game "$RUNNER_TEMP/gamefiles/game/csgo" --viewer "$RUNNER_TEMP/vrf/Source2Viewer-CLI" --reference build/cs2 build/cs2-worlds
+      - run: python -m tools.check_cs2_playable_areas build/cs2-worlds build/cs2/inventory.json
       - name: Build the missing Inferno visibility reference from its pinned VPK
         uses: actions/checkout@v4
         with:
@@ -55,4 +59,4 @@ jobs:
           persist-credentials: false
       - run: |
           python build/awpy-data/scripts/process_geometry.py --input build/cs2-worlds/de_inferno/world_physics.glb --output build/cs2/de_inferno/de_inferno.mesh --no-decimate
-          python tools/check_cs2_navigation.py build/cs2 --require-all-meshes
+          python -m tools.check_cs2_navigation build/cs2 --require-all-meshes

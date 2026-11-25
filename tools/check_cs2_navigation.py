@@ -7,6 +7,8 @@ from pathlib import Path
 
 from awpy import NavMesh, VisibilityChecker
 
+from backend.cs2_navigation import surface_height
+
 
 def measure(folder):
     nav = NavMesh(folder / f"{folder.name}.nav")
@@ -68,22 +70,6 @@ def measure(folder):
         "sameXYOccluded": blocked,
         "staticOccluderTriangles": visibility.triangle_count if visibility else None,
     }
-
-
-def surface_height(corners, x, y):
-    """Height on a convex NAV polygon, including slopes and edge points."""
-    ax, ay, az = corners[0]
-    for b, c in zip(corners[1:], corners[2:]):
-        bx, by, bz = b
-        cx, cy, cz = c
-        det = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
-        if abs(det) < 1e-8:
-            continue
-        u = ((x - ax) * (cy - ay) - (y - ay) * (cx - ax)) / det
-        v = ((bx - ax) * (y - ay) - (by - ay) * (x - ax)) / det
-        if min(u, v, 1 - u - v) >= -1e-7:
-            return az + u * (bz - az) + v * (cz - az)
-    return None
 
 
 def main():
