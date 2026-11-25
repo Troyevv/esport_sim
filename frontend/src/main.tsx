@@ -1,3 +1,4 @@
+import MapSelect from "./MapSelect";
 import { Brand } from "./GameUI";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -73,6 +74,7 @@ function takePairingCode() {
 }
 
 function App() {
+  const [mapId, setMapId] = useState("depo");
   const [screen, go] = useState<"menu" | "hub" | "lab" | "match">(() =>
     new URLSearchParams(location.search).get("screen") === "lab"
       ? "lab"
@@ -258,11 +260,12 @@ function App() {
             </div>
             {world && (
               <div className="board-buttons">
+                <MapSelect value={mapId} change={setMapId} />
                 <button onClick={() => showBoard(true)}>Редактор тактик</button>
                 <button
                   className="primary"
                   disabled={!enabled || !validSeed}
-                  onClick={() => act("match", Number(seed))}
+                  onClick={() => act("match", {seed: Number(seed), map: mapId})}
                 >
                   Открыть матч BO1
                 </button>

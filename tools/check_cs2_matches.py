@@ -6,7 +6,9 @@ import gzip
 import json
 from pathlib import Path
 import random
-from statistics import mean
+from collections import defaultdict
+import cProfile
+import pstats
 from time import perf_counter
 
 import psutil
@@ -24,11 +26,15 @@ def play(name, seed, pair, pack, replay):
     retakes=set()
     stalls=set()
     team_sides={}
+    outcomes = []
     while game["phase"]!="finished":
         match.advance(game)
         tick=game["tick"]
         if tick>180000:
             raise RuntimeError(f"{name}/{seed}: BO1 превысил 180000 тиков")
+        if replay and game["events"] and game["events"][-1]["tick"] == tick:
+            outcomes.extend([e for e in reversed(game["events"]) if e["tick"] == tick and e["kind"] in
+                             {"plant","defuse","kill","rotate","round_end","explode","throw"}])
         if tick%10==0:
             for a in game["agents"]:
                 team_sides[game["round"],a["id"]]=a["team"]
@@ -40,7 +46,7 @@ def play(name, seed, pair, pack, replay):
                     retakes.add(game["round"])
                 if a.get("blockedTicks",0)>=20:
                     stalls.add((game["round"],a["id"]))
-            if replay and game["round"]<=3:
+            if replay:
                 frames.append([tick,game["round"],game["phase"],
                                [[round(a["x"],1),round(a["y"],1),round(a["z"],1),a["hp"],a["status"]]
                                 for a in game["agents"]]])
@@ -71,7 +77,7 @@ def play(name, seed, pair, pack, replay):
                  reasons=Counter(h["reason"] for h in game["history"]),sides=Counter(h["side"] for h in game["history"]),
                  plants=plants,retakes=len(retakes),saveDecisions=len(saves),saved=len(survived),
                  ownC4=own,utility=utility,plans=plans,rotations=rotations,trades=trades,stalls=len(stalls))
-    return results,frames
+    return results,frames,outcomes
 
 
 def main():
@@ -81,20 +87,33 @@ def main():
     parser.add_argument("--seed",type=int,default=41000)
     parser.add_argument("--out",type=Path,required=True)
     args=parser.parse_args()
-    pack=json.loads(gzip.decompress(database.RELEASE.read_bytes()))
+    pack=json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
     rosters=sorted(career.roster_index(pack).values())
     args.out.mkdir(exist_ok=True,parents=True)
     rows=[]
+    profiler = cProfile.Profile()
     for i in range(args.games):
         seed=args.seed+i
         pair=random.Random(seed).sample(rosters,2)
-        row,frames=play(args.map,seed,pair,pack,i==0)
+        if i==1:
+            profiler.enable()
+        row,frames,events=play(args.map,seed,pair,pack,i==0)
+        if i==1:
+            profiler.disable()
+            profiler.dump_stats(str(args.out/(args.map+".prof")))
+            pstats.Stats(profiler).strip_dirs().sort_stats("tottime").print_stats(15)
+            row["profiled"] = True
         rows.append(row)
         print("BO1",json.dumps(row,ensure_ascii=False),flush=True)
         if frames:
             (args.out/(args.map+"-frames.json")).write_text(json.dumps(frames,ensure_ascii=False))
             # Short, evenly spaced samples can also be viewed from the CI journal.
-            print("RADAR",json.dumps([[f[0],f[1],f[2],[a[:4] for a in f[3]]] for f in frames[::5]],separators=(",",":")),flush=True)
+            (args.out/(args.map+"-events.json")).write_text(json.dumps(events,ensure_ascii=False))
+            by_round = defaultdict(list)
+            for tick,number,phase,agents in frames[::3]:
+                by_round[number].append([tick,phase,[a[:4] for a in agents]])
+            for number, samples in by_round.items():
+                print("RADAR",number,json.dumps(samples,separators=(",",":")),flush=True)
     (args.out/(args.map+".json")).write_text(json.dumps(rows,ensure_ascii=False,indent=2))
 
 

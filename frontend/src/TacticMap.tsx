@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Application, Container } from "pixi.js";
-import { CameraButton, drawPlan, type RadarMap } from "./Radar";
+import { CameraButton, drawPlan, onLayer, type RadarMap } from "./Radar";
 import {
+  readJSON,
   colors,
   floor,
   gridRouter,
@@ -46,7 +47,21 @@ export default function TacticMap(props: Props) {
   const pointers = useRef(new Map<number, Point>()),
     nav = useRef(false),
     trail = useRef<Point[]>([]);
-  const router = useMemo(() => gridRouter(map), [map]);
+  const [layer, setLayer] = useState("default");
+  const layerId = map.layers?.[layer] ? layer : "default";
+  const gesture = useRef(0);
+  useEffect(() => { gesture.current++; }, [map.id, plan, slot, tool, layerId]);
+  const place = (p: Point) => map.radar ? p : snap(p);
+  const router = useMemo(() => map.radar ? null : gridRouter(map), [map]);
+  const [legs, setLegs] = useState<Point[][][]>([]);
+  useEffect(() => {
+    let active = true;
+    setLegs([]);
+    if (map.radar) void readJSON<Point[][][]>("/api/maps/" + map.id + "/routes", {side: plan.side, slots: plan.slots})
+      .then(result => { if (active) setLegs(result); })
+      .catch(e => { if (active) props.onError(String(e.message)); });
+    return () => { active = false; };
+  }, [map.id, plan.side, plan.slots]);
   const scale =
     Math.min(size.w / (map.width + 24), size.h / (map.height + 24)) *
     camera.zoom;
@@ -79,6 +94,8 @@ export default function TacticMap(props: Props) {
       resize({ w: el.clientWidth, h: el.clientHeight }),
     );
     observer.observe(el);
+    setReady(false);
+    setRenderError(false);
     const app = new Application();
     let stopped = false;
     app
@@ -95,7 +112,7 @@ export default function TacticMap(props: Props) {
           app.destroy(true, { children: true });
           return;
         }
-        const ground = drawPlan(map);
+        const ground = drawPlan(map, layerId, () => app.render(), () => setRenderError(true));
         app.stage.addChild(ground);
         el.prepend(app.canvas);
         scene.current = { app, ground };
@@ -112,7 +129,7 @@ export default function TacticMap(props: Props) {
         scene.current = null;
       }
     };
-  }, [map.id, map.version]);
+  }, [map.id, map.version, layerId]);
   useEffect(() => {
     const sc = scene.current;
     if (!sc) return;
@@ -184,13 +201,13 @@ export default function TacticMap(props: Props) {
       plan.slots[i].forEach((s, j) => {
         const moving = walks(s.kind);
         line(
-          [prev, ...(moving ? router(prev, s) : [s])],
+          moving && !router ? (legs[i]?.[j] || []).filter(p => onLayer(map, layerId, p.z)) : [prev, ...(moving && router ? router(prev, s) : [s])],
           colors[i],
           i === slot ? 1.3 : 0.7,
           !moving,
         );
         if (moving) prev = s;
-        if (i === slot || s.kind !== "move")
+        if (onLayer(map, layerId, s.z) && (i === slot || s.kind !== "move"))
           disc(
             s,
             i === slot && selected === j ? 4.4 : 2.5,
@@ -199,7 +216,7 @@ export default function TacticMap(props: Props) {
             s.kind === "move" ? String(j + 1) : symbols[s.kind],
           );
       });
-      if (!preview) {
+      if (!preview && onLayer(map, layerId, start.z)) {
         ctx.globalAlpha = 1;
         disc(
           start,
@@ -227,7 +244,8 @@ export default function TacticMap(props: Props) {
         ctx.fillStyle = f.utility === "Огонь" ? "#fc98536b" : "#cedddb66";
         ctx.fill();
       }
-      frame.forEach(([x, y, h, hp], i) => {
+      frame.forEach(([x, y, h, hp, z], i) => {
+        if (!onLayer(map, layerId, z)) return;
         const target = next[i],
           p = {
             x: x + (target[0] - x) * fraction,
@@ -260,7 +278,7 @@ export default function TacticMap(props: Props) {
     map,
     plan,
     slot,
-    router,
+    router, legs, layerId,
     preview,
     tick,
     stroke,
@@ -281,6 +299,14 @@ export default function TacticMap(props: Props) {
       return;
     }
     if (tool === "pan") return;
+    if (map.radar) {
+      const token = ++gesture.current;
+      const origin = plan.slots[slot].filter(s => walks(s.kind)).at(-1) || spawn(map, plan.side, slot);
+      void readJSON<Point[]>("/api/maps/" + map.id + "/surface", {points: tool === "move" ? points : [p], height: origin.z ?? 0, layer: layerId, plant: tool === "plant"})
+        .then(result => { if (gesture.current === token) props.onDraw(result); })
+        .catch(e => { if (gesture.current === token) props.onError(String(e.message)); });
+      return;
+    }
     if (points.some((p) => !floor(map, p))) {
       props.onError(
         "Маршрут попал в стену. Проведите его по свободным клеткам.",
@@ -350,7 +376,7 @@ export default function TacticMap(props: Props) {
             setStroke([]);
             return;
           }
-          trail.current = [snap(local(p))];
+          trail.current = [place(local(p))];
           setStroke(trail.current);
         }}
         onPointerMove={(e) => {
@@ -381,7 +407,7 @@ export default function TacticMap(props: Props) {
               to = local(p),
               count = Math.ceil(gap(from, to) / 4);
             for (let i = 1; i <= count; i++) {
-              const v = snap({
+              const v = place({
                 x: from.x + ((to.x - from.x) * i) / count,
                 y: from.y + ((to.y - from.y) * i) / count,
               });
@@ -398,7 +424,7 @@ export default function TacticMap(props: Props) {
         onPointerUp={(e) => {
           if (!pointers.current.delete(e.pointerId)) return;
           if (!nav.current) {
-            const last = snap(local(pos(e)));
+            const last = place(local(pos(e)));
             if (!same(last, trail.current[trail.current.length - 1]))
               trail.current.push(last);
             commit(trail.current);
@@ -412,6 +438,7 @@ export default function TacticMap(props: Props) {
         )}
       </div>
       <div className="board-camera">
+        {map.layers?.lower && <button onClick={() => setLayer(layerId === "lower" ? "default" : "lower")}>{layerId === "lower" ? "Нижний этаж" : "Верхний этаж"}</button>}
         <CameraButton
           disabled={!ready}
           label="Уменьшить доску"

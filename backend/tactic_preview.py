@@ -6,7 +6,7 @@ from .match_rules import RULES
 
 def simulate(draft):
     board = dict(tactics.validate(draft), id="preview", revision=0)
-    world = match.initial(42)
+    world = match.initial(42,map_id=board["map"])
     first = 1 if board["side"] == "T" else RULES["half"] + 1
     world["round"] = first - 1
     match.next_round(world)
@@ -19,7 +19,7 @@ def simulate(draft):
     frames = []
     while True:
         frames.append(
-            [[a["x"], a["y"], round(a["heading"], 3), a["hp"]] for a in world["agents"]]
+            [[a["x"], a["y"], round(a["heading"], 3), a["hp"], *([a["z"]] if "z" in a else [])] for a in world["agents"]]
         )
         if world["phase"] in ("result", "finished"):
             break

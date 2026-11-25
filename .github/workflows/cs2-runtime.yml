@@ -1,0 +1,76 @@
+name: Import dated CS2 runtime
+on: workflow_call
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install --only-binary=:all: awpy==3.3.1 numpy==2.5.5
+      - run: python tools/cs2_map_sources.py --download build/cs2
+      - name: Check reference navigation and visibility
+        run: python -m tools.check_cs2_navigation build/cs2
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+      - run: dotnet build tools/cs2_export/Cs2Export.csproj -c Release
+      - name: Fetch original map packages from the dated public Steam depot
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -fsSLo depot.zip https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_3.4.0/DepotDownloader-linux-x64.zip
+          unzip -q depot.zip -d depot
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          maps = json.loads((Path(os.environ["GITHUB_WORKSPACE"]) / "build/cs2/inventory.json").read_bytes())["maps"]
+          Path("maps.txt").write_text("game/csgo/steam.inf\n" + "".join(f"game/csgo/maps/{name}.vpk\n" for name in maps))
+          PY
+          depot/DepotDownloader -app 730 -depot 2347770 -manifest 5924479096069937098 -filelist maps.txt -dir gamefiles -validate
+      - name: Resolve shared models referenced by placed map entities
+        run: python tools/cs2_ci_shared_models.py "$RUNNER_TEMP/gamefiles/game/csgo" "$RUNNER_TEMP/depot/DepotDownloader" tools/cs2_export/bin/Release/net11.0/Cs2Export.dll
+      - name: Extract game entities and original world physics
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/vrf.zip" https://github.com/ValveResourceFormat/ValveResourceFormat/releases/download/21.1/cli-linux-x64.zip
+          echo "6c76b646485977480b9f25bcf5026c30856f70e5d138a1eb127b52d768156843  $RUNNER_TEMP/vrf.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/vrf.zip" -d "$RUNNER_TEMP/vrf"
+          python tools/cs2_world_sources.py --game "$RUNNER_TEMP/gamefiles/game/csgo" --viewer "$RUNNER_TEMP/vrf/Source2Viewer-CLI" --reference build/cs2 build/cs2-worlds
+      - run: python -m tools.check_cs2_playable_areas build/cs2-worlds build/cs2/inventory.json
+      - name: Fetch the pinned Awpy visibility mesh converter
+        uses: actions/checkout@v4
+        with:
+          repository: pnxenopoulos/awpy-data
+          ref: 7c73907f74521d271f0eb40bcbe14a4912184e05
+          path: build/awpy-data
+          persist-credentials: false
+      - run: |
+          python build/awpy-data/scripts/process_geometry.py --input build/cs2-worlds/de_inferno/world_physics.glb --output build/cs2/de_inferno/de_inferno.mesh --no-decimate
+          python build/awpy-data/scripts/process_geometry.py --input build/cs2-worlds/de_cache/world_physics.glb --output build/cs2-worlds/de_cache/world_visibility.mesh --no-decimate
+          python -m tools.check_cs2_navigation build/cs2 --require-all-meshes --worlds build/cs2-worlds --compare-source de_cache
+      - name: Collect versioned BO1 runtime data from the verified import
+        run: |
+          python - <<'PY'
+          import json, shutil
+          from pathlib import Path
+          worlds = Path("build/cs2-worlds")
+          for name in json.loads(Path("build/cs2/inventory.json").read_bytes())["maps"]:
+              target = Path("build/runtime-maps") / name
+              target.mkdir(parents=True)
+              source = worlds / name
+              for filename in ("gameplay.json", "provenance.json", "collision.json", "collision.bin"):
+                  shutil.copyfile(source / filename, target / filename)
+              for png in source.glob("*.png"):
+                  shutil.copyfile(png, target / png.name)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cs2-runtime-26879581
+          path: build/runtime-maps/
+          retention-days: 3
+          if-no-files-found: error
+

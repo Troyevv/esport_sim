@@ -187,7 +187,7 @@ export default function TacticEditor({
     chosen = index === null ? null : steps[index],
     match = frame.world.match;
   const assignable =
-    match &&
+    match && frame.world.map.id === plan.map && Number(frame.world.map.version) === plan.geometry &&
     ((match.pregame && !frame.running) ||
       (match.phase === "timeout" &&
         coachSide === plan.side &&
@@ -246,7 +246,7 @@ export default function TacticEditor({
   function draw(points: Point[]) {
     if (working || tool === "pan" || tool === "select") return;
     if (
-      tool === "plant" &&
+      tool === "plant" && !map.radar &&
       !map.zones.some(
         (z) =>
           points[0].x >= z.x &&
@@ -324,7 +324,7 @@ export default function TacticEditor({
     try {
       const p = await readJSON<Plan>(
         "/api/tactics/proposal?" +
-          new URLSearchParams({ side: plan!.side, buy: plan!.buy }),
+          new URLSearchParams({ side: plan!.side, buy: plan!.buy, map_id: plan!.map }),
       );
       open(
         { ...p, id: crypto.randomUUID(), revision: 0, standard: false },

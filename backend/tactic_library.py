@@ -3,7 +3,7 @@
 import json
 from uuid import UUID
 
-from . import engine, tactics
+from . import cs2_maps, engine, tactics
 from .match_rules import MAP, ROLES
 
 
@@ -22,7 +22,7 @@ def catalog(db):
     """)
     ]
     return dict(
-        maps=[MAP],
+        maps=[MAP,*[cs2_maps.description(m) for m in cs2_maps.installed()]],
         roles=ROLES,
         players=engine._NAMES["T"],
         buys=tactics.BUYS,

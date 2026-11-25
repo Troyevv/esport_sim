@@ -11,7 +11,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  maps:
+    uses: ./.github/workflows/cs2-runtime.yml
+
   build:
+    needs: maps
     name: Build Windows x64 archive
     runs-on: windows-2022
     steps:
@@ -36,6 +40,10 @@ jobs:
           npm ci
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
+      - uses: actions/download-artifact@v4
+        with:
+          name: cs2-runtime-26879581
+          path: build/runtime-maps
       - name: Build self-contained launcher and archive
         shell: pwsh
         run: |

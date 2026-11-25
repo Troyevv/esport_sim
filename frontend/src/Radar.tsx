@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import type { RadarPlayback } from "./playback";
-import type { Frame } from "./session";
+import { serverURL, type Frame } from "./session";
 import "./radar.css";
 import { drawEvents, RadarEquipment } from "./matchRadar";
 
-type Point = { x: number; y: number };
+type Point = { x: number; y: number; z?: number };
 type Rect = Point & { w: number; h: number };
 type Team = "T" | "CT";
 export interface RadarMap {
@@ -15,6 +15,8 @@ export interface RadarMap {
   author: string;
   width: number;
   height: number;
+  radar?: string;
+  layers?: Record<string, {AltitudeMin: string; AltitudeMax: string}>;
   walls: Rect[];
   zones: (Rect & { name: string })[];
   spawns: (Point & { team: Team })[];
@@ -32,6 +34,7 @@ export interface Agent extends Point {
   status: string;
 }
 interface Props {
+  layer?: string;
   frame: Frame;
   playback: RadarPlayback;
   connected: boolean;
@@ -59,9 +62,27 @@ function label(
   return item;
 }
 
-// All structural outlines come from the authoritative collision rectangles.
-export function drawPlan(map: RadarMap) {
+export function onLayer(map: RadarMap, layer: string, z?: number) {
+  const limits = map.layers?.[layer];
+  if (!limits || z === undefined) return true;
+  return z * 12 >= Number(limits.AltitudeMin) && z * 12 < Number(limits.AltitudeMax);
+}
+
+export function drawPlan(map: RadarMap, layer = "default", redraw = () => {}, failed = () => {}) {
   const plan = new Container();
+  if (map.radar) {
+    const url = serverURL(map.radar);
+    url.searchParams.set("layer", layer);
+    void Assets.load<Texture>({src: url.href, parser: "loadTextures", data: {loadParser: "loadImageBitmap"}})
+      .then(texture => {
+        if (plan.destroyed) return;
+        const background = plan.addChild(new Sprite(texture));
+        background.width = map.width;
+        background.height = map.height;
+        redraw();
+      }).catch(() => { if (!plan.destroyed) failed(); });
+    return plan;
+  }
   const lines = new Graphics();
   plan.addChild(lines);
   const { width, height } = map;
@@ -182,14 +203,15 @@ function setupScene(
   host: HTMLDivElement,
   props: Props,
   zoomLabel: (n: number) => void,
+  failed: () => void,
 ) {
   let current = props,
     zoom = 1,
     fit = 1;
   const pan = { x: 0, y: 0 };
   const world = new Container({ label: "map" });
-  let plan = drawPlan(props.frame.world.map);
-  plan.cacheAsTexture({ resolution: 3, antialias: true });
+  let plan = drawPlan(props.frame.world.map, props.layer, redraw, failed);
+  if (!props.frame.world.map.radar) plan.cacheAsTexture({ resolution: 3, antialias: true });
   const players = new Container({ label: "players" });
   const markers = new Map<string, ReturnType<typeof marker>>();
   const playback = props.playback;
@@ -204,7 +226,7 @@ function setupScene(
     let changed = dirty;
     for (const a of current.frame.world.agents) {
       const m = markers.get(a.id)!;
-      const visible = playback.has(a.id);
+      const visible = playback.has(a.id) && onLayer(current.frame.world.map, current.layer || 'default', a.z);
       if (m.group.visible !== visible) { m.group.visible = visible; changed = true; }
       if (!visible) continue;
       const p = playback.sample(a.id, now);
@@ -233,6 +255,7 @@ function setupScene(
     host.dataset.ready ||= "true";
     if (current.connected && current.frame.running) schedule();
   }
+  function redraw() { dirty = true; schedule(); }
   function schedule() {
     if (!request) request = requestAnimationFrame(present);
   }
@@ -267,7 +290,7 @@ function setupScene(
     update(next) {
       const oldMap = current.frame.world.map,
         map = next.frame.world.map;
-      const changed = oldMap.id !== map.id || oldMap.version !== map.version;
+      const changed = oldMap.id !== map.id || oldMap.version !== map.version || current.layer !== next.layer;
       current = next;
 
       for (const [id, m] of markers) {
@@ -295,8 +318,8 @@ function setupScene(
       }
       if (changed) {
         plan.destroy({ children: true });
-        plan = drawPlan(map);
-        plan.cacheAsTexture({ resolution: 3, antialias: true });
+        plan = drawPlan(map, next.layer, redraw, failed);
+        if (!map.radar) plan.cacheAsTexture({ resolution: 3, antialias: true });
         world.addChildAt(plan, 0);
         api.reset();
         resize();
@@ -505,7 +528,9 @@ export function CameraButton({
   );
 }
 
-export default function Radar(props: Props) {
+export default function Radar(input: Props) {
+  const [floor, setFloor] = useState('default');
+  const props = { ...input, layer: input.frame.world.map.layers?.[floor] ? floor : 'default' };
   const hostRef = useRef<HTMLDivElement>(null);
   const api = useRef<RadarApi | null>(null);
   const latest = useRef(props);
@@ -539,7 +564,7 @@ export default function Radar(props: Props) {
         return;
       }
       element.appendChild(app.canvas);
-      const scene = setupScene(app, element, latest.current, setZoom);
+      const scene = setupScene(app, element, latest.current, setZoom, () => setError(true));
       api.current = scene;
       observer = new ResizeObserver(scene.resize);
       observer.observe(element);
@@ -589,6 +614,7 @@ export default function Radar(props: Props) {
         >
           −
         </CameraButton>
+        {props.frame.world.map.layers?.lower && <button onClick={() => setFloor(props.layer === "lower" ? "default" : "lower")} aria-label="Сменить этаж">{props.layer === "lower" ? "Нижний" : "Верхний"}</button>}
         <output aria-label="Масштаб карты">{Math.round(zoom * 100)}%</output>
         <CameraButton
           disabled={!ready || zoom >= 4}

@@ -1,3 +1,4 @@
+import { fixtureMap } from "./careerData";
 import { Fragment, useState } from "react";
 import { Avatar } from "./SceneIdentity";
 import { Glyph, Heading } from "./GameUI";
@@ -170,7 +171,7 @@ export function Dashboard({
   const played = c.history.filter((e) => e.teams.includes(c.team)),
     latest = played.at(-1);
   const metrics = [
-    ["users", "Сила состава", c.teamRating, "Командный OVR · Депо"],
+    ["users", "Сила состава", c.teamRating, "Командный OVR"],
     [
       "calendar",
       "До матча",
@@ -211,7 +212,7 @@ export function Dashboard({
                     {i === 1 && (
                       <div>
                         <div className="versus">VS</div>
-                        <div className="match-meta">Депо</div>
+                        <div className="match-meta">{fixtureMap(next)}</div>
                       </div>
                     )}
                     <button

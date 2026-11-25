@@ -2,6 +2,7 @@
 
 import json
 import os
+import sys
 from functools import cached_property, lru_cache
 from math import atan2, dist, hypot
 from pathlib import Path
@@ -17,14 +18,20 @@ NAMES = dict(zip(PROFILES, ("Ancient", "Anubis", "Cache", "Dust II", "Inferno", 
 UNIT = 12.
 
 
-def root():
-    override = os.environ.get("ESPORT_SIM_MAPS")
+@lru_cache(maxsize=4)
+def _root(override, local_data):
+    if getattr(sys, "frozen", False) and not override:
+        return Path(sys.executable).parent / "maps" / str(BUILD)
     if override:
         return Path(override)
     if os.name == "nt":
         from .paths import windows_data_dir
         return windows_data_dir() / "maps" / str(BUILD)
     return Path(__file__).resolve().parents[1] / "runtime-data" / "maps" / str(BUILD)
+
+
+def root():
+    return _root(os.environ.get("ESPORT_SIM_MAPS"), os.environ.get("LOCALAPPDATA"))
 
 
 def installed():
@@ -44,6 +51,15 @@ def _load(directory, name):
 
 def get(name):
     return _load(root(), name)
+
+
+@lru_cache(maxsize=16)
+def _description(directory,name):
+    return _load(directory,name).descriptor
+
+
+def description(name):
+    return _description(root(),name)
 
 
 def for_match(w):
@@ -139,11 +155,11 @@ class Map:
             variant = lane if i in (0,2,4) else 1-lane
             start = player["navArea"]
             if side=="T":
-                options = self._approach(site,variant)
+                options = self.approach(site,variant)
                 selected = options.route(start)
                 if selected is None:
                     # A mid-round call can originate beyond a one-way transition.
-                    selected = self._approach(site,1-variant).route(start)
+                    selected = self.approach(site,1-variant).route(start)
                 waypoints = [self.centers[j] for j in selected[1][:-1]] if selected else []
                 plant = self.centers[selected[1][-1]] if selected else self.site_points[site]
             else:
@@ -217,6 +233,19 @@ class Map:
                 a["navArea"]=node[3]
                 a["path"].pop(0)
         return moved
+
+    def pick(self, x, y, layer, previous_z):
+        from math import floor
+        wx,wy,_=self.world((x,y,0))
+        bounds=self.overview.get("verticalsections",{}).get(layer,{})
+        options=[]
+        for i in self.nav._sectors.get((floor(wx/256),floor(wy/256)),()):
+            z=surface_height(self.nav.areas[i]["corners"],wx,wy)
+            if z is not None and float(bounds.get("AltitudeMin",-1e8))<=z<=float(bounds.get("AltitudeMax",1e8)):
+                options.append(z/UNIT)
+        if not options:
+            raise ValueError("В этой точке на выбранном этаже нет поверхности NAV")
+        return min(options,key=lambda z:(abs(z-previous_z),z))
 
     @cached_property
     def descriptor(self):

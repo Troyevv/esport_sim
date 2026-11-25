@@ -2,7 +2,7 @@ import type { RadarMap } from "./Radar";
 import { serverURL } from "./session";
 
 export type Side = "T" | "CT";
-export type Point = { x: number; y: number };
+export type Point = { x: number; y: number; z?: number };
 export const labels = {
   move: "Маршрут",
   hold: "Удержание",
@@ -39,7 +39,7 @@ export interface Library {
   plans: Plan[];
 }
 export interface Preview {
-  frames: [number, number, number, number][][];
+  frames: [number, number, number, number, number?][][];
   tickMs: number;
   events: { tick: number; text: string }[];
   effects: (Point & {
