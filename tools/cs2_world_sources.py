@@ -58,11 +58,11 @@ def extract_map(csgo, map_id, viewer, reference, output):
             "-f", world, "-o", str(physics), "--gltf_export_format", "glb",
             "--gltf_export_materials",
         ], check=True)
-        glbs = list(physics.rglob("*.glb"))
-        if len(glbs) != 1:
-            raise ValueError(f"{map_id}: ожидалась одна модель world_physics, получено {len(glbs)}")
+        glb = physics / "maps" / map_id / "world_physics_physics.glb"
+        if not glb.is_file():
+            raise ValueError(f"{map_id}: Source 2 Viewer не экспортировал физическую модель")
         exported = stage / "world_physics.glb"
-        glbs[0].rename(exported)
+        glb.rename(exported)
         counts = entity_classes(dumps)
         for name in ("info_player_terrorist", "info_player_counterterrorist", "func_bomb_target"):
             if not counts[name]:
