@@ -3,19 +3,22 @@ import { expect, test } from "@playwright/test";
 if (process.env.ESPORT_CS2_QA) {
   test("установленные карты в матч-центре и на доске", async ({page}, info) => {
     test.setTimeout(360000);
+    page.setDefaultTimeout(15000);
     const errors:string[]=[];
     page.on("pageerror", e => errors.push(e.message));
     const catalog=await (await page.request.get("/api/maps")).json() as {id:string;name:string}[];
     expect(catalog).toHaveLength(10);
     const button=(name:string)=>page.getByRole("button",{name,exact:true});
     await page.goto("/?screen=lab");
+    await expect(page.getByTestId("connection")).toContainText("На связи");
     for (const map of catalog.filter(m=>m.id!=="depo")) {
+      await test.step(map.name,async () => {
       const previous=await (await page.request.get("/api/state")).json();
       if (previous.world.match) {
         await page.getByText("Новый сценарий",{exact:true}).click();
         await button("Стенд R0").click();
       }
-      await page.getByLabel("Карта",{exact:true}).selectOption(map.id);
+      await page.getByRole("combobox",{name:"Карта",exact:true}).selectOption(map.id);
       const radarRequest = page.waitForResponse(r=>r.url().includes("/"+map.id+"/radar.png?layer=default") && r.ok());
       await button("Открыть матч BO1").click();
       await radarRequest;
@@ -37,6 +40,7 @@ if (process.env.ESPORT_CS2_QA) {
       await page.screenshot({path:info.outputPath(map.id+"-board.png")});
       await page.reload();
       await expect(page.getByTestId("connection")).toContainText("На связи");
+      });
     }
     expect(errors).toEqual([]);
   });

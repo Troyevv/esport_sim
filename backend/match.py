@@ -489,8 +489,12 @@ def begin_live(w):
                 if side == "CT" and not a["kit"] and a["slot"] in (0, 2, 4):
                     purchase(w, a, "Набор")
                 order = ["Дым", "Свет", "HE", "Огонь", "Ложная"]
-                first = (a["slot"] + w["round"]) % len(order)
-                for item in order[first:] + order[:first]:
+                if space:
+                    order = ai.cs2_play.utility_buy(a,squad,w["plans"][side],profile(w,a)["skills"])
+                else:
+                    first = (a["slot"] + w["round"]) % len(order)
+                    order = order[first:] + order[:first]
+                for item in order:
                     if len(a["utility"]) >= 2:
                         break
                     if item not in a["utility"]:

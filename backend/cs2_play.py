@@ -41,6 +41,48 @@ def opening(space, w, squad, captain, player, buy, site, style, call):
     return site, style, lane
 
 
+def utility_buy(actor, squad, plan, skills):
+    """Reserve grenades for the current call and complement teammates' equipment."""
+    role = actor["playingRole"]
+    if actor["team"] == "CT":
+        preferred = ["Огонь", "Дым"] if role != "support" else ["Свет", "Дым"]
+    elif role == "entry" or plan["style"] == "Групповой выход":
+        preferred = ["Свет", "Дым"]
+    elif role in ("support", "awper"):
+        preferred = ["Дым", "Свет"]
+    elif role == "lurker" and plan["style"] == "Контроль карты":
+        preferred = ["Дым", "Ложная"]
+    else:
+        preferred = ["HE", "Свет"]
+    counts = {g: sum(g in p["utility"] for p in squad) for g in perf.GRENADE_SKILL}
+    options = list(dict.fromkeys(preferred + ["Дым", "Свет", "HE", "Огонь"]))
+    return sorted(
+        options,
+        key=lambda g: (
+            counts[g],
+            g not in preferred,
+            -skills[perf.GRENADE_SKILL[g]],
+            options.index(g),
+        ),
+    )
+
+
+def contact_utility(actor, opponents, allies, contact):
+    # Use what the squad bought for the local situation. A decoy belongs
+    # on the fake approach, not in a duel against a visible enemy.
+    injured = actor["hp"] < 45
+    under_fire = any(p is not actor and p["target"] == contact["id"] for p in allies)
+    if injured or (actor["reloadAt"] and not under_fire):
+        preferred = ["Дым", "Свет"]
+    elif len(opponents) > 1:
+        preferred = ["HE", "Огонь", "Свет"]
+    elif under_fire:
+        preferred = ["Свет", "HE"]
+    else:
+        preferred = ["Огонь", "HE", "Свет"]
+    return next((g for g in preferred if g in actor["utility"]), None)
+
+
 def assign_backup(space, plan, squad, site, pressure):
     """Send an available off-site player to an angle that complements the anchors."""
     if not site:
@@ -396,6 +438,15 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         middle = space.places[space.profile["middle"]]
         goal = min((space.centers[i] for i in middle), key=lambda p: dist(pos, p))
         a["status"] = "Проверяет центр"
+        if "Ложная" in a["utility"] and now >= a["throwAt"] and dist(pos, goal) <= 22:
+            other = "B" if site == "A" else "A"
+            false_lane = [
+                p for p in space.ingress(other, plan["lane"]) if 12 < dist(pos, p) < 48
+            ]
+            if false_lane:
+                aim = min(false_lane, key=lambda p: dist(p, goal))
+                a["status"] = "Отвлекает на другом подходе"
+                return "throw", dict(zip(("x", "y", "z"), aim), utility="Ложная")
     if (
         latest
         and w["phase"] == "live"

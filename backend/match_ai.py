@@ -454,8 +454,10 @@ def act(w, a, allies, bomb, visible_fire):
             )
         a["observedSpeed"] = contact.get("speed", 0)
         a["status"] = "Перезаряжается" if a["reloadAt"] else "Держит контакт"
+        grenade = None
         if a["utility"] and now >= a["throwAt"] and distance(a, contact) > 18:
-            grenade = a["utility"][0]
+            grenade = cs2_play.contact_utility(a,visible,allies,contact) if w.get("space") else a["utility"][0]
+        if grenade:
             clearance = UTILITY[grenade][0] * s["decisions"] / 100
             unsafe = grenade in ("HE", "Огонь", "Свет") and any(
                 distance(mate, contact) < clearance for mate in allies
@@ -465,7 +467,7 @@ def act(w, a, allies, bomb, visible_fire):
             shot_soon = a["ammo"] and not a["reloadAt"] and a["ready"] < now + 5
             shot_range = 18 + s["decisions"] * min(0.6, spec.damage / 75)
             if not unsafe and not (shot_soon and distance(a, contact) <= shot_range):
-                return ("throw", contact)
+                return ("throw", dict(contact,utility=grenade) if w.get("space") else contact)
         if not a["reloadAt"] and a["ammo"] and now >= a["ready"]:
             return ("shoot", contact)
         return ("hold", None)

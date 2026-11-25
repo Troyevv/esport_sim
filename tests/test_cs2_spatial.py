@@ -254,3 +254,17 @@ def test_retaker_checks_obscured_plant_surfaces_after_hearing_the_beep():
     )
     assert search_site(space, actor, "B", 100) == behind_cover
     assert actor["bombSearch"]["seen"] == [1]
+
+
+def test_utility_is_selected_for_a_call_and_a_contact():
+    from backend import cs2_play, match_performance
+
+    actor = dict(playingRole="support", team="T", utility=["Ложная","HE"], hp=100, reloadAt=0)
+    allies = [actor, dict(utility=["Свет"], target="enemy")]
+    skills = dict.fromkeys(match_performance.GRENADE_SKILL.values(), 65)
+    buy = cs2_play.utility_buy(actor, allies, {"style":"Сбор"}, skills)
+    assert buy[0] == "Дым" and "Ложная" not in buy
+    enemy = dict(id="enemy")
+    assert cs2_play.contact_utility(actor,[enemy],allies,enemy) == "HE"
+    actor["utility"] = ["Ложная"]
+    assert cs2_play.contact_utility(actor,[enemy],allies,enemy) is None
