@@ -54,10 +54,10 @@ def drop_on_death(w, a, kill_id):
         if a["holster"] and a["holster"]["weapon"] not in SIDEARMS
         else in_hand(a)
     )
-    w["groundWeapons"].append(dict(id=kill_id, x=a["x"], y=a["y"], **item))
+    w["groundWeapons"].append(dict(id=kill_id, **{k:a[k] for k in ("x","y","z") if k in a}, **item))
 
 
-def take_nearby(w, a):
+def take_nearby(w, a, space=None):
     if not w["groundWeapons"] or a["blind"] > w["tick"]:
         return None
     primary, secondary = slots(a)
@@ -70,17 +70,17 @@ def take_nearby(w, a):
             continue
         if (
             not (gun["ammo"] or gun["reserve"])
-            or hypot(a["x"] - gun["x"], a["y"] - gun["y"]) > 6
+            or hypot(a["x"] - gun["x"], a["y"] - gun["y"],a.get("z",0)-gun.get("z",0)) > 6
         ):
             continue
-        if not engine.clear_line(a["x"], a["y"], gun["x"], gun["y"]):
+        if not (space.clear(a,gun) if space else engine.clear_line(a["x"], a["y"], gun["x"], gun["y"])):
             continue
         w["groundWeapons"].pop(index)
         if name in SIDEARMS and secondary:
             previous = a if a["weapon"] == secondary else a["holster"]
             # The exchanged sidearm takes the same place on the ground.
             w["groundWeapons"].append(
-                dict(id=gun["id"], x=a["x"], y=a["y"], **in_hand(previous))
+                dict(id=gun["id"], **{k:a[k] for k in ("x","y","z") if k in a}, **in_hand(previous))
             )
         equip(a, in_hand(gun))
         return gun

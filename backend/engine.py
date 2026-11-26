@@ -184,6 +184,15 @@ def _draw(agent):
     return agent["rng"]
 
 
+def spawn_slot(seed, team, slot, index, x=0, y=0):
+    return dict(
+        id=f"{team}{slot+1}", name=_NAMES[team][slot], team=team,
+        x=x, y=y, heading=0.0 if team=="T" else atan2(0,-1),
+        status="На старте", visible=[], knowledge={}, path=[],
+        rng=(seed + 0x9E3779B9 * (index+1)) & MASK,
+    )
+
+
 def initial(seed: int):
     state = dict(
         version=VERSION,
@@ -196,19 +205,7 @@ def initial(seed: int):
     for team, cells in _SPAWN_CELLS.items():
         for i, cell in enumerate(cells):
             x, y = _center(cell)
-            agent = dict(
-                id=f"{team}{i + 1}",
-                name=_NAMES[team][i],
-                team=team,
-                x=x,
-                y=y,
-                heading=0.0 if team == "T" else atan2(0, -1),
-                status="На старте",
-                visible=[],
-                knowledge={},
-                path=[],
-                rng=(seed + 0x9E3779B9 * (len(state["agents"]) + 1)) & MASK,
-            )
+            agent = spawn_slot(seed, team, i, len(state["agents"]), x, y)
             state["agents"].append(agent)
         _event(state, team, f"Группа {team} заняла стартовые позиции")
     _observe(state)
@@ -276,7 +273,7 @@ def motion_sample(state):
     known = {team: {target for a in state["agents"] if a["team"] == team
                     for target in a["visible"]} for team in ("T", "CT")}
     return {
-        a["id"]: ((a["x"], a["y"], a["heading"]),
+        a["id"]: ((a["x"], a["y"], a["heading"], *([a["z"]] if "z" in a else [])),
                   tuple(team for team in known if a["team"] == team or a["id"] in known[team]))
         for a in state["agents"]
     }

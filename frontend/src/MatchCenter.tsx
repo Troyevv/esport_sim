@@ -10,7 +10,7 @@ import { Gear, ItemIcon, WeaponSlots } from "./MatchEquipment";
 import { RoleRatings } from "./SceneProfiles";
 
 type Side = "CT" | "T";
-type Point = { x: number; y: number };
+type Point = { x: number; y: number; z?: number };
 export interface MatchView {
   rules: string;
   clubs: {
@@ -70,6 +70,7 @@ export interface MatchView {
   effects: (Point & {
     team?: Side;
     kind: string;
+    trajectory?: [number, number, number][];
     sx: number;
     sy: number;
     land: number;

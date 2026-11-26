@@ -9,11 +9,11 @@ from urllib.parse import urlsplit
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
-from . import career, career_scene, tactic_library, tactic_preview, tactics
+from . import cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
@@ -310,6 +310,72 @@ def create_app(
                 return store.careers.report(event["result"])
         raise HTTPException(404, "Отчёт не найден")
 
+    @app.get("/api/maps")
+    def map_catalog():
+        return [{"id":"depo","name":"Депо"}, *[
+            {"id":m,"name":cs2_maps.NAMES[m]} for m in cs2_maps.installed()]]
+
+    @app.get("/api/maps/{name}/radar.png")
+    def radar_image(name: str, layer: Literal["default","lower"]="default"):
+        if name not in cs2_maps.NAMES:
+            raise HTTPException(404,"Неизвестная карта")
+        path=cs2_maps.root()/name/(name+("_lower" if layer=="lower" else "")+".png")
+        if not path.is_file():
+            raise HTTPException(404,"Радар выбранного этажа отсутствует")
+        return FileResponse(path,media_type="image/png")
+
+    @app.post("/api/maps/{name}/surface")
+    def surface_points(name: str, body: dict):
+        from math import isfinite
+        try:
+            space=cs2_maps.get(name)
+            points=body["points"]
+            if not isinstance(points,list) or not 1<=len(points)<=96:
+                raise ValueError("Допустимо от одной до 96 точек")
+            layer=body.get("layer","default")
+            z=float(body["height"])
+            result=[]
+            for point in points:
+                x,y=float(point["x"]),float(point["y"])
+                if not all(isfinite(v) for v in (x,y,z)):
+                    raise ValueError("Недопустимые координаты")
+                z=space.pick(x,y,layer,z)
+                if body.get("plant") and not space.site_at((x,y,z)):
+                    raise ValueError("Для установки выберите площадку A или B")
+                result.append(dict(x=x,y=y,z=z))
+            return result
+        except (KeyError,TypeError,ValueError) as exc:
+            raise HTTPException(422,str(exc)) from exc
+
+    @app.post("/api/maps/{name}/routes")
+    def map_routes(name: str, body: dict):
+        try:
+            space = cs2_maps.get(name)
+            side, slots = body["side"], body["slots"]
+            if side not in ("T", "CT") or not isinstance(slots, list) or len(slots) != 5:
+                raise ValueError("Ожидались пять ролей одной стороны")
+            result = []
+            for slot, steps in enumerate(slots):
+                if not isinstance(steps, list) or len(steps) > 96:
+                    raise ValueError("Допустимо до 96 точек на роль")
+                pos, _, area = space.spawn(side, slot)
+                legs = []
+                for step in steps:
+                    goal = cs2_maps.xyz(step)
+                    if step["kind"] not in tactics.MOVES:
+                        legs.append([])
+                        continue
+                    target = space.locate(goal)
+                    path = space.path(area,tuple(pos),target,tuple(goal),frozenset())
+                    if path is None:
+                        raise ValueError("Между точками отсутствует проход NAV")
+                    legs.append([dict(zip(("x","y","z"),p)) for p in (pos,*path)])
+                    pos, area = goal, target
+                result.append(legs)
+            return result
+        except (KeyError, TypeError, ValueError, OverflowError) as exc:
+            raise HTTPException(422, str(exc)) from exc
+
     @app.get("/api/tactics")
     async def library():
         store = app.state.store
@@ -323,9 +389,9 @@ def create_app(
         return result
 
     @app.get("/api/tactics/proposal")
-    async def proposal(side: Literal["T", "CT"], buy: str):
+    def proposal(side: Literal["T", "CT"], buy: str, map_id: str="depo"):
         try:
-            return tactics.propose(side, buy, secrets.randbits(32))
+            return tactics.propose(side, buy, secrets.randbits(32),map_id=map_id)
         except ValueError as err:
             raise HTTPException(422, str(err)) from err
 

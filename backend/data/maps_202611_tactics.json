@@ -1,0 +1,399 @@
+{
+  "de_ancient": {
+    "A": [
+      [
+        "MainHall",
+        "SideHall"
+      ],
+      [
+        "Middle",
+        "TopofMid"
+      ]
+    ],
+    "B": [
+      [
+        "Tunnel",
+        "Ramp"
+      ],
+      [
+        "Middle",
+        "House"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "SideHall",
+        "TopofMid"
+      ],
+      "B": [
+        "Ramp",
+        "House"
+      ]
+    },
+    "middle": "Middle",
+    "overwatch": [
+      "TopofMid",
+      "Middle"
+    ],
+    "probe": {
+      "A": "MainHall",
+      "B": "Tunnel"
+    }
+  },
+  "de_anubis": {
+    "A": [
+      [
+        "Canal",
+        "Main"
+      ],
+      [
+        "Bridge",
+        "Walkway"
+      ]
+    ],
+    "B": [
+      [
+        "Ruins",
+        "OutsideLong"
+      ],
+      [
+        "MidDoors",
+        "Connector"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "Heaven",
+        "Main"
+      ],
+      "B": [
+        "BackofB",
+        "Connector"
+      ]
+    },
+    "middle": "Bridge",
+    "overwatch": [
+      "MidDoors",
+      "Bridge"
+    ],
+    "probe": {
+      "A": "Canal",
+      "B": "Ruins"
+    }
+  },
+  "de_cache": {
+    "A": [
+      [
+        "AHalls",
+        "AMain"
+      ],
+      [
+        "Mid",
+        "Highway"
+      ]
+    ],
+    "B": [
+      [
+        "BHalls",
+        "BMain"
+      ],
+      [
+        "Middle",
+        "Vents",
+        "Checkers"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "ForkLift",
+        "Quad"
+      ],
+      "B": [
+        "Heaven",
+        "Headshot"
+      ]
+    },
+    "middle": "Middle",
+    "navAnchors": {
+      "sha256": "a3dd9d3b9b0be9fa319e7f0ab035238ea7987b9773d21e49d25438e7e8a8b0b2",
+      "places": {
+        "Middle": [
+          439,
+          688
+        ],
+        "Checkers": [
+          2198
+        ]
+      }
+    },
+    "overwatch": [
+      "Connector",
+      "Middle"
+    ],
+    "probe": {
+      "A": "AHalls",
+      "B": "BHalls"
+    }
+  },
+  "de_dust2": {
+    "A": [
+      [
+        "OutsideLong",
+        "LongDoors",
+        "LongA"
+      ],
+      [
+        "TopofMid",
+        "Catwalk",
+        "ShortStairs"
+      ]
+    ],
+    "B": [
+      [
+        "OutsideTunnel",
+        "UpperTunnel"
+      ],
+      [
+        "LowerTunnel",
+        "MidDoors",
+        "BDoors"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "ExtendedA",
+        "ARamp"
+      ],
+      "B": [
+        "BDoors",
+        "Hole"
+      ]
+    },
+    "middle": "Middle",
+    "navAnchors": {
+      "sha256": "64bbc202edae8a92d432368e86948bbee3af9c56555e190dda251d28c64e1ea7",
+      "places": {
+        "TopofMid": [
+          70
+        ]
+      }
+    },
+    "overwatch": [
+      "MidDoors",
+      "Middle"
+    ],
+    "probe": {
+      "A": "OutsideLong",
+      "B": "LowerTunnel"
+    }
+  },
+  "de_inferno": {
+    "A": [
+      [
+        "SecondMid",
+        "Apartments",
+        "Balcony"
+      ],
+      [
+        "LowerMid",
+        "Middle",
+        "TopofMid"
+      ]
+    ],
+    "B": [
+      [
+        "Banana"
+      ],
+      [
+        "Middle",
+        "Arch",
+        "CTSpawn"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "Pit",
+        "Library"
+      ],
+      "B": [
+        "Ruins",
+        "Banana"
+      ]
+    },
+    "middle": "TopofMid",
+    "overwatch": [
+      "Arch",
+      "TopofMid"
+    ],
+    "probe": {
+      "A": "SecondMid",
+      "B": "Banana"
+    }
+  },
+  "de_mirage": {
+    "A": [
+      [
+        "PalaceAlley",
+        "PalaceInterior"
+      ],
+      [
+        "TopofMid",
+        "Middle",
+        "Connector"
+      ]
+    ],
+    "B": [
+      [
+        "BackAlley",
+        "Apartments"
+      ],
+      [
+        "TopofMid",
+        "Catwalk"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "Stairs",
+        "Jungle"
+      ],
+      "B": [
+        "Shop",
+        "Truck"
+      ]
+    },
+    "middle": "Middle",
+    "overwatch": [
+      "SnipersNest",
+      "Middle"
+    ],
+    "probe": {
+      "A": "PalaceAlley",
+      "B": "BackAlley"
+    }
+  },
+  "de_nuke": {
+    "A": [
+      [
+        "Lobby",
+        "Hut"
+      ],
+      [
+        "Outside",
+        "Mini"
+      ]
+    ],
+    "B": [
+      [
+        "Outside",
+        "Secret",
+        "Tunnels"
+      ],
+      [
+        "Lobby",
+        "Trophy",
+        "Ramp"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "Rafters",
+        "Mini"
+      ],
+      "B": [
+        "Decon",
+        "Ramp"
+      ]
+    },
+    "middle": "Outside",
+    "overwatch": [
+      "Garage",
+      "Outside"
+    ],
+    "probe": {
+      "A": "Lobby",
+      "B": "Outside"
+    }
+  },
+  "de_train": {
+    "A": [
+      [
+        "TMain"
+      ],
+      [
+        "Alley",
+        "Ivy"
+      ]
+    ],
+    "B": [
+      [
+        "TStairs",
+        "TSideUpper"
+      ],
+      [
+        "Tunnels",
+        "Entrance"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "ElectricalBox",
+        "Dumpster"
+      ],
+      "B": [
+        "BackofB",
+        "Connector"
+      ]
+    },
+    "middle": "Connector",
+    "overwatch": [
+      "Connector",
+      "TMain"
+    ],
+    "probe": {
+      "A": "Alley",
+      "B": "TStairs"
+    }
+  },
+  "de_vertigo": {
+    "A": [
+      [
+        "Pit",
+        "ARamp"
+      ],
+      [
+        "Side",
+        "Scaffolding"
+      ]
+    ],
+    "B": [
+      [
+        "TCorridorUp"
+      ],
+      [
+        "Mid",
+        "TopofMid",
+        "Connector"
+      ]
+    ],
+    "guards": {
+      "A": [
+        "APlatform",
+        "BackofA"
+      ],
+      "B": [
+        "BPlatform",
+        "BackofB"
+      ]
+    },
+    "middle": "Mid",
+    "overwatch": [
+      "TopofMid",
+      "Mid"
+    ],
+    "probe": {
+      "A": "Pit",
+      "B": "TCorridorUp"
+    }
+  }
+}

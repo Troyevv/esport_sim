@@ -1,3 +1,4 @@
+import { fixtureMap } from "./careerData";
 import { useEffect, useRef, useState } from "react";
 import { regions } from "./databaseModel";
 import {
@@ -241,7 +242,7 @@ export function MatchReport({
       ) : (
         <>
           <p>
-            {date(event.date)} · Депо · {rounds} раундов
+            {date(event.date)} · {fixtureMap(event)} · {rounds} раундов
           </p>
           {event.teams.map((tid, club) => (
             <table key={tid}>

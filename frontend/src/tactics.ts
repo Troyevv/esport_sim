@@ -2,7 +2,7 @@ import type { RadarMap } from "./Radar";
 import { serverURL } from "./session";
 
 export type Side = "T" | "CT";
-export type Point = { x: number; y: number };
+export type Point = { x: number; y: number; z?: number };
 export const labels = {
   move: "Маршрут",
   hold: "Удержание",
@@ -39,7 +39,8 @@ export interface Library {
   plans: Plan[];
 }
 export interface Preview {
-  frames: [number, number, number, number][][];
+  economy?: { scenario: string; spent: number; drops: number };
+  frames: [number, number, number, number, number?][][];
   tickMs: number;
   events: { tick: number; text: string }[];
   effects: (Point & {
@@ -105,12 +106,12 @@ export function newPlan(map: RadarMap, side: Side, buy: string): Plan {
   return {
     id: crypto.randomUUID(),
     revision: 0,
-    format: 1,
+    format: map.id === "depo" ? 1 : 2,
     map: map.id,
     geometry: Number(map.version),
     name: "Новая тактика",
     side,
-    buy,
+    buy: map.id === "depo" && !["Пистолетная","Эко","Оружейная"].includes(buy) ? "Оружейная" : buy,
     standard: false,
     slots: [[], [], [], [], []],
   };

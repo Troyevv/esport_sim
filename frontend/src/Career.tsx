@@ -1,3 +1,4 @@
+import { fixtureMap } from "./careerData";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Brand, Dialog, Glyph, Heading } from "./GameUI";
 import { Avatar } from "./SceneIdentity";
@@ -520,7 +521,7 @@ function Manager({
                     {next && (
                       <>
                         <h2>{next.teams.map((t) => c.teams[t]).join(" — ")}</h2>
-                        <p>{date(next.date)} · Выставочный BO1 · Депо</p>
+                        <p>{date(next.date)} · Выставочный BO1 · {fixtureMap(next)}</p>
                         <button
                           className="btn"
                           onClick={() => calendar(next.date)}

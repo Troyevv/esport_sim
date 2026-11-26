@@ -7,7 +7,7 @@ import sqlite3
 from pathlib import Path
 from uuid import uuid4
 
-from . import career, checkpoints, database, engine, match, world
+from . import career, checkpoints, cs2_maps, database, engine, match, world
 from .database import require
 
 
@@ -173,8 +173,9 @@ class CareerStore:
         require(
             event["kind"] == "match"
             and report["seed"] == event["seed"]
-            and report["rules"] == match.VERSION
-            and report["map"] == match.MAP["version"]
+            and report.get("mapId") == event.get("mapId")
+            and report["rules"] in (cs2_maps.SUPPORTED_RULES if event.get("mapId") else (match.VERSION,))
+            and report["map"] == (cs2_maps.BUILD if event.get("mapId") else match.MAP["version"])
             and len(report["stats"]) == len(expected)
             and {row["player"]: row["teamId"] for row in report["stats"]} == expected
             and set(report["teams"]) == set(points)
@@ -318,7 +319,9 @@ class CareerStore:
             queue=c["queue"],
             history=c["history"],
             roster=members,
-            teamRating=world.team_rating(domain, c["teams"][own], match.MAP["id"]),
+            teamRating=world.team_rating(domain,c["teams"][own],next(
+                (event.get("mapId","depo").removeprefix("de_") for event in c["queue"]
+                 if event["kind"]=="match" and own in event["teams"]), "depo")) ,
             slots=self.slots(c["id"]),
         )
         return dict(careers=list(menu.values()), active=info)

@@ -4,7 +4,7 @@ from collections import Counter
 from copy import deepcopy
 from math import atan2
 
-from . import checkpoints, engine, match_inventory, match_score, tactics, world
+from . import cs2_economy, cs2_maps, checkpoints, engine, match_inventory, match_score, tactics, world
 from . import match_performance as perf
 from .world import match_player as profile
 from . import match_ai as ai
@@ -79,8 +79,11 @@ def init_performance(a, now):
     )
 
 
-def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None):
-    w = engine.initial(seed)
+def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, *, map_id="depo"):
+    space = None if map_id=="depo" else cs2_maps.get(map_id)
+    agents = [engine.spawn_slot(seed, side, slot, side_index*5+slot)
+              for side_index,side in enumerate(("T","CT")) for slot in range(5)]
+    w = dict(seed=seed,tick=0,agents=agents)
     w.update(
         version=2,
         checkpointVersion=checkpoints.VERSION,
@@ -99,7 +102,9 @@ def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None):
         call=None,
         feedback=[],
     )
-    # R0 creates named spawn slots. Bind them once when creating the match.
+    if space:
+        w.update(mapId=space.name,map_version=cs2_maps.BUILD,rules=cs2_maps.RULES,checkpointVersion=7)
+    # Slot identity survives side switches and loading a saved round.
     for a in w["agents"]:
         slot = int(a["id"][len(a["team"]) :]) - 1
         a.update(
@@ -205,13 +210,26 @@ def next_round(w):
         roundStart=w["tick"],
     )
     if reset:
-        w["streak"] = [0, 0]
+        w["streak"] = [1, 1] if w.get("mapId") else [0, 0]
+        if w.get("mapId"):
+            w["opponentEconomy"] = {}
+    space = cs2_maps.for_match(w)
     for a in w["agents"]:
         side = (
             "T" if (a["teamId"] == w["firstAttackTeamId"]) != bool(swaps % 2) else "CT"
         )
         slot = a["slot"]
-        x, y = engine._center(engine._SPAWN_CELLS[side][slot])
+        if space:
+            (x,y,z),heading,area = space.spawn(side,slot,(w["seed"]+n) % len(space.spawns[side]))
+            a.update(z=z,navArea=area,waypoint=0,blockedTicks=0,inspectedSites={},routeReports={},lastRouteReport=-100,
+                     useTarget=None,useFloor=None,checkContact=None,checkPosition=None,
+                     shelter=None,coverUntil=0,coverReview=0,bombSearch=None,coveredDefuser=None,coverPoint=None,revisedApproach=None,
+                     rendezvous=None,plantCover=None,plantCheck=None,watchDevice=None,heardUse=-1000,
+                     seenDevice=None,beepBearing=None,plantCue=None,leftScreen=False,sectorReview=None,incoming=None,pressureCall=None,nextPressureCall=0,sectorCalls={},squadPressure={},screenedOpening=False,friendlyUtility=[])
+        else:
+            x, y = engine._center(engine._SPAWN_CELLS[side][slot])
+            heading=0 if side=="T" else atan2(0,-1)
+        a.pop("postWatch", None)
         if reset or not a["hp"]:
             a.update(
                 weapon="Glock" if side == "T" else "USP",
@@ -242,7 +260,7 @@ def next_round(w):
             y=y,
             hp=100,
             status="Подготовка",
-            heading=0 if side == "T" else atan2(0, -1),
+            heading=heading,
             ammo=WEAPONS[a["weapon"]].mag,
             reserve=WEAPONS[a["weapon"]].mag * 3,
             visible=[],
@@ -299,6 +317,8 @@ def purchase(w, a, item, give=None):
 
 
 def buy_context(w, squad, call=None):
+    if w.get("mapId"):
+        return cs2_economy.decision(w, squad, call, profile=cs2_maps.PROFILES[w["mapId"]])["scenario"]
     average = sum(a["cash"] for a in squad) / len(squad)
     if call == "Экономить":
         return "Эко"
@@ -311,6 +331,12 @@ def board_buy(buy):
     return "Оружейная" if buy in ("Полная", "Форс") else buy
 
 
+def board_categories(w, buy):
+    if w.get("mapId"):
+        return (buy,) if buy in ("Эко","Пистолетная") else (buy,"Оружейная")
+    return (board_buy(buy),)
+
+
 def next_buy(w, squad):
     if w.get("nextBoard"):
         return "Эко" if w["nextBoard"]["buy"] == "Эко" else buy_context(w, squad)
@@ -320,10 +346,12 @@ def next_buy(w, squad):
 def assign(w, board):
     check_coach(w)
     board = deepcopy(tactics.validate(board) | tactics.reference(board))
+    if board["map"]!=w.get("mapId","depo") or board["geometry"]!=w["map_version"]:
+        raise ValueError("Тактика создана для другой карты или версии геометрии")
     side, buy = board["side"], board["buy"]
     if w["phase"] == "timeout":
         squad = [a for a in w["agents"] if a["teamId"] == w["coachTeamId"]]
-        if side != squad[0]["team"] or buy != board_buy(next_buy(w, squad)):
+        if side != squad[0]["team"] or buy not in board_categories(w, next_buy(w, squad)):
             raise ValueError(
                 "Тактика не соответствует стороне или закупке ближайшего раунда"
             )
@@ -350,6 +378,7 @@ def assign(w, board):
 
 
 def begin_live(w):
+    space=cs2_maps.for_match(w)
     now = w["tick"]
     for side in ("T", "CT"):
         squad = [a for a in w["agents"] if a["team"] == side]
@@ -361,12 +390,15 @@ def begin_live(w):
             if board:
                 call = "Экономить" if board["buy"] == "Эко" else None
         buy = buy_context(w, squad, call)
+        if space and board and w.get("previewBuy"):
+            buy = w["previewBuy"]
         if (
             igl["teamId"] == w["coachTeamId"]
             and not board
             and call in (None, "Экономить")
         ):
-            board = w.get("playbook", {}).get(side + "/" + board_buy(buy))
+            book = w.get("playbook", {})
+            board = next((book[side + "/" + key] for key in board_categories(w,buy) if side + "/" + key in book),None)
         site = "AB"[(engine._draw(igl) >> 16) % 2]
         if call in ("Выход A", "Выход B"):
             site = call[-1]
@@ -383,7 +415,21 @@ def begin_live(w):
                 None,
             )
             if plant:
-                site = tactics.zone_at(plant["x"], plant["y"])
+                site = space.site_at(ai.point(plant)) if space else tactics.zone_at(plant["x"], plant["y"])
+        lane=0
+        if space:
+            # Pick the budget once after choosing the board and intended site.
+            # Its label, role orders, wallet limits and the emitted call must agree.
+            requested = None
+            if board:
+                requested = w.get("previewBuy") or board["buy"]
+            strategy = cs2_economy.decision(
+                w, squad, call, site=site, profile=space.profile, board=board, requested=requested
+            )
+            buy = strategy["scenario"]
+            site,style,lane=ai.cs2_play.opening(space,w,squad,igl,profile(w,igl),buy,site,style,call)
+            if board and plant:
+                site=space.site_at(ai.point(plant))
         w["plans"][side] = dict(
             site=site,
             style=style,
@@ -391,10 +437,17 @@ def begin_live(w):
             start=now,
             review=now,
             rotated=False,
-            orders=role_orders(side, site),
+            orders=space.orders(side,site,squad,lane,style) if space else role_orders(side, site),
             captain=igl["id"],
             reinforce=site if side == "CT" and call in ("Выход A", "Выход B") else None,
         )
+        if space:
+            plan = w["plans"][side]
+            plan["lane"] = lane
+            if side == "CT" and not call and not board:
+                plan["anticipated"] = ai.cs2_play.defensive_read(w, igl)
+            if side == "T" and not board and style in ("Сбор", "Контроль карты"):
+                plan["probe"] = ai.cs2_play.default_probe(space, squad, w["bomb"]["carrier"], plan, now, w["domain"])
         emit(
             w,
             "plan",
@@ -428,11 +481,22 @@ def begin_live(w):
                 a.update(stepIndex=0, stepUntil=None)
                 if any(s["kind"] == "plant" for s in steps):
                     w["bomb"]["carrier"] = a["id"]
+                if space:
+                    continue
                 for item in (
                     tactics.equipment(steps) - Counter(a["utility"])
                 ).elements():
                     if len(a["utility"]) < 2:
                         purchase(w, a, item)
+        if space:
+            # The captain can switch sites during the opening call. Give each role
+            # the utility for the final approach within its agreed spending limit.
+            strategy["needs"] = {
+                a["id"]: cs2_economy.items_for(a, site, space.profile, board) for a in squad
+            }
+            w["plans"][side]["economy"] = strategy
+            cs2_economy.buy(w, squad, strategy, purchase, board)
+            continue
         rifle = "AK-47" if side == "T" else "M4A1-S"
         smg = "MAC-10" if side == "T" else "MP9"
         for a in squad:
@@ -466,8 +530,12 @@ def begin_live(w):
                 if side == "CT" and not a["kit"] and a["slot"] in (0, 2, 4):
                     purchase(w, a, "Набор")
                 order = ["Дым", "Свет", "HE", "Огонь", "Ложная"]
-                first = (a["slot"] + w["round"]) % len(order)
-                for item in order[first:] + order[:first]:
+                if space:
+                    order = ai.cs2_play.utility_buy(a,squad,w["plans"][side],profile(w,a)["skills"])
+                else:
+                    first = (a["slot"] + w["round"]) % len(order)
+                    order = order[first:] + order[:first]
+                for item in order:
                     if len(a["utility"]) >= 2:
                         break
                     if item not in a["utility"]:
@@ -555,6 +623,16 @@ def finish_round(w, side, reason):
         side=side,
         reason=reason,
     )
+    if w.get("mapId") and "T" in w["plans"]:
+        attack = next(a["teamId"] for a in w["agents"] if a["team"]=="T")
+        history=w.setdefault("siteHistory",{}).setdefault(attack,[])
+        history.append([w["plans"]["T"]["site"],side=="T"])
+        del history[:-6]
+        guards = [a for a in w["agents"] if a["team"] == "CT"]
+        identified = next((a["heardSite"] for a in guards if a.get("heardSite")), None)
+        defence = w.setdefault("defensiveHistory", {}).setdefault(guards[0]["teamId"], [])
+        defence.append(identified)
+        del defence[:-4]
     kills = w["kills"]
     for a in w["agents"]:
         player = profile(w, a)
@@ -585,7 +663,15 @@ def finish_round(w, side, reason):
             )
             money(w, a, bonus, "Поражение")
             if a["team"] == "T" and w["bomb"]["site"]:
-                money(w, a, RULES["plantBonus"], "Установка в проигранном раунде")
+                money(w, a, 600 if w.get("mapId") else RULES["plantBonus"], "Установка в проигранном раунде")
+    if w.get("mapId"):
+        ct_ids = {p["id"] for p in w["agents"] if p["team"]=="CT"}
+        bonus = 50 * sum(k["enemy"] and k["player"] in ct_ids for k in kills)
+        if bonus:
+            for p in w["agents"]:
+                if p["id"] in ct_ids:
+                    money(w,p,bonus,"Командная награда за устранения CT")
+        cs2_economy.update_opponents(w,side,reason)
     if side in w["clutch"]:
         w["stats"][w["clutch"][side]]["clutches"] += 1
     w["history"].append(
@@ -604,8 +690,12 @@ def finish_round(w, side, reason):
     for plan in w["plans"].values():
         if plan.get("board"):
             w["history"][-1]["tactic"] = tactics.reference(plan["board"])
-    w["streak"][winner] = 0
-    w["streak"][1 - winner] += 1
+    if w.get("mapId"):
+        w["streak"][winner] = max(0,w["streak"][winner]-1)
+        w["streak"][1-winner] = min(4,w["streak"][1-winner]+1)
+    else:
+        w["streak"][winner] = 0
+        w["streak"][1 - winner] += 1
     n = w["round"]
     half, ot = RULES["half"], RULES["overtimeHalf"]
     target = (
@@ -632,6 +722,14 @@ def finish_round(w, side, reason):
 
 
 def objective(w, a, kind, site=None):
+    space=cs2_maps.for_match(w)
+    if space:
+        if kind=="plant":
+            site=space.site_at(ai.point(a))
+            if not site or w["bomb"]["carrier"]!=a["id"]:
+                return
+        elif ai.distance(a,w["bomb"])>6 or not space.clear(a,w["bomb"]):
+            return
     now = w["tick"]
     if w["action"] is None:
         duration = (
@@ -642,6 +740,10 @@ def objective(w, a, kind, site=None):
         w["action"] = dict(
             player=a["id"], kind=kind, site=site, start=now, end=now + duration
         )
+        if space and kind == "plant":
+            ai.cs2_play.hear_plant(space, w["agents"], a, now)
+        if space and kind == "defuse":
+            ai.cs2_play.hear_c4_use(space,w["agents"],w["bomb"],now)
         a["status"] = "Ставит C4" if kind == "plant" else "Обезвреживает"
         emit(
             w,
@@ -654,7 +756,7 @@ def objective(w, a, kind, site=None):
     if action["player"] != a["id"] or now < action["end"]:
         return
     if action["kind"] == "plant":
-        w["bomb"].update(carrier=None, site=action["site"], x=a["x"], y=a["y"])
+        w["bomb"].update(carrier=None, site=action["site"], **ai.at(ai.point(a)))
         w.update(phase="planted", deadline=now + RULES["fuse"], action=None)
         money(w, a, RULES["planter"], "Установка C4")
         emit(w, "plant", f"{a['name']} установил C4", player=a["id"])
@@ -667,6 +769,9 @@ def objective(w, a, kind, site=None):
 def advance(w):
     if w["phase"] in ("finished", "timeout"):
         return
+    if w["rules"] in cs2_maps.SUPPORTED_RULES[1:]:
+        w["rulesTransition"] = dict(previous=w["rules"], tick=w["tick"], lastEvent=w["serial"])
+        w["rules"] = cs2_maps.RULES
     # Preserve the initiative and utility ordering after restoring a reordered collection.
     w["agents"].sort(key=lambda a: (a["teamId"] != w["firstAttackTeamId"], a["slot"]))
     w["started"] = True
@@ -681,9 +786,10 @@ def advance(w):
             next_round(w)
         return
     ids = {a["id"]: a for a in w["agents"]}
-    ai.apply_effects(w, ids)
+    space=cs2_maps.for_match(w)
+    ai.apply_effects(w, ids, space)
     players = [a for a in ids.values() if a["hp"]]
-    ai.observe(w, players)
+    ai.observe(w, players, space)
     bomb = w["bomb"]
     w["traces"] = [t for t in w["traces"] if now - t["tick"] < 45]
     intents = []
@@ -691,9 +797,10 @@ def advance(w):
         squad = [a for a in players if a["team"] == side]
         if not squad:
             continue
-        ai.captain(w, squad)
+        ai.captain(w, squad, space)
+        recovery = ai.cs2_play.rescue(space, squad, bomb) if space and side == "T" else None
         for a in squad:
-            picked = match_inventory.take_nearby(w, a)
+            picked = match_inventory.take_nearby(w, a, space)
             if picked:
                 emit(
                     w,
@@ -704,7 +811,7 @@ def advance(w):
                     weapon=picked["weapon"],
                     dropId=picked["id"],
                 )
-            known_bomb = bomb if side == "T" else None
+            known_bomb = bomb if side == "T" else a.get("seenDevice")
             if side == "CT" and bomb["site"] and ai.distance(a, bomb) < 72:
                 if not a["heardSite"]:
                     a["heardSite"] = bomb["site"]
@@ -716,15 +823,28 @@ def advance(w):
                             due=now + ai.radio_delay(profile(w, a)["skills"]),
                         )
                     )
-                if ai.distance(a, bomb) < 30 and engine.clear_line(
-                    a["x"], a["y"], bomb["x"], bomb["y"]
-                ):
-                    known_bomb = bomb
+                if space:
+                    ai.cs2_play.hear_device(a, bomb, now)
+                if (known_bomb is None and ai.distance(a, bomb) < 30 and ai.clear(space, a, bomb)):
+                    if space is None:
+                        known_bomb = bomb
+                    elif a["blind"] <= now and not any(
+                        fog["kind"] == "Дым" and fog["land"] <= now < fog["end"]
+                        and ai.near_line(a, bomb, fog, fog["radius"])
+                        for fog in w["effects"]
+                    ):
+                        known_bomb = {k: bomb[k] for k in ("x", "y", "z", "site", "carrier")}
+                        a["seenDevice"] = known_bomb
+                        w["messages"].append(dict(
+                            team=side, sender=a["id"], device=known_bomb,
+                            due=now + ai.radio_delay(profile(w, a)["skills"]),
+                        ))
             if (
                 side == "T"
                 and not bomb["carrier"]
                 and not bomb["site"]
                 and ai.distance(a, bomb) <= 7
+                and (space is None or space.clear(a, bomb))
             ):
                 bomb["carrier"] = a["id"]
                 emit(w, "pickup", f"{a['name']} поднял C4", "T", player=a["id"])
@@ -734,9 +854,11 @@ def advance(w):
                 if f["kind"] == "Огонь"
                 and f["land"] <= now
                 and ai.distance(a, f) < 70
-                and engine.clear_line(a["x"], a["y"], f["x"], f["y"])
+                and ai.clear(space,a,f)
             ]
             observation = dict(
+                space=space,
+                recovery=recovery,
                 tick=now,
                 player=profile(w, a),
                 chemistry=w["domain"]["chemistry"],
@@ -752,6 +874,17 @@ def advance(w):
             previous = a["status"]
             step_index = a.get("stepIndex", 0)
             intents.append((a, *ai.act(observation, a, squad, known_bomb, fire)))
+            if space:
+                ai.cs2_play.cs2_defense.check_incoming(a,intents[-1][1],now,observation["player"]["skills"])
+            if space and a.get("lastBlockedTick") != now:
+                a["blockedTicks"] = 0
+            if (space and side=="T" and w["phase"]=="live" and a.get("blockedTicks",0)>=20
+                    and now-a.get("lastRouteReport",-100)>=60):
+                site=w["plans"][side]["site"]
+                a["lastRouteReport"]=now
+                a.setdefault("routeReports",{})[a["id"]]=[site,now]
+                w["messages"].append(dict(team=side,sender=a["id"],blockedSite=site,
+                                          due=now+ai.radio_delay(profile(w,a)["skills"])))
             if intents[-1][1] == "move":
                 a["lastMove"] = now
                 a["movingTicks"] += 1
@@ -789,10 +922,31 @@ def advance(w):
         if not a["hp"] or kind not in ("shoot", "throw"):
             continue
         if kind == "throw":
-            ai.throw(w, a, target)
+            ai.throw(w, a, target, space)
         else:
-            ai.shoot(w, a, target, ids[target["id"]])
+            victim = ids.get(target.get("id"))
+            if space and "id" not in target:
+                # Collision is resolved by the world after all players commit
+                # their intents. An empty aim point consumes the same shot.
+                crossed = (p for p in players if p is not a and p["hp"] and
+                           ai.near_line(a,target,p,3))
+                victim = min(crossed,key=lambda p: ai.distance(a,p),default=None)
+            ai.shoot(w, a, target, victim, space)
             for listener in players:
+                # A passing shot is perceptible at the listener, even when the
+                # shooter is outside their vision or normal local audio radius.
+                if (space and listener is not a and listener["hp"] and
+                        a["id"] not in listener["visible"] and
+                        ai.near_line(a,target,listener,6) and
+                        space.hit(ai.point(a),ai.point(listener),4,56) is None):
+                    listener["incoming"] = dict(tick=now,bearing=ai.cs2_play.sound_bearing(listener,a))
+                    if now >= listener.get("nextPressureCall",0):
+                        delay = ai.radio_delay(profile(w,listener)["skills"])
+                        listener.setdefault("squadPressure",{})[listener["id"]] = dict(listener["incoming"],origin=list(ai.point(listener)))
+                        listener["nextPressureCall"] = now + 10 + delay
+                        w["messages"].append(dict(team=listener["team"],sender=listener["id"],
+                            pressure=dict(listener["incoming"],origin=list(ai.point(listener))),
+                            due=now+delay))
                 if (
                     listener["team"] != a["team"]
                     and listener["hp"]
@@ -800,11 +954,15 @@ def advance(w):
                     and ai.distance(a, listener) < 55
                 ):
                     # Sound identifies a sector, never a tracked live enemy position.
-                    p = ai.audible_sector(a["x"] // 30, a["y"] // 30)
+                    p = ai.sound_position(space,a)
                     key = "Шум"
-                    listener["knowledge"][key] = dict(
-                        id=key, **p, tick=now, source="Слух"
-                    )
+                    cue = dict(id=key, **p, tick=now, source="Слух")
+                    listener["knowledge"][key] = cue
+                    if space and now >= listener.get("nextSoundCall", 0):
+                        delay = ai.radio_delay(profile(w, listener)["skills"])
+                        listener["nextSoundCall"] = now + 10 + delay
+                        w["messages"].append(dict(team=listener["team"], sender=listener["id"],
+                                                  sight=cue, due=now+delay))
     action = w["action"]
     if action and not any(
         a["hp"] and a["id"] == action["player"] and kind == "objective"
@@ -866,12 +1024,13 @@ def advance(w):
             if a["hp"]
             and ids[ident]["hp"]
             and a["blind"] <= now
-            and engine.sees(a, ids[ident])
+            and ai.sees(space,a,ids[ident])
             and not any(ai.near_line(a, ids[ident], f, f["radius"]) for f in smoke)
         ]
 
 
 def project(w, view="full"):
+    space=cs2_maps.for_match(w)
     if view not in ("full", "T", "CT"):
         raise ValueError("Неизвестный режим обзора")
     own = [a for a in w["agents"] if a["team"] == view]
@@ -895,6 +1054,8 @@ def project(w, view="full"):
                 "club",
             )
         }
+        if space:
+            marker["z"]=a["z"]
         marker.update(
             alive=bool(a["hp"]),
             status=a["status"] if friendly else "В поле зрения",
@@ -933,7 +1094,7 @@ def project(w, view="full"):
         return view == "full" or any(
             a["hp"]
             and a["blind"] <= w["tick"]
-            and engine.sees(a, p)
+            and ai.sees(space,a,p)
             and not any(
                 ai.near_line(a, p, f, f["radius"]) for f in smoke if not cloud or f != p
             )
@@ -947,7 +1108,7 @@ def project(w, view="full"):
         or (not carrier and observable(point))
     ):
         public_bomb = dict(
-            x=point["x"], y=point["y"], carrier=bomb["carrier"], site=bomb["site"]
+            **ai.at(ai.point(point)), carrier=bomb["carrier"], site=bomb["site"]
         )
     effects = [
         f
@@ -957,7 +1118,7 @@ def project(w, view="full"):
     ]
     # Do not reveal an unseen thrower's origin via the trajectory of a landed grenade.
     effects = [
-        f if view in ("full", f["team"]) else dict(f, sx=f["x"], sy=f["y"], player=None)
+        f if view in ("full", f["team"]) else dict({k:v for k,v in f.items() if k not in ("trajectory","sz")}, sx=f["x"], sy=f["y"], player=None)
         for f in effects
     ]
     stats = []
@@ -1002,7 +1163,7 @@ def project(w, view="full"):
         seed=w["seed"],
         tick=w["tick"],
         time=w["tick"] / 10,
-        map=MAP,
+        map=space.descriptor if space else MAP,
         agents=agents,
         view=view,
         events=journal[-48:],
@@ -1018,7 +1179,7 @@ def project(w, view="full"):
                         for r in w["rosterIds"]
                         if w["domain"]["rosters"][r]["team"] == w["coachTeamId"]
                     ),
-                    MAP["id"],
+                    space.name.removeprefix("de_") if space else MAP["id"],
                 )
                 if coach_view
                 else None
@@ -1082,7 +1243,7 @@ def project(w, view="full"):
             ],
             kills=w["kills"],
             groundWeapons=[
-                {k: g[k] for k in ("id", "weapon", "x", "y")}
+                {k: g[k] for k in ("id", "weapon", "x", "y","z") if k in g}
                 for g in w["groundWeapons"]
                 if view == "full" or observable(g)
             ],
@@ -1102,11 +1263,11 @@ def project(w, view="full"):
             and w["phase"] == "freeze"
             and w["remaining"] == RULES["timeouts"],
             nextBuy=(
-                board_buy(
+                board_categories(w,
                     next_buy(
                         w, [a for a in w["agents"] if a["teamId"] == w["coachTeamId"]]
                     )
-                )
+                )[0]
                 if coach_view
                 else None
             ),

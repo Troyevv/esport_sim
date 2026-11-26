@@ -171,3 +171,4 @@ websockets==16.0
     # via
     #   -c requirements.txt
     #   -r requirements.in
+embreex==4.4.0.post1

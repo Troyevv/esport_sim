@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import database, match, match_score, world
+from . import cs2_maps, database, match, match_score, world
 from .database import require
 
 VERSION = 1
@@ -103,11 +103,14 @@ def create(pack, options):
         error=None,
         milestones=[dict(date=pack["asOf"], title="Назначение в клуб", matches=None)],
     )
+    c["mapPool"] = cs2_maps.installed()
     schedule(c)
     return c
 
 
 def schedule(c):
+    if not c.get("mapPool"):
+        c["mapPool"] = cs2_maps.installed()
     week = c["week"]
     start = database.day(c["start"]) + timedelta(days=7 * week)
     # Rotate opponents without allocating a season or creating a competition.
@@ -135,6 +138,7 @@ def schedule(c):
                 date=day.isoformat(),
                 teams=[home, away],
                 seed=seed,
+                **({"mapId":c["mapPool"][seed%len(c["mapPool"])]} if c.get("mapPool") else {}),
             )
         )
     c["queue"].append(
@@ -184,6 +188,7 @@ def initial(pack, c, event, badges=None, portraits=None):
         domain,
         rosters,
         c["team"] if c["team"] in event["teams"] else None,
+        map_id=event.get("mapId","depo"),
     )
 
 
@@ -202,6 +207,7 @@ def result(game):
         winnerTeamId=game["winnerTeamId"],
         rules=game["rules"],
         map=game["map_version"],
+        **({"mapId":game["mapId"]} if game.get("mapId") else {}),
         seed=game["seed"],
         rounds=game["history"],
         ticks=game["tick"],

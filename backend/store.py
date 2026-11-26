@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
 
-from . import database, checkpoints, engine, match, tactic_library
+from . import cs2_maps, database, checkpoints, engine, match, tactic_library
 from . import career, career_store
 from .match_rules import LEGACY_VERSION, PREVIOUS_VERSION, SCOREBOT_VERSION
 from . import match_inventory, match_score
@@ -28,6 +28,10 @@ def validate_snapshot(state):
         (2, match.MAP["version"], PREVIOUS_VERSION),
         (2, match.MAP["version"], SCOREBOT_VERSION),
     )
+    if world.get("mapId") is not None:
+        if (model[:2] != (2, cs2_maps.BUILD) or model[2] not in cs2_maps.SUPPORTED_RULES) or world.get("checkpointVersion")!=7 or world["mapId"] not in cs2_maps.NAMES or state.get("version")!=1:
+            raise Conflict("Несовместимая версия сохранения реальной карты")
+        return
     if state.get("version") != 1 or model not in supported:
         raise Conflict("Несовместимая версия снимка, ядра или геометрии")
     if world.get("version") == 2:
@@ -144,7 +148,7 @@ class Store:
             game.update(rules=match.VERSION, checkpointVersion=checkpoints.VERSION)
         checkpoints.validate_current(game)
         match.validate_bindings(game)
-        if old_version == checkpoints.VERSION:
+        if old_version >= checkpoints.VERSION:
             return False
         self.db.execute("""CREATE TABLE IF NOT EXISTS checkpoint_backup (
             source TEXT NOT NULL, body TEXT NOT NULL, UNIQUE(source, body))""")
@@ -357,7 +361,7 @@ class Store:
                 elif kind == "resume":
                     state["running"] = True
             elif kind == "database-match":
-                if not isinstance(value, dict) or set(value) != {
+                if not isinstance(value, dict) or set(value).difference({"map"}) != {
                     "id",
                     "revision",
                     "rosters",
@@ -383,16 +387,19 @@ class Store:
                     if not domain["players"][pid]["visual"].get("head"):
                         domain["players"][pid]["visual"]["head"] = portrait["image"]
                 state.update(
-                    world=match.initial(seed, domain, value["rosters"]),
+                    world=match.initial(seed, domain, value["rosters"],map_id=value.get("map","depo")),
                     running=False,
                     speed=1,
                     context=str(uuid4()),
                 )
             elif kind in ("reset", "match"):
+                map_id="depo"
+                if kind=="match" and isinstance(value,dict) and set(value)=={"seed","map"}:
+                    map_id,value=value["map"],value["seed"]
                 if type(value) is not int or not 0 <= value <= 2147483647:
                     raise ValueError("Seed должен быть целым числом от 0 до 2147483647")
                 state.update(
-                    world=(match if kind == "match" else engine).initial(value),
+                    world=match.initial(value,map_id=map_id) if kind=="match" else engine.initial(value),
                     running=False,
                     speed=min(8, state["speed"]) if kind == "reset" else 1,
                     context=str(uuid4()),

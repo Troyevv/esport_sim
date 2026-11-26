@@ -1,6 +1,7 @@
 """Build from a clean locked frontend dist and the installed packaging environment."""
 
 import hashlib
+from importlib.metadata import distribution
 import os
 import platform
 import shutil
@@ -59,6 +60,10 @@ def main():
             f"{frontend}:frontend/dist",
             "--add-data",
             f"{ROOT / 'backend' / 'data'}:backend/data",
+            "--collect-all",
+            "embreex",
+            "--add-binary",
+            f"{distribution('embreex').locate_file('embreex.libs')}/*.dll:embreex.libs",
             "--collect-data",
             "mediapipe",
             "--collect-binaries",
@@ -73,6 +78,18 @@ def main():
     )
     dist = ROOT / "dist"
     output = dist / "EsportSim"
+    from json import loads
+    maps = loads((ROOT / "backend/data/maps_202611_tactics.json").read_bytes())
+    runtime = build / "runtime-maps"
+    for name in maps:
+        provenance = loads((runtime / name / "provenance.json").read_bytes())
+        if (provenance["map"] != name or int(provenance["steamBuild"]) != 26879581
+                or provenance["unresolvedModels"]):
+            raise RuntimeError(f"{name}: неполный импорт карты")
+        target = output / "maps/26879581" / name
+        target.mkdir(parents=True, exist_ok=True)
+        for file in ("provenance.json", "gameplay.json", "collision.json", "collision.bin", *provenance["radars"]):
+            shutil.copyfile(runtime / name / file, target / file)
     for file in ("EsportSim.exe", "_internal/frontend/dist/index.html"):
         if not (output / file).is_file():
             raise RuntimeError(f"В сборке отсутствует {file}")
@@ -86,6 +103,9 @@ def main():
     )
     for name in (
         "BO1.md",
+        "MAPS_R4.md",
+        "MAPS_R4_QA.md",
+        "MAPS_R4_AI.md",
         "CAREER_R33.md",
         "INTERFACE_R34.md",
         "INTERFACE_R34_QA.md",
@@ -108,11 +128,20 @@ def main():
             ),
             encoding="utf-8",
         )
+    source_tools = output / "tools"
+    source_tools.mkdir(exist_ok=True)
+    for script in ("cs2_map_sources.py", "cs2_world_sources.py"):
+        shutil.copyfile(ROOT / "tools" / script, source_tools / script)
+    exporter_source = source_tools / "cs2_export"
+    exporter_source.mkdir(exist_ok=True)
+    for name in ("Program.cs", "Physics.cs", "Dependencies.cs", "Cs2Export.csproj"):
+        shutil.copyfile(ROOT / "tools" / "cs2_export" / name, exporter_source / name)
     screenshots = output / "screenshots"
     screenshots.mkdir(exist_ok=True)
     shutil.copytree(ROOT / "docs" / "screenshots" / "r34", screenshots / "r34", dirs_exist_ok=True)
+    shutil.copyfile(ROOT / "docs" / "screenshots" / "r41-bo1.webp", screenshots / "r41-bo1.webp")
     for source in sorted((ROOT / "docs" / "screenshots").glob("*.png")):
-        if not source.name.startswith(("r2-", "r32-", "r33-")):
+        if not source.name.startswith(("r2-", "r32-", "r33-", "r41-")):
             continue
         shutil.copyfile(source, screenshots / source.name)
     archive = dist / "EsportSim-windows-x64.zip"

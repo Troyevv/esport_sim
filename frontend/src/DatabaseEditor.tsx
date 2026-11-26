@@ -1,3 +1,4 @@
+import MapSelect from "./MapSelect";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { serverURL } from "./session";
 import {
@@ -140,6 +141,7 @@ function Select({
 }
 
 export default function DatabaseEditor({ onClose, start, enabled }: Props) {
+  const [mapId, setMapId] = useState("depo");
   const [catalog, setCatalog] = useState<(Ref & { title: string })[]>([]);
   const [pack, setPack] = useState<Pack | null>(null);
   const [at, setAt] = useState<Destination>({ group: "players", id: "" });
@@ -538,10 +540,11 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
         <section className="db-match" inert={busy}>
           <h2>Выставочный матч</h2>
           <p>
-            Депо · пять на пять. Для неизвестных ролей и капитана движок
+            Пять на пять. Для неизвестных ролей и капитана движок
             использует игровые назначения.
           </p>
           <div className="db-match-fields">
+            <MapSelect value={mapId} change={setMapId} />
             <Select
               label="Ваша пятёрка"
               value={home}
@@ -582,6 +585,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
                         revision: pack.revision,
                         rosters: [home, away],
                         seed: Number(seed),
+                        map: mapId,
                       })
                     )
                       onClose();

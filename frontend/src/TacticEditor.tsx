@@ -56,7 +56,7 @@ const draftKey = "tactics-draft:" + serverURL("/").origin;
 function readDraft(): Plan | null {
   try {
     const plan = JSON.parse(sessionStorage.getItem(draftKey) || "null");
-    return plan?.format === 1 &&
+    return [1,2].includes(plan?.format) &&
       Array.isArray(plan.slots) &&
       plan.slots.length === 5 &&
       plan.slots.every(Array.isArray)
@@ -120,7 +120,9 @@ export default function TacticEditor({
             (p) =>
               p.standard && p.side === coachSide && p.buy === match?.nextBuy,
           ) || data.plans.find((p) => p.standard)!;
-        setPlan((old) => old || initial);
+        const arena=data.maps.find(m=>m.id===frame.world.map.id);
+        setPlan(old => old && data.maps.some(m=>m.id===old.map && Number(m.version)===old.geometry)
+          ? old : arena?.radar ? newPlan(arena,coachSide || "T",match?.nextBuy || data.buys[0]) : initial);
       })
       .catch((e) => {
         if (live) setError(errorText(e));
@@ -187,11 +189,11 @@ export default function TacticEditor({
     chosen = index === null ? null : steps[index],
     match = frame.world.match;
   const assignable =
-    match &&
+    match && frame.world.map.id === plan.map && Number(frame.world.map.version) === plan.geometry &&
     ((match.pregame && !frame.running) ||
       (match.phase === "timeout" &&
         coachSide === plan.side &&
-        match.nextBuy === plan.buy));
+        (match.nextBuy === plan.buy || (plan.buy === "Оружейная" && !!match.nextBuy && !["Эко", "Пистолетная"].includes(match.nextBuy)))));
   const stale =
     plan.revision > 0 &&
     !library.plans.some(
@@ -246,7 +248,7 @@ export default function TacticEditor({
   function draw(points: Point[]) {
     if (working || tool === "pan" || tool === "select") return;
     if (
-      tool === "plant" &&
+      tool === "plant" && !map.radar &&
       !map.zones.some(
         (z) =>
           points[0].x >= z.x &&
@@ -324,7 +326,7 @@ export default function TacticEditor({
     try {
       const p = await readJSON<Plan>(
         "/api/tactics/proposal?" +
-          new URLSearchParams({ side: plan!.side, buy: plan!.buy }),
+          new URLSearchParams({ side: plan!.side, buy: plan!.buy, map_id: plan!.map }),
       );
       open(
         { ...p, id: crypto.randomUUID(), revision: 0, standard: false },
@@ -485,6 +487,7 @@ export default function TacticEditor({
                 <strong>Спарринг · один раунд против «Контура»</strong>
                 <span>
                   Seed 42 · {plan.buy} · {Math.floor(tick / 10)} с
+                  {preview.economy && ` · закуплено на $${preview.economy.spent.toLocaleString("ru-RU")} · дропов ${preview.economy.drops}`}
                 </span>
                 <div className="board-buttons">
                   <button
@@ -666,7 +669,7 @@ export default function TacticEditor({
                   value={plan.buy}
                   onChange={(e) => edit({ ...plan, buy: e.target.value })}
                 >
-                  {library.buys.map((b) => (
+                  {library.buys.filter((b) => plan.map !== "depo" || ["Пистолетная","Эко","Оружейная"].includes(b)).map((b) => (
                     <option key={b}>{b}</option>
                   ))}
                 </select>
@@ -778,7 +781,7 @@ export default function TacticEditor({
                       </span>
                       <small>
                         {s.seconds ? s.seconds + " с · " : ""}
-                        {s.x}, {s.y}
+                        {Math.round(s.x * 10) / 10}, {Math.round(s.y * 10) / 10}
                       </small>
                     </button>
                   </li>
