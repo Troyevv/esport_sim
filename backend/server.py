@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
-from . import competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
+from . import training_center, competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
@@ -51,6 +51,7 @@ class Command(BaseModel):
         "career-create",
         "career-entry",
         "career-staff",
+        "career-training",
         "career-tactic-draft",
         "career-open",
         "career-exhibition",
@@ -134,7 +135,8 @@ def create_app(
                     async with condition:
                         state = store.read()
                         try:
-                            work = store.careers.work(state)
+                            pack = store.careers.pack(state["career"]["source"]) if state.get("career") and state["career"]["progress"] else None
+                            work = await asyncio.to_thread(store.careers.work, state, pack)
                         except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                             c = state["career"]
                             token = (state["context"], c["id"], c["queue"][0]["id"] if c["queue"] else None)
@@ -318,6 +320,17 @@ def create_app(
                     available=registrations.available(c,c["team"],pack),live=c["circuit"].get("live"),
                     snapshots={**competitions.seed_data()["snapshots"], **c["circuit"]["snapshots"]})
 
+    @app.get("/api/career/{career_id}/training")
+    async def training_week(career_id: str, week: str):
+        store = app.state.store
+        c = store.read().get("career")
+        if not c or c["id"] != career_id:
+            raise HTTPException(404, "Карьера уже сменилась")
+        try:
+            return training_center.week(c, store.careers.pack(c["source"]), store.db, week)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
     @app.get("/api/career/{career_id}/scene")
     async def scene_directory(career_id: str):
         store = app.state.store
@@ -338,7 +351,7 @@ def create_app(
     async def career_report(event_id: str):
         store = app.state.store
         c = store.read().get("career")
-        for event in reversed(c["history"] if c else []):
+        for event in reversed([*c["history"], *[e for e in c["training"]["practice"] if e.get("result")]] if c else []):
             if event["id"] == event_id:
                 return store.careers.report(event["result"])
         raise HTTPException(404, "Отчёт не найден")

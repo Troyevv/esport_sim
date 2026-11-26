@@ -9,6 +9,7 @@ const actionLabel: Record<Decision["action"], string> = {
   repair: "Проверить и восстановить карты",
   retry: "Повторить расчёт",
   overview: "Открыть турнир",
+  training: "Открыть отчёт",
   inbox: "Во входящие",
 };
 export function ManagerAttention({

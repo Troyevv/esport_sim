@@ -763,9 +763,16 @@ def act(w, a, allies, bomb, visible_fire):
         )
         if a["stepIndex"] != before:
             mastery = player["roleMastery"].get(a["playingRole"], 0)
-            a["stepReady"] = (
-                now + 1 + (100 - s["execution"]) // 20 + (100 - mastery) // 35
-            )
+            delay = 1 + (100 - s["execution"]) // 20 + (100 - mastery) // 35
+            if "tactics" in player:
+                key = f"{board['id']}@{board['revision']}"
+                learned = player["tactics"].get(key, 0)
+                known_map = player["mapKnowledge"].get(board["map"].removeprefix("de_"), 45)
+                pairs = [w["chemistry"].get(world.pair_key(a["playerId"], mate["playerId"]), 0)
+                         for mate in allies if mate["playerId"] != a["playerId"]]
+                understanding = .65 * learned + .2 * known_map + .15 * sum(pairs) / max(1,len(pairs))
+                delay += round((50 - understanding) / 13)
+            a["stepReady"] = now + max(1, delay)
         if intent:
             return intent
     if w.get("space"):

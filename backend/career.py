@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
+from . import training, round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
 from .database import require
 
 VERSION = 1
@@ -88,6 +88,7 @@ def create(pack, options):
     c = dict(
         version=VERSION,
         office=staff.office(),
+        training=training.new(pack["asOf"]),
         id=str(uuid4()),
         source=[pack["id"], pack["revision"]] + ([pack["tournamentSupplement"]] if "tournamentSupplement" in pack else []),
         character=name.strip(),
@@ -174,6 +175,8 @@ def ensure_schedule(c, pack):
 
 
 def stops(c, event):
+    if event.get("pcw"):
+        return event["watch"] and not training.unavailable(c, event)
     return event["kind"] == "review" or c["team"] in event["teams"] or event["id"]==c.get("watchFixture")
 
 
@@ -202,6 +205,8 @@ def match_domain(pack, c, event, badges=None, portraits=None):
         pack = dict(pack, rosters=frozen, staff={k:v for k,v in pack["staff"].items() if k in coaches})
         rosters = list(frozen)
     domain = database.match_input(pack, rosters, badges)
+    if "training" in c:
+        training.overlay(domain, c["training"])
     domain["authority"]["mode"] = c["mode"]
     if c["team"] in domain["teams"]:
         domain["authority"]["organization"] = domain["teams"][c["team"]]["organization"]

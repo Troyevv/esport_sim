@@ -1,5 +1,6 @@
 """R5.1 professional profiles and daily work. People and club membership belong to the scene."""
 
+from functools import lru_cache
 from hashlib import sha256
 from statistics import mean
 
@@ -135,9 +136,12 @@ def draw(person, key):
 
 
 def profile(person, row):
-    role = position(row["role"])
+    return _profile(person, position(row["role"]), row["preparation"])
+
+
+@lru_cache(maxsize=4096)
+def _profile(person, role, base):
     primary, secondary = (s.split() for s in WEIGHTS[role])
-    base = row["preparation"]
     attributes = {}
     for group in GROUPS.values():
         for key in group:

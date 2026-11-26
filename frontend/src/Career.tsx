@@ -17,6 +17,7 @@ import {
   type Summary,
 } from "./careerData";
 import { Load, MatchReport, NewCareer, Saves } from "./CareerForms";
+import { TrainingCenter } from "./TrainingCenter";
 import { StaffOffice } from "./StaffOffice";
 import { CareerMenu } from "./CareerMenu";
 import { CompetitionCenter } from "./CompetitionCenter";
@@ -45,6 +46,7 @@ const sections = [
     "Моя команда",
     [
       ["Состав", "users"],
+      ["Тренировочный центр", "calendar"],
       ["Тренерский штаб", "users"],
       ["Скаутский отдел", "search"],
       ["Тактики", "crosshair"],
@@ -232,7 +234,8 @@ function Manager({
         leaveTool();
         go("match");
       }
-    } else if (row.edition) to("Соревнования",undefined,row.edition,row.action);
+    } else if (row.action === "training") {setDay(row.due);to("Тренировочный центр")}
+    else if (row.edition) to("Соревнования",undefined,row.edition,row.action);
     else showLetter(null);
   };
   const quick = async () => {
@@ -538,6 +541,8 @@ function Manager({
                 <Load {...directory} />
               ) : route.profile?.group === "staff" && c.office.people[route.profile.id] ? (
                 <StaffOffice key={route.profile.id} {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial="Тренерский штаб" personId={route.profile.id}/>
+              ) : active === "Тренировочный центр" ? (
+                <TrainingCenter {...{c,act}} initial={day} revision={frame.careerRevision||0} enabled={enabled && !progress && !frame.world.series && !frame.world.match}/>
               ) : ["Тренерский штаб","Скаутский отдел"].includes(active) ? (
                 <StaffOffice {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial={active}/>
               ) : route.profile ? (
