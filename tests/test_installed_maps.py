@@ -74,7 +74,8 @@ def test_real_map_exhibition_save_and_board(tmp_path, name):
     store.db.close()
 
 
-def test_background_and_observed_share_report_across_the_map_pool(tmp_path):
+@pytest.mark.parametrize("name", cs2_maps.NAMES)
+def test_background_and_observed_share_report_across_the_map_pool(tmp_path, name):
     store = Store(tmp_path / "career.sqlite")
     pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
     teams = career.roster_index(pack)
@@ -83,29 +84,29 @@ def test_background_and_observed_share_report_across_the_map_pool(tmp_path):
     )
     assert set(state["mapPool"]) == set(cs2_maps.NAMES)
     event = next(e for e in state["queue"] if e["kind"] == "match")
-    for name in cs2_maps.NAMES:
-        fixture = dict(event, mapId=name)
-        fixture.pop("bestOf", None)  # Explicit single-map exhibition across all installed maps.
-        frozen = dict(state, queue=[fixture], history=[])
-        started = perf_counter()
-        game = career.initial(pack, frozen, fixture)
-        initialized = perf_counter() - started
-        observed = deepcopy(game)
-        started = perf_counter()
-        expected = career.simulate(game)
-        elapsed = perf_counter() - started
-        rss = psutil.Process().memory_info().rss / 2**20
-        print(f"CAREER {name} init={initialized:.2f}s BO1={elapsed:.2f}s RSS_after={rss:.1f}MiB")
-        for _ in range(80):
-            match.advance(observed)
-        saved = json.loads(json.dumps(observed))
-        checkpoints.validate_current(saved)
-        assert career.simulate(saved) == expected
-        store.careers.record(frozen, expected)
-        assert store.careers.report(frozen["history"][-1]["result"]) == expected
+    fixture = dict(event, mapId=name)
+    fixture.pop("bestOf", None)  # Explicit single-map exhibition across all installed maps.
+    fixture.pop("edition", None)  # An exhibition has no tournament series to record.
+    frozen = dict(state, queue=[fixture], history=[])
+    started = perf_counter()
+    game = career.initial(pack, frozen, fixture)
+    initialized = perf_counter() - started
+    observed = deepcopy(game)
+    started = perf_counter()
+    expected = career.simulate(game)
+    elapsed = perf_counter() - started
+    rss = psutil.Process().memory_info().rss / 2**20
+    print(f"CAREER {name} init={initialized:.2f}s BO1={elapsed:.2f}s RSS_after={rss:.1f}MiB")
+    for _ in range(80):
+        match.advance(observed)
+    saved = json.loads(json.dumps(observed))
+    checkpoints.validate_current(saved)
+    assert career.simulate(saved) == expected
+    store.careers.record(frozen, expected)
+    assert store.careers.report(frozen["history"][-1]["result"]) == expected
     store.db.close()
 
-@pytest.mark.parametrize("previous", ["cs2-bo1.14", "cs2-bo1.15", "cs2-bo1.16"])
+@pytest.mark.parametrize("previous", ["cs2-bo1.14", "cs2-bo1.15", "cs2-bo1.16", "cs2-bo1.17"])
 def test_recent_checkpoints_resume_from_the_recorded_tick(previous):
     state = match.initial(41000,map_id="de_nuke")
     match.advance(state)
@@ -281,3 +282,50 @@ def test_nuke_scans_legal_parts_of_nav_polygons_cut_by_the_site_trigger():
         assert all(space.site_at(p) == site for p in points)
     assert any(space.locate(p) not in space.plants[site]
                for site,points in space.plant_surfaces.items() for p in points)
+
+
+def test_reported_carrier_redirects_living_defenders_before_plant():
+    from backend import cs2_defense, cs2_play
+
+    game = match.initial(41000, map_id="de_dust2")
+    match.begin_live(game)
+    space = cs2_maps.get(game["mapId"])
+    plan = game["plans"]["CT"]
+    squad = [p for p in game["agents"] if p["team"] == "CT"]
+    leader = squad[0]
+    carrier = next(p for p in game["agents"] if p["team"] == "T")
+    # The actual attacker stays at spawn through both reviews.
+    for site in ("A", "B"):
+        game["tick"] += 12
+        point = next(
+            space.centers[i]
+            for i in space.plants[site]
+            if space.site_at(space.centers[i]) == site
+        )
+        leader["knowledge"][carrier["id"]] = dict(
+            zip(("x", "y", "z"), point),
+            id=carrier["id"],
+            carryingC4=True,
+            tick=game["tick"],
+            source="Радио",
+        )
+        cs2_play.direct_defense(space, game, plan, squad, leader)
+        assert {cs2_defense.assignment(plan, p, squad)["site"] for p in squad} == {site}
+        assert plan["confirmedAttack"]["site"] == site
+        assert game["events"][-1]["carrierSite"] == site
+
+
+def test_retake_wait_ends_when_the_partner_or_time_is_lost():
+    from backend import cs2_retake
+
+    a = dict(id="a", x=10, y=10, z=0)
+    b = dict(id="b")
+    for alone in (False, True):
+        duty = dict(stage=[10, 10, 0], partner="b", release=125, latest=130)
+        state = dict(tick=120, plan=dict(retake=dict(duties={"a": duty, "b": {}})))
+        assert cs2_retake.staging(state, a, [a, b]) == (10, 10, 0)
+        assert a["status"] == "Ждёт напарника на ретейке"
+        if not alone:
+            state["tick"] = 130
+        assert cs2_retake.staging(state, a, [a] if alone else [a, b]) is None
+        assert duty["done"]

@@ -246,6 +246,11 @@ def captain(w, squad, space=None):
     if now < plan["review"]:
         return
     plan["review"] = now + 18 + (100 - s["calling"]) // 2
+    if space and leader["team"] == "CT":
+        plan["review"] = now + 5 + (200 - s["calling"] - s["communication"]) // 8
+        if w["phase"] == "live":
+            cs2_play.direct_defense(space, w, plan, squad, leader)
+            return
     # Only the acting captain's timestamped reports are available here.
     contacts = [
         p
@@ -294,45 +299,16 @@ def captain(w, squad, space=None):
             contacts=[p["id"] for p in contacts],
         )
     if leader["team"] == "CT":
-        last_report = max((p["tick"] for p in contacts), default=plan["start"])
-        if space:
-            # Friendly casualties and their last positions are known on the squad radar.
-            # A lost site calls for a response without inventing any enemy position.
-            if w["phase"] == "live":
-                orders = plan["orders"]["slots"]
-                for site in ("A", "B"):
-                    if any(p["slot"] != 4 and orders[p["slot"]]["site"] == site and space.reported_site(xyz(p)) == site for p in squad):
-                        continue
-                    lost = [p["lastHurt"] for p in w["agents"] if p["team"] == "CT" and not p["hp"]
-                            and now-p["lastHurt"] < 75 and space.reported_site(xyz(p)) == site]
-                    if lost:
-                        counts[site] = max(counts[site], 2)  # known loss of the last local guard
-                        last_report = max(last_report, max(lost))
-        if counts["A"] != counts["B"] and max(counts.values()) >= (1.65 if space else 2):
+        if not space and counts["A"] != counts["B"] and max(counts.values()) >= 2:
             plan["reinforce"] = max(counts, key=counts.get)
-        if space and w["phase"] == "live":
-            if max(counts.values()) >= (1.65 if space else 2) and counts["A"] != counts["B"]:
-                plan["reinforceUntil"] = last_report + 75
-            elif now > plan.get("reinforceUntil", plan["start"] + 75):
-                plan["reinforce"] = None
-            destination = plan["reinforce"]
-            if not destination:
-                if max(counts.values()) >= 0.65 and counts["A"] != counts["B"]:
-                    destination = max(counts,key=counts.get)
-                else:
-                    destination = cs2_play.cs2_defense.help_site(space,leader,now) or plan.get("anticipated")
-            carrier_report = max((p for p in contacts if p.get("carryingC4")),
-                                 key=lambda p: p["tick"], default=None)
-            bomb_site = (space.reported_site(xyz(carrier_report))
-                         if carrier_report and now - carrier_report["tick"] < 35 else None)
-            if destination and not plan.get("board"):
-                cs2_play.cs2_defense.brief(space, plan, squad, leader, world.match_player(w,leader), now)
-            cs2_play.coordinate_reserves(space, plan, squad, destination, counts, now, bomb_site)
         if w["phase"] == "planted":
             # The announcement is public. Site identification travels with the beep.
             heard = leader["heardSite"]
             if heard:
                 plan["reinforce"] = heard
+                if space and "retake" not in plan:
+                    from . import cs2_retake
+                    cs2_retake.assemble(space, w, squad, leader, heard)
 
 
 @lru_cache(maxsize=4096)
@@ -527,6 +503,8 @@ def act(w, a, allies, bomb, visible_fire):
     if w["phase"] == "planted" and not (
         w["action"] and w["action"]["player"] == a["id"]
     ):
+        if side == "CT" and w.get("space") and w["action"] and bomb and distance(a,bomb) < 45:
+            a.pop("saving", None)
         exit_goal = a.get("saving") or postplant_exit(w, a, allies, bomb)
         if exit_goal:
             a["saving"] = list(exit_goal)
@@ -536,7 +514,7 @@ def act(w, a, allies, bomb, visible_fire):
             if not contact:
                 return ("hold", None)
     if w.get("space") and not w["action"] and w["deadline"]-now > 35:
-        retreat = cs2_play.seek_cover(w["space"],a,contact,allies,s,now,visible_fire,travel)
+        retreat = cs2_play.seek_cover(w["space"],a,contact,allies,s,now,visible_fire,travel,plan)
         if retreat:
             return retreat
     if contact:
@@ -600,8 +578,7 @@ def act(w, a, allies, bomb, visible_fire):
         rescuer = recover and assignment and assignment["player"] == a["id"]
     else:
         rescuer = recover and min(alive, key=lambda p: (distance(p, bomb), p["id"])) is a
-    backup = plan.get("backup")
-    responding = any(duty and duty["id"] == a["id"] for duty in (backup, plan.get("secondBackup"))) if w.get("space") else (plan["reinforce"] and slot in (1, 4))
+    responding = cs2_play.cs2_defense.relief(plan, a) if w.get("space") else (plan["reinforce"] and slot in (1, 4))
     reinforce = side == "CT" and (w["phase"] == "planted" or responding)
     if (
         not rescuer
@@ -845,6 +822,7 @@ def throw(w, a, target, space=None):
         a["team"],
         **{k: v for k, v in effect.items() if k not in ("team", "kind")},
         utility=name,
+        **({"purpose": target["purpose"]} if target.get("purpose") else {}),
     )
     a.update(throwAt=now + 45, ready=now + THROW_RECOVERY, status="Бросает гранату")
 

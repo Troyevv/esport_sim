@@ -4,7 +4,7 @@ from collections import Counter
 from copy import deepcopy
 from math import atan2
 
-from . import cs2_economy, cs2_maps, checkpoints, engine, match_inventory, match_score, tactics, world
+from . import cs2_defense, cs2_economy, cs2_maps, checkpoints, engine, match_inventory, match_score, tactics, world
 from . import match_performance as perf
 from .world import match_player as profile
 from . import match_ai as ai
@@ -448,8 +448,12 @@ def begin_live(w):
         if space:
             plan = w["plans"][side]
             plan["lane"] = lane
-            if side == "CT" and not call and not board:
-                plan["anticipated"] = ai.cs2_play.defensive_read(w, igl)
+            if side == "CT" and not board:
+                predicted = ai.cs2_play.defensive_read(w, igl) if not call else None
+                site = plan["site"] = predicted or site
+                style = cs2_defense.deployment(
+                    space, plan, squad, w["domain"]["players"], igl, predicted, plan["reinforce"]
+                )
             if side == "T" and not board and style in ("Сбор", "Контроль карты"):
                 plan["probe"] = ai.cs2_play.default_probe(space, squad, w["bomb"]["carrier"], plan, now, w["domain"])
         emit(

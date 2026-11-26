@@ -12,15 +12,160 @@ def facing(origin, watch, point):
     return dx * x + dy * y >= 0.5 * hypot(dx, dy) * hypot(x, y)
 
 
-def assignment(plan, actor, squad):
-    """A reserve and an inherited anchor duty replace the whole home assignment."""
+def station(space, actor, site, lane, options, occupied=()):
+    for point, watch in options:
+        if any(dist(point, taken) < 5 for taken in occupied):
+            continue
+        if space._reachable(xyz(actor), [point], actor["navArea"]) is not None:
+            return dict(
+                id=actor["id"],
+                site=site,
+                lane=lane,
+                hold=list(point),
+                watch=list(watch),
+            )
+    return None
+
+
+def forward_pair(space, slots, site, mate, mobile, players, skills, familiar):
+    scout = players[mate["playerId"]]
+    cohesion = scout["skills"]["coordination"] + skills["calling"]
+    if familiar + scout["skills"]["map_control"] >= 100:
+        home = slots[mate["slot"]]
+        label = space.profile[site][home["lane"]][-1]
+        targets = [space.centers[i] for i in sorted(space.places[label])]
+        targets.sort(key=lambda q: dist(q, home["hold"]))
+        for target in targets:
+            path = space.path(
+                mate["navArea"], xyz(mate), space.locate(target), target, frozenset()
+            )
+            if not path:
+                continue
+            # Stage the pair together. If the named entrance is too far
+            # forward, look for a supported step on the way there.
+            points = [target, *(q[:3] for q in reversed(path))]
+            for point in points:
+                gap = dist(point, home["hold"])
+                if not 9 < gap < 34 + cohesion / 8:
+                    continue
+                if dist(point, target) >= dist(home["hold"], target):
+                    continue
+                support = [
+                    q[:3]
+                    for q in path
+                    if 9 < dist(q[:3], point) < 27
+                    and dist(q[:3], target) > dist(point, target)
+                    and space.hit(q[:3], point, 1, 64) is None
+                ]
+                if not support:
+                    continue
+                cover = station(
+                    space,
+                    mobile,
+                    site,
+                    home["lane"],
+                    [(q, point) for q in reversed(support)],
+                )
+                if cover:
+                    slots[4]["screen"] = cover
+                    forward = [
+                        q
+                        for q in space.ingress(site, home["lane"])
+                        if dist(point, q) > 5 and space.hit(point, q, 1, 64) is None
+                    ]
+                    watch = (
+                        target
+                        if dist(point, target) > 4
+                        else next(iter(forward), home["watch"])
+                    )
+                    home["screen"] = dict(
+                        site=site,
+                        lane=home["lane"],
+                        hold=list(point),
+                        watch=list(watch),
+                    )
+                    return "Парный контроль " + label
+    return "Мобильный защитник"
+
+
+def deployment(space, plan, squad, players, leader, predicted, explicit):
+    """Choose the fifth assignment and any forward pair on this map before contact."""
     slots = plan["orders"]["slots"]
-    slot = actor["slot"]
+    by_slot = {p["slot"]: p for p in squad}
+    mobile = by_slot[4]
+    site = predicted or plan["site"]
+    lane = plan["lane"]
+    skills = players[leader["playerId"]]["skills"]
+    familiar = players[mobile["playerId"]]["mapKnowledge"].get(space.name[3:], 0)
+    light = plan["buy"] in ("Эко", "Форс", "Частичная")
+    name = "Мобильный защитник"
+    wing = 2 if site == "A" else 3
+    occupied = [slot["hold"] for slot in slots[:4]]
+    if predicted or explicit:
+        options = space.angles(site, lane, space.site_points[site], "site")
+        duty = station(space, mobile, site, lane, options, occupied)
+        if duty:
+            slots[4].update(duty)
+            name = "Усиление " + site
+            if light and predicted:
+                other_wing = by_slot[3 if wing == 2 else 2]
+                extra = station(
+                    space,
+                    other_wing,
+                    site,
+                    1 - lane,
+                    space.angles(site, 1 - lane, space.site_points[site], "site"),
+                    occupied + [duty["hold"]],
+                )
+                if extra:
+                    slots[other_wing["slot"]].pop("screen", None)
+                    slots[other_wing["slot"]].update(extra)
+                    name = "Стак " + site
+    elif plan["style"] == "Быстро":
+        name = forward_pair(
+            space, slots, site, by_slot[wing], mobile, players, skills, familiar
+        )
+    else:
+        middle = space.profile["middle"]
+        routes = [r for sector in ("A", "B") for r in space.profile[sector]]
+        if (
+            any(middle in route for route in routes)
+            and familiar + skills["map_control"] >= 100
+        ):
+            junction = space.profile["overwatch"][0]
+            mids = [space.centers[i] for i in sorted(space.places[middle])]
+            posts = [space.centers[i] for i in sorted(space.places[junction])]
+            options = [
+                (q, target)
+                for q in posts
+                for target in mids
+                if dist(q, target) > 5 and space.hit(q, target, 1, 64) is None
+            ]
+            duty = station(space, mobile, site, lane, options, occupied)
+            if duty:
+                slots[4].update(duty)
+                name = "2–1–2"
+    plan["formation"] = name
+    return name
+
+
+def relief(plan, actor):
     for key in ("backup", "secondBackup"):
         duty = plan.get(key)
         if duty and duty["id"] == actor["id"]:
             return duty
-    if slot in (2, 3) and not any(p["slot"] == slot - 2 for p in squad):
+    return plan.get("commitments", {}).get(actor["id"])
+
+
+def assignment(plan, actor, squad):
+    """A reserve and an inherited anchor duty replace the whole home assignment."""
+    slots = plan["orders"]["slots"]
+    slot = actor["slot"]
+    duty = relief(plan, actor)
+    if duty:
+        return duty
+    if (slot in (2, 3) and slots[slot]["site"] == slots[slot-2]["site"]
+            and not any(p["slot"] == slot - 2 for p in squad)):
         return slots[slot - 2]
     order = slots[slot]
     if order.get("screen") and not actor.get("leftScreen"):
@@ -372,7 +517,13 @@ def attention(space, plan, actor, squad, player, now):
             and space.reported_site(xyz(r)) == home["site"]
             for r in sight
         )
-        if breached or actor["plantCue"] or actor["reloadAt"] or actor["hp"] < 35:
+        if dist(xyz(actor), order["hold"]) < 5:
+            order.setdefault("checkedAt", now)
+        checked = order.get("checkedAt")
+        if (breached or actor["plantCue"] or actor["reloadAt"] or actor["hp"] < 35
+                or now - plan["start"] > 190
+                or checked is not None and now - checked >= 12 + player["skills"]["map_control"] // 3
+                or any(r["source"] == "Зрение" and now-r["tick"] < 15 for r in sight)):
             actor["leftScreen"] = True
             order = home
     token = [order["site"], order["hold"], order["watch"]]
