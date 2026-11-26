@@ -235,3 +235,19 @@ def test_pressure_request_expires_without_creating_an_opponent():
     leader = dict(squadPressure={"CT2": dict(origin=[2, 3, 0], tick=40)})
     assert defense.help_site(space, leader, 41) == "A"
     assert defense.help_site(space, leader, 70) is None
+
+
+def test_order_feedback_requires_physical_arrival_and_resets_on_reassignment():
+    from backend import cs2_defense
+
+    p = dict(id="one", slot=0, x=20, y=0, z=0, visible=[], hp=100)
+    order = dict(id="one", hold=[45, 0, 0], site="B", lane=1)
+    plan = dict(orders=dict(slots=[order]), backup=order)
+    assert cs2_defense.duty_feedback(plan, p, [p], 10)["state"] == "moving"
+    assert cs2_defense.duty_feedback(plan, p, [p], 15) is None
+    p["blockedTicks"] = 5
+    assert cs2_defense.duty_feedback(plan, p, [p], 20)["state"] == "blocked"
+    p.update(blockedTicks=0, x=42)
+    assert cs2_defense.duty_feedback(plan, p, [p], 25)["state"] == "arrived"
+    order.update(site="A", hold=[4, 0, 0])
+    assert cs2_defense.duty_feedback(plan, p, [p], 30)["state"] == "moving"

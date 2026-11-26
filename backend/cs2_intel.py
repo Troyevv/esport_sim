@@ -36,7 +36,7 @@ def learn_motion(observer, sight, prior):
             bucket = str(elapsed.bit_length() - 1)
             total, count = memory.get(bucket, (0, 0))
             fraction = max(0, min(1, length / (elapsed * prior["speed"])))
-            memory[bucket] = (total + fraction, count + 1)
+            memory[bucket] = [total + fraction, count + 1]
     if "motionRun" in sight and memory:
         # This snapshot accompanies the dated report. Subsequent observations
         # can change personal experience without rewriting the squad's memory.
@@ -100,6 +100,56 @@ def pressure(space, contacts, now):
         # lower bound, never an extra group added to already named opponents.
         groups[site] = max(groups[site], report.get("groupSize",0)*(1-age/75)*(0.7 if approach_only else 1))
     return {site:max(counts[site],groups[site]) for site in counts}
+
+
+def sector_pressure(space, reports, calls, now, counts):
+    """Unidentified audio corroborates a lane, never identifies additional enemies."""
+    audio = {"A": {}, "B": {}}
+    for r in reports:
+        if not r.get("sound") or not 0 <= now - r["tick"] < 32:
+            continue
+        pos = xyz(r)
+        site = space.reported_site(pos) or space.entry_sites.get(space.locate(pos))
+        if site:
+            strength = r["confidence"] * (1 - (now - r["tick"]) / 32)
+            weight = (
+                0.84 if r.get("repeated") and r["sound"] == "Шаги" else 0.54
+            ) * strength
+            audio[site][r["sound"]] = max(audio[site].get(r["sound"], 0), weight)
+    for site in counts:
+        # Even repeated noises in one lane can release at most one reserve.
+        counts[site] += min(0.94, sum(audio[site].values()))
+        recent = [c for c in calls if c["site"] == site and 0 <= now - c["tick"] < 35]
+        # A blocked path or a missing partner calls for new coverage. It is
+        # not evidence that an opponent is there. Require independent contact.
+        if any(c["state"] in ("unsupported", "engaged") for c in recent) and any(
+            r["source"] in ("Радио", "Зрение")
+            and now - r["tick"] < 25
+            and (
+                space.reported_site(xyz(r))
+                or space.entry_sites.get(space.locate(xyz(r)))
+            )
+            == site
+            for r in reports
+        ):
+            counts[site] += 0.68
+        # Cleared angles supersede only older observations of that same angle.
+        for call in recent:
+            if call["state"] != "watching":
+                continue
+            if any(
+                r["source"] in ("Зрение", "Радио")
+                and r["tick"] >= call["tick"]
+                and dist(xyz(r), tuple(call["point"])) < 30
+                for r in reports
+            ):
+                continue
+            if any(
+                r["tick"] < call["tick"] and dist(xyz(r), tuple(call["point"])) < 25
+                for r in reports
+            ):
+                counts[site] = max(0, counts[site] - 0.45)
+                break
 
 
 def sniper_lane(space, reports, order, now):

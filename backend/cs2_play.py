@@ -2,7 +2,7 @@
 
 from math import atan2, cos, dist, hypot, sin, tau
 from .cs2_maps import UNIT, xyz
-from . import cs2_defense, match_performance as perf, world
+from . import cs2_defense, cs2_intel, cs2_openings, cs2_retake, match_performance as perf, world
 from .match_rules import BLAST_RADIUS, RULES, UTILITY, equipment_value
 
 
@@ -282,6 +282,159 @@ def contact_utility(actor, opponents, allies, contact):
     return next((g for g in preferred if g in actor["utility"]), None)
 
 
+def direct_defense(space, w, plan, squad, leader):
+    """Convert delivered reports into reversible assignments for living CTs."""
+    from .match_events import emit
+
+    now = w["tick"]
+    # The team radar and kill feed identify missing guards. They give
+    # no coordinates for the player responsible.
+    eliminated = {k["target"] for k in w["kills"]}
+    reports = [r for r in leader["knowledge"].values() if r["id"] not in eliminated]
+    counts = cs2_intel.pressure(space, reports, now)
+    calls = list(leader.get("sectorCalls", {}).values())
+    cs2_intel.sector_pressure(space, reports, calls, now, counts)
+    plan["unavailable"] = {
+        pid.split("/")[0]: call["site"]
+        for pid, call in leader.get("sectorCalls", {}).items()
+        if call.get("duty")
+        and call["state"] == "blocked"
+        and 0 <= now - call["tick"] < 30
+    }
+    for pid, call in leader.get("sectorCalls", {}).items():
+        if (
+            call.get("duty")
+            and call["state"] in ("moving", "arrived")
+            and now - call["tick"] < 25
+        ):
+            actor = next((p for p in squad if p["id"] == pid.split("/")[0]), None)
+            duty = cs2_defense.relief(plan, actor) if actor else None
+            if duty and duty["site"] == call["site"]:
+                duty["acknowledged"] = call["state"]
+                if call["state"] == "moving":
+                    duty.setdefault("arriveBy",call["tick"]+30)
+    losses = {"A": [], "B": []}
+    for mate in w["agents"]:
+        if mate["team"] != "CT" or mate["hp"] or now - mate["lastHurt"] >= 75:
+            continue
+        lost_at = space.reported_site(xyz(mate))
+        if not lost_at:
+            job = plan.get("opening", {}).get("jobs", {}).get(mate["id"], {})
+            if job.get("peek") and dist(xyz(mate), job["peek"]) < 30:
+                lost_at = job["site"]
+        if lost_at:
+            losses[lost_at].append(mate["lastHurt"])
+    for label, times in losses.items():
+        if times and not any(space.reported_site(xyz(p)) == label for p in squad):
+            counts[label] += (1 + min(2, len(times))) * (1 - (now - max(times)) / 75)
+    carrier = max(
+        (r for r in reports if r.get("carryingC4") and now - r["tick"] < 35),
+        key=lambda r: r["tick"],
+        default=None,
+    )
+    bomb_site = space.reported_site(xyz(carrier)) if carrier else None
+    # Seeing the objective inside the trigger outweighs noise at the
+    # opposite site. Seeing it pass an approach alone can still be a fake.
+    on_site = (
+        space.site_at(xyz(carrier)) if carrier and now - carrier["tick"] < 20 else None
+    )
+    ranked = sorted(counts, key=counts.get, reverse=True)
+    high, low = ranked
+    destination = on_site
+    if not destination and counts[high] >= 0.65 and counts[high] - counts[low] >= 0.35:
+        destination = high
+    if not destination:
+        destination = cs2_defense.help_site(space, leader, now)
+    full = destination and (
+        on_site == destination
+        or (
+            len(losses[destination]) >= 2
+            and (bomb_site == destination or counts[destination] >= 3.5)
+        )
+        or (counts[destination] >= 3.5 and bomb_site == destination)
+    )
+    confirmed = plan.get("confirmedAttack")
+    if full:
+        plan["confirmedAttack"] = dict(site=destination, until=now + 30)
+    elif confirmed and now < confirmed["until"]:
+        prior_site = confirmed["site"]
+        other_site = "B" if prior_site == "A" else "A"
+        if (
+            bomb_site in (None, prior_site)
+            and counts[other_site] < 1.65
+            and destination in (None, prior_site)
+        ):
+            destination, full = prior_site, True
+        else:
+            plan.pop("confirmedAttack", None)
+    old = {
+        p["id"]: duty["site"] for p in squad if (duty := cs2_defense.relief(plan, p))
+    }
+    plan["reinforce"] = (
+        destination if destination and counts[destination] >= 1.65 else None
+    )
+    if destination and not plan.get("board"):
+        cs2_defense.brief(
+            space, plan, squad, leader, world.match_player(w, leader), now
+        )
+    if on_site and (plan.get("backup") or {}).get("site") != on_site:
+        plan.pop("backup", None)
+        plan.pop("secondBackup", None)
+    # Weak evidence can start one support move. Keep it over a short radio
+    # gap, but release it on a newer conflicting contact or a checked approach.
+    reserve = plan.get("backup")
+    if reserve:
+        old_site = reserve["site"]
+        opposite = "B" if old_site == "A" else "A"
+        contradiction = any(
+            r["source"] in ("Радио", "Зрение")
+            and now - r["tick"] < 30
+            and space.reported_site(xyz(r)) == opposite
+            for r in reports
+        )
+        cleared = any(
+            c["state"] == "watching"
+            and c["site"] == old_site
+            and reserve.get("lastEvidence", now) < c["tick"] <= now
+            and any(
+                dist(xyz(r), tuple(c["point"])) < 22 and r["tick"] < c["tick"]
+                for r in reports
+            )
+            for c in calls
+        )
+        if destination == old_site:
+            reserve["lastEvidence"] = now
+        elif on_site or contradiction or cleared:
+            reserve["arriveBy"] = now - 1
+        elif now - reserve.get("lastEvidence", reserve.get("issued", now)) < 28:
+            destination = old_site
+    coordinate_reserves(space, plan, squad, destination, counts, now, bomb_site)
+    if plan.get("backup"):
+        plan["backup"].setdefault("issued",now)
+    commit_reserves(space, plan, squad, destination if full else None)
+    cs2_openings.review(space, plan, squad, now, leader)
+    current = {
+        p["id"]: duty["site"] for p in squad if (duty := cs2_defense.relief(plan, p))
+    }
+    if old != current:
+        label = "Возврат на позиции"
+        if current:
+            assigned = next(iter(current.values()))
+            label = ("Полная перетяжка " if full else "Поддержка ") + assigned
+        emit(
+            w,
+            "rotate",
+            label,
+            "CT",
+            player=leader["id"],
+            assignments=current,
+            previous=old,
+            contacts=[r["id"] for r in reports if r["source"] in ("Зрение", "Радио")],
+            losses={s: len(v) for s, v in losses.items()},
+            carrierSite=bomb_site,
+        )
+
+
 def assign_backup(space, plan, squad, site, pressure):
     """Send an available off-site player to an angle that complements the anchors."""
     if not site:
@@ -291,6 +444,7 @@ def assign_backup(space, plan, squad, site, pressure):
     # The junction player can have this site's label and still be watching mid.
     # Count a mobile guard by their actual position, never by the nominal label.
     other = [a for a in squad if slots[a["slot"]]["site"] != site or a["slot"] == 4]
+    other = [a for a in other if plan.get("unavailable", {}).get(a["id"]) != site]
     if pressure < 1.65:
         # A previous round or an isolated sighting only repositions the
         # junction player. Keep both guards of the opposite site in place.
@@ -353,6 +507,7 @@ def reinforce_pair(space, plan, squad, site, pressure):
         return
     candidates = [a for a in squad if a["id"] != first["id"]
                   and (a["slot"] == 4 or (a in away and a["slot"] >= 2))]
+    candidates = [p for p in candidates if plan.get("unavailable", {}).get(p["id"]) != site]
     if not candidates:
         plan.pop("secondBackup", None)
         return
@@ -380,7 +535,8 @@ def coordinate_reserves(space, plan, squad, destination, counts, now, bomb_site=
         if not order or now > order.get("arriveBy", -1):
             return False
         actor = members.get(order["id"])
-        if not actor or actor.get("blockedTicks", 0) >= 5 or dist(xyz(actor), order["hold"]) < 8:
+        if (not actor or plan.get("unavailable", {}).get(order["id"]) == order["site"]
+                or dist(xyz(actor), order["hold"]) < 8):
             return False
         other = "B" if order["site"] == "A" else "A"
         if counts[other] >= 0.65 and counts[other] > counts[order["site"]]:
@@ -420,6 +576,101 @@ def coordinate_reserves(space, plan, squad, destination, counts, now, bomb_site=
             order["arriveBy"] = now + round(length / 1.65) + (plan["review"] - now)
 
 
+def commit_reserves(space, plan, squad, site):
+    prior = plan.pop("commitments", {})
+    if not site:
+        return
+    slots = plan["orders"]["slots"]
+    occupied = [
+        job["hold"]
+        for p in squad
+        if (job := cs2_defense.assignment(plan, p, squad))["site"] == site
+        and (p["slot"] != 4 or cs2_defense.relief(plan, p))
+    ]
+    duties = {}
+    for actor in squad:
+        slot = actor["slot"]
+        if plan.get("unavailable", {}).get(actor["id"]) == site or cs2_defense.relief(plan, actor) or (
+            slot != 4 and slots[slot]["site"] == site
+        ):
+            continue
+        duty = prior.get(actor["id"])
+        if (
+            not duty
+            or duty["site"] != site
+            or any(dist(duty["hold"], q) < 5 for q in occupied)
+        ):
+            lane = slots[slot]["lane"]
+            choices = space.angles(site, lane, space.site_points[site], "site")
+            duty = cs2_defense.station(space, actor, site, lane, choices, occupied)
+        if duty:
+            duties[actor["id"]] = duty
+            occupied.append(duty["hold"])
+    plan["commitments"] = duties
+
+
+def flank_route(space, actor, order, home, squad, timer, skills):
+    """An advanced guard may approach from the side while another CT supports directly."""
+    if "flank" not in order:
+        order["flank"] = None
+        screen = home.get("screen")
+        forward = screen and dist(xyz(actor), screen["hold"]) <= 30
+        if (
+            (not forward and actor["slot"] < 2)
+            or timer < 125
+            or skills["map_control"] + skills["decisions"] < 115
+            or not any(
+                m is not actor and dist(xyz(m), order["hold"]) < 65 for m in squad
+            )
+        ):
+            return None
+        pos, goal = xyz(actor), tuple(order["hold"])
+        direct = space.path(
+            actor["navArea"], pos, space.locate(goal), goal, frozenset()
+        )
+        if direct is None:
+            return None
+        limit = min(
+            timer * 1.6 - 45,
+            cs2_retake.walk_length(pos, direct) + skills["timing"] * 0.65,
+        )
+        site = order["site"]
+        labels = [
+            space.profile[site][1 - order["lane"]][-1],
+            *space.profile["guards"][site],
+        ]
+        options = {i for label in labels for i in space.places[label]}
+        for i in sorted(
+            options,
+            key=lambda i: (
+                dist(pos, space.centers[i]) + dist(space.centers[i], goal),
+                i,
+            ),
+        ):
+            q = space.centers[i]
+            if (
+                dist(pos, q) < 8
+                or dist(goal, q) < 12
+                or any(dist(n[:3], q) < 14 for n in direct)
+            ):
+                continue
+            outward = space.path(actor["navArea"], pos, i, q, frozenset())
+            inward = space.path(i, q, space.locate(goal), goal, frozenset())
+            if (
+                outward is not None
+                and inward is not None
+                and cs2_retake.walk_length(pos, (*outward, *inward)) < limit
+            ):
+                order["flank"] = list(q)
+                break
+    via = order["flank"]
+    if via and (
+        dist(xyz(actor), via) < 4 or actor.get("blockedTicks", 0) >= 5 or timer < 70
+    ):
+        order["flank"] = None
+    return order["flank"]
+
+
 def rendezvous(space, actor, mate, now):
     # Rendezvous on a walkable surface within trading distance. The
     # teammate's exact feet can be between NAV surfaces on a ladder.
@@ -452,7 +703,7 @@ def rendezvous(space, actor, mate, now):
     return goal
 
 
-def seek_cover(space, actor, contact, allies, skills, now, fire, travel):
+def seek_cover(space, actor, contact, allies, skills, now, fire, travel, plan=None):
     """Break sight or finish reloading using only this player's last contact."""
     exposed = False
     if contact and len(actor.get("visible", ())) > 1:
@@ -494,6 +745,14 @@ def seek_cover(space, actor, contact, allies, skills, now, fire, travel):
                 if length > 20:
                     continue
                 actor["shelter"] = list(q)
+                if (plan and actor["team"] == "CT" and "Дым" in actor["utility"]
+                        and now >= actor["throwAt"] and dist(pos, threat) > 24
+                        and not any(p is not actor and p["target"] == contact["id"] for p in allies)):
+                    screen = tuple(a + (b-a)*0.55 for a,b in zip(pos,threat))
+                    land = space.grenade(pos, screen, max(3, round(dist(pos,screen)/7)))
+                    if dist(land[:3], screen) < 6 and cs2_defense.screen_safe(space, plan, actor, allies, land[:3]):
+                        actor["coverUntil"] = max(actor["reloadAt"], now + 14)
+                        return "throw", dict(zip(("x","y","z"), screen), utility="Дым", purpose="Прикрывает отход")
                 actor["coverUntil"] = max(actor["reloadAt"], now + 10)
                 break
     if actor.get("shelter") and now < actor.get("coverUntil", 0):
@@ -574,6 +833,14 @@ def exit_goal(space, w, a, allies, bomb):
                 point = node[:3]
                 length += dist(prev, point)
                 prev = point
+        # A late escort only has to reach its teammate before the use ends.
+        # A player with no kit need not save solely because their own use
+        # would be too slow while the kit carrier is already on the device.
+        if path is not None and length / speed + 12 < remaining and any(
+            p is not a and p["kit"] and not p.get("saving") and p.get("seenDevice")
+            and dist(xyz(p), pos) < 12 and remaining > RULES["kitDefuse"] + 6 for p in allies
+        ):
+            return
         if (
             path is not None
             and remaining
@@ -903,7 +1170,9 @@ def crossing_utility(space, w, a, allies, order, site):
     defending = a["team"] == "CT" and w["phase"] == "live"
     if defending:
         lane = order.get("lane", plan["lane"]) if order["site"] == site else plan["lane"]
-        targets = space.ingress(site, lane)
+        targets = list(space.ingress(site, lane))
+        entrance = space.profile[site][lane][-1]
+        targets.extend(space.centers[i] for i in sorted(space.places[entrance]))
         # Deny an opening race or respond to a report of pressure. Do not
         # continually refresh an empty lane throughout a quiet round.
         reports = [r for r in a["knowledge"].values() if now-r["tick"]<35 and
@@ -912,15 +1181,28 @@ def crossing_utility(space, w, a, allies, order, site):
         if pressure:
             # Deny this reported approach rather than the doorway closest to the thrower.
             targets = sorted(targets,key=lambda p:min(dist(p,xyz(r)) for r in reports))
-        if not pressure:
+        pushing = [m for m in allies if m is not a
+                   and (duty := plan["orders"]["slots"][m["slot"]].get("screen"))
+                   and cs2_defense.assignment(plan, m, allies) is duty
+                   and dist(xyz(m), duty["hold"]) < 28 and dist(xyz(m),pos) < 40]
+        flash_support = bool(pushing and "Свет" in a["utility"] and
+                             not plan.get("pushFlash", {}).get(site) and
+                             w["player"]["skills"]["flashes"] + w["player"]["skills"]["coordination"] >= 100)
+        if not pressure and not flash_support:
             # Estimate arrival from legal opposing spawns. A screen that burns
             # out before anyone could cross spends the anchor's only denial.
             costs, _ = space.contest(site, lane)
             arrival = min(costs.get(i,float("inf")) for i in space.attack_spawns) / (2*UNIT)
             elapsed = now-plan["start"]
-            if a.get("screenedOpening") or elapsed > arrival+35 or elapsed+35 < arrival:
+            opening = plan.setdefault("openingThrows", {})
+            if (plan.get("opening") or site in opening or a.get("screenedOpening") or elapsed > arrival+55 or elapsed+35 < arrival
+                    or plan["buy"] in ("Эко", "Частичная") and len(a["utility"]) == 1):
                 return None
-        gadgets = ("Огонь","Дым")
+        if flash_support:
+            targets = [q for q in targets if any(16 < dist(xyz(m), q) < 60 for m in pushing)]
+        gadgets = ("Свет",) if flash_support else ("Огонь", "Дым")
+        if cs2_defense.relief(plan, a) and reports:
+            gadgets = ("Дым", "Свет", "Огонь")
     else:
         labels = space.profile["guards"][site]
         targets = [space.centers[i] for label in labels for i in sorted(space.places[label])]
@@ -946,10 +1228,19 @@ def crossing_utility(space, w, a, allies, order, site):
                 not cs2_defense.screen_safe(space, plan, a, allies, (x,y,z))):
             continue
         calls.append(dict(item=item, point=list(p), end=now+flight+UTILITY[item][1]))
-        if defending:
+        if defending and not pressure:
             a["screenedOpening"] = True
+            if flash_support:
+                plan.setdefault("pushFlash", {})[site] = a["id"]
+            else:
+                plan.setdefault("openingThrows", {})[site] = a["id"]
         a["status"]="Имитирует выход" if feint else "Готовит гранату на подход"
-        return "throw", dict(zip(("x","y","z"),p),utility=item)
+        aim = dict(zip(("x","y","z"),p), utility=item)
+        if defending:
+            aim["purpose"] = ("Прикрывает перетяжку" if cs2_defense.relief(plan, a) else
+                              "Поддерживает поджим" if pushing and item == "Свет" else
+                              "Сдерживает выход" if pressure else "Стартовый контроль")
+        return "throw", aim
     return None
 
 
@@ -959,6 +1250,10 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
     orders = plan["orders"]["slots"]
     order = orders[slot]
     holding = side == "CT" and w["phase"] == "live"
+    if holding and plan.get("opening"):
+        intent = cs2_openings.execute(space, w, a, allies, fire, travel)
+        if intent:
+            return intent
     if holding:
         order, sector_watch = cs2_defense.attention(space, plan, a, allies, w["player"], now)
     site = plan["site"]
@@ -1033,6 +1328,16 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             else:
                 a.pop("coveredDefuser", None)
             a["status"] = "Прикрывает разминирование" if other else "Идёт на ретейк"
+            if not other:
+                stage = cs2_retake.staging(w, a, allies)
+                if stage is not None:
+                    goal = stage
+                watch = xyz(latest) if latest else cs2_retake.check_angle(space, w, a, site, space.site_points[site])
+            elif bomb:
+                # From the cover point face the entry, away from the defuser.
+                watch = xyz(latest) if latest else min(
+                    space.ingress(site, order.get("lane",plan["lane"])), key=lambda q: dist(q,goal),
+                    default=order["watch"])
         else:
             site = bomb["site"]
             check = now - a.get("heardUse", -1000) <= 34
@@ -1120,11 +1425,24 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
     else:
         site = order["site"]
         watch = sector_watch
-        a["status"] = f"Занимает {site}"
+        if cs2_defense.relief(plan, a):
+            a["status"] = f"Перетягивается на {site}"
+            flank = flank_route(space, a, order, orders[slot], allies, w["deadline"]-now, skill)
+            if flank:
+                goal = flank
+                a["status"] = f"Обходит к {site} по другому входу"
+        elif order is orders[slot].get("screen"):
+            a["status"] = "Проверяет передовую позицию"
+        else:
+            a["status"] = f"Занимает {site}"
     cue = a.get("plantCue")
     checking_plant = holding and cue and 0 <= now-cue["tick"] < 30
-    if not checking_plant and not w["action"] and (w["phase"] == "live" or (side == "CT" and a["heardSite"] and len(allies) >= 2 and w["deadline"]-now > RULES["defuse"] + 40)):
-        intent = crossing_utility(space,w,a,allies,order,site)
+    if not checking_plant and not w["action"]:
+        intent = None
+        if w["phase"] == "live":
+            intent = crossing_utility(space,w,a,allies,order,site)
+        elif side == "CT" and (a["heardSite"] or plan.get("retake")) and w["deadline"]-now > (RULES["kitDefuse"] if a["kit"] else RULES["defuse"]) + 25:
+            intent = cs2_retake.utility(space, w, a, allies, site)
         if intent:
             return intent
     if checking_plant:
@@ -1203,7 +1521,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                     if grenade:
                         a["status"] = "Сдерживает выход на плент"
                         return "throw", dict(zip(("x","y","z"),crossing), utility=grenade)
-        reserve_duty = any(task and task["id"]==a["id"] for task in (plan.get("backup"),plan.get("secondBackup")))
+        reserve_duty = cs2_defense.relief(plan, a)
         check_flank = (not checking_plant and not reserve_duty and (
             not holding or (latest["source"] in ("Зрение","Радио") and now-latest["tick"]<20
                             and dist(pos,goal)<14 and any(p is not a and p["hp"] and

@@ -6,8 +6,9 @@ from math import dist
 from .cs2_navigation import surface_height
 
 
-def named_stages(data, nav, profile):
+def named_stages(data, nav, profile, additional=()):
     names = {name for site in ("A", "B") for route in profile[site] for name in route}
+    names.update(additional)
     names.update(name for guards in profile["guards"].values() for name in guards)
     names.add(profile["middle"])
     names.update(profile.get("overwatch", ()))

@@ -105,11 +105,52 @@ def test_velocity_estimate_uses_only_observed_reacquisitions_and_freezes_sent_ev
                   speed=1, direction=[1,0,0], motionRun=10)
     reacquired = dict(report,tick=20,x=2)
     learn_motion(observer,reacquired,report)
-    assert reacquired["motionHistory"] == {"3":(0.2,1)}
+    assert reacquired["motionHistory"] == {"3":[0.2,1]}
     assert expected_travel(reacquired,10,85) < expected_travel(reacquired,10,65)
     later = dict(report,tick=30,x=12)
     learn_motion(observer,later,reacquired)
-    assert reacquired["motionHistory"] == {"3":(0.2,1)}
-    assert later["motionHistory"] == {"3":(1.2,2)}
+    assert reacquired["motionHistory"] == {"3":[0.2,1]}
+    assert later["motionHistory"] == {"3":[1.2,2]}
     learn_motion(observer,dict(later,tick=40),dict(later,source="Слух"))
-    assert observer["motionHistory"] == {"3":(1.2,2)}
+    assert observer["motionHistory"] == {"3":[1.2,2]}
+
+
+def test_ct_footstep_is_anonymous_occluded_and_delivered_over_existing_radio():
+    game = match.initial(12)
+    game["tick"] = 100
+    source, listener, captain = game["agents"][0], *game["agents"][5:7]
+    source.update(x=64,y=10,z=0)
+    listener.update(x=10,y=0,z=0,hp=100,visible=[],blind=150)
+    captain.update(x=10,y=105,z=0,hp=100)
+    space = SightLines(None)
+    space.hit = lambda *args: (0.2, "concrete", (1,0,0))
+    match_ai.heard_action(game,space,source,[listener],"Шаги",88)
+    assert not listener["knowledge"]
+    space.hit = lambda *args: None
+    match_ai.heard_action(game,space,source,[listener],"Шаги",88)
+    cue, = listener["knowledge"].values()
+    assert cue["source"] == "Слух" and cue["witness"] == listener["id"]
+    assert not {"carryingC4","groupSize","weapon","target"}.intersection(cue)
+    assert cue["id"] != source["id"] and (cue["x"],cue["y"]) != (source["x"],source["y"])
+    msg, = game["messages"]
+    assert not captain["knowledge"] and msg["due"] > game["tick"]
+    game["tick"] = msg["due"]
+    match_ai.observe(game,[captain],space)
+    assert captain["knowledge"][cue["id"]]["tick"] == 100
+    counts = {"A":0.0,"B":0.0}
+    cs2_intel.sector_pressure(space,[cue],[],101,counts)
+    assert 0 < counts["A"] < 0.65
+    # Several relays of one noise cannot create more opponents.
+    duplicate = dict.fromkeys(counts,0.0)
+    cs2_intel.sector_pressure(space,[cue,cue],[],101,duplicate)
+    assert duplicate == counts
+    expired = dict.fromkeys(counts,0.0)
+    cs2_intel.sector_pressure(space,[cue],[],150,expired)
+    assert not any(expired.values())
+
+
+def test_failed_support_is_not_enemy_evidence():
+    counts = {"A":0.0,"B":0.0}
+    reports = [dict(site="A",state="blocked",tick=10,point=[40,0,0])]
+    cs2_intel.sector_pressure(SightLines(None),[],reports,12,counts)
+    assert counts == {"A":0.0,"B":0.0}

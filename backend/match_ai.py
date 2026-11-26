@@ -88,6 +88,78 @@ def radio_delay(skills):
     return 1 + (100 - skills["communication"]) // 12
 
 
+def heard_action(w, space, source, guards, kind, radius):
+    """Model a game audio event at the listener, before any radio transmission."""
+    now = w["tick"]
+    pos = xyz(source)
+    for guard in guards:
+        if (
+            guard["team"] != "CT"
+            or not guard["hp"]
+            or source.get("id") in guard["visible"]
+        ):
+            continue
+        d = distance(guard, source)
+        if d > radius or d < 1:
+            continue
+        skills = world.match_player(w, guard)["skills"]
+        obstruction = space.hit(xyz(guard), pos, 4, 48)
+        transmission = 1.0
+        if obstruction:
+            transmission = (
+                0.70 if obstruction[1] in ("wood", "glass", "metalgrate") else 0.47
+            )
+        reach = radius * transmission * (0.78 + skills["game_reading"] / 460)
+        if d + 0.8 * abs(pos[2] - guard["z"]) > reach:
+            continue
+        # Report an octant and a distance band, on the listener's floor. Never copy the source NAV area, identity or exact position.
+        _, _, dx, dy = cs2_play.sound_bearing(guard, source)
+        band = 14 if d < 25 else 43 if d < 62 else 83
+        step = band / hypot(dx, dy)
+        estimate = (guard["x"] + dx * step, guard["y"] + dy * step, guard["z"])
+        key = "Шум · " + kind
+        prior = guard["knowledge"].get(key)
+        # Several footsteps or fake shots are one cue, never a head count.
+        sustained = bool(
+            prior
+            and prior.get("witness") == guard["id"]
+            and 0 < now - prior["tick"] < 18
+            and dist(xyz(prior), estimate) < 28
+        )
+        cue = dict(
+            id=key,
+            **at(estimate),
+            source="Слух",
+            tick=now,
+            sound=kind,
+            witness=guard["id"],
+            repeated=sustained,
+            confidence=round(0.35 + 0.45 * (1 - d / reach), 2),
+        )
+        guard["knowledge"][key] = cue
+        clocks = guard.setdefault("audioCalls", {})
+        if now >= clocks.get(kind, 0):
+            clocks[kind] = now + 12 + radio_delay(skills)
+            w["messages"].append(
+                dict(
+                    team="CT",
+                    sender=guard["id"],
+                    sight=cue,
+                    due=now + radio_delay(skills),
+                )
+            )
+
+
+def send_sector(w, actor, call):
+    now = w["tick"]
+    key = actor["id"] + ("/order" if call.get("feedback") else "")
+    actor.setdefault("sectorCalls", {})[key] = call
+    delay = radio_delay(world.match_player(w, actor)["skills"])
+    w["messages"].append(
+        dict(team="CT", sender=actor["id"], crossing=call, due=now + delay)
+    )
+
+
 def observe(w, players, space=None):
     now = w["tick"]
     for message in w["messages"][:]:
@@ -97,7 +169,11 @@ def observe(w, players, space=None):
         for a in players:
             if a["team"] == message["team"] and a["id"] != message["sender"]:
                 if "crossing" in message:
-                    a.setdefault("sectorCalls",{})[message["sender"]] = message["crossing"]
+                    call = message["crossing"]
+                    key = message["sender"] + ("/order" if call.get("feedback") else "")
+                    prior = a.setdefault("sectorCalls", {}).get(key)
+                    if not prior or prior["tick"] <= call["tick"]:
+                        a["sectorCalls"][key] = call
                     continue
                 if "pressure" in message:
                     call = message["pressure"]
@@ -125,7 +201,55 @@ def observe(w, players, space=None):
                     continue
                 sight = message["sight"]
                 if sight["tick"] > a["knowledge"].get(sight["id"], {}).get("tick", -1):
-                    a["knowledge"][sight["id"]] = dict(sight, source=sight["source"] if sight["source"] in ("Граната","Слух") else "Радио")
+                    source = (
+                        sight["source"]
+                        if sight["source"] in ("Граната", "Слух")
+                        else "Радио"
+                    )
+                    delivered = dict(sight, source=source)
+                    if space and a["team"] == "CT" and w.get("phase") == "live":
+                        delivered["reporter"] = message["sender"]
+                        plan = w["plans"]["CT"]
+                        old = a["knowledge"].get(sight["id"], {})
+                        if (
+                            a["id"] == plan["captain"]
+                            and source == "Радио"
+                            and (
+                                not old
+                                or sight.get("carryingC4")
+                                and not old.get("carryingC4")
+                                or sight.get("groupSize", 1) > old.get("groupSize", 1)
+                            )
+                        ):
+                            skill = world.match_player(w, a)["skills"]
+                            sender = next(
+                                (
+                                    p
+                                    for p in w["agents"]
+                                    if p["id"] == message["sender"]
+                                ),
+                                None,
+                            )
+                            chemistry = (
+                                w["domain"]["chemistry"].get(
+                                    world.pair_key(sender["playerId"], a["playerId"]), 0
+                                )
+                                if sender
+                                else 0
+                            )
+                            delay = (
+                                1
+                                + (
+                                    400
+                                    - skill["decisions"]
+                                    - skill["coordination"]
+                                    - skill["leadership"]
+                                    - chemistry
+                                )
+                                // 55
+                            )
+                            plan["review"] = min(plan["review"], now + delay)
+                    a["knowledge"][sight["id"]] = delivered
     smoke = [
         f for f in w["effects"] if f["kind"] == "Дым" and f["land"] <= now < f["end"]
     ]
@@ -211,15 +335,35 @@ def observe(w, players, space=None):
                 )
 
 
+        if space and a["team"] == "CT" and w.get("phase") == "live":
+            lost = [
+                a["knowledge"][pid]
+                for pid in previous
+                if pid not in a["visible"] and pid in a["knowledge"]
+            ]
+            if lost:
+                report = max(lost, key=lambda r: r["tick"])
+                site = space.reported_site(xyz(report))
+                if site:
+                    send_sector(
+                        w,
+                        a,
+                        dict(
+                            state="lost",
+                            point=list(xyz(report)),
+                            site=site,
+                            lane=w["plans"]["CT"]["lane"],
+                            tick=now,
+                        ),
+                    )
+
     if space and w.get("phase")=="live" and now%5==0 and (plan:=w.get("plans",{}).get("CT")) and plan.get("orders",{}).get("slots"):
         squad = [p for p in players if p["team"]=="CT"]
         observer = next((p for p in squad if p["slot"]==(now//5)%5),None)
         if observer:
             call = cs2_play.cs2_defense.report_crossing(space,observer,squad,plan,smoke,now)
             if call:
-                observer.setdefault("sectorCalls",{})[observer["id"]]=call
-                w["messages"].append(dict(team="CT",sender=observer["id"],crossing=call,
-                                     due=now+radio_delay(world.match_player(w,observer)["skills"])))
+                send_sector(w,observer,call)
 
 
 def captain(w, squad, space=None):
@@ -246,6 +390,11 @@ def captain(w, squad, space=None):
     if now < plan["review"]:
         return
     plan["review"] = now + 18 + (100 - s["calling"]) // 2
+    if space and leader["team"] == "CT":
+        plan["review"] = now + 5 + (200 - s["calling"] - s["communication"]) // 8
+        if w["phase"] == "live":
+            cs2_play.direct_defense(space, w, plan, squad, leader)
+            return
     # Only the acting captain's timestamped reports are available here.
     contacts = [
         p
@@ -294,45 +443,16 @@ def captain(w, squad, space=None):
             contacts=[p["id"] for p in contacts],
         )
     if leader["team"] == "CT":
-        last_report = max((p["tick"] for p in contacts), default=plan["start"])
-        if space:
-            # Friendly casualties and their last positions are known on the squad radar.
-            # A lost site calls for a response without inventing any enemy position.
-            if w["phase"] == "live":
-                orders = plan["orders"]["slots"]
-                for site in ("A", "B"):
-                    if any(p["slot"] != 4 and orders[p["slot"]]["site"] == site and space.reported_site(xyz(p)) == site for p in squad):
-                        continue
-                    lost = [p["lastHurt"] for p in w["agents"] if p["team"] == "CT" and not p["hp"]
-                            and now-p["lastHurt"] < 75 and space.reported_site(xyz(p)) == site]
-                    if lost:
-                        counts[site] = max(counts[site], 2)  # known loss of the last local guard
-                        last_report = max(last_report, max(lost))
-        if counts["A"] != counts["B"] and max(counts.values()) >= (1.65 if space else 2):
+        if not space and counts["A"] != counts["B"] and max(counts.values()) >= 2:
             plan["reinforce"] = max(counts, key=counts.get)
-        if space and w["phase"] == "live":
-            if max(counts.values()) >= (1.65 if space else 2) and counts["A"] != counts["B"]:
-                plan["reinforceUntil"] = last_report + 75
-            elif now > plan.get("reinforceUntil", plan["start"] + 75):
-                plan["reinforce"] = None
-            destination = plan["reinforce"]
-            if not destination:
-                if max(counts.values()) >= 0.65 and counts["A"] != counts["B"]:
-                    destination = max(counts,key=counts.get)
-                else:
-                    destination = cs2_play.cs2_defense.help_site(space,leader,now) or plan.get("anticipated")
-            carrier_report = max((p for p in contacts if p.get("carryingC4")),
-                                 key=lambda p: p["tick"], default=None)
-            bomb_site = (space.reported_site(xyz(carrier_report))
-                         if carrier_report and now - carrier_report["tick"] < 35 else None)
-            if destination and not plan.get("board"):
-                cs2_play.cs2_defense.brief(space, plan, squad, leader, world.match_player(w,leader), now)
-            cs2_play.coordinate_reserves(space, plan, squad, destination, counts, now, bomb_site)
         if w["phase"] == "planted":
             # The announcement is public. Site identification travels with the beep.
             heard = leader["heardSite"]
             if heard:
                 plan["reinforce"] = heard
+                if space and "retake" not in plan:
+                    from . import cs2_retake
+                    cs2_retake.assemble(space, w, squad, leader, heard)
 
 
 @lru_cache(maxsize=4096)
@@ -527,6 +647,8 @@ def act(w, a, allies, bomb, visible_fire):
     if w["phase"] == "planted" and not (
         w["action"] and w["action"]["player"] == a["id"]
     ):
+        if side == "CT" and w.get("space") and w["action"] and bomb and distance(a,bomb) < 45:
+            a.pop("saving", None)
         exit_goal = a.get("saving") or postplant_exit(w, a, allies, bomb)
         if exit_goal:
             a["saving"] = list(exit_goal)
@@ -536,7 +658,7 @@ def act(w, a, allies, bomb, visible_fire):
             if not contact:
                 return ("hold", None)
     if w.get("space") and not w["action"] and w["deadline"]-now > 35:
-        retreat = cs2_play.seek_cover(w["space"],a,contact,allies,s,now,visible_fire,travel)
+        retreat = cs2_play.seek_cover(w["space"],a,contact,allies,s,now,visible_fire,travel,plan)
         if retreat:
             return retreat
     if contact:
@@ -600,8 +722,7 @@ def act(w, a, allies, bomb, visible_fire):
         rescuer = recover and assignment and assignment["player"] == a["id"]
     else:
         rescuer = recover and min(alive, key=lambda p: (distance(p, bomb), p["id"])) is a
-    backup = plan.get("backup")
-    responding = any(duty and duty["id"] == a["id"] for duty in (backup, plan.get("secondBackup"))) if w.get("space") else (plan["reinforce"] and slot in (1, 4))
+    responding = cs2_play.cs2_defense.relief(plan, a) if w.get("space") else (plan["reinforce"] and slot in (1, 4))
     reinforce = side == "CT" and (w["phase"] == "planted" or responding)
     if (
         not rescuer
@@ -836,6 +957,10 @@ def throw(w, a, target, space=None):
         cue=dict(**at(point(target)),end=now+flight+10)
         w["messages"].append(dict(team=a["team"],sender=a["id"],friendlyUtility=cue,
                                   due=now+radio_delay(world.match_player(w,a)["skills"])))
+    if target.get("openingZone"):
+        job = w["plans"]["CT"]["opening"]["jobs"][a["id"]]
+        job["throw"]["land"] = effect["land"]
+        effect.update(openingZone=job["zone"], supported=job["throw"]["forPlayer"])
     w["effects"].append(effect)
     w["recentEffects"].append(effect)
     emit(
@@ -845,6 +970,7 @@ def throw(w, a, target, space=None):
         a["team"],
         **{k: v for k, v in effect.items() if k not in ("team", "kind")},
         utility=name,
+        **({"purpose": target["purpose"]} if target.get("purpose") else {}),
     )
     a.update(throwAt=now + 45, ready=now + THROW_RECOVERY, status="Бросает гранату")
 
@@ -854,6 +980,15 @@ def apply_effects(w, ids, space=None):
     w["recentEffects"] = [f for f in w["recentEffects"] if f["end"] + 42 > now]
     w["effects"] = [f for f in w["effects"] if f["end"] > now]
     for f in w["effects"]:
+        if space and w.get("phase") == "live" and f["team"] == "T":
+            if (
+                now == f["land"]
+                or f["kind"] == "Ложная"
+                and now > f["land"]
+                and (now - f["land"]) % 10 == 0
+            ):
+                kind = "Выстрел" if f["kind"] == "Ложная" else "Граната"
+                heard_action(w, space, f, ids.values(), kind, 108 if f["kind"] in ("HE","Свет","Ложная") else 54)
         if space and f["kind"] in ("Дым","Огонь") and now==f["land"]:
             for a in ids.values():
                 if (a["hp"] and a["id"]!=f["player"] and a["blind"]<=now and distance(a,f)<58
@@ -874,6 +1009,7 @@ def apply_effects(w, ids, space=None):
                     if (
                         a["hp"]
                         and a["team"] != f["team"]
+                        and not (space and a["team"] == "CT" and w.get("phase") == "live")
                         and distance(f, a) < f["radius"]
                     ):
                         a["knowledge"]["Шум"] = dict(

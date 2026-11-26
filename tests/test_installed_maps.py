@@ -74,7 +74,8 @@ def test_real_map_exhibition_save_and_board(tmp_path, name):
     store.db.close()
 
 
-def test_background_and_observed_share_report_across_the_map_pool(tmp_path):
+@pytest.mark.parametrize("name", cs2_maps.NAMES)
+def test_background_and_observed_share_report_across_the_map_pool(tmp_path, name):
     store = Store(tmp_path / "career.sqlite")
     pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
     teams = career.roster_index(pack)
@@ -83,29 +84,29 @@ def test_background_and_observed_share_report_across_the_map_pool(tmp_path):
     )
     assert set(state["mapPool"]) == set(cs2_maps.NAMES)
     event = next(e for e in state["queue"] if e["kind"] == "match")
-    for name in cs2_maps.NAMES:
-        fixture = dict(event, mapId=name)
-        fixture.pop("bestOf", None)  # Explicit single-map exhibition across all installed maps.
-        frozen = dict(state, queue=[fixture], history=[])
-        started = perf_counter()
-        game = career.initial(pack, frozen, fixture)
-        initialized = perf_counter() - started
-        observed = deepcopy(game)
-        started = perf_counter()
-        expected = career.simulate(game)
-        elapsed = perf_counter() - started
-        rss = psutil.Process().memory_info().rss / 2**20
-        print(f"CAREER {name} init={initialized:.2f}s BO1={elapsed:.2f}s RSS_after={rss:.1f}MiB")
-        for _ in range(80):
-            match.advance(observed)
-        saved = json.loads(json.dumps(observed))
-        checkpoints.validate_current(saved)
-        assert career.simulate(saved) == expected
-        store.careers.record(frozen, expected)
-        assert store.careers.report(frozen["history"][-1]["result"]) == expected
+    fixture = dict(event, mapId=name)
+    fixture.pop("bestOf", None)  # Explicit single-map exhibition across all installed maps.
+    fixture.pop("edition", None)  # An exhibition has no tournament series to record.
+    frozen = dict(state, queue=[fixture], history=[])
+    started = perf_counter()
+    game = career.initial(pack, frozen, fixture)
+    initialized = perf_counter() - started
+    observed = deepcopy(game)
+    started = perf_counter()
+    expected = career.simulate(game)
+    elapsed = perf_counter() - started
+    rss = psutil.Process().memory_info().rss / 2**20
+    print(f"CAREER {name} init={initialized:.2f}s BO1={elapsed:.2f}s RSS_after={rss:.1f}MiB")
+    for _ in range(80):
+        match.advance(observed)
+    saved = json.loads(json.dumps(observed))
+    checkpoints.validate_current(saved)
+    assert career.simulate(saved) == expected
+    store.careers.record(frozen, expected)
+    assert store.careers.report(frozen["history"][-1]["result"]) == expected
     store.db.close()
 
-@pytest.mark.parametrize("previous", ["cs2-bo1.14", "cs2-bo1.15", "cs2-bo1.16"])
+@pytest.mark.parametrize("previous", ["cs2-bo1.14", "cs2-bo1.15", "cs2-bo1.16", "cs2-bo1.17", "cs2-bo1.18", "cs2-bo1.19"])
 def test_recent_checkpoints_resume_from_the_recorded_tick(previous):
     state = match.initial(41000,map_id="de_nuke")
     match.advance(state)
@@ -281,3 +282,139 @@ def test_nuke_scans_legal_parts_of_nav_polygons_cut_by_the_site_trigger():
         assert all(space.site_at(p) == site for p in points)
     assert any(space.locate(p) not in space.plants[site]
                for site,points in space.plant_surfaces.items() for p in points)
+
+
+def test_reported_carrier_redirects_living_defenders_before_plant():
+    from backend import cs2_defense, cs2_play
+
+    game = match.initial(41000, map_id="de_dust2")
+    match.begin_live(game)
+    space = cs2_maps.get(game["mapId"])
+    plan = game["plans"]["CT"]
+    squad = [p for p in game["agents"] if p["team"] == "CT"]
+    leader = squad[0]
+    carrier = next(p for p in game["agents"] if p["team"] == "T")
+    # The actual attacker stays at spawn through both reviews.
+    for site in ("A", "B"):
+        game["tick"] += 12
+        point = next(
+            space.centers[i]
+            for i in space.plants[site]
+            if space.site_at(space.centers[i]) == site
+        )
+        leader["knowledge"][carrier["id"]] = dict(
+            zip(("x", "y", "z"), point),
+            id=carrier["id"],
+            carryingC4=True,
+            tick=game["tick"],
+            source="Радио",
+        )
+        cs2_play.direct_defense(space, game, plan, squad, leader)
+        assert {cs2_defense.assignment(plan, p, squad)["site"] for p in squad} == {site}
+        assert plan["confirmedAttack"]["site"] == site
+        assert game["events"][-1]["carrierSite"] == site
+
+
+def test_retake_wait_ends_when_the_partner_or_time_is_lost():
+    from backend import cs2_retake
+
+    a = dict(id="a", x=10, y=10, z=0)
+    b = dict(id="b")
+    for alone in (False, True):
+        duty = dict(stage=[10, 10, 0], partner="b", release=125, latest=130)
+        state = dict(tick=120, plan=dict(retake=dict(duties={"a": duty, "b": {}})))
+        assert cs2_retake.staging(state, a, [a, b]) == (10, 10, 0)
+        assert a["status"] == "Ждёт напарника на ретейке"
+        if not alone:
+            state["tick"] = 130
+        assert cs2_retake.staging(state, a, [a] if alone else [a, b]) is None
+        assert duty["done"]
+
+
+def test_pair_waits_for_real_flash_and_checks_before_releasing_escort():
+    from backend import cs2_openings
+    from tools.cs2_opening_audit import record
+    from math import dist
+    from random import Random
+
+    pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
+    teams = Random(843).sample(sorted(career.roster_index(pack).values()), 2)
+    # Exactly the normal economy and captain call used in the 40-second audit.
+    row = record(pack, teams, "de_dust2", 15)
+    flashes = [
+        e
+        for e in row["events"]
+        if e.get("openingZone")
+        and e["utility"] == "Свет"
+        and e["supported"] != e["player"]
+    ]
+    assert flashes
+    first_contact = min(e["tick"] for e in row["events"] if e["kind"] == "contact")
+    slots = {pid: i for i, (pid, _, _) in enumerate(row["agents"])}
+
+    def followed_signal(e):
+        who = e["supported"]
+        departure = row["jobs"][who].get("departed", 0)
+        time = departure - row["start"]
+        if not (0 <= departure - e["land"] <= 15 and 0 < time < first_contact):
+            return False
+
+        def position(tick):
+            _, players = min(row["frames"], key=lambda frame: abs(frame[0] - tick))
+            return players[slots[who]][:3]
+
+        return dist(position(time), position(time + 10)) > 4
+
+    assert any(followed_signal(e) for e in flashes)
+
+    plan = dict(
+        opening=dict(
+            quiet=False,
+            focus=["Long"],
+            jobs={
+                "scout": dict(
+                    zone="Long", watch=[10, 0, 0], role="разведка", partner="escort"
+                ),
+                "escort": dict(
+                    zone="Long",
+                    partner="scout",
+                    handoff=dict(zone="Short"),
+                    role="страховка",
+                ),
+            },
+            reports={"scout": dict(zone="Long", observed=11, due=14)},
+        )
+    )
+    squad = [dict(id="scout"), dict(id="escort")]
+    captain = dict(id="scout", knowledge={})
+    cs2_openings.review(None, plan, squad, 13, captain)
+    assert "handoff" in plan["opening"]["jobs"]["escort"]
+    captain["knowledge"]["T1"] = dict(x=10, y=2, z=0, tick=13, source="Радио")
+    cs2_openings.review(None, plan, squad, 14, captain)
+    assert "handoff" in plan["opening"]["jobs"]["escort"]
+    plan["opening"]["reports"]["scout"].update(observed=21, due=24)
+    cs2_openings.review(None, plan, squad, 24, captain)
+    assert plan["opening"]["jobs"]["escort"]["zone"] == "Short"
+    assert plan["opening"]["jobs"]["scout"]["holdsFor"] == "escort"
+
+
+def test_dust2_short_long_hearing_depends_on_the_actual_approach():
+    from backend import match_ai
+
+    space = cs2_maps.get("de_dust2")
+    game = match.initial(65400, map_id="de_dust2")
+    listener, source = game["agents"][5], game["agents"][0]
+    listener.update(hp=100, visible=[])
+    # Dated NAV. These walkable approaches are within 35 units of the
+    # ShortStairs and LongA map markers, respectively.
+    for who, ident in ((listener, 1248), (source, 1521)):
+        who.update(match_ai.at(space.centers[ident]))
+    match_ai.heard_action(game, space, source, [listener], "Шаги", 88)
+    cue, = listener["knowledge"].values()
+    assert cue["witness"] == listener["id"] and cue["id"] != source["id"]
+    assert cs2_maps.xyz(cue) != cs2_maps.xyz(source)
+    listener["knowledge"].clear()
+    listener.update(match_ai.at(space.centers[968]))
+    source.update(match_ai.at(space.centers[1682]))
+    match_ai.heard_action(game, space, source, [listener], "Шаги", 88)
+    assert not listener["knowledge"]

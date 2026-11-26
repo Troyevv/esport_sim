@@ -4,7 +4,7 @@ from collections import Counter
 from copy import deepcopy
 from math import atan2
 
-from . import cs2_economy, cs2_maps, checkpoints, engine, match_inventory, match_score, tactics, world
+from . import cs2_openings, cs2_economy, cs2_maps, checkpoints, engine, match_inventory, match_score, tactics, world
 from . import match_performance as perf
 from .world import match_player as profile
 from . import match_ai as ai
@@ -233,6 +233,8 @@ def next_round(w):
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
+        for key in ("audioCalls","lastDutyFeedback"):
+            a.pop(key, None)
         a.pop("postWatch", None)
         if reset or not a["hp"]:
             a.update(
@@ -448,8 +450,19 @@ def begin_live(w):
         if space:
             plan = w["plans"][side]
             plan["lane"] = lane
-            if side == "CT" and not call and not board:
-                plan["anticipated"] = ai.cs2_play.defensive_read(w, igl)
+            if side == "CT" and not board:
+                predicted = ai.cs2_play.defensive_read(w, igl) if not call else None
+                site = plan["site"] = predicted or site
+                style = cs2_openings.draft(
+                    space,
+                    plan,
+                    squad,
+                    w["domain"]["players"],
+                    igl,
+                    predicted,
+                    plan["reinforce"],
+                    w["domain"]["chemistry"],
+                )
             if side == "T" and not board and style in ("Сбор", "Контроль карты"):
                 plan["probe"] = ai.cs2_play.default_probe(space, squad, w["bomb"]["carrier"], plan, now, w["domain"])
         emit(
@@ -496,10 +509,23 @@ def begin_live(w):
             # The captain can switch sites during the opening call. Give each role
             # the utility for the final approach within its agreed spending limit.
             strategy["needs"] = {
-                a["id"]: cs2_economy.items_for(a, site, space.profile, board) for a in squad
+                a["id"]: cs2_economy.items_for(a, site, space.profile, board)
+                for a in squad
             }
             w["plans"][side]["economy"] = strategy
+            if opening := plan.get("opening"):
+                for actor in squad:
+                    task = opening["jobs"][actor["id"]]
+                    if opening["quiet"] or task["zone"] not in opening["focus"]:
+                        continue
+                    wanted = cs2_openings.priority(task)
+                    existing = strategy["needs"][actor["id"]]
+                    strategy["needs"][actor["id"]] = (
+                        wanted + [g for g in existing if g not in wanted]
+                    )[:4]
             cs2_economy.buy(w, squad, strategy, purchase, board)
+            if plan.get("opening"):
+                cs2_openings.equip(space, plan, squad)
             continue
         rifle = "AK-47" if side == "T" else "M4A1-S"
         smg = "MAC-10" if side == "T" else "MP9"
@@ -875,11 +901,28 @@ def advance(w):
                     else None
                 ),
             )
+            if (
+                side == "CT"
+                and w["phase"] == "live"
+                and (opening := observation["plan"].get("opening"))
+            ):
+                job = opening["jobs"][a["id"]]
+                if "peek" in job and ai.distance(a, ai.at(job["peek"])) < 6:
+                    sight = ai.at(job["watch"])
+                    observation["openingSight"] = space.clear(a, sight) and not any(
+                        f["kind"] == "Дым"
+                        and f["land"] <= now < f["end"]
+                        and ai.near_line(a, sight, f, f["radius"])
+                        for f in w["effects"]
+                    )
             previous = a["status"]
             step_index = a.get("stepIndex", 0)
+            prior_position = cs2_maps.xyz(a) if space and side == "T" and w["phase"] == "live" else None
             intents.append((a, *ai.act(observation, a, squad, known_bomb, fire)))
             if space:
-                ai.cs2_play.cs2_defense.check_incoming(a,intents[-1][1],now,observation["player"]["skills"])
+                ai.cs2_play.cs2_defense.check_incoming(
+                    a, intents[-1][1], now, observation["player"]["skills"]
+                )
             if space and a.get("lastBlockedTick") != now:
                 a["blockedTicks"] = 0
             if (space and side=="T" and w["phase"]=="live" and a.get("blockedTicks",0)>=20
@@ -889,7 +932,19 @@ def advance(w):
                 a.setdefault("routeReports",{})[a["id"]]=[site,now]
                 w["messages"].append(dict(team=side,sender=a["id"],blockedSite=site,
                                           due=now+ai.radio_delay(profile(w,a)["skills"])))
+            if space and side == "CT" and w["phase"] == "live" and now % 5 == a["slot"]:
+                call = ai.cs2_play.cs2_defense.duty_feedback(
+                    w["plans"]["CT"], a, squad, now
+                )
+                if call:
+                    ai.send_sector(w, a, call)
             if intents[-1][1] == "move":
+                if (
+                    prior_position
+                    and now % 5 == a["slot"]
+                    and ai.dist(prior_position, cs2_maps.xyz(a)) > 0.9
+                ):
+                    ai.heard_action(w, space, a, players, "Шаги", 88)
                 a["lastMove"] = now
                 a["movingTicks"] += 1
             if observation["plan"].get("board"):
@@ -936,6 +991,9 @@ def advance(w):
                            ai.near_line(a,target,p,3))
                 victim = min(crossed,key=lambda p: ai.distance(a,p),default=None)
             ai.shoot(w, a, target, victim, space)
+            if space and a["team"] == "T" and w["phase"] == "live":
+                radius = 75 if a["weapon"] in ("USP", "M4A1-S") else 128
+                ai.heard_action(w,space,a,players,"Выстрел",radius)
             for listener in players:
                 # A passing shot is perceptible at the listener, even when the
                 # shooter is outside their vision or normal local audio radius.
@@ -955,6 +1013,7 @@ def advance(w):
                     listener["team"] != a["team"]
                     and listener["hp"]
                     and a["id"] not in listener["visible"]
+                    and not (space and listener["team"] == "CT" and w["phase"] == "live")
                     and ai.distance(a, listener) < 55
                 ):
                     # Sound identifies a sector, never a tracked live enemy position.
