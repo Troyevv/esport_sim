@@ -245,8 +245,9 @@ def simulate(game):
             return round_sim.play_map(game, game["mapId"], first, game["seed"])
         s = game["series"]
         veto.advance(game, "captain")
+        strain = {}
         for i, entry in enumerate(s["order"]):
-            report = round_sim.play_map(game, entry["map"], entry["attack"], series.map_seed(s["seed"], i))
+            report = round_sim.play_map(game, entry["map"], entry["attack"], series.map_seed(s["seed"], i), strain)
             s["results"].append(report)
             winner = report["winnerTeamId"]
             s["score"][winner] += 1

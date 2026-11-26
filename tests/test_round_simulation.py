@@ -85,3 +85,20 @@ def test_strength_roles_condition_and_overtime():
         (2, True, 19),
         (3, True, 19),
     ]
+
+
+def test_series_fatigue_uses_played_rounds_and_survives_map_interval():
+    w = fixture(3, 31)
+    team = w["series"]["teams"][0]
+    members = world.lineup(w["domain"], w["rosterIds"][0])
+    tired, fit = (w["domain"]["players"][m["player"]] for m in members[:2])
+    tired["fatigue"] = 100
+    fit["fatigue"] = 0
+    fit["skills"]["recovery"] = 0
+    strain = {}
+    round_sim.play_map(w, "de_nuke", team, 31, strain)
+    first = strain[members[1]["player"]]
+    assert first > 0 and strain[members[0]["player"]] == 0
+    round_sim.play_map(w, "de_mirage", team, 32, strain)
+    assert strain[members[1]["player"]] > first
+    assert fit["fatigue"] == 0

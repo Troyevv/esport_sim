@@ -69,6 +69,10 @@ def lineup(domain, rid, map_id, club):
                 weight=max(0.3, base / 55),
                 openingWeight=1.35 if role in ("entry", "awper") else 0.92,
                 consistency=s["consistency"],
+                wear=(1.0 - s["endurance"] / 160)
+                * (1.0 - s["fatigue_resistance"] / 180),
+                capacity=(100 - p["fatigue"]) * (1 - s["fatigue_resistance"] / 180),
+                recovery=s["recovery"],
                 assist=0.20 + s["support"] / 350,
                 hs=0.22 + s["first_shot"] / 270,
                 risk=s["risk"],
@@ -99,7 +103,7 @@ def purchase(rng, cash, saved, pistol, risk):
     return "eco", min(cash, 350), -13.0
 
 
-def buy_for_team(rng, row, cash, saved, stats, pistol, attacking):
+def buy_for_team(rng, row, cash, saved, stats, pistol, attacking, strain):
     strength, purchases = 0, []
     for i, p in enumerate(row):
         kind, spent, gear = purchase(rng, cash[i], saved[i], pistol, p["risk"])
@@ -109,6 +113,7 @@ def buy_for_team(rng, row, cash, saved, stats, pistol, attacking):
         saved[i] = {"pistol": 0, "full": 3000, "force": 1300, "eco": 0}[kind]
         strength += (
             p["base"]
+            - 0.13 * strain.get(p["player"], 0)
             + p["attack" if attacking else "defense"]
             + p["pistol" if pistol or kind == "eco" else "rifle"]
             + gear
@@ -165,7 +170,10 @@ def resolve_round(rng, powers, players, cash, stats):
     return winner, alive, contributed
 
 
-def play_map(game, map_id, first_attack, seed):
+def play_map(game, map_id, first_attack, seed, strain=None):
+    # Transient extra fatigue for rounds actually played. Shared only within this series.
+    if strain is None:
+        strain = {}
     rng = Random(seed)
     domain, rids = game["domain"], game["rosterIds"]
     teams = [domain["rosters"][rid]["team"] for rid in rids]
@@ -201,7 +209,14 @@ def play_map(game, map_id, first_attack, seed):
         powers, buys = [], []
         for side, row in enumerate(players):
             strength, buy = buy_for_team(
-                rng, row, cash[side], saved[side], stats[side], pistol, side == attack
+                rng,
+                row,
+                cash[side],
+                saved[side],
+                stats[side],
+                pistol,
+                side == attack,
+                strain,
             )
             powers.append(
                 strength / 5
@@ -218,6 +233,9 @@ def play_map(game, map_id, first_attack, seed):
                 if rng.random() < 0.80:
                     stats[side][rng.randrange(5)]["damage"] += rng.randint(12, 65)
             for i in range(5):
+                player = players[side][i]
+                pid = player["player"]
+                strain[pid] = min(player["capacity"], strain.get(pid, 0) + player["wear"])
                 survived = i in alive[side]
                 stats[side][i]["kast"] += int(survived or i in contributed[side])
                 if not survived:
@@ -246,6 +264,9 @@ def play_map(game, map_id, first_attack, seed):
         )
         if scores[winner] == target:
             break
+    for row in players:
+        for p in row:
+            strain[p["player"]] *= 1 - p["recovery"] / 160
     return dict(
         simulation=MODE,
         rules="round-mr12.1",
