@@ -47,6 +47,11 @@ def record(name, seed, pack):
                 guards=len(guards),
                 line=len(visible),
                 gaze=len(gaze),
+                blind=sum(a["blind"] > now for a in gaze),
+                ctSmoke=any(match_ai.near_line(a, planter, f, f["radius"])
+                           for a in gaze for f in fog if f["team"] == "CT"),
+                tSmoke=any(match_ai.near_line(a, planter, f, f["radius"])
+                          for a in gaze for f in fog if f["team"] == "T"),
                 unobscured=len(open_gaze),
                 nearby=sum(
                     dist(cs2_maps.xyz(a), cs2_maps.xyz(planter)) * cs2_maps.UNIT <= 600

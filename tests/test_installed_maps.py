@@ -253,3 +253,11 @@ def test_anubis_grenade_contact_includes_float32_endpoint(monkeypatch):
         assert t == 1 and material == "concrete" and normal[0] > 0.99
     finally:
         collision.trace.cache_clear()
+
+
+def test_defensive_smoke_distinguishes_legal_plant_and_other_floor():
+    space = cs2_maps.get("de_nuke")
+    upper, lower = (space.site_points[s] for s in ("A", "B"))
+    assert space.smokes_plant("A", tuple(upper))
+    assert not space.smokes_plant("B", tuple(upper))
+    assert space.smokes_plant("B", tuple(lower))

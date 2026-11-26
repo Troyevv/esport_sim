@@ -786,7 +786,8 @@ def crossing_utility(space, w, a, allies, order, site):
     calls[:] = [c for c in calls if now < c["end"]]
     defending = a["team"] == "CT" and w["phase"] == "live"
     if defending:
-        targets = space.ingress(site,plan["lane"])
+        lane = order.get("lane", plan["lane"]) if order["site"] == site else plan["lane"]
+        targets = space.ingress(site, lane)
         # Deny an opening race or respond to a report of pressure. Do not
         # continually refresh an empty lane throughout a quiet round.
         pressure = any(now-r["tick"] < 35 and space.reported_site(xyz(r)) == site
@@ -794,7 +795,7 @@ def crossing_utility(space, w, a, allies, order, site):
         if not pressure:
             # Estimate arrival from legal opposing spawns. A screen that burns
             # out before anyone could cross spends the anchor's only denial.
-            costs, _ = space.contest(site,plan["lane"])
+            costs, _ = space.contest(site, lane)
             arrival = min(costs.get(i,float("inf")) for i in space.attack_spawns) / (2*UNIT)
             elapsed = now-plan["start"]
             if a.get("screenedOpening") or elapsed > arrival+35 or elapsed+35 < arrival:
@@ -808,7 +809,7 @@ def crossing_utility(space, w, a, allies, order, site):
         if not feint and not any(m is not a and dist(xyz(m),pos) < 35 for m in allies):
             return None
     candidates = sorted((p for p in targets if 24 < dist(pos,p)<68),key=lambda p:dist(pos,p))
-    for p in candidates[:8]:
+    for p in candidates[:16 if defending else 8]:
         item = next((g for g in gadgets if g in a["utility"]
                      and not any(c["item"] == g and dist(c["point"],p) < UTILITY[g][0] for c in calls)
                      and not any(dist(xyz(m),p) < (UTILITY[g][0] if g == "Свет" else 18)
@@ -818,6 +819,8 @@ def crossing_utility(space, w, a, allies, order, site):
         flight = max(3,round(dist(pos,p)/7))
         x,y,z,_ = space.grenade(pos,p,flight)
         if dist((x,y,z),p)>8:
+            continue
+        if defending and item == "Дым" and space.smokes_plant(site, (x,y,z)):
             continue
         calls.append(dict(item=item, point=list(p), end=now+flight+UTILITY[item][1]))
         if defending:
@@ -1078,6 +1081,8 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                     if any(dist(xyz(p), crossing) < 21 for p in allies):
                         continue
                     grenade = next((g for g in ("Огонь", "Дым") if g in a["utility"]), None)
+                    if grenade == "Дым" and space.smokes_plant(site, tuple(crossing)):
+                        continue
                     if grenade:
                         a["status"] = "Сдерживает выход на плент"
                         return "throw", dict(zip(("x","y","z"),crossing), utility=grenade)
@@ -1118,7 +1123,10 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             (p for p in allies if p is not a and p["target"] == latest["id"]), None
         )
         smoke = "Дым" in a["utility"]
-        if engaged and dist(pos, xyz(latest)) > 25 and smoke:
+        if engaged and dist(pos, xyz(latest)) > 25 and smoke and (
+            side == "T" or engaged["reloadAt"] or engaged["hp"] < 45
+            or not space.smokes_plant(site, tuple(xyz(latest)))
+        ):
             a["status"] = "Закрывает дымом контакт партнёра"
             return "throw", dict(latest, utility="Дым")
     if side == "T" and w["phase"] == "live" and a["status"].startswith("Выход на "):

@@ -12,12 +12,12 @@ from pathlib import Path
 from .cs2_navigation import Navigation, surface_height
 from .cs2_profiles import named_stages, resolve_anchors
 from .cs2_sites import BombSites
-from .match_rules import BLAST_RADIUS, ROLES
+from .match_rules import BLAST_RADIUS, ROLES, UTILITY
 
 BUILD = 26879581
-RULES = "cs2-bo1.11"
-PREVIOUS_RULES = "cs2-bo1.10"
-SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.9", "cs2-bo1.8", "cs2-bo1.7", "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
+RULES = "cs2-bo1.12"
+PREVIOUS_RULES = "cs2-bo1.11"
+SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.10", "cs2-bo1.9", "cs2-bo1.8", "cs2-bo1.7", "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )
@@ -172,6 +172,7 @@ class Map:
         self.contest = lru_cache(maxsize=4)(partial(Map._contest, proxy(self)))
         self.ingress = lru_cache(maxsize=4)(partial(Map._ingress, proxy(self)))
         self.crossfire = lru_cache(maxsize=64)(partial(Map._crossfire, proxy(self)))
+        self.smokes_plant = lru_cache(maxsize=1024)(partial(Map._smokes_plant, proxy(self)))
         self.angles = lru_cache(maxsize=128)(partial(Map._angles, proxy(self)))
         self.escape = lru_cache(maxsize=16)(partial(Map._escape, proxy(self)))
         self.nominal_exit = lru_cache(maxsize=1024)(partial(Map._nominal_exit, proxy(self)))
@@ -249,6 +250,15 @@ class Map:
         defensible = [i for i,line in positions if visible.get(line)]
         defence = self.nav.routes_through([defensible]).costs if defensible else costs
         return costs, min((defence.get(i,float("inf")) for i in guards),default=0)
+
+    def _smokes_plant(self, site, landing):
+        """Would this planned smoke shelter a legal planter on this level?"""
+        radius = UTILITY["Дым"][0]
+        return any(
+            dist(landing, self.centers[area]) <= radius
+            and self.hit(landing, self.centers[area], 1, 48) is None
+            for area in self.plants[site]
+        )
 
     def _escape(self, bomb):
         goals = [

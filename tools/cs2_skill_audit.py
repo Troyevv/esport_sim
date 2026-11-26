@@ -34,6 +34,9 @@ PROFILES = (
 )
 
 
+CONTEXT_PROFILES = ("high_form", "low_morale", "fatigued")
+
+
 class SkillReads(dict):
     """Instrument individual reads without changing match state or drawing randomness."""
 
@@ -123,9 +126,9 @@ def lineups(pack, pair, order, name, profile):
                     s.update(dict.fromkeys(MECHANICS, 85))
             p.update(
                 skills=s,
-                form=50,
-                morale=50,
-                fatigue=0,
+                form=90 if club == 0 and profile == "high_form" else 50,
+                morale=20 if club == 0 and profile == "low_morale" else 50,
+                fatigue=60 if club == 0 and profile == "fatigued" else 0,
                 mapKnowledge={name.removeprefix("de_"): knowledge},
                 roleMastery={m["role"]: mastery},
             )
@@ -206,7 +209,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--map", choices=cs2_maps.NAMES, required=True)
     parser.add_argument("--seeds", nargs="+", type=int, default=[41000, 59000])
-    parser.add_argument("--profiles", nargs="+", choices=PROFILES, default=PROFILES)
+    parser.add_argument("--profiles", nargs="+", choices=PROFILES + CONTEXT_PROFILES, default=PROFILES)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
