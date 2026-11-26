@@ -125,6 +125,12 @@ def test_portrait_pack_complete_unique_and_addressed_by_content(tmp_path):
         keys = list(edition["players"]) + list(edition["staff"])
         ids = [assets["people"][key] for key in keys]
         assert len(set(ids)) == len(ids)
+    for roster in release["rosters"].values():
+        if roster["name"] in ("BIG EQUIPA", "Shimmer", "girl kissers"):
+            assert all(
+                assets["assets"][assets["people"][pid]][2] == 35
+                for pid in roster["players"]
+            )
     for digest in assets["assets"]:
         assert hashlib.sha256(scene_portraits.read(digest)).hexdigest() == digest
 

@@ -21,8 +21,15 @@ def cutouts(path):
     red, green, blue = rgb.transpose(2, 0, 1)
     excess = green - np.maximum(red, blue)
     mask = ((excess < 44) | (green < 65)).astype(np.uint8)
-    _, labels, boxes, _ = cv2.connectedComponentsWithStats(mask)
     height, width = mask.shape
+    if path.stem == "r51-35":
+        # This sheet has dark rules between cells. Remove the rules before
+        # component labeling so long hair does not connect neighboring heads.
+        for i in range(9):
+            x, y = round(width * i / 8), round(height * i / 8)
+            mask[max(0, y - 5) : y + 5, :] = 0
+            mask[:, max(0, x - 5) : x + 5] = 0
+    _, labels, boxes, _ = cv2.connectedComponentsWithStats(mask)
     # Find actual heads rather than cutting a nominal 8x8 grid through hair.
     for label, (x, y, w, h, area) in sorted(
         enumerate(boxes[1:], 1), key=lambda b: (b[1][1], b[1][0])
@@ -132,16 +139,27 @@ def main(folder):
     atlas = bytearray()
     entries = {}
     people = {}
-    # Reserve the oldest and youngest sheets first, then fill the central cohort.
+    # Pin faces from the shipped manifest when the source remains usable.
+    manifest = DATA / "heads-v1.json"
+    previous = json.loads(manifest.read_bytes())["people"] if manifest.exists() else {}
+    pool = {face[3]: face for face in faces}
+    reserved = {
+        pid: pool.pop(previous[pid])
+        for pid in ages
+        if previous.get(pid) in pool
+        and (pid in women) == (pool[previous[pid]][1] == 35)
+    }
     for pid, a in sorted(ages.items(), key=lambda pair: (-abs(pair[1] - 23), pair[0])):
-        at = min(
-            range(len(faces)),
-            key=lambda i: (
-                int((pid in women) != (faces[i][1] == 35)),
-                abs(faces[i][0] - a),
-            ),
-        )
-        _, sheet, tile, digest, raw = faces.pop(at)
+        if pid in reserved:
+            _, sheet, tile, digest, raw = reserved[pid]
+        else:
+            candidates = (
+                face for face in pool.values() if (pid in women) == (face[1] == 35)
+            )
+            match = min(candidates, key=lambda face: abs(face[0] - a), default=None)
+            if match is None:
+                raise ValueError(f"Не хватает подходящих портретов для {pid}")
+            _, sheet, tile, digest, raw = pool.pop(match[3])
         entries[digest] = [len(atlas), len(raw), sheet, tile]
         atlas.extend(raw)
         people[pid] = digest
