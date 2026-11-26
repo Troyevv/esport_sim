@@ -41,7 +41,7 @@ DUTIES = {
     "opponent": ("Анализ соперников", "R5.1", "opponent matches reading meta", 2),
     "schedule": ("Тренировочное расписание", "R5.2", "organisation teaching discipline fitness", 2),
     "individual": ("Индивидуальная подготовка", "R5.2", "mechanics individual_tactics individualisation teaching youth", 2),
-    "tactics": ("Подготовка тактик", "R5.2", "team_tactics utility maps meta", 2),
+    "tactics": ("Подготовка тактик", "R5.1", "team_tactics utility maps meta", 2),
     "practice": ("Организация пракков", "R5.2", "communication organisation team_tactics", 2),
     "recovery": ("Восстановление игроков", "R5.2", "fitness mental conflicts motivation", 1),
     "search": ("Поиск новых игроков", "R5.3", "ability potential fit discovery", 2),
@@ -179,9 +179,51 @@ def overview(c, pack):
         p["capacity"] = capacity(p)
         p["suitability"] = {d: quality(p, d) for d in DUTIES}
     return dict(people=people, roles=ROLES, groups=GROUPS, owners=owners,
-                duties={k: dict(title=v[0], stage=v[1]) for k,v in DUTIES.items()}, jobs=jobs)
+                duties={k: dict(title=v[0], stage=v[1]) for k,v in DUTIES.items()}, jobs=[{k:v for k,v in j.items() if k not in ("plan","philosophy")} for j in jobs])
 
 def registered_coach(c, pack, team):
     people = team_people(c, pack, team)
     eligible = [p for p in people.values() if p["role"] in ("head", "assistant", "tactical", "individual")]
     return max(eligible, key=lambda p:(p["role"]=="head", p["ratings"]["head"], p["id"]))["id"] if eligible else None
+
+def draft_job(c, side, buy, map_id):
+    return next((j for j in c.get("office", {}).get("ledger", {}).get("jobs", [])
+                 if j["date"] == c["date"] and j["team"] == c["team"] and j["duty"] == "tactics"
+                 and j["person"] == c["office"]["duties"].get("tactics")
+                 and j.get("request") == [side, buy, map_id]), None)
+
+
+def prepare_draft(c, pack, value):
+    from math import hypot
+    from . import tactics
+    from .database import require
+    side, buy, map_id = (value.get(k) for k in ("side", "buy", "map_id"))
+    require(set(value) == {"side", "buy", "map_id"} and all(isinstance(v,str) for v in (side,buy,map_id)),
+            "Укажите карту, сторону и закупку")
+    team = c["team"]
+    sid = c.get("office", {}).get("duties", {}).get("tactics")
+    require(sid, "Подготовка тактик находится под личным управлением")
+    if draft_job(c, side, buy, map_id):
+        return
+    person = team_people(c, pack, team)[sid]
+    used = sum(j["cost"] for j in day_plan(c, pack, team, c["date"]) if j["person"] == sid)
+    cost = DUTIES["tactics"][3]
+    require(used + cost <= capacity(person), "У специалиста нет времени на новый тактический план сегодня")
+    grade = max(0, quality(person, "tactics") - used*3)
+    key = f"draft/{sid}/{side}/{buy}/{map_id}"
+    seed = draw(sid, c["date"] + key)
+    philosophy = person["philosophy"]
+
+    def preference(plan):
+        lengths = [sum(hypot(b["x"]-a["x"], b["y"]-a["y"]) for a,b in zip(steps, steps[1:]))
+                   for steps in plan["slots"]]
+        spread = max(lengths) - min(lengths)
+        structure = {"Структурированный": -1, "Гибкий": 0, "Импровизационный": 1}[philosophy["Тактический подход"]]
+        tempo = {"Агрессивный": -1, "Сбалансированный": 0, "Осторожный": 1}[philosophy["Стиль игры"]]
+        return structure * spread + tempo * mean(lengths)
+
+    plans = (tactics.propose(side,buy,seed+i,map_id=map_id) for i in range(1+grade//25))
+    plan = max(plans, key=preference)
+    job = dict(person=sid, name=person["name"], team=team, event=key, date=c["date"], due=c["date"],
+               duty="tactics", cost=cost, quality=grade, request=[side,buy,map_id], plan=plan)
+    record(c,[job],c["date"])

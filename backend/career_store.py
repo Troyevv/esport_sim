@@ -295,6 +295,10 @@ class CareerStore:
                 state["hasSave"] |= slot == "1"
             elif kind in ("career-load", "load"):
                 self.load(state, c["id"], slot)
+            elif kind == "career-tactic-draft":
+                require(not c["progress"], "Дождитесь завершения расчёта календаря")
+                staff.prepare_draft(c, self.pack(c["source"]), value)
+                self.save(state,"auto")
             elif kind == "career-staff":
                 require(not c["progress"] and state["world"]["version"] == 1, "Завершите встречу или расчёт календаря")
                 staff.change(c, self.pack(c["source"]), value)
@@ -377,6 +381,8 @@ class CareerStore:
                     running=False,
                     speed=1,
                 )
+                if "bestOf" in e:
+                    staff.record(c, staff.booked(c, pack, e), e["date"])
                 if c["team"] not in e["teams"]:
                     state["world"]["series"]["spectator"]=True
                     veto.advance(state["world"],"captain")

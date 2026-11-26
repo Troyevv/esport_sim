@@ -78,7 +78,7 @@ export function StaffOffice({c, scene, act, enabled, initial, personId}: {
       })}</div>
     </> : section==="Обязанности" ? <div className="surface panel-body">
       {Object.entries(office.duties).map(([key,duty])=><div className="staff-assignment" key={key}><div>
-        <strong>{duty.title}</strong><small>{duty.stage==="R5.1" ? "Подготовка к серии по календарю" : "Планирование · задачи появятся в " + duty.stage}</small></div>
+        <strong>{duty.title}</strong><small>{key==="tactics" ? "Черновик по запросу в редакторе тактик" : duty.stage==="R5.1" ? "Подготовка к серии по календарю" : "Планирование · задачи появятся в " + duty.stage}</small></div>
         <select aria-label={duty.title} value={office.owners[key]||""} disabled={!allowed}
           onChange={e=>void change({duty:key,person:e.target.value || null})}><option value="">Личное управление</option>
           {[...people].sort((a,b)=>b.suitability[key]-a.suitability[key]).map(s=><option key={s.id} value={s.id}
@@ -92,7 +92,7 @@ export function StaffOffice({c, scene, act, enabled, initial, personId}: {
         <progress max={s.capacity} value={dayLoad(s.id)} aria-label="Занятость сегодня"/>
         <h3>Обязанности</h3><p>{owners(s.id).map(d=>office.duties[d].title).join(" · ") || "Нет назначений"}</p>
         <h3>Задания по календарю</h3>{office.jobs.filter(j=>j.person===s.id).map(j=><div className="staff-job" key={j.event+j.duty}>
-          <strong>{office.duties[j.duty].title}</strong><small>{c.queue.find(e=>e.id===j.event)?.teams.map(t=>c.teams[t]).join(" — ") || "Сыгранная серия"}</small>
+          <strong>{office.duties[j.duty].title}</strong><small>{j.duty==="tactics" ? "Черновик в редакторе" : c.queue.find(e=>e.id===j.event)?.teams.map(t=>c.teams[t]).join(" — ") || "Сыгранная серия"}</small>
           <small>Срок {date(j.due)} · {j.cost} ед.</small></div>)}
         {!office.jobs.some(j=>j.person===s.id) && <p className="muted">Запланированных заданий нет</p>}</section>)}
         {!people.length && <p>В клубе нет сотрудников.</p>}</div>}

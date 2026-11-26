@@ -97,3 +97,20 @@ def test_portrait_pack_complete_unique_and_addressed_by_content():
         assert len(set(ids))==len(ids)
     for digest in assets["assets"]:
         assert hashlib.sha256(scene_portraits.read(digest)).hexdigest()==digest
+
+
+def test_tactic_editor_drafts_are_real_idempotent_and_capacity_limited():
+    from backend import tactics
+    pack = starter()
+    sid, row = next(iter(pack["staff"].items()))
+    c = career.create(pack, dict(name="Тренер", team=row["team"], mode="owner", scope="full"))
+    staff.change(c,pack,dict(duty="tactics",person=sid))
+    request = dict(side="T",buy="Оружейная",map_id="depo")
+    staff.prepare_draft(c,pack,request)
+    job = staff.draft_job(c,"T","Оружейная","depo")
+    assert job["plan"] == tactics.validate(job["plan"]) and job["person"] == sid
+    staff.prepare_draft(c,pack,request)
+    assert len(c["office"]["ledger"]["jobs"]) == 1
+    staff.prepare_draft(c,pack,dict(request,side="CT"))
+    with pytest.raises(ValueError, match="нет времени"):
+        staff.prepare_draft(c,pack,dict(request,buy="Эко"))

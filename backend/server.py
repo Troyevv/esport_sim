@@ -51,6 +51,7 @@ class Command(BaseModel):
         "career-create",
         "career-entry",
         "career-staff",
+        "career-tactic-draft",
         "career-open",
         "career-exhibition",
         "career-lab",
@@ -411,12 +412,21 @@ def create_app(
         if c:
             pack = store.careers.pack(c["source"])
             ids = pack["rosters"][c["teams"][c["team"]]]["players"]
+            sid = c.get("office", {}).get("duties", {}).get("tactics")
+            result["planner"] = pack["staff"][sid]["name"] if sid else None
             result["players"] = [pack["players"][pid]["name"] for pid in ids]
         return result
 
     @app.get("/api/tactics/proposal")
     def proposal(side: Literal["T", "CT"], buy: str, map_id: str="depo"):
         try:
+            c = app.state.store.read().get("career")
+            if c and c.get("office", {}).get("duties", {}).get("tactics"):
+                from .staff import draft_job
+                prepared = draft_job(c,side,buy,map_id)
+                if not prepared:
+                    raise ValueError("Сначала поручите специалисту подготовить план")
+                return prepared["plan"]
             return tactics.propose(side, buy, secrets.randbits(32),map_id=map_id)
         except ValueError as err:
             raise HTTPException(422, str(err)) from err
