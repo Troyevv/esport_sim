@@ -205,10 +205,8 @@ def captain(w, squad, space=None):
     else:
         counts = {site: sum(distance(at(POSITIONS[site][0]), p) < 80 for p in contacts)
                   for site in POSITIONS}
-    probe = plan.get("probe")
-    if probe and not probe.get("released") and (contacts or now >= probe.get("reportDue", probe["until"])
-                                                or len(squad) < 4 or now >= probe["until"]):
-        probe["released"] = now
+    if space and leader["team"] == "T":
+        cs2_play.release_probe(space, plan, squad, contacts, now)
     site = plan["site"]
     obstructed=space and any(s==site and now-t<60 for s,t in leader.get("routeReports",{}).values())
     if space and leader["team"] == "T" and not plan.get("board") and not plan["rotated"] and w["phase"] == "live":
@@ -759,7 +757,7 @@ def throw(w, a, target, space=None):
         radius=radius,
     )
     if space:
-        effect.update(z=z,sz=a["z"],trajectory=trajectory)
+        effect.update(z=z, sz=a["z"], trajectory=[list(point) for point in trajectory])
     if space and name in ("Дым","Огонь"):
         # Teammates call their intended target. A missed/bounced grenade can be misidentified.
         cue=dict(**at(point(target)),end=now+flight+10)

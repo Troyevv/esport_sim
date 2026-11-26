@@ -1,6 +1,6 @@
 """Map-dependent choices for the shared BO1 agents, using squad observations."""
 
-from math import atan2, dist, sin, tau
+from math import atan2, cos, dist, hypot, sin, tau
 from .cs2_maps import UNIT, xyz
 from . import match_performance as perf
 from .match_rules import RULES, equipment_value
@@ -91,6 +91,58 @@ def probe_intent(space, w, a, allies, goal, watch):
         a["status"] = "Ждёт сведений со второго подхода"
         return pos, space.site_points[site]
     return goal, watch
+
+
+def release_probe(space, plan, squad, contacts, now):
+    probe = plan.get("probe")
+    if not probe or probe.get("released"):
+        return
+    other = "B" if plan["site"] == "A" else "A"
+    scout = next((a for a in squad if a["id"] == probe["scout"]), None)
+    # A mid duel by the main group says nothing about the scout's flank.
+    flank = any(space.reported_site(xyz(report)) == other for report in contacts)
+    if scout is None or flank or now >= probe.get("reportDue", probe["until"]) or len(squad) < 4:
+        probe["released"] = now
+
+
+def prepare_plant(space, w, a, allies, site):
+    now = w["tick"]
+    if w["action"] or w["deadline"] - now <= RULES["plant"] + 10:
+        return "plant", site
+    pos = xyz(a)
+    # The planter can count a friendly covering an angle only if the teammate
+    # can see it, is facing it and can fire. Enemy locations come from memory.
+    check = a.get("plantCheck")
+    if not check or check["site"] != site or dist(pos, check["origin"]) > 6:
+        reports = [r for r in a["knowledge"].values() if r["source"] not in ("Слух","Граната")
+                   and now-r["tick"] < 50 and space.hit(pos, xyz(r), 1, 64) is None]
+        angles = [xyz(r) for r in sorted(reports, key=lambda r: -r["tick"])]
+        choices = sorted((p for _, p in space.holds[site]), key=lambda p: dist(pos,p))
+        for p in choices:
+            if len(angles) >= 3:
+                break
+            if 8 < dist(pos,p) < 65 and all(dist(p,q)>12 for q in angles) and space.hit(pos,p,1,64) is None:
+                angles.append(p)
+        check = a["plantCheck"] = dict(site=site, origin=list(pos), angles=[list(p) for p in angles], index=0)
+    while check["index"] < len(check["angles"]):
+        q = check["angles"][check["index"]]
+        covered = False
+        for mate in allies:
+            if mate is a or not mate["ammo"] or mate["blind"] > now or mate["reloadAt"]:
+                continue
+            dx, dy = q[0]-mate["x"], q[1]-mate["y"]
+            if (dx*cos(mate["heading"])+dy*sin(mate["heading"]) >= 0.75*hypot(dx,dy)
+                    and dist(xyz(mate),pos)<55 and space.hit(xyz(mate),q,1,64) is None):
+                covered = True
+                break
+        if not covered:
+            a["status"] = "Проверяет угол перед установкой"
+            a["heading"] = atan2(q[1]-pos[1], q[0]-pos[0])
+            if now < check.setdefault("until", now + 2 + (100-w["player"]["skills"]["positioning"])//15):
+                return "hold", None
+        check.pop("until", None)
+        check["index"] += 1
+    return "plant", site
 
 
 def utility_buy(actor, squad, plan, skills):
@@ -712,7 +764,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             if carrier:
                 at = space.site_at(pos)
                 if at and (at == site or w["deadline"] - now < 90):
-                    return "plant", at
+                    return prepare_plant(space, w, a, allies, at)
             route = order["via"]
             index = a["waypoint"]
             if index < len(route) and dist(pos, route[index]) < 2.6:

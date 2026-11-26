@@ -386,3 +386,36 @@ def test_beep_shares_only_a_sector_and_obeys_its_interval():
     assert not outside_bearing((30, 12, 9), actor["beepBearing"])
     hear_device(other, dict(x=0, y=1, z=8), 11)
     assert other["beepBearing"] == actor["beepBearing"]
+
+
+def test_middle_contact_does_not_release_the_opposite_lane_scout():
+    from types import SimpleNamespace
+    from backend.cs2_play import release_probe
+
+    space = SimpleNamespace(reported_site=lambda p: "B" if p[0] > 10 else None)
+    plan = dict(site="A", probe=dict(scout="T2", until=400))
+    squad = [dict(id=f"T{i}") for i in range(5)]
+    release_probe(space, plan, squad, [dict(x=0,y=0,z=0)], 100)
+    assert not plan["probe"].get("released")
+    release_probe(space, plan, squad, [dict(x=20,y=0,z=0)], 110)
+    assert plan["probe"]["released"] == 110
+
+
+def test_planter_checks_exposed_angle_unless_partner_covers_it_or_clock_expires():
+    from types import SimpleNamespace
+    from math import pi
+    from backend.cs2_play import prepare_plant
+
+    space = SimpleNamespace(holds={"A":[(1,(30,0,0))]}, hit=lambda *args: None)
+    carrier = dict(x=0,y=0,z=0,heading=pi,knowledge={})
+    mate = dict(x=2,y=0,z=0,heading=pi,ammo=12,blind=0,reloadAt=0)
+    w = dict(tick=10,deadline=400,action=None,player={"skills":{"positioning":70}})
+    assert prepare_plant(space,w,carrier,[carrier,mate],"A") == ("hold",None)
+    assert carrier["heading"] == 0
+    mate["heading"] = 0
+    assert prepare_plant(space,w,carrier,[carrier,mate],"A") == ("plant","A")
+    carrier.pop("plantCheck")
+    mate["blind"] = 100
+    assert prepare_plant(space,w,carrier,[carrier,mate],"A") == ("hold", None)
+    w["deadline"] = 45
+    assert prepare_plant(space,w,carrier,[carrier,mate],"A") == ("plant","A")

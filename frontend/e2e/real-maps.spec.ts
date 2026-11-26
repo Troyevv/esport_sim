@@ -37,6 +37,15 @@ if (process.env.ESPORT_CS2_QA) {
       await page.screenshot({path:info.outputPath(map.id+".png")});
       await button("Редактор тактик").click();
       await expect(page.getByTestId("tactic-map")).toHaveAttribute("data-ready","true");
+      if (map.id === "de_nuke") {
+        const buy = page.getByRole("combobox", {name:"Закупка"});
+        await buy.selectOption("Бонусная");
+        await button("Предложение штаба").click();
+        await expect(page.getByText("План штаба готов к редактированию")).toBeVisible();
+        await button("▷ Предпросмотр").click();
+        await expect(page.getByText(/Seed 42 · Бонусная.*закуплено на/)).toBeVisible();
+        await button("К редактированию").click();
+      }
       await page.screenshot({path:info.outputPath(map.id+"-board.png")});
       await page.reload();
       await expect(page.getByTestId("connection")).toContainText("На связи");

@@ -224,7 +224,7 @@ def next_round(w):
             a.update(z=z,navArea=area,waypoint=0,blockedTicks=0,inspectedSites={},routeReports={},lastRouteReport=-100,
                      useTarget=None,useFloor=None,checkContact=None,checkPosition=None,
                      shelter=None,coverUntil=0,coverReview=0,bombSearch=None,coveredDefuser=None,coverPoint=None,revisedApproach=None,
-                     rendezvous=None,plantCover=None,watchDevice=None,heardUse=-1000,
+                     rendezvous=None,plantCover=None,plantCheck=None,watchDevice=None,heardUse=-1000,
                      seenDevice=None,beepBearing=None,plantCue=None,crossingReview=0,friendlyUtility=[])
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
