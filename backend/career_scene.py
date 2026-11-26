@@ -57,7 +57,8 @@ def directory(pack, badges, portraits, positions=None):
         person = identity("staff", sid, row)
         tid = row["team"]
         role = (positions or {}).get(sid, staff.position(row["role"]))
-        person.update(team=tid, role=staff.ROLES[role], realName=row["realName"])
+        person.update(team=tid, role=staff.ROLES[role], realName=row["realName"],
+                      professional=staff.profile(sid, row))
         person["visual"].update(player=True, staff=True, head=heads.get(sid, {}).get("image"), photo=row.get("photo"))
         if tid:
             t = teams[tid]

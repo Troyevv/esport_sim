@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { serverURL } from "./session";
+import type { Office } from "./StaffOffice";
 import type { Visual } from "./SceneIdentity";
 export type Act = (kind: string, value?: object, rejected?:(detail:string)=>void) => Promise<boolean>;
 export type Summary = {
@@ -45,7 +46,7 @@ export type Player = {
   ratings: Record<string, number>;
 };
 export type Career = Summary & {
-  office: import("./StaffOffice").Office;
+  office: Office;
   team: string;
   teams: Record<string, string>;
   start: string;
@@ -191,6 +192,7 @@ export type Scene = {
       team: string | null;
       role: string;
       realName: string | null;
+      professional: Pick<Office["people"][string], "attributes" | "ratings" | "philosophy">;
     }
   >;
 };

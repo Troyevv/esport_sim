@@ -42,6 +42,14 @@ test("Штаб, назначения и выбор между ECL и Major", asy
   await expect(
     page.getByRole("heading", { name: "Кабинет менеджера" }),
   ).toBeVisible();
+  await press("Глобальный поиск");
+  const search = page.getByRole("dialog", { name: "Глобальный поиск" });
+  await search.getByRole("textbox").fill("TOBIZ");
+  await search.getByRole("button", { name: /TOBIZ/ }).click();
+  await expect(page.locator(".staff-office meter")).toHaveCount(24);
+  await expect(
+    page.getByRole("heading", { name: "Тренерская философия" }),
+  ).toBeVisible();
   await press("Тренерский штаб");
   await expect(
     page.getByRole("heading", { name: "Главный тренер" }),

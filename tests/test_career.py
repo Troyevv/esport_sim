@@ -223,6 +223,8 @@ def test_career_scene_contains_public_links_without_private_ratings(tmp_path):
             assert set(player).isdisjoint({"potential", "skills", "mapKnowledge", "roleMastery", "ratings"})
         for staff in result["staff"].values():
             assert "preparation" not in staff
+            assert len(staff["professional"]["attributes"]) == 24
+            assert len(staff["professional"]["ratings"]) == 8
         active = store.careers.detail(state)["active"]
         assert all(skills.HIDDEN.isdisjoint(p["skills"]) for p in active["roster"])
         assert 0 <= active["teamRating"] <= 100

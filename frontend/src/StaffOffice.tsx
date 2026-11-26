@@ -41,6 +41,65 @@ function Rating({ value }: { value: number }) {
   return <span className="staff-rating">{value}</span>;
 }
 
+export function StaffSkills({
+  p,
+  roles,
+  groups,
+}: {
+  p: Pick<Person, "attributes" | "ratings" | "philosophy">;
+  roles: Office["roles"];
+  groups: Office["groups"];
+}) {
+  return (
+    <>
+      {" "}
+      <div className="staff-columns">
+        <section className="surface panel-body">
+          <h2>Ролевые рейтинги</h2>
+          {Object.entries(roles).map(([key, title]) => (
+            <div className="staff-line" key={key}>
+              <span>{title}</span>
+              <Rating value={p.ratings[key]} />
+            </div>
+          ))}
+        </section>
+        <section className="surface panel-body">
+          <h2>Тренерская философия</h2>
+          {Object.entries(p.philosophy).map(([k, v]) => (
+            <div className="staff-line" key={k}>
+              <span>{k}</span>
+              <strong>{v}</strong>
+            </div>
+          ))}
+        </section>
+      </div>
+      <h2>Характеристики</h2>
+      <p className="muted">
+        Навыки и предпочтения — игровые оценки модели staff.1.
+      </p>
+      <div className="staff-columns">
+        {Object.entries(groups).map(([group, keys]) => (
+          <section key={group} className="surface panel-body">
+            <h3>{group}</h3>
+            {Object.entries(keys).map(([k, label]) => (
+              <div className="staff-line" key={k}>
+                <span>{label}</span>
+                <meter
+                  aria-label={label}
+                  min={0}
+                  max={100}
+                  value={p.attributes[k]}
+                />
+                <strong>{p.attributes[k]}</strong>
+              </div>
+            ))}
+          </section>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export function StaffOffice({
   c,
   scene,
@@ -164,49 +223,7 @@ export function StaffOffice({
               </a>
             </details>
           )}
-          <div className="staff-columns">
-            <section className="surface panel-body">
-              <h2>Ролевые рейтинги</h2>
-              {Object.entries(office.roles).map(([key, title]) => (
-                <div className="staff-line" key={key}>
-                  <span>{title}</span>
-                  <Rating value={p.ratings[key]} />
-                </div>
-              ))}
-            </section>
-            <section className="surface panel-body">
-              <h2>Тренерская философия</h2>
-              {Object.entries(p.philosophy).map(([k, v]) => (
-                <div className="staff-line" key={k}>
-                  <span>{k}</span>
-                  <strong>{v}</strong>
-                </div>
-              ))}
-            </section>
-          </div>
-          <h2>Характеристики</h2>
-          <p className="muted">
-            Навыки и предпочтения — игровые оценки модели staff.1.
-          </p>
-          <div className="staff-columns">
-            {Object.entries(office.groups).map(([group, keys]) => (
-              <section key={group} className="surface panel-body">
-                <h3>{group}</h3>
-                {Object.entries(keys).map(([k, label]) => (
-                  <div className="staff-line" key={k}>
-                    <span>{label}</span>
-                    <meter
-                      aria-label={label}
-                      min={0}
-                      max={100}
-                      value={p.attributes[k]}
-                    />
-                    <strong>{p.attributes[k]}</strong>
-                  </div>
-                ))}
-              </section>
-            ))}
-          </div>
+          <StaffSkills p={p} roles={office.roles} groups={office.groups} />
         </>
       ) : departments.includes(section) ? (
         <>
