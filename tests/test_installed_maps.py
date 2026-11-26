@@ -218,7 +218,7 @@ def test_nuke_postplant_escape_time_uses_the_route_that_is_walked():
     assert dist(cs2_maps.xyz(actor), planted) >= BLAST_RADIUS
 
 
-def test_anubis_grenade_contact_includes_float32_endpoint():
+def test_anubis_grenade_contact_includes_float32_endpoint(monkeypatch):
     from backend.cs2_collision import THROW
 
     space = cs2_maps.get("de_anubis")
@@ -230,3 +230,24 @@ def test_anubis_grenade_contact_includes_float32_endpoint():
         t, material, normal = space.hit(start, end, THROW, terminal=True)
         assert 0.99999 < t <= 1 and material == "concrete" and normal[0] > 0.99
     assert space.hit(start, (216.001, 282.0, 0.333335441666666), THROW, terminal=True) is None
+
+    # Reproduce the runner on which the single center ray missed the triangle
+    # seam. The small endpoint query must return the same contact plane.
+    collision = space.collision
+    intersect = collision.scene.first_many
+
+    def miss_terminal_center(starts, directions, limits, channel):
+        faces, distances, normals = intersect(starts, directions, limits, channel)
+        if channel == THROW and len(starts) == 1 and distances[0] > 0.99999:
+            faces[0] = -1
+        return faces, distances, normals
+
+    monkeypatch.setattr(collision.scene, "first_many", miss_terminal_center)
+    collision.trace.cache_clear()
+    try:
+        t, material, normal = space.hit(
+            start, (216.0, 282.0, 0.333335441666666), THROW, terminal=True
+        )
+        assert t == 1 and material == "concrete" and normal[0] > 0.99
+    finally:
+        collision.trace.cache_clear()
