@@ -396,3 +396,25 @@ def test_pair_waits_for_real_flash_and_checks_before_releasing_escort():
     cs2_openings.review(None, plan, squad, 24, captain)
     assert plan["opening"]["jobs"]["escort"]["zone"] == "Short"
     assert plan["opening"]["jobs"]["scout"]["holdsFor"] == "escort"
+
+
+def test_dust2_short_long_hearing_depends_on_the_actual_approach():
+    from backend import match_ai
+
+    space = cs2_maps.get("de_dust2")
+    game = match.initial(65400, map_id="de_dust2")
+    listener, source = game["agents"][5], game["agents"][0]
+    listener.update(hp=100, visible=[])
+    # Dated NAV. These walkable approaches are within 35 units of the
+    # ShortStairs and LongA map markers, respectively.
+    for who, ident in ((listener, 1248), (source, 1521)):
+        who.update(match_ai.at(space.centers[ident]))
+    match_ai.heard_action(game, space, source, [listener], "Шаги", 88)
+    cue, = listener["knowledge"].values()
+    assert cue["witness"] == listener["id"] and cue["id"] != source["id"]
+    assert cs2_maps.xyz(cue) != cs2_maps.xyz(source)
+    listener["knowledge"].clear()
+    listener.update(match_ai.at(space.centers[968]))
+    source.update(match_ai.at(space.centers[1682]))
+    match_ai.heard_action(game, space, source, [listener], "Шаги", 88)
+    assert not listener["knowledge"]
