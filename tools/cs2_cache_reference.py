@@ -93,6 +93,15 @@ def extract(directory):
                 duration=(end - start) / 64,
                 survivingCT=alive["CT"],
                 radar=radar,
+                wallets={
+                    sid: dict(
+                        side=p["team"],
+                        remaining=data["economy"][sid]["cashRemaining"],
+                        spent=None,
+                        loadout=p["inventory"],
+                    )
+                    for sid, p in first["players"].items()
+                },
                 grenades=dict(grenades),
             )
         )

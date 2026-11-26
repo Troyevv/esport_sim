@@ -70,6 +70,24 @@ def parse(path, rounds):
         ["X", "Y", "Z", "health", "team_num", "current_equip_value"], ticks=ticks
     )
     grouped = dict(tuple(radar.groupby("tick")))
+    freeze = parser.parse_ticks(
+        ["health", "team_num", "balance", "cash_spent_this_round", "inventory"],
+        ticks=sorted({r["freeze_end_tick"] for r in rounds}),
+    )
+    wallets = {}
+    active = freeze[(freeze.health > 0) & freeze.team_num.isin([2, 3])]
+    for tick, group in active.groupby("tick"):
+        if len(group) != 10 or group.steamid.nunique() != 10:
+            continue
+        wallets[int(tick)] = {
+            str(p.steamid): dict(
+                side="T" if p.team_num == 2 else "CT",
+                remaining=int(p.balance),
+                spent=int(p.cash_spent_this_round),
+                loadout=list(p.inventory) if p.inventory is not None else [],
+            )
+            for p in group.itertuples()
+        }
     result = []
     for row in rounds:
         start, end = row["freeze_end_tick"], row["end_tick"]
@@ -96,6 +114,7 @@ def parse(path, rounds):
         result.append(
             dict(
                 radar=positions,
+                wallets=wallets.get(start),
                 round=row["round_num"],
                 winner=row["winner_side"],
                 reason=row["end_reason"],
