@@ -390,9 +390,10 @@ export function entityVisual(p: Pack, g: Group, id: string) {
   const club = g === "teams" || g === "organizations" || g === "rosters";
   return {
     club,
-    player: g === "players",
-    head: g === "players" ? playerAppearance(p, id)?.image : null,
-    kit: g === "players" ? teamKit(p, latestTeam(p, id)) : null,
+    player: g === "players" || g === "staff",
+    staff: g === "staff",
+    head: g === "players" ? playerAppearance(p, id)?.image : g === "staff" ? portraitCacheFor(p)[id]?.image : null,
+    kit: g === "players" ? teamKit(p, latestTeam(p, id)) : g === "staff" ? teamKit(p,r.team) : null,
     photo: club
       ? clubBadge(
           p,

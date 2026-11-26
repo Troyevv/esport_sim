@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import competitions, registrations, cs2_maps, database, match, series, veto, world
+from . import staff, competitions, registrations, cs2_maps, database, match, series, veto, world
 from .database import require
 
 VERSION = 1
@@ -29,7 +29,7 @@ def roster_index(pack):
 def choices(pack):
     return dict(
         date=pack["asOf"],
-        circuit=pack["id"] == database.RELEASE_ID and pack["asOf"] == "2026-11-25",
+        circuit=pack["id"] in database.NOVEMBER_EDITIONS and pack["asOf"] == "2026-11-25",
         teams=[
             dict(id=tid, name=t["name"], region=t["region"], tier=t["tier"])
             for tid in roster_index(pack)
@@ -60,7 +60,7 @@ def create(pack, options):
         isinstance(team, str) and team in available,
         "У клуба нет полной пятёрки на дату базы",
     )
-    circuit = pack["id"] == database.RELEASE_ID and pack["asOf"] == "2026-11-25"
+    circuit = pack["id"] in database.NOVEMBER_EDITIONS and pack["asOf"] == "2026-11-25"
     ranked = any(t["tier"] for t in pack["teams"].values())
     participants = {}
     registered = set()
@@ -87,6 +87,7 @@ def create(pack, options):
     )
     c = dict(
         version=VERSION,
+        office=staff.office(),
         id=str(uuid4()),
         source=[pack["id"], pack["revision"]] + ([pack["tournamentSupplement"]] if "tournamentSupplement" in pack else []),
         character=name.strip(),
@@ -199,7 +200,7 @@ def match_domain(pack, c, event, badges=None, portraits=None):
             {pid: pack["players"][pid] for pid in domain["players"]}
         ).items():
             visual = domain["players"][pid]["visual"]
-            if not visual["head"]:
+            if not pack["players"][pid].get("appearance"):
                 visual["head"] = portrait["image"]
     return domain, rosters
 
@@ -207,9 +208,10 @@ def match_domain(pack, c, event, badges=None, portraits=None):
 def initial(pack, c, event, badges=None, portraits=None):
     domain, rosters = match_domain(pack, c, event, badges, portraits)
     if "bestOf" in event:
+        jobs = staff.booked(c, pack, event)
         game = series.initial(event["seed"], event["bestOf"], domain, rosters,
                               c["team"] if c["team"] in event["teams"] else None,
-                              profile=(c["circuit"]["editions"][event["edition"]]["rules"] if event.get("edition") else c["seriesProfile"]), history=c["history"], today=event["date"])
+                              profile=(c["circuit"]["editions"][event["edition"]]["rules"] if event.get("edition") else c["seriesProfile"]), history=c["history"], today=event["date"], jobs=jobs)
         if event.get("edition"):
             game["series"]["tournament"]=c["circuit"]["editions"][event["edition"]]["title"]
         return game

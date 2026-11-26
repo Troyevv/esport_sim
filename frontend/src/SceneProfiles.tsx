@@ -114,7 +114,8 @@ export function ProfileHeading({
   context: string;
   rating?: number;
 }) {
-  const asset = visual?.player && !visual.head ? null : resolvePortrait(photo);
+  const generated = visual?.head?.includes("/generated/");
+  const asset = generated || visual?.player && !visual.head ? null : resolvePortrait(photo);
   return (
     <header className="pf-heading">
       <div className="pf-portrait">
@@ -135,6 +136,7 @@ export function ProfileHeading({
           <small>OVR</small>
         </div>
       )}
+      {generated && <small className="pf-credit">Синтетический портрет · OpenAI ImageGen</small>}
       {asset && (
         <small className="pf-credit">
           <a href={asset.source} target="_blank" rel="noreferrer">

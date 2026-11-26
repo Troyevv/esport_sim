@@ -66,6 +66,7 @@ export type Visual = {
   badgeLicense?: string | null;
   gameBadge?: boolean;
   player?: boolean;
+  staff?: boolean;
   head?: string | null;
   kit?: ClubKit | null;
 };
@@ -77,13 +78,14 @@ export function Avatar({
   badgeLicense,
   gameBadge,
   player = false,
+  staff = false,
   head,
   kit,
 }: { name: string } & Visual) {
   const asset = resolvePortrait(photo);
   const [failed, setFailed] = useState("");
   const src = url || asset?.image;
-  if (player) return <GamePortrait name={name} head={head} kit={kit} />;
+  if (player) return <GamePortrait name={name} head={head} kit={kit} staff={staff} />;
   if (src && failed !== src)
     return (
       <img

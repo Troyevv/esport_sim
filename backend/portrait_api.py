@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 
-from . import database, personal_portraits
+from . import database, personal_portraits, scene_portraits
 
 
 def portrait_router(app):
@@ -49,15 +49,20 @@ def portrait_router(app):
     async def index(key: str, revision: int):
         store = app.state.store
         try:
-            return store.portraits.index(
-                database.get(store.db, key, revision)["players"]
-            )
+            return scene_portraits.index(database.get(store.db, key, revision), store.portraits)
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
 
     @routes.get("/kit-index")
     async def kit_index():
         return personal_portraits.installed_kits(app.state.store.portraits)
+
+    @routes.get("/generated/{digest}")
+    def generated(digest: str):
+        data = scene_portraits.read(digest)
+        if not data:
+            raise HTTPException(404)
+        return Response(data, media_type="image/webp", headers={"Cache-Control": "private, immutable, max-age=31536000"})
 
     @routes.get("/image/{digest}")
     async def image(digest: str):

@@ -45,6 +45,7 @@ export type Player = {
   ratings: Record<string, number>;
 };
 export type Career = Summary & {
+  office: import("./StaffOffice").Office;
   team: string;
   teams: Record<string, string>;
   start: string;

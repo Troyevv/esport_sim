@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 from . import competition_stages as stages, registrations, vrs
 from .competition_catalog import offset, season, seed_data
 from .competition_catalog import cct_europe
-from . import competition_scene
+from . import competition_scene, staff
 from .database import day, require
 
 
@@ -161,7 +161,7 @@ def import_cct(c, event, pack):
     for row in rows:
         team = row["id"]
         players = [p["id"] for p in row["players"]]
-        coach = next((k for k, r in pack["staff"].items() if r["team"] == team), None)
+        coach = staff.registered_coach(c, pack, team)
         event["entries"][team] = "locked" if qualifier else "accepted"
         event["registrations"][team] = [
             dict(
@@ -667,7 +667,15 @@ def auto_register(c, event, pack):
         ) and event.get("feeds"):
             continue
         try:
-            registrations.signup(c, event, team, pack)
+            collisions = registrations.clashes(c, event, team)
+            others = [c["circuit"]["editions"][r["id"]] for r in collisions]
+            if others and all(priority_for(event, team) < priority_for(other, team) for other in others):
+                # Validate eligibility and capacity before releasing an accepted place.
+                registrations.signup(c, event, team, pack, prioritise={o["id"] for o in others})
+                for other in others:
+                    leave(c, other, team, pack, "Приоритет: " + event["title"])
+            else:
+                registrations.signup(c, event, team, pack)
         except ValueError as exc:
             if event["entries"].get(team) == "invited":
                 event["entries"][team] = "declined"
@@ -695,9 +703,7 @@ def auto_register(c, event, pack):
                     for out in players
                 )
             ]
-        coach = next(
-            (sid for sid, s in pack["staff"].items() if s["team"] == team), None
-        )
+        coach = staff.registered_coach(c, pack, team)
         try:
             registrations.submit(c, event, team, pack, players, reserve, coach)
         except ValueError as exc:
@@ -871,6 +877,10 @@ def begin(c, event, field):
                 spec["format"], field, spec["advance"], bronze=spec.get("bronze", False)
             )
         ]
+    for draw in draws:
+        withdrawn = [t for t in draw["teams"] if event["entries"].get(t) == "withdrawn"]
+        if withdrawn:
+            draw["withdrawn"] = withdrawn
     event["draws"].append(draws)
     if c["team"] in field:
         notice(c, event, "Опубликована сетка", spec["name"])
@@ -889,6 +899,22 @@ def schedule_draw(c, event):
             promoted.extend(output)
         elif not ready:
             ready = stages.ready(draw)
+        # Future opponent slots can resolve days after a team withdrew. Settle
+        # those matches before emitting fixtures or advancing another round.
+        while any(any(event["entries"].get(t) == "withdrawn" for t in teams) for _,teams in ready):
+            for n, teams in ready:
+                absent = [t for t in teams if event["entries"].get(t) == "withdrawn"]
+                if absent:
+                    row = draw["games"][n]
+                    row.update(winner=next((t for t in teams if t not in absent), None),
+                               loser=absent[0] if len(absent)==1 else None,
+                               administrative=True, reason="Снятие команды")
+            ready = stages.ready(draw)
+            output = stages.finish_round(draw)
+            if output is not None:
+                promoted.extend(output)
+            elif not ready:
+                ready = stages.ready(draw)
         for n, teams in ready:
             row = draw["games"][n]
             fixture = f"{event['id']}.{index}.{group}.{n}"
@@ -934,7 +960,7 @@ def schedule_draw(c, event):
                     >> 1,
                 )
             )
-    order(c)
+    resolve_slots(c)
     if any(any("winner" not in g for g in draw["games"]) for draw in draws):
         return
     if index + 1 < len(event["stages"]):
@@ -945,7 +971,102 @@ def schedule_draw(c, event):
             ]
         begin(c, event, event["direct"].get(str(index + 1), []) + promoted)
     else:
-        finish(c, event, promoted)
+        finish(c, event, [t for t in promoted if event["entries"].get(t) != "withdrawn"])
+
+
+def leave(c, event, team, pack, reason):
+    state = event["entries"].get(team)
+    require(event["status"] in ("registration", "playing") and
+            state in registrations.COMMITTED | {"invited", "offered", "waiting"},
+            "Нет действующего участия в этом турнире")
+    locked = event["status"] == "playing" or c["date"] >= event["lock"]
+    event["entries"][team] = "withdrawn" if locked else "declined"
+    event.setdefault("reasons", {})[team] = reason
+    if team == c["team"]:
+        notice(c, event, "Снятие с турнира" if locked else "Отказ от участия", reason)
+    if not locked:
+        if event.get("invitePools") and not event.get("inviteClosed"):
+            refill_invites(c, event)
+        if event.get("waiting"):
+            select_applicants(c, event, pack)
+        return
+    for draws in event["draws"]:
+        for draw in draws:
+            if draw["format"] == "swiss" and team in draw["teams"]:
+                withdrawn = draw.setdefault("withdrawn", [])
+                if team not in withdrawn:
+                    withdrawn.append(team)
+    # Existing games stay in the historical draw. Advance their opponents
+    # administratively, without recording played maps, VRS or player stats.
+    while fixture := next((f for f in c["queue"] if f.get("edition") == event["id"] and team in f["teams"]), None):
+        draw = event["draws"][fixture["stage"]][fixture["group"]]
+        winner = next(t for t in fixture["teams"] if t != team)
+        stages.record(draw, fixture["game"], winner, team)
+        draw["games"][fixture["game"]].update(administrative=True, reason=reason)
+        c["queue"].remove(fixture)
+        if c.get("watchFixture") == fixture["id"]:
+            c.pop("watchFixture")
+        schedule_draw(c, event)
+    if event["status"] == "finished":
+        publish(c, pack)
+
+
+def priority_for(event, team):
+    # A place already earned or a stage already under way is more costly to relinquish.
+    state = event["entries"].get(team)
+    return (event["prestige"], -len(event["draws"]), state not in ("qualified", "locked"),
+            not bool(event.get("feeds")), -sum(event["prizes"]), event["id"])
+
+
+def resolve_slots(c):
+    """Only modeled online windows allow a later day in the same round."""
+    events = c["circuit"]["editions"]
+    for f in c["queue"]:
+        if "edition" not in f:
+            continue
+        e = events[f["edition"]]
+        spec = e["stages"][f["stage"]]
+        if not e.get("modelDates") or e.get("lan", True) or "roundDays" in spec or "groupDays" in spec:
+            continue
+        occupied = {g["date"] for g in c["queue"] if g.get("edition") != e["id"] and set(f["teams"]).intersection(g["teams"])}
+        if f["date"] not in occupied:
+            continue
+        draw = e["draws"][f["stage"]][f["group"]]
+        row = draw["games"][f["game"]]
+        # Stop before a dependent round can begin, including unpublished games.
+        rounds = max(g["round"] for g in draw["games"])
+        duration = (day(spec["end"]) - day(spec["start"])).days
+        limit = (offset(spec["start"], round(duration * (row["round"] + 1) / max(1, rounds)) - 1)
+                 if row["round"] < rounds else spec["end"])
+        candidate = offset(f["date"], 1)
+        while candidate <= limit:
+            if candidate not in occupied and not any(g is not f and g["date"] == candidate and
+                    set(f["teams"]).intersection(g["teams"]) for g in c["queue"]):
+                f["date"] = row["date"] = candidate
+                if c["team"] in f["teams"]:
+                    notice(c, e, "Изменение расписания", "Свободный игровой день: " + candidate)
+                break
+            candidate = offset(candidate, 1)
+    order(c)
+
+
+def fixture_conflicts(c, fixture):
+    return [f for f in c["queue"] if f.get("edition") and f["edition"] != fixture.get("edition")
+            and f["date"] == fixture["date"] and set(f["teams"]).intersection(fixture["teams"])]
+
+
+def settle_fixture_conflicts(c, fixture, pack):
+    # A later draw can create a new clash after both entries were accepted.
+    resolve_slots(c)
+    for other in fixture_conflicts(c, fixture):
+        for team in sorted(set(other["teams"]).intersection(fixture["teams"])):
+            if team == c["team"]:
+                c.update(progress=None, error="Конфликт календаря. Выберите приоритет на странице соревнования → Моя заявка.")
+                return
+            events = c["circuit"]["editions"]
+            lost = max((events[other["edition"]], events[fixture["edition"]]), key=lambda e:priority_for(e,team))
+            leave(c, lost, team, pack, "Совпадение обязательных матчей")
+            return
 
 
 def tournament_priority(event):
@@ -953,13 +1074,7 @@ def tournament_priority(event):
 
 
 def qualification_conflict(c, target, team):
-    commitments = [
-        e
-        for e in c["circuit"]["editions"].values()
-        if e is not target
-        and e["entries"].get(team) in registrations.COMMITTED
-        and registrations.conflicts(target, e)
-    ]
+    commitments = [c["circuit"]["editions"][r["id"]] for r in registrations.clashes(c, target, team)]
     if not commitments:
         return None
     for other in commitments:

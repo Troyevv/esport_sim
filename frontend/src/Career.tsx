@@ -16,6 +16,7 @@ import {
   type Summary,
 } from "./careerData";
 import { Load, NewCareer, Saves } from "./CareerForms";
+import { StaffOffice } from "./StaffOffice";
 import { CareerMenu } from "./CareerMenu";
 import { CompetitionCenter } from "./CompetitionCenter";
 import { Calendar } from "./CareerCalendar";
@@ -43,6 +44,8 @@ const sections = [
     "Моя команда",
     [
       ["Состав", "users"],
+      ["Тренерский штаб", "users"],
+      ["Скаутский отдел", "search"],
       ["Тактики", "crosshair"],
       ["Организация", "building"],
     ],
@@ -487,6 +490,10 @@ function Manager({
                 </>
               ) : !scene || directory.error ? (
                 <Load {...directory} />
+              ) : route.profile?.group === "staff" && c.office.people[route.profile.id] ? (
+                <StaffOffice key={route.profile.id} {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial="Тренерский штаб" personId={route.profile.id}/>
+              ) : ["Тренерский штаб","Скаутский отдел"].includes(active) ? (
+                <StaffOffice {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial={active}/>
               ) : route.profile ? (
                 <EntityProfile
                   key={route.profile.group + route.profile.id}

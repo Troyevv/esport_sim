@@ -97,9 +97,11 @@ export function GamePortrait({
   head,
   kit,
   showShoulders = false,
+  staff = false,
 }: {
   name: string;
   showShoulders?: boolean;
+  staff?: boolean;
   head?: string | null;
   kit?: ClubKit | null;
 }) {
@@ -225,9 +227,10 @@ export function GamePortrait({
       viewBox={camera && badHead !== head ? camera.join(" ") : "0 0 240 280"}
       role="img"
       aria-label={
-        name + " · " + (kit ? "форма " + kit.name : "нейтральная одежда")
+        name + (head?.includes("/generated/") ? " · синтетический портрет · " : " · ") + (kit ? "форма " + kit.name : "нейтральная одежда")
       }
       data-team={kit?.id || ""}
+      data-synthetic={head?.includes("/generated/") || undefined}
     >
       <defs>
         {fitted && (
@@ -326,6 +329,7 @@ export function GamePortrait({
           <stop offset="1" stopColor="#546363" />
         </linearGradient>
       </defs>
+      {staff && <image href="/portraits/club-jacket.webp" x="0" y="121" width="240" height="160" preserveAspectRatio="none"/>}
       {head && badHead !== head ? (
         <image
           data-layer="appearance"
@@ -358,13 +362,14 @@ export function GamePortrait({
           </g>
         </g>
       )}
-      <g data-layer="kit">
+      <g data-layer="kit" transform={!staff && head?.includes("/generated/") ? "translate(0 8)" : undefined}>
         {smooth && (
           <g filter={textile ? undefined : href("cloth")}>{placedFabric}</g>
         )}
         <g filter={fitted ? href("drape") : undefined}>
           <g transform={fitted?.placement}>
-            {!smooth &&
+            {staff && <image href="/portraits/club-jacket-front.webp" x="0" y="121" width="240" height="160" preserveAspectRatio="none"/>}
+            {!staff && !smooth &&
               (textile && textile !== failedCloth ? (
                 <image
                   data-layer="garment"
@@ -375,7 +380,7 @@ export function GamePortrait({
               ) : (
                 <g filter={href("cloth")}>{cloth}</g>
               ))}
-            {(!textile || textile === failedCloth) &&
+            {!staff && (!textile || textile === failedCloth) &&
               design.pattern !== "plain" && (
                 <g clipPath={href("panel")}>
                   <g filter={href("trim")}>{cloth}</g>

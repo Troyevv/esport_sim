@@ -175,6 +175,17 @@ def recommend(w, delegate):
     opponent = next(t for t in s["teams"] if t != team)
     scouting = s["evidence"]
     rng = Random(f"{s['seed']}/{index}/{delegate}")
+    work = s.get("work", {}).get(team, {})
+    specialist = work.get("veto") if delegate == "staff" else None
+    analysis = 0.35 + captain["game_reading"] / 180
+    noise = 0.025 + captain["risk"] / 1200
+    philosophy = {}
+    if specialist:
+        analysis = 0.3 + specialist["quality"] / 125
+        noise = 0.09 - specialist["quality"] / 1250
+        philosophy = specialist["philosophy"]
+    if "opponent" in work:
+        analysis = (analysis + .3 + work["opponent"]["quality"] / 120) / 2
     if step["kind"] == "side":
         row = scouting[team][s["order"][-1]["map"]]
 
@@ -186,6 +197,7 @@ def recommend(w, delegate):
             - side_value("defense")
             + (captain["aggression"] - 50) / 500
         )
+        attack += {"Агрессивный": .035, "Осторожный": -.035}.get(philosophy.get("Стиль игры"), 0)
         return "T" if attack + rng.uniform(-0.06, 0.06) > 0 else "CT"
 
     def value(map_id):
@@ -199,10 +211,12 @@ def recommend(w, delegate):
         preference = lambda row: (
             (row["picks"] - row["bans"]) / (5 + row["picks"] + row["bans"])
         )
-        analysis = 0.7 if delegate == "staff" else 0.35 + captain["game_reading"] / 180
+        if philosophy.get("Подготовка") == "Специализация на картах":
+            prior += (knowledge - 50) / 350
         advantage = estimate(own, prior) - analysis * estimate(other, 0.5)
         advantage += 0.09 * (preference(own) - analysis * preference(other))
-        noise = 0.025 + captain["risk"] / 1200
+        if philosophy.get("Адаптация") == "Экспериментальная":
+            advantage += 0.035 / (1 + own["games"])
         return advantage + rng.uniform(-noise, noise)
 
     choose = min if step["kind"] == "ban" else max
@@ -238,5 +252,6 @@ def advance(w, delegate=None):
         elif step["team"] == w["coachTeamId"] and delegate is None:
             break
         else:
-            by = delegate if step["team"] == w["coachTeamId"] else "captain"
+            by = delegate if step["team"] == w["coachTeamId"] else (
+                "staff" if "veto" in s.get("work", {}).get(step["team"], {}) else "captain")
             apply(s, recommend(w, by), by)

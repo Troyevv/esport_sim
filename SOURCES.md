@@ -161,3 +161,5 @@ Valve публикует исключения для отдельных меро
 - CCT публикует календарь, призовые и регламент. Состав участников и пары квалификации Series 16 сверены по опубликованной сетке. [Contenders 12](https://cctour.gg/cct-2026-contenders-europe-12/) · [Europe Series 16](https://cctour.gg/cct-2026-europe-16/) · [Участники квалификации](https://www.hltv.org/events/9497/cct-2026-europe-series-16-closed-qualifier) · [Основной турнир](https://www.hltv.org/events/9498/cct-2026-europe-series-16)
 - Digital Crusade публикует сроки регистрации DraculaN, состав поля, зависимость фонда от числа заявок и схему круговых групп с отдельным BO3. [DraculaN Season 8](https://draculan.gg/)
 - Исходные игровые эмблемы выполнены в SVG в компоненте CompetitionMark. Источники матчей и исторических составов перечислены в [атрибуции спортивных данных](backend/data/competitions/ATTRIBUTION.md).
+
+Дополнение штаба на 25 ноября 2026 года включает отдельный источник и дату для каждой новой записи. Происхождение должности и игровой оценки разделены. [Источники специалистов](backend/data/staff-20261125.json) · [Происхождение синтетических голов](docs/STAFF_R51.md).

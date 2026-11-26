@@ -50,6 +50,7 @@ class Command(BaseModel):
         "database-match",
         "career-create",
         "career-entry",
+        "career-staff",
         "career-open",
         "career-exhibition",
         "career-lab",
@@ -304,7 +305,7 @@ def create_app(
         if not c or c["id"]!=career_id or "circuit" not in c:
             raise HTTPException(404,"В этой карьере нет турнирного календаря")
         pack=store.careers.pack(c["source"])
-        return dict(archive=competitions.vrs.archive(),editions=[dict(e, ownEligible=registrations.in_region(c, e, c["team"], pack),
+        return dict(archive=competitions.vrs.archive(),editions=[dict(e, conflicts=registrations.clashes(c,e,c["team"]), ownEligible=registrations.in_region(c, e, c["team"], pack),
                 draws=[[dict(d,standings=competitions.stages.table(d)) for d in stage] for stage in e["draws"]])
                 for e in c["circuit"]["editions"].values()],
                     available=registrations.available(c,c["team"],pack),live=c["circuit"].get("live"),
@@ -317,7 +318,7 @@ def create_app(
         if not active or active["id"] != career_id:
             raise HTTPException(404, "Карьера уже сменилась")
         pack = store.careers.pack(active["source"])
-        return career_scene.directory(pack, store.badges.index(pack), store.portraits)
+        return career_scene.directory(pack, store.badges.index(pack), store.portraits, active.get("office", {}).get("positions"))
 
     @app.get("/api/career/options/{key}/{revision}")
     async def career_options(key: str, revision: int):

@@ -7,7 +7,7 @@ import sqlite3
 from pathlib import Path
 from uuid import uuid4
 
-from . import career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
+from . import staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -106,7 +106,10 @@ class CareerStore:
         # Upgrade parked careers, manual slots and their backups in the same transaction as active.
         rows = self.db.execute(
             """SELECT career,slot,body,digest FROM career_slot
-            WHERE CASE WHEN json_valid(body) THEN json_extract(body,'$.world.checkpointVersion') END IN (4,5)"""
+            WHERE CASE WHEN json_valid(body) THEN
+                json_extract(body,'$.world.checkpointVersion') IN (4,5) OR
+                (json_type(body,'$.career')='object' AND json_type(body,'$.career.office') IS NULL)
+            END"""
         )
         for cid, slot, body, digest in rows:
             if checksum(body) != digest:
@@ -237,6 +240,8 @@ class CareerStore:
         )
         if edition:
             facts["rosterVersions"] = {t:edition["registrations"][t][-1]["version"] for t in teams}
+        if "bestOf" in event:
+            staff.record(c, staff.booked(c, pack, event), event["date"])
         career.complete(c, digest, points, report["winnerTeamId"], facts)
 
         if edition:
@@ -290,6 +295,10 @@ class CareerStore:
                 state["hasSave"] |= slot == "1"
             elif kind in ("career-load", "load"):
                 self.load(state, c["id"], slot)
+            elif kind == "career-staff":
+                require(not c["progress"] and state["world"]["version"] == 1, "Завершите встречу или расчёт календаря")
+                staff.change(c, self.pack(c["source"]), value)
+                self.save(state, "auto")
             elif kind == "career-entry":
                 require(not c["progress"] and state["world"]["version"]==1,"Завершите текущую встречу или расчёт")
                 event = c.get("circuit",{}).get("editions",{}).get(value.get("edition"))
@@ -297,7 +306,23 @@ class CareerStore:
                 pack = self.pack(c["source"])
                 team = c["team"]
                 action = value.get("action")
-                if action=="accept":
+                if action in ("prioritise", "leave"):
+                    if action == "leave":
+                        competitions.leave(c, event, team, pack, "Решение менеджера")
+                    else:
+                        clashes = registrations.clashes(c, event, team)
+                        require(clashes and sorted(r["id"] for r in clashes) == value.get("release"),
+                                "Список конфликтов изменился. Обновите календарь.")
+                        for row in clashes:
+                            competitions.leave(c, c["circuit"]["editions"][row["id"]], team, pack,
+                                              "Приоритет: " + event["title"])
+                        if event["entries"].get(team) == "offered":
+                            require(c["date"] < event["replyBy"][team], "Срок подтверждения истёк")
+                            event["entries"][team] = "confirmed"
+                        elif event["entries"].get(team) not in registrations.COMMITTED:
+                            registrations.signup(c, event, team, pack)
+                    c["error"] = None
+                elif action=="accept":
                     registrations.signup(c,event,team,pack)
                 elif action=="withdraw":
                     fixture=c["queue"][0]
@@ -308,6 +333,7 @@ class CareerStore:
                 elif action=="confirm":
                     require(event["entries"].get(team)=="offered" and c["date"]<event["replyBy"][team],
                             "Срок подтверждения истёк")
+                    require(not registrations.conflict_for(c,event,team), "Разрешите конфликт календаря")
                     event["entries"][team]="confirmed"
                 elif action=="decline":
                     require(c["date"]<event["lock"] and event["entries"].get(team) in ("invited","accepted","offered","confirmed","qualified"),
@@ -341,6 +367,7 @@ class CareerStore:
                     and state["world"]["version"] == 1,
                     "Матч пока недоступен",
                 )
+                require(not ("edition" in e and competitions.fixture_conflicts(c, e)), "Разрешите конфликт календаря на странице турнира")
                 pack = self.pack(c["source"])
                 state.update(
                     world=career.initial(
@@ -419,6 +446,7 @@ class CareerStore:
                  if event["kind"]=="match" and own in event["teams"]), "depo")) ,
             competitions="circuit" in c,watchFixture=c.get("watchFixture"),
             slots=self.slots(c["id"]),
+            office=staff.overview(c, pack),
         )
         return dict(careers=list(menu.values()), active=info)
 
@@ -430,7 +458,7 @@ class CareerStore:
         e = c["queue"][0]
         token = (state["context"], c["id"], e["id"])
         game = (
-            None if career.stops(c, e) or ("edition" in e and competitions.missing_players(c,e,self.pack(c["source"]))) else career.initial(self.pack(c["source"]), c, e)
+            None if career.stops(c, e) or ("edition" in e and (competitions.fixture_conflicts(c,e) or competitions.missing_players(c,e,self.pack(c["source"])))) else career.initial(self.pack(c["source"]), c, e)
         )
         return token, game
 
@@ -449,7 +477,9 @@ class CareerStore:
             elif report is None:
                 e = c["queue"][0]
                 c["date"]=e["date"]
-                if "edition" in e and competitions.missing_players(c,e,self.pack(c["source"])):
+                if "edition" in e and competitions.fixture_conflicts(c, e):
+                    competitions.settle_fixture_conflicts(c, e, self.pack(c["source"]))
+                elif "edition" in e and competitions.missing_players(c,e,self.pack(c["source"])):
                     competitions.resolve_availability(c,e,self.pack(c["source"]))
                     if c["team"] in e["teams"]:
                         c["progress"]=None

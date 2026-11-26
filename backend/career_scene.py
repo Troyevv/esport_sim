@@ -1,9 +1,9 @@
 """Public directory of the edition pinned to the active career."""
 
-from . import club_art
+from . import club_art, scene_portraits, staff
 
 
-def directory(pack, badges, portraits):
+def directory(pack, badges, portraits, positions=None):
     media = f"/api/database/{pack['id']}/{pack['revision']}/media/"
 
     def identity(group, key, row):
@@ -34,7 +34,7 @@ def directory(pack, badges, portraits):
         for pid in team["members"]:
             membership.setdefault(pid, []).append(tid)
     players = {}
-    heads = portraits.index(pack["players"])
+    heads = scene_portraits.index(pack, portraits)
     for pid, row in pack["players"].items():
         p = identity("players", pid, row)
         clubs = membership.get(pid, [])
@@ -52,10 +52,21 @@ def directory(pack, badges, portraits):
                                       badge=t["visual"].get("url"), badgeLicense=t["visual"].get("badgeLicense"))
         players[pid] = dict(**p, teams=clubs, realName=row["realName"], born=row["born"],
                             role=row["role"], contract=row["contract"], statistics=row["statistics"])
+    specialists = {}
+    for sid,row in pack["staff"].items():
+        person = identity("staff", sid, row)
+        tid = row["team"]
+        role = (positions or {}).get(sid, staff.position(row["role"]))
+        person.update(team=tid, role=staff.ROLES[role], realName=row["realName"])
+        person["visual"].update(player=True, staff=True, head=heads.get(sid, {}).get("image"), photo=row.get("photo"))
+        if tid:
+            t = teams[tid]
+            person["visual"]["kit"] = dict(id=tid,name=t["name"],design=pack["teams"][tid].get("kit"),
+                                          badge=t["visual"].get("url"),badgeLicense=t["visual"].get("badgeLicense"))
+        specialists[sid] = person
     return dict(
         teams=teams, players=players,
         organizations={k: dict(**identity("organizations", k, r), founded=r["founded"])
                        for k, r in pack["organizations"].items()},
-        staff={k: dict(**identity("staff", k, r), team=r["team"], role=r["role"], realName=r["realName"])
-               for k, r in pack["staff"].items()},
+        staff=specialists,
     )

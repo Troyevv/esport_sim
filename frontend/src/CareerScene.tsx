@@ -487,6 +487,7 @@ export function EntityProfile({
           </span>
           <h2>{item.name}</h2>
           <div className="fullname">{player?.realName || staff?.realName}</div>
+          {item.visual.head?.includes("/generated/") && <small>Синтетический игровой портрет</small>}
           <div className="profile-meta">
             <Flag value={item.visual.flag} />
             {player?.born && (

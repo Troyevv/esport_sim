@@ -1,5 +1,7 @@
 """Roster versions and current employment have independent lifetimes."""
 
+from datetime import date, timedelta
+
 from .database import require
 
 
@@ -7,18 +9,52 @@ def conflicts(a, b):
     return a["start"] <= b["end"] and b["start"] <= a["end"]
 
 
-COMMITTED = {"accepted", "locked", "qualified", "confirmed", "offered"}
+COMMITTED = {"accepted", "locked", "qualified", "confirmed"}
+
+
+def obligation_days(c, event, team):
+    """Known fixtures, or admission to a particular stage before its draw exists."""
+    if event.get("status") in ("cancelled", "finished"):
+        return set()
+    dates = {f["date"] for f in c.get("queue", []) if f.get("edition") == event["id"] and team in f["teams"]}
+    # Results from this day still consume a competition day.
+    dates.update(f["date"] for f in reversed(c.get("history", []))
+                 if f["date"] == c["date"] and f.get("edition") == event["id"] and team in f["teams"])
+    stages = event.get("stages", [])
+    index = next((int(i) for i, teams in event.get("direct", {}).items() if team in teams), 0)
+    if stages and index >= len(event.get("draws", [])):
+        spec = stages[index]
+        # A sixteen-team Swiss stage guarantees three rounds before elimination
+        # or advancement. Later knockout rounds remain conditional.
+        offsets = spec.get("roundDays", [0])[:3 if spec["format"] == "swiss" else 1]
+        if spec.get("groupDays"):
+            offsets = set.intersection(*(set(group[:1]) for group in spec["groupDays"]))
+        for delta in offsets:
+            stamp = (date.fromisoformat(spec["start"]) + timedelta(days=delta)).isoformat()
+            if stamp >= c["date"]:
+                dates.add(stamp)
+    return dates
+
+
+def clashes(c, event, team):
+    target = obligation_days(c, event, team)
+    if not target:
+        return []
+    result = []
+    for other in c["circuit"]["editions"].values():
+        if other["id"] == event["id"] or other["entries"].get(team) not in COMMITTED:
+            continue
+        if not conflicts(event, other):
+            continue
+        dates = sorted(target & obligation_days(c, other, team))
+        if dates:
+            result.append(dict(id=other["id"], title=other["title"], state=other["entries"][team], dates=dates))
+    return result
 
 
 def conflict_for(c, event, team):
-    for other in c["circuit"]["editions"].values():
-        if (
-            other is not event
-            and other["entries"].get(team) in COMMITTED
-            and conflicts(event, other)
-        ):
-            return other
-    return None
+    rows = clashes(c, event, team)
+    return c["circuit"]["editions"][rows[0]["id"]] if rows else None
 
 
 def player_conflict(c, event, team, players, reserves=()):
@@ -41,7 +77,7 @@ def player_conflict(c, event, team, players, reserves=()):
     return None
 
 
-def signup(c, event, team, pack):
+def signup(c, event, team, pack, *, prioritise=frozenset()):
     require(
         event["opens"] <= c["date"] < event.get("applyBy", event["lock"]),
         "Регистрация закрыта",
@@ -73,12 +109,12 @@ def signup(c, event, team, pack):
         parent = c["circuit"]["editions"][parent["feeds"]]
         require(
             parent["entries"].get(team)
-            not in ("invited", "accepted", "locked", "qualified"),
+            not in COMMITTED,
             "Команда уже получила место в следующем этапе",
         )
-    clash = conflict_for(c, event, team)
-    if clash:
-        raise ValueError("Пересечение дат: " + clash["title"])
+    for clash in clashes(c, event, team):
+        if clash["id"] not in prioritise:
+            raise ValueError("Пересечение дат: " + clash["title"] + " · " + ", ".join(clash["dates"]))
     require(
         sum(s == "accepted" for s in event["entries"].values()) < event["capacity"]
         or event["admission"] == "rankedOpen",

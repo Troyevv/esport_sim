@@ -9,7 +9,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from . import cs2_maps, database, checkpoints, engine, match, tactic_library
-from . import career, career_store, series
+from . import career, career_store, series, staff
 from .match_rules import LEGACY_VERSION, PREVIOUS_VERSION, SCOREBOT_VERSION
 from . import match_inventory, match_score
 
@@ -106,6 +106,7 @@ class Store:
                         self.db, gzip.decompress(database.RELEASE.read_bytes())
                     )
                     database.migrate_club_links(self.db)
+                database.install_staff_edition(self.db)
                 self.careers.upgrade_slots()
                 for table in ("active", "slot"):
                     row = self.db.execute(
@@ -135,9 +136,17 @@ class Store:
         validate_snapshot(state)
         if state.get("career") and state["career"].get("version") != career.VERSION:
             raise ValueError("Несовместимая версия карьеры")
+        c = state.get("career")
+        migrate_office = c is not None and "office" not in c
+        if migrate_office:
+            c["office"] = staff.office()
+        elif c:
+            database.require(c["office"].get("version") == 1, "Неизвестная версия назначений")
         game = state["world"]
         if game["version"] != 2:
-            return False
+            if migrate_office:
+                self.backup_checkpoint(source, body)
+            return migrate_office
         if "series" in game:
             checkpoints.validate_round_logs(self.db, game)
         old_version = game.get("checkpointVersion", 1)
@@ -156,14 +165,17 @@ class Store:
             game.update(rules=match.VERSION, checkpointVersion=checkpoints.VERSION)
         checkpoints.validate_current(game)
         match.validate_bindings(game)
-        if old_version >= checkpoints.VERSION:
+        if old_version >= checkpoints.VERSION and not migrate_office:
             return False
+        self.backup_checkpoint(source, body)
+        return True
+
+    def backup_checkpoint(self, source, body):
         self.db.execute("""CREATE TABLE IF NOT EXISTS checkpoint_backup (
             source TEXT NOT NULL, body TEXT NOT NULL, UNIQUE(source, body))""")
         self.db.execute(
             "INSERT OR IGNORE INTO checkpoint_backup VALUES(?,?)", (source, body)
         )
-        return True
 
     def restore_checkpoint(self, table, body):
         label = "активный сценарий" if table == "active" else "ручное сохранение"
@@ -428,7 +440,7 @@ class Store:
                     {pid: pack["players"][pid] for pid in domain["players"]}
                 )
                 for pid, portrait in cached.items():
-                    if not domain["players"][pid]["visual"].get("head"):
+                    if not pack["players"][pid].get("appearance"):
                         domain["players"][pid]["visual"]["head"] = portrait["image"]
                 history = [
                     e

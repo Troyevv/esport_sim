@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { date, useData, type Act, type Career, type Scene } from "./careerData";
-import { Heading, Tabs } from "./GameUI";
+import { Dialog, Heading, Tabs } from "./GameUI";
 import { Load, MatchReport } from "./CareerForms";
 import { Avatar } from "./SceneIdentity";
 import "./competitions.css";
@@ -78,6 +78,7 @@ type Edition = {
   end: string;
   year: number;
   ownEligible: boolean;
+  conflicts: {id:string; title:string; state:string; dates:string[]}[];
   simulated: boolean;
   admission: string;
   status: string;
@@ -146,6 +147,7 @@ type Props = {
 };
 const status: Record<string, string> = {
   registration: "Регистрация",
+  withdrawn: "Команда снялась",
   offered: "Ожидает подтверждения",
   confirmed: "Место подтверждено",
   waiting: "Лист ожидания",
@@ -366,7 +368,8 @@ function Registration({
     [res, setRes] = useState(old?.reserves || []),
     [coach, setCoach] = useState(old?.coach || ""),
     [reason, setReason] = useState(""),
-    [alert, setAlert] = useState("");
+    [alert, setAlert] = useState(""),
+    [decision, setDecision] = useState<"calendar"|"leave"|null>(null);
   const state = event.entries[c.team],
     before = c.date >= event.opens && c.date < event.lock,
     locked = state === "locked" && event.status === "playing",
@@ -382,10 +385,11 @@ function Registration({
         reserves: res,
         coach: coach || null,
         reason,
+        release: event.conflicts.map(r=>r.id).sort(),
       },
       setAlert,
     );
-    if (ok) setAlert("Изменения сохранены.");
+    if (ok) {setDecision(null);setAlert("Изменения сохранены.");}
   };
   const candidates =
     locked && old ? [...old.players, ...old.reserves] : available;
@@ -409,7 +413,7 @@ function Registration({
         <button
           className="btn primary"
           disabled={!enabled}
-          onClick={() => send("confirm")}
+          onClick={() => event.conflicts.length ? setDecision("calendar") : send("confirm")}
         >
           Подтвердить место до {date(event.replyBy![c.team])}
         </button>
@@ -423,25 +427,37 @@ function Registration({
           <button
             className="btn primary"
             disabled={!enabled}
-            onClick={() => send("accept")}
+            onClick={() => event.conflicts.length ? setDecision("calendar") : send("accept")}
           >
             {state === "invited"
               ? "Принять приглашение"
               : "Заявиться на участие"}
           </button>
         )}
-      {before &&
-        ["accepted", "invited", "confirmed", "offered", "qualified"].includes(
-          state,
-        ) && (
-          <button
-            className="btn"
-            disabled={!enabled}
-            onClick={() => send("decline")}
-          >
-            Отказаться от участия
-          </button>
-        )}
+      {["registration","playing"].includes(event.status) && ["accepted","invited","confirmed","offered","waiting","qualified","locked"].includes(state) && (
+        <button className="btn" disabled={!enabled} onClick={()=>setDecision("leave")}>
+          {state==="invited" || state==="offered" ? "Отклонить приглашение" : locked ? "Снять команду с турнира" : "Отменить участие"}
+        </button>
+      )}
+      {!!event.conflicts.length && (before || locked) && <button className="btn" disabled={!enabled}
+        onClick={()=>setDecision("calendar")}>Разрешить конфликт календаря</button>}
+      {decision && <Dialog title={decision==="calendar" ? "Конфликт календаря" : "Отказ от участия"} close={()=>setDecision(null)}>
+        <div className="panel-body tc-decision">
+          <h3>{event.title}</h3><p>{status[state] || "Заявка ещё не подана"} · {span(event.start,event.end)}</p>
+          {decision==="calendar" ? <>
+            {event.conflicts.map(row=><article key={row.id}><h3>{row.title}</h3><p>{status[row.state]} · {row.dates.map(date).join(", ")}</p>
+              <small>{row.state==="locked" ? "Снятие после фиксации. Назначенные встречи завершатся техническим поражением." : "Место будет освобождено."}</small></article>)}
+            <button className="btn primary" disabled={!enabled || !event.conflicts.length} onClick={()=>send("prioritise")}>
+              Выбрать {event.title} и отказаться от конфликтующих турниров</button>
+            <button className="btn" disabled={!enabled} onClick={()=>state && !["declined","withdrawn"].includes(state) ? send("leave") : setDecision(null)}>
+              Сохранить другие обязательства</button>
+          </> : <>
+            <p>{locked ? "Сыгранные матчи и версии заявки сохранятся. Соперники пройдут дальше по регламенту." :
+                "Место освободится для другого участника. Предыдущие версии заявки останутся в истории."}</p>
+            <button className="btn primary" disabled={!enabled} onClick={()=>send("leave")}>Подтвердить отказ</button>
+          </>}
+          {alert && <p role="status">{alert}</p>}
+        </div></Dialog>}
       {((before &&
         ["accepted", "qualified", "offered", "confirmed"].includes(state)) ||
         (locked && !!old?.reserves.length)) && (
