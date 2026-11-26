@@ -34,17 +34,23 @@ def catalog(db):
     )
 
 
-def resolve(db, value):
+def resolve(db, value, *, pinned=False):
     if not isinstance(value, dict) or not isinstance(value.get("id"), str):
         raise ValueError("Выберите сохранённую тактику")
     ident = value["id"]
     if ident.startswith("std-"):
         plan = next((p for p in tactics.standards() if p["id"] == ident), None)
     else:
-        row = db.execute(
-            "SELECT body FROM tactic WHERE id=? ORDER BY revision DESC LIMIT 1",
-            (ident,),
-        ).fetchone()
+        if pinned:
+            row = db.execute(
+                "SELECT body FROM tactic WHERE id=? AND revision=?",
+                (ident, value.get("revision")),
+            ).fetchone()
+        else:
+            row = db.execute(
+                "SELECT body FROM tactic WHERE id=? ORDER BY revision DESC LIMIT 1",
+                (ident,),
+            ).fetchone()
         plan = json.loads(row[0]) if row and row[0] else None
     if not plan or plan["revision"] != value.get("revision"):
         raise StalePlan(

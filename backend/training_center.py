@@ -32,10 +32,10 @@ def selection(value, allowed, limit):
     return value
 
 
-def ref(db, raw, map_id, kind):
+def ref(db, raw, map_id, kind, *, pinned=False):
     if not raw:
         return {}
-    board = tactic_library.resolve(db, raw)
+    board = tactic_library.resolve(db, raw, pinned=pinned)
     require(
         kind in ("team", "attack", "defense", "retake", "pcw"),
         "Направление не использует тактическую доску",
@@ -46,7 +46,10 @@ def ref(db, raw, map_id, kind):
         and (kind != "defense" or board["side"] == "CT"),
         "Проверьте сторону и карту тактики",
     )
-    return dict(tactic=tactics.reference(board))
+    result = dict(tactic=tactics.reference(board))
+    if kind == "pcw":
+        result["board"] = board
+    return result
 
 
 def current(c, pack, day):
@@ -80,7 +83,7 @@ def check_load(c, pack, day, rows, extra=0):
         )
 
 
-def change(c, pack, db, value):
+def change(c, pack, db, value, *, from_template=False):
     t, team, action = c["training"], c["team"], value.get("action")
     ids = tr.members(c, pack, team)
     if action == "program":
@@ -171,7 +174,13 @@ def change(c, pack, db, value):
                 t["plans"][d] = rows
                 practice = entry["practice"]
                 if practice and team not in busy and practice["opponent"] not in busy:
-                    change(c, pack, db, dict(practice, action="pcw", date=d))
+                    change(
+                        c,
+                        pack,
+                        db,
+                        dict(practice, action="pcw", date=d),
+                        from_template=True,
+                    )
         return
     require(day >= c["date"], "Прошедшие занятия завершены")
     if action in ("cancel-pcw", "watch-pcw"):
@@ -189,8 +198,6 @@ def change(c, pack, db, value):
         require(event, "Пракк уже завершён")
         if action == "watch-pcw":
             event["watch"] = not event["watch"]
-            if event["watch"] and event.get("tactic"):
-                event["board"] = tactic_library.resolve(db, event["tactic"])
             event["delegated"] = False
         else:
             if event.get("delegated"):
@@ -231,9 +238,7 @@ def change(c, pack, db, value):
         )
         require(not ({team, other} & busy), "Соперник или команда заняты в этот день")
         check_load(c, pack, day, rows if day in t["plans"] else [], extra=count)
-        board = ref(db, value.get("tactic"), map_id, "pcw")
-        if board:
-            board["board"] = tactic_library.resolve(db, value["tactic"])
+        board = ref(db, value.get("tactic"), map_id, "pcw", pinned=from_template)
         for i in range(count):
             pair = [team, other] if i == 0 else [other, team]
             c["queue"].append(tr.fixture(c, day, *pair, map_id, goal, watch, i) | board)

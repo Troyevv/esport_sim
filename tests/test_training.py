@@ -12,6 +12,7 @@ from backend import (
     skills,
     staff,
     tactics,
+    tactic_library,
     training,
     training_center,
 )
@@ -168,6 +169,51 @@ def test_week_template_limits_and_staff_planner(office):
     assert sum(
         j["cost"] for j in c["office"]["ledger"]["jobs"] if j["person"] == sid
     ) <= staff.capacity(people[sid])
+
+
+def test_template_retains_practice_board_after_library_edit(office):
+    s, pack = office
+    c = s.read()["career"]
+    partner = next(t for t in c["teams"] if t != c["team"])
+    day = c["date"]
+    board = dict(tactics.propose("T", "Пистолетная", 18), id=str(uuid4()), revision=0)
+    tactic_library.change(s.db, "tactic-save", board)
+    ref = dict(id=board["id"], revision=1)
+    create = dict(
+        action="pcw",
+        date=day,
+        opponent=partner,
+        map="depo",
+        games=1,
+        goal="attack",
+        watch=False,
+        tactic=ref,
+    )
+    training_center.change(c, pack, s.db, create)
+    monday = training.monday(day)
+    training_center.change(
+        c, pack, s.db, dict(action="template", date=monday, name="Доска")
+    )
+    tactic_library.change(
+        s.db, "tactic-save", dict(board, revision=1, name="Новая версия")
+    )
+    with pytest.raises(tactic_library.StalePlan):
+        tactic_library.resolve(s.db, ref)
+    event = next(e for e in c["queue"] if e.get("pcw"))
+    training_center.change(
+        c, pack, s.db, dict(action="watch-pcw", date=day, id=event["id"])
+    )
+    assert event["watch"] and event["board"]["revision"] == 1
+    training_center.change(
+        c,
+        pack,
+        s.db,
+        dict(action="apply", date=training.offset(monday, 7), name="Доска"),
+    )
+    copied = next(
+        e for e in c["queue"] if e.get("pcw") and e["date"] == training.offset(day, 7)
+    )
+    assert copied["board"] == event["board"]
 
 
 @pytest.mark.parametrize("watch", [False, True])
