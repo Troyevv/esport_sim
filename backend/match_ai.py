@@ -95,6 +95,15 @@ def observe(w, players, space=None):
         w["messages"].remove(message)
         for a in players:
             if a["team"] == message["team"] and a["id"] != message["sender"]:
+                if "pressure" in message:
+                    call = message["pressure"]
+                    # A nearby partner can cover the reported sector. The call
+                    # contains the teammate’s position and an octant, not a target.
+                    if dist(point(a),call["origin"]) < 35:
+                        previous = a.get("pressureCall")
+                        if not previous or call["tick"] > previous["tick"]:
+                            a["pressureCall"] = call
+                    continue
                 if "friendlyUtility" in message:
                     a["friendlyUtility"] = [p for p in a.get("friendlyUtility",[]) if p["end"] >= now]
                     a["friendlyUtility"].append(message["friendlyUtility"])

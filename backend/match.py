@@ -225,7 +225,7 @@ def next_round(w):
                      useTarget=None,useFloor=None,checkContact=None,checkPosition=None,
                      shelter=None,coverUntil=0,coverReview=0,bombSearch=None,coveredDefuser=None,coverPoint=None,revisedApproach=None,
                      rendezvous=None,plantCover=None,plantCheck=None,watchDevice=None,heardUse=-1000,
-                     seenDevice=None,beepBearing=None,plantCue=None,leftScreen=False,sectorReview=None,crossingReview=0,screenedOpening=False,friendlyUtility=[])
+                     seenDevice=None,beepBearing=None,plantCue=None,leftScreen=False,sectorReview=None,incoming=None,pressureCall=None,nextPressureCall=0,crossingReview=0,screenedOpening=False,friendlyUtility=[])
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
@@ -874,6 +874,8 @@ def advance(w):
             previous = a["status"]
             step_index = a.get("stepIndex", 0)
             intents.append((a, *ai.act(observation, a, squad, known_bomb, fire)))
+            if space:
+                ai.cs2_play.cs2_defense.check_incoming(a,intents[-1][1],now,observation["player"]["skills"])
             if space and a.get("lastBlockedTick") != now:
                 a["blockedTicks"] = 0
             if (space and side=="T" and w["phase"]=="live" and a.get("blockedTicks",0)>=20
@@ -931,6 +933,19 @@ def advance(w):
                 victim = min(crossed,key=lambda p: ai.distance(a,p),default=None)
             ai.shoot(w, a, target, victim, space)
             for listener in players:
+                # A passing shot is perceptible at the listener, even when the
+                # shooter is outside their vision or normal local audio radius.
+                if (space and listener is not a and listener["hp"] and
+                        a["id"] not in listener["visible"] and
+                        ai.near_line(a,target,listener,6) and
+                        space.hit(ai.point(a),ai.point(listener),4,56) is None):
+                    listener["incoming"] = dict(tick=now,bearing=ai.cs2_play.sound_bearing(listener,a))
+                    if now >= listener.get("nextPressureCall",0):
+                        delay = ai.radio_delay(profile(w,listener)["skills"])
+                        listener["nextPressureCall"] = now + 10 + delay
+                        w["messages"].append(dict(team=listener["team"],sender=listener["id"],
+                            pressure=dict(listener["incoming"],origin=list(ai.point(listener))),
+                            due=now+delay))
                 if (
                     listener["team"] != a["team"]
                     and listener["hp"]

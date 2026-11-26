@@ -15,9 +15,9 @@ from .cs2_sites import BombSites
 from .match_rules import BLAST_RADIUS, ROLES, UTILITY
 
 BUILD = 26879581
-RULES = "cs2-bo1.14"
-PREVIOUS_RULES = "cs2-bo1.13"
-SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.12", "cs2-bo1.11", "cs2-bo1.10", "cs2-bo1.9", "cs2-bo1.8", "cs2-bo1.7", "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
+RULES = "cs2-bo1.15"
+PREVIOUS_RULES = "cs2-bo1.14"
+SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.13", "cs2-bo1.12", "cs2-bo1.11", "cs2-bo1.10", "cs2-bo1.9", "cs2-bo1.8", "cs2-bo1.7", "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )
@@ -186,6 +186,37 @@ class Map:
     @cached_property
     def attack_spawns(self):
         return tuple(self.spawn("T", i)[2] for i in range(len(self.spawns["T"])))
+
+    @cached_property
+    def plant_surfaces(self):
+        """Representative legal locations including trigger edges cutting NAV polygons."""
+        from math import ceil, floor
+        result = {}
+        for site, solids in self.sites.volumes.items():
+            positions = {self.centers[i] for i in self.plants[site]}
+            for solid in solids:
+                (xmin,xmax),(ymin,ymax),_ = solid.bounds
+                # Only consult NAV bins overlapping this trigger's bounds.
+                for ix in range(floor(xmin/64),ceil(xmax/64)+1):
+                    x = max(xmin,min(xmax,ix*64))
+                    for iy in range(floor(ymin/64),ceil(ymax/64)+1):
+                        y = max(ymin,min(ymax,iy*64))
+                        for area in self.nav._sectors.get((floor(x/256),floor(y/256)),()):
+                            z = surface_height(self.nav.areas[area]["corners"],x,y)
+                            if z is not None and solid.contains((x,y,z+1)):
+                                positions.add(self.to_sim((x,y,z)))
+            # Distribute samples over the surface without overweighting a dense NAV patch.
+            samples = [self.site_points[site]]
+            gaps = {p:dist(p,samples[0]) for p in sorted(positions)}
+            while len(samples)<24 and gaps:
+                point = max(gaps,key=gaps.get)
+                if gaps.pop(point)<3:
+                    break
+                samples.append(point)
+                for p in gaps:
+                    gaps[p] = min(gaps[p],dist(p,point))
+            result[site] = tuple(samples)
+        return result
 
     @cached_property
     def collision(self):
@@ -502,13 +533,10 @@ class Map:
         plant = self.site_points[site]
         if duty == "site":
             # Sample the spatial extent, including legal positions behind different boxes.
-            remaining = [self.centers[i] for i in sorted(self.plants[site])]
-            objectives = [plant]
-            while len(objectives) < 12:
-                q = max(remaining, key=lambda p: min(dist(p, other) for other in objectives))
-                if min(dist(q, other) for other in objectives) < 3:
-                    break
-                objectives.append(q)
+            objectives = self.plant_surfaces[site]
+            # A legal plant cell cannot also count as the entry that the
+            # carrier has yet to cross.
+            ingress = [q for q in ingress if self.site_at(q)!=site] or ingress
         covers = {p for _, p in self.cover if dist(p, anchor) <= 20
                   or (objectives and dist(p, plant) <= 27)}
         nearby = [self.centers[i] for i in self.nearby_areas(anchor, 15)]
@@ -541,12 +569,14 @@ class Map:
                             sum(facing(pos,q,p) for p in entries))
                 scored = [(coverage(q),q) for q in [*plant_views,*entries]]
                 (joint,entrances),watch = max(scored, key=lambda entry: (
-                    all(entry[0]), entry[0], -dist(entry[1],plant)))
+                    min(entry[0][0]/len(objectives),entry[0][1]/len(ingress)),
+                    entry[0], -dist(entry[1],plant)))
             else:
                 watch = next(iter(entries or plant_views), None) or self._watch(site,pos,variant)
                 joint, entrances = 0, len(entries)
             ranked.append((not bool(plant_views) if objectives else False,
                            not bool(entrances), abs(pos[2]-anchor[2])*UNIT > 72,
+                           -min(joint/len(objectives),entrances/max(1,len(ingress))) if objectives else 0,
                            -joint, -min(6,entrances), pos not in covers,
                            dist(pos, anchor), pos, watch))
         return [(pos, watch) for *_, pos, watch in sorted(ranked)]

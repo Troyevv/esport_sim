@@ -714,7 +714,7 @@ def hear_plant(space, players, planter, tick):
         # Choose from known plant areas in the audible direction; stacked sites can be ambiguous.
         guesses = [(costs.get(actor["navArea"], float("inf")), site)
                    for site, costs in space.site_costs.items()
-                   if any(not outside_bearing(space.centers[i], cue) for i in space.plants[site])]
+                   if any(not outside_bearing(point, cue) for point in space.plant_surfaces[site])]
         if guesses:
             _, site = min(guesses)
             actor["plantCue"] = dict(tick=tick, site=site, bearing=cue)
@@ -1064,8 +1064,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             a["status"] = "Проверяет последнее донесение о C4"
             return "shoot",aim
         if "peek" not in cue:
-            points = [space.centers[i] for i in sorted(space.plants[cue["site"]])
-                      if not outside_bearing(space.centers[i], cue["bearing"])]
+            points = [p for p in space.plant_surfaces[cue["site"]] if not outside_bearing(p,cue["bearing"])]
             cue["peek"],cue["watch"] = cs2_defense.plant_intercept(
                 space,a,allies,points,now,cue["tick"]+RULES["plant"])
         if cue["peek"] is not None:
@@ -1074,8 +1073,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             # defender can deny the sound even when smoke obscures the peek.
             if not cue.get("denialChecked") and now >= a["throwAt"]:
                 cue["denialChecked"] = True
-                points = [space.centers[i] for i in sorted(space.plants[cue["site"]])
-                          if not outside_bearing(space.centers[i], cue["bearing"])]
+                points = [p for p in space.plant_surfaces[cue["site"]] if not outside_bearing(p,cue["bearing"])]
                 if points:
                     target = min(points, key=lambda q: (sum(dist(q,p) for p in points), q))
                     intent = deny_plant(space, a, allies, target, now, cue["tick"], plan)
@@ -1123,7 +1121,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         if anchor and latest["source"] != "Слух" and a["utility"] and now >= a["throwAt"]:
             # Use a reported push to delay a crossing while the anchor still holds the site.
             if now - latest["tick"] < 18 and 20 < dist(pos, xyz(latest)) < 80:
-                for crossing in space.ingress(site, plan["lane"]):
+                for crossing in space.ingress(site, order.get("lane",plan["lane"])):
                     if dist(crossing, xyz(latest)) > 12 or space.hit(pos, crossing, 1, 64):
                         continue
                     if any(dist(xyz(p), crossing) < 21 for p in allies):
@@ -1135,7 +1133,12 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                     if grenade:
                         a["status"] = "Сдерживает выход на плент"
                         return "throw", dict(zip(("x","y","z"),crossing), utility=grenade)
-        if not holding and not anchor and dist(goal, xyz(latest)) < (55 - skill["discipline"] / 4) and dist(pos, xyz(latest)) > 6:
+        reserve_duty = any(task and task["id"]==a["id"] for task in (plan.get("backup"),plan.get("secondBackup")))
+        check_flank = (not checking_plant and not reserve_duty and (
+            not holding or (latest["source"] in ("Зрение","Радио") and now-latest["tick"]<20
+                            and dist(pos,goal)<14 and any(p is not a and p["hp"] and
+                            dist(xyz(p),pos)<40 for p in allies))))
+        if check_flank and not anchor and dist(goal, xyz(latest)) < (55 - skill["discipline"] / 4) and dist(pos, xyz(latest)) > 6:
             contact = xyz(latest)
             if space.hit(pos, contact, 1, 64) is None:
                 goal = pos
@@ -1213,16 +1216,20 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         fire,
         allow_detour=True,
     )
+    follow_sight = latest is not None and (not holding or (
+        not checking_plant and (latest["source"]=="Зрение" or
+        (dist(pos,xyz(latest))<55 and latest["source"] in ("Слух","Радио")) or
+        any(p is not a and p["target"]==latest["id"] and dist(pos,xyz(p))<35 for p in allies))))
     if moved:
         if side == "CT" and (holding or not latest) and dist(xyz(a), goal) < 22 + familiarity / 6:
             # Strafe into the last stretch of the hold facing the known crossing.
             a["heading"] = atan2(watch[1]-a["y"], watch[0]-a["x"])
-        if not holding and latest and now - latest["tick"] < 12 + skill["positioning"] // 5:
+        if follow_sight and now - latest["tick"] < 12 + skill["positioning"] // 5:
             point = cs2_defense.anticipated(space,latest,now,skill["game_reading"])
             a["heading"] = atan2(point[1]-a["y"],point[0]-a["x"])
         return "move", None
     # Watch an approach known to this team or turn toward the last reported contact.
-    if not holding and latest and now - latest["tick"] <= perf.pursuit_window(skill, latest["source"] == "Слух") and latest["tick"] >= a.get("heardUse", -1000):
+    if follow_sight and now - latest["tick"] <= perf.pursuit_window(skill, latest["source"] == "Слух") and latest["tick"] >= a.get("heardUse", -1000):
         watch = cs2_defense.anticipated(space,latest,now,skill["game_reading"])
     a["heading"] = atan2(watch[1] - a["y"], watch[0] - a["x"]) + (0.6 - skill["discipline"] / 260) * sin(
         (now + 13 * slot) / 26

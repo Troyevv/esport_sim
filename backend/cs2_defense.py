@@ -242,6 +242,45 @@ def screen_safe(space, plan, actor, squad, point):
     return True
 
 
+def check_incoming(actor, intent, now, skills):
+    """Turn toward an incoming round using only the observer's coarse directional cue."""
+    from math import atan2
+    from .cs2_play import outside_bearing
+
+    cue = actor.get("incoming")
+    shared = actor.get("pressureCall")
+    if shared and (not cue or now - cue["tick"] > 12):
+        cue = shared
+    if (
+        not cue
+        or intent not in ("move", "hold")
+        or actor["visible"]
+        or actor["blind"] > now
+    ):
+        return
+    age = now - cue["tick"]
+    if age > 12 or age <= 0:
+        return
+    direction = cue["bearing"]
+    # A recent sight in the same octant can disambiguate two possible angles.
+    relevant = [
+        r
+        for r in actor["knowledge"].values()
+        if r["source"] in ("Зрение", "Радио")
+        and 0 <= now - r["tick"] < 20
+        and not outside_bearing(xyz(r), direction)
+    ]
+    angle = atan2(direction[3], direction[2])
+    if relevant:
+        from math import pi
+
+        sight = max(relevant, key=lambda r: r["tick"])
+        bearing = atan2(sight["y"] - actor["y"], sight["x"] - actor["x"])
+        confidence = (1 - (now - sight["tick"]) / 20) * skills["game_reading"] / 100
+        angle += ((bearing - angle + pi) % (2 * pi) - pi) * confidence
+    actor["heading"] = angle
+
+
 def anticipated(space, report, now, reading):
     """Advance a visual report along its measured motion up to the first obstacle."""
     position = xyz(report)
@@ -260,17 +299,31 @@ def anticipated(space, report, now, reading):
 
 def breach_watch(space, plan, actor, squad, order, now, reading):
     """One available guard checks a credible breach; the other guards retain their angles."""
-    reports = [
-        r
-        for r in actor["knowledge"].values()
-        if r["source"] in ("Зрение", "Радио") and 0 < now - r["tick"] < 30
-    ]
+    reports = [r for r in actor["knowledge"].values() if 0 < now - r["tick"] < 30]
     reports.sort(key=lambda r: (not r.get("carryingC4"), -r["tick"]))
     for r in reports:
         last = xyz(r)
-        if dist(last, order["hold"]) > 65 or space.reported_site(last) != order["site"]:
-            continue
         point = anticipated(space, r, now, reading)
+        # Personal visual contact can be reacquired without abandoning a
+        # position. A NAV site label is immaterial to a visible corridor.
+        if (
+            r["source"] == "Зрение"
+            and now - r["tick"] <= 12
+            and space.hit(xyz(actor), point, 1, 64) is None
+        ):
+            return point
+        if r["source"] == "Граната" or dist(last, order["hold"]) > 65:
+            continue
+        report_site = space.reported_site(last)
+        if report_site != order["site"]:
+            if report_site is not None:
+                continue
+            if not facing(order["hold"], order["watch"], point) and (
+                space.entry_sites.get(space.locate(last)) != order["site"]
+            ):
+                continue
+        if r["source"] == "Слух" and now - r["tick"] > 12:
+            continue
         responders = []
         for mate in squad:
             if (
@@ -444,7 +497,7 @@ def protected_by(space, actor, contact, squad):
         and not p["reloadAt"]
         and dist(xyz(actor), xyz(p)) < 45
         and in_view(p, contact)
-        and space.clear(p, contact)
+        and space.hit(xyz(p), xyz(contact), 1, 64) is None
         for p in squad
     )
 
@@ -524,14 +577,12 @@ def last_burst(space, actor, sight, squad, player, now):
     age = now - sight["tick"]
     if sight["source"] != "Зрение" or not 0 < age <= 3:
         return None
-    direction = sight.get("direction")
-    if direction is None or not sight.get("speed"):
-        return None
+    direction = sight.get("direction", (0, 0, 0))
     origin = xyz(sight)
     reading = player["skills"]["game_reading"] / 100
-    delta = min(2, sight["speed"]) * age * reading
+    delta = min(2, sight.get("speed", 0)) * age * reading
     predicted = tuple(a + d * delta for a, d in zip(origin, direction))
-    if space.hit(origin, predicted, 1, 56) is not None:
+    if predicted != origin and space.hit(origin, predicted, 1, 56) is not None:
         predicted = origin
     target = dict(sight, **dict(zip(("x", "y", "z"), predicted)))
     if any(p is not actor and near_line(actor, target, p, 2) for p in squad):

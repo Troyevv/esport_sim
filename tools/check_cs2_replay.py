@@ -18,7 +18,7 @@ def main():
         ("de_vertigo", 100, 4, (78.84, 203.85, 957.67), 100),
         ("de_cache", 250, 0, (235.07, 212.22, 139.75), 100),
         ("de_nuke", 190, 1, (232.04, 333.46, -34.33), 100),
-        ("de_dust2", 1450, 0, (173.66, 236.85, 0.01), 100),
+        ("de_dust2", 1450, 0, (63.91, 223.78, 2.96), 100),
     )
     failures = []
     for name, tick, slot, point, hp in samples:
@@ -54,7 +54,7 @@ def main():
     # Record the approach as well as the finish so a divergence can be localized.
     seed = 41002
     pair = random.Random(seed).sample(sorted(career.roster_index(pack).values()), 2)
-    for teams, expected in ((pair, 536), (pair[::-1], 493)):
+    for teams, expected in ((pair, 511), (pair[::-1], 544)):
         state = match.initial(seed, database.match_input(pack, teams), teams, map_id="de_anubis")
         approach = []
         live = None

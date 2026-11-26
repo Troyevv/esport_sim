@@ -261,3 +261,11 @@ def test_defensive_smoke_distinguishes_legal_plant_and_other_floor():
     assert space.smokes_plant("A", tuple(upper))
     assert not space.smokes_plant("B", tuple(upper))
     assert space.smokes_plant("B", tuple(lower))
+
+
+def test_nuke_scans_legal_parts_of_nav_polygons_cut_by_the_site_trigger():
+    space = cs2_maps.get("de_nuke")
+    for site, points in space.plant_surfaces.items():
+        assert all(space.site_at(p) == site for p in points)
+    assert any(space.locate(p) not in space.plants[site]
+               for site,points in space.plant_surfaces.items() for p in points)

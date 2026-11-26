@@ -112,3 +112,40 @@ def test_shot_on_empty_map_point_records_ammo_and_no_victim():
     assert actor["ammo"] == original - 1
     assert game["traces"][-1]["target"] is None
     assert not any(e["kind"] == "damage" for e in game["events"])
+
+
+def test_incoming_direction_can_override_an_empty_watch_but_expires_and_preserves_contact():
+    from math import pi
+
+    actor = dict(
+        heading=0,
+        x=0,
+        y=0,
+        z=0,
+        visible=[],
+        blind=0,
+        knowledge={},
+        incoming=dict(tick=100, bearing=[0, 0, -1, 0]),
+    )
+    defense.check_incoming(actor, "hold", 101, dict(game_reading=65))
+    assert actor["heading"] == pi
+    actor.update(heading=0, visible=["T2"])
+    defense.check_incoming(actor, "hold", 102, dict(game_reading=65))
+    assert actor["heading"] == 0
+    actor["visible"].clear()
+    defense.check_incoming(actor, "move", 114, dict(game_reading=85))
+    assert actor["heading"] == 0
+
+
+def test_stationary_personal_sight_does_not_need_an_invented_motion_vector():
+    player = dict(skills=dict(game_reading=85))
+    actor = dict(x=0, y=0, z=0)
+    sight = dict(x=20, y=0, z=0, id="T2", tick=19, source="Зрение")
+    assert defense.last_burst(None, actor, sight, [actor], player, 20) == sight
+    assert defense.last_burst(None, actor, sight, [actor], player, 24) is None
+    assert (
+        defense.last_burst(
+            None, actor, dict(sight, source="Радио"), [actor], player, 20
+        )
+        is None
+    )
