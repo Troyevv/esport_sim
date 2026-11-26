@@ -46,6 +46,9 @@ if (process.env.ESPORT_CS2_QA) {
         await button("▷ Предпросмотр").click();
         await expect(page.getByText(/Seed 42 · Бонусная.*закуплено на/)).toBeVisible();
         await button("К редактированию").click();
+        const coordinates = page.locator(".board-sequence li small").first();
+        await expect(coordinates).toBeVisible();
+        await expect(coordinates).not.toHaveText(/\.\d{2,}/);
       }
       await page.screenshot({path:info.outputPath(map.id+"-board.png")});
       await page.reload();

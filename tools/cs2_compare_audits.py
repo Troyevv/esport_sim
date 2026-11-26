@@ -18,7 +18,7 @@ def professional_rounds(directory):
         )
     return db.execute("""select r.map_name,r.map_uid,r.round_num,r.winner_side,r.end_reason,r.bomb_planted,
  (r.end_tick-r.freeze_end_tick)/64.0,t.team_current_equip_value, CT.team_current_equip_value,m.hltv_stars, t.team_spend, ct.team_spend,
- (r.bomb_plant_tick-r.freeze_end_tick)/64.0
+ (r.bomb_plant_tick-r.freeze_end_tick)/64.0,t.team_balance,ct.team_balance
  from rounds r join maps m using(map_uid)
  join team_round_economy t on r.map_uid=t.map_uid and r.round_num=t.round_num and t.side='t'
  join team_round_economy ct on r.map_uid=ct.map_uid and r.round_num=ct.round_num and ct.side='ct'
@@ -153,6 +153,7 @@ def professional(pro, n):
     res.update(
         games=len({x[1] for x in g}),
         purchases=st.median(spend for r in g for spend in r[10:12]),
+        pocket=st.median(balance for r in g for balance in r[13:15]),
         zero=round(
             100 * sum(not spend for r in g for spend in r[10:12]) / (2 * len(g)), 1
         ),
@@ -220,10 +221,23 @@ def raw_professional(files):
         plants = [r for r in rows if r["plant"]]
         plant_times = [r["plantSeconds"] for r in plants if r.get("plantSeconds") is not None]
         touches_known = bool(plants) and all(r.get("touched") is not None for r in plants)
+        spending, balances = [], []
+        for r in rows:
+            for side in ("T", "CT"):
+                squad = [a for a in (r.get("wallets") or {}).values() if a["side"] == side]
+                if len(squad) != 5:
+                    continue
+                if all(a["spent"] is not None for a in squad):
+                    spending.append(sum(a["spent"] for a in squad))
+                if all(a["remaining"] is not None for a in squad):
+                    balances.append(sum(a["remaining"] for a in squad))
         data[games[0]["map"]] = dict(
             plantSeconds=round(st.median(plant_times), 1) if plant_times else None,
             touched=sum(r["touched"] for r in plants) if touches_known else None,
             plantedRounds=len(plants),
+            purchases=st.median(spending) if spending else None,
+            zero=round(100 * spending.count(0) / len(spending), 1) if spending else None,
+            pocket=st.median(balances) if balances else None,
             eco=rates(equip_rows).get("eco", []),
             games=len(games),
             n=len(rows),

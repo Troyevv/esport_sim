@@ -781,7 +781,7 @@ export default function TacticEditor({
                       </span>
                       <small>
                         {s.seconds ? s.seconds + " с · " : ""}
-                        {s.x}, {s.y}
+                        {Math.round(s.x * 10) / 10}, {Math.round(s.y * 10) / 10}
                       </small>
                     </button>
                   </li>
