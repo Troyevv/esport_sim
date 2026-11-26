@@ -77,7 +77,7 @@ export default function CareerScreen(props: Props) {
   const { frame, act, screen, go, database, status, settings } = props;
   const res = useData<{ careers: Summary[]; active: Career | null }>(
     "/api/career",
-    frame.careerRevision,
+    frame.calendarProgress ? -1 : frame.careerRevision,
   );
   const [create, setCreate] = useState(false);
   const enabled = props.enabled && res.revision === (frame.careerRevision || 0);
@@ -128,10 +128,11 @@ export default function CareerScreen(props: Props) {
         }
       />
     );
-  return <Manager key={c.id} {...props} c={c} enabled={enabled} />;
+  return <Manager key={c.id} {...props} c={c} enabled={enabled} pauseEnabled={props.enabled && frame.careerId===c.id} />;
 }
 type Route = { page: string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
 function Manager({
+  pauseEnabled,
   c,
   frame,
   enabled,
@@ -143,7 +144,9 @@ function Manager({
   tool,
   toolName,
   leaveTool,
-}: Props & { c: Career }) {
+}: Props & { c: Career; pauseEnabled:boolean }) {
+  const progress = frame.calendarProgress;
+  const currentDate = progress?.date || c.date;
   const directory = useData<Scene>("/api/career/" + c.id + "/scene");
   const [route, setRoute] = useState<Route>({ page: "Кабинет" }),
     [drawer, setDrawer] = useState(false),
@@ -240,7 +243,7 @@ function Manager({
     }
   };
   const advance = async () => {
-    if (!enabled || c.progress) return;
+    if (!enabled || progress) return;
     if (directMatch) await resolve(required[0]);
     else if (required.length) {setDecisionError("");setDecisions(true)}
     else await act("career-advance",{},msg=>{setDecisionError(msg);setDecisions(true)});
@@ -435,9 +438,9 @@ function Manager({
               <kbd className="shortcut">Ctrl K</kbd>
             </button>
             <div className="game-date cr-time">
-              <time>{date(c.date)}</time>
+              <time>{date(currentDate)}</time>
               <small>
-                {new Date(c.date + "T12:00:00Z").toLocaleDateString("ru", {
+                {new Date(currentDate + "T12:00:00Z").toLocaleDateString("ru", {
                   weekday: "long",
                   timeZone: "UTC",
                 })}
@@ -445,7 +448,7 @@ function Manager({
             </div>
             <button
               className="btn primary"
-              disabled={!enabled || !!c.progress}
+              disabled={!enabled || !!progress}
               onClick={advance}
             >
               {directMatch ? "В матч-центр" : required.length ? "Решения · " + required.length : "Продолжить"}
@@ -454,27 +457,27 @@ function Manager({
           </div>
         </header>
         <div className="main-content" id="main-content">
-          {c.progress && (
+          {progress && (
             <div className="cr-progress" role="status">
-              Рассчитано встреч · {c.progress.done}
+              Рассчитано встреч · {progress.done}
               <progress aria-label="Расчёт календаря до следующего решения" />
-              <button className="btn" disabled={!enabled} onClick={()=>act("career-pause")}>Остановить расчёт</button>
+              <button className="btn" disabled={!pauseEnabled} onClick={()=>act("career-pause",{runId:progress.runId})}>Остановить расчёт</button>
             </div>
           )}
-          {!tool && (!c.progress || required.length > 0) && <button className="attention-summary surface" data-blocked={!!required.length}
+          {!tool && (!progress || required.length > 0) && <button className="attention-summary surface" data-blocked={!!required.length}
             aria-label={"Открыть центр решений · обязательных: " + required.length} aria-describedby="decision-explanation"
             onClick={()=>{setDecisionError("");setDecisions(true)}}>
             <span id="decision-explanation"><strong>{required.length ? required[0].title : "Центр решений"}</strong>
             <small>{required.length ? required[0].detail : "Обязательных решений нет"}</small></span>
             <b>{required.length ? "Требуют внимания · " + required.length : "Открыть"}</b>
           </button>}
-          {directMatch && required[0].action === "play" && !c.progress && <div className="quick-fixture surface">
+          {directMatch && required[0].action === "play" && !progress && <div className="quick-fixture surface">
             <div><strong>{c.queue[0].teams.map(t=>c.teams[t]).join(" — ")}</strong><small>Расчёт по раундам с автоматическим выбором карт</small></div>
             <button className="btn" disabled={!enabled} onClick={quick}>Быстро рассчитать матч</button>
           </div>}
           {completedQuick && <Dialog title="Матч завершён" close={()=>setQuickResult(null)}><MatchReport event={completedQuick} teams={c.teams} close={()=>setQuickResult(null)}/></Dialog>}
           <ManagerAttention quick={quick} items={c.attention} open={decisions} close={()=>setDecisions(false)}
-            enabled={enabled && !c.progress} resolve={resolve} repair={repair} error={decisionError}
+            enabled={enabled && !progress} resolve={resolve} repair={repair} error={decisionError}
             saves={()=>{setDecisions(false);to("Сохранения")}}/>
           <div key={active} className="screen-enter">
             {tool ||

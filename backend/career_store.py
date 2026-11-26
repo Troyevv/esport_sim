@@ -368,6 +368,8 @@ class CareerStore:
                 self.save(state,"auto")
             elif kind == "career-pause":
                 require(c["progress"] and state["world"]["version"] == 1, "Расчёт календаря уже остановлен")
+                if value:
+                    require(isinstance(value, dict) and value.get("runId") == c["progress"].get("runId", state["context"]), "Начался другой расчёт календаря")
                 c["progress"] = None
                 state["context"] = str(uuid4())
                 self.save(state, "auto")

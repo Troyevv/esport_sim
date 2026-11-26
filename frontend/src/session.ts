@@ -9,6 +9,7 @@ export interface Frame {
   libraryRevision?: number;
   careerId?: string;
   careerRevision?: number;
+  calendarProgress?: {runId: string; done: number; date: string};
   sequence: number;
   revision: number;
   context: string;

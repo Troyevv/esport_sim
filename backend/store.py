@@ -267,6 +267,8 @@ class Store:
         c = state.pop("career", None)
         if c:
             state["careerId"] = c["id"]
+            if c["progress"]:
+                state["calendarProgress"] = dict(c["progress"], date=c["date"], runId=c["progress"].get("runId", state["context"]))
         model = match if state["world"]["version"] == 2 else engine
         game = state["world"]
         if game["version"] == 3:
@@ -325,9 +327,14 @@ class Store:
                     raise Conflict("Идентификатор уже использован для другой команды")
                 return json.loads(previous[1])
             state = self.read()
-            if (command["context"], command["revision"]) != (
-                state["context"],
-                state["revision"],
+            progress = (state.get("career") or {}).get("progress")
+            value = command.get("value")
+            same_run_pause = (
+                command["kind"] == "career-pause" and progress and isinstance(value, dict)
+                and value.get("runId") == progress.get("runId", state["context"])
+            )
+            if command["context"] != state["context"] or (
+                command["revision"] != state["revision"] and not same_run_pause
             ):
                 raise Conflict(
                     "Другое устройство уже изменило состояние. Проверьте данные и повторите действие."

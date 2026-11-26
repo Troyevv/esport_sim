@@ -292,3 +292,22 @@ def test_manager_quick_result_survives_retry_restart_and_old_slot(tmp_path, monk
     act(store, "career-quick", {"fixture":fixture["id"]})
     assert store.read()["career"]["history"][0]["result"] == result
     store.db.close()
+
+
+def test_pause_targets_running_calendar_even_after_background_publication(tmp_path, monkeypatch):
+    monkeypatch.setenv("ESPORT_SIM_MAPS", str(tmp_path / "no-geometry"))
+    store = Store(tmp_path / "profile.sqlite")
+    start(store)
+    act(store, "career-advance")
+    frame = store.snapshot("full")
+    target = {"runId": frame["calendarProgress"]["runId"]}
+    pause = intent(store, "career-pause", target)
+    token, game = store.careers.work(store.read())
+    assert store.careers.commit_work(token, career.simulate(game))
+    assert store.read()["revision"] > pause["revision"]
+    store.apply(pause)
+    act(store, "career-advance")
+    with pytest.raises(ValueError, match="другой расчёт"):
+        act(store, "career-pause", target)
+    assert store.read()["career"]["progress"]
+    store.db.close()

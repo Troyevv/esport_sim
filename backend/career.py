@@ -181,7 +181,7 @@ def start_advance(c, *, administrative=False):
     require(not c["progress"], "Календарь уже рассчитывается")
     until = next((i for i, e in enumerate(c["queue"]) if e["kind"] == "match" and stops(c, e)), len(c["queue"]))
     require(administrative or until or c["queue"][0]["kind"] == "review" or c["date"] != c["queue"][0]["date"], "Вас ждут в матч-центре")
-    c.update(progress=dict(done=0, total=until), error=None)
+    c.update(progress=dict(done=0, total=until, runId=str(uuid4())), error=None)
 
 
 def match_domain(pack, c, event, badges=None, portraits=None):
