@@ -1,0 +1,234 @@
+.training-center {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.training-center h2 {
+  font-size: 1.08rem;
+  margin: 0 0 12px;
+}
+.training-center .view-tabs {
+  flex-wrap: wrap;
+  height: auto;
+}
+.training-week,
+.training-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.training-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+.training-day {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.training-day header,
+.training-scale {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+}
+.training-day header h2 {
+  margin: 0;
+}
+.training-day[data-today="true"] {
+  border-top: 3px solid var(--accent);
+  padding-top: 8px;
+}
+.training-day time,
+.training-block small,
+.training-block span,
+.training-practice span {
+  color: var(--muted);
+}
+.training-block {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  align-content: start;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: inherit;
+  min-height: 80px;
+  overflow-wrap: anywhere;
+  font: inherit;
+}
+.training-block:disabled {
+  opacity: 0.82;
+}
+.training-block:enabled,
+.training-center summary {
+  cursor: pointer;
+}
+.training-official {
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+.training-fields,
+.training-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 215px), 1fr));
+  gap: 12px;
+  align-items: end;
+}
+.training-cards {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  align-items: start;
+}
+.training-center label,
+.training-form label {
+  display: grid;
+  gap: 6px;
+}
+.training-center label.staff-assignment {
+  grid-template-columns: 1fr minmax(130px, 1fr);
+  align-items: center;
+}
+.training-center select,
+.training-center input:not([type="checkbox"]),
+.training-form select {
+  width: 100%;
+  min-width: 0;
+}
+.training-center > label {
+  max-width: 350px;
+}
+.training-form {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.training-form p {
+  margin: 0;
+}
+.training-form fieldset {
+  min-width: 0;
+  border: 1px solid var(--border);
+  padding: 12px;
+}
+.training-form .training-check,
+.training-checks label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+}
+.training-form input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+}
+.training-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 5px;
+}
+.training-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0;
+}
+.training-facts dd {
+  margin: 0;
+}
+.training-goal,
+.training-log p {
+  color: var(--muted);
+}
+.training-status,
+.training-error {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--accent);
+}
+.training-error {
+  border-color: #d87060;
+}
+.training-practice,
+.training-log {
+  display: grid;
+  gap: 5px;
+  border-top: 1px solid var(--border);
+  padding: 10px 0;
+}
+.training-practice .btn,
+.training-form > .btn {
+  justify-self: start;
+}
+.training-log p {
+  margin: 0;
+}
+.training-scale meter {
+  width: 85px;
+  max-width: 100%;
+  accent-color: var(--accent);
+}
+.training-scale b {
+  min-width: 3ch;
+  text-align: right;
+}
+@media (max-width: 1250px) {
+  .training-week-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 820px) {
+  .training-week-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .training-center .view-tab,
+  .training-center button,
+  .training-form button {
+    min-height: 40px;
+  }
+}
+@media (max-width: 560px) {
+  .training-week-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .training-week strong {
+    font-size: 0.84rem;
+  }
+  .training-day {
+    padding: 9px;
+  }
+  .training-center label.staff-assignment {
+    grid-template-columns: 1fr;
+  }
+  .training-center .view-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.training-nav > label {
+  display: none;
+}
+@media (max-width: 600px), (max-height: 500px) {
+  .training-nav > .view-tabs {
+    display: none;
+  }
+  .training-nav > label {
+    display: grid;
+  }
+  .training-center .btn,
+  .training-form .btn,
+  .training-center select,
+  .training-form select {
+    min-height: 44px;
+  }
+}

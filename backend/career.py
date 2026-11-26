@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
+from . import training, round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
 from .database import require
 
 VERSION = 1
@@ -88,6 +88,7 @@ def create(pack, options):
     c = dict(
         version=VERSION,
         office=staff.office(),
+        training=training.new(pack["asOf"]),
         id=str(uuid4()),
         source=[pack["id"], pack["revision"]] + ([pack["tournamentSupplement"]] if "tournamentSupplement" in pack else []),
         character=name.strip(),
@@ -165,15 +166,17 @@ def schedule(c):
 
 def ensure_schedule(c, pack):
     """Repopulate the calendar boundary of a parked career before advancing it."""
-    if c["queue"]:
-        return
-    if "circuit" in c:
-        competitions.add_season(c, pack, int(c["date"][:4]))
-    else:
-        schedule(c)
+    if not any(not e.get("pcw") for e in c["queue"]):
+        if "circuit" in c:
+            competitions.add_season(c, pack, int(c["date"][:4]))
+        else:
+            schedule(c)
+    training.refresh_practices(c, pack)
 
 
 def stops(c, event):
+    if event.get("pcw"):
+        return event["watch"] and not training.unavailable(c, event)
     return event["kind"] == "review" or c["team"] in event["teams"] or event["id"]==c.get("watchFixture")
 
 
@@ -202,6 +205,8 @@ def match_domain(pack, c, event, badges=None, portraits=None):
         pack = dict(pack, rosters=frozen, staff={k:v for k,v in pack["staff"].items() if k in coaches})
         rosters = list(frozen)
     domain = database.match_input(pack, rosters, badges)
+    if "training" in c:
+        training.overlay(domain, c["training"])
     domain["authority"]["mode"] = c["mode"]
     if c["team"] in domain["teams"]:
         domain["authority"]["organization"] = domain["teams"][c["team"]]["organization"]
@@ -228,14 +233,20 @@ def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
             game["simulation"] = round_sim.MODE
         return game
     if not detailed:
-        return dict(simulation=round_sim.MODE, seed=event["seed"], domain=domain, rosterIds=rosters, mapId=event.get("mapId"))
-    return match.initial(
+        game = dict(simulation=round_sim.MODE, seed=event["seed"], domain=domain, rosterIds=rosters, mapId=event.get("mapId"))
+        if event.get("pcw") and event.get("board"):
+            game.update(practiceBoard=event["board"], practiceTeam=c["team"])
+        return game
+    game = match.initial(
         event["seed"],
         domain,
         rosters,
         c["team"] if c["team"] in event["teams"] else None,
         map_id=event.get("mapId","depo"),
     )
+    if event.get("pcw") and event.get("board"):
+        match.assign(game, event["board"])
+    return game
 
 
 def simulate(game):

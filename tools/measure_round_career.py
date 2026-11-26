@@ -157,7 +157,9 @@ def measure(path, days, compare=None, reports=None):
                 days=days,
                 elapsed=wall,
                 teams=len(c["teams"]),
-                series=len(per_match),
+                series=len(c["history"]),
+                practiceMaps=c["training"]["fixturesPlayed"],
+                simulationsTimed=len(per_match),
                 matchesInHistory=len(c["history"]),
                 finished=sum(
                     e["status"] == "finished" for e in c["circuit"]["editions"].values()
@@ -167,8 +169,8 @@ def measure(path, days, compare=None, reports=None):
                 p95Day=quantiles(per_day.values(), n=20, method="inclusive")[-1]
                 if len(per_day) > 1
                 else wall,
-                meanSeriesMs=1000 * sum(per_match) / len(per_match),
-                maxSeriesMs=1000 * max(per_match),
+                meanSimulationMs=1000 * sum(per_match) / len(per_match),
+                maxSimulationMs=1000 * max(per_match),
                 seconds=times,
                 sqliteMiB=path.stat().st_size / 2**20,
             ),

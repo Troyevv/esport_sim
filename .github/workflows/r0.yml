@@ -46,7 +46,7 @@ jobs:
           npm ci
           npm run build
           npx playwright install --with-deps chromium
-          npx playwright test r0.spec.ts r1.spec.ts r2.spec.ts career.spec.ts quick-match.spec.ts competitions.spec.ts staff.spec.ts --project "${{ matrix.project }}"
+          npx playwright test r0.spec.ts r1.spec.ts r2.spec.ts career.spec.ts quick-match.spec.ts competitions.spec.ts staff.spec.ts training.spec.ts --project "${{ matrix.project }}"
       - if: matrix.project == 'phone-portrait'
         run: node frontend/e2e/mobile-tls.mjs
       - uses: actions/upload-artifact@v4

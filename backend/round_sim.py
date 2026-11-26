@@ -4,7 +4,7 @@ from itertools import combinations
 from math import exp
 from random import Random
 
-from . import skills, world
+from . import skills, tactics, world
 from .match_rules import RULES
 
 MODE = {"mode": "round", "version": 1}
@@ -170,6 +170,55 @@ def resolve_round(rng, powers, players, cash, stats):
     return winner, alive, contributed
 
 
+def board_lineup(board, rows, domain):
+    # A rehearsed five changes who takes first contact according to the saved slot orders.
+    # The round resolver keeps the same weapons, team power and damage rules.
+    prepared = []
+    key = f"{board['id']}@{board['revision']}"
+    for p, steps in zip(rows, board["slots"]):
+        delay = 0
+        for step in steps:
+            if step["kind"] in ("exit", "hold", "plant"):
+                break
+            delay += step.get("seconds", 1)
+        learned = domain["players"][p["player"]].get("tactics", {}).get(key, 0) / 100
+        planned = 2 / (1 + delay / 3) if steps else p["openingWeight"]
+        weight = p["openingWeight"] + learned * (planned - p["openingWeight"])
+        prepared.append(dict(p, openingWeight=weight))
+    return prepared
+
+
+def board_applies(board, attacking, buy, previous, club, teams, carried):
+    if board["side"] != ("T" if attacking else "CT"):
+        return False
+    category = board["buy"]
+    if category == "Антиэко":
+        return (
+            buy == "full"
+            and previous
+            and previous["winnerTeamId"] == teams[club]
+            and previous["buys"][1 - club] == "full"
+        )
+    if category == "Бонусная":
+        return (
+            buy != "pistol"
+            and previous
+            and previous["winnerTeamId"] == teams[club]
+            and carried >= 2
+        )
+    if category == "Частичная":
+        return buy == "eco" and carried > 0
+    return (
+        category
+        in {
+            "pistol": ("Пистолетная",),
+            "eco": ("Эко",),
+            "full": ("Оружейная", "Полная"),
+            "force": ("Оружейная", "Форс"),
+        }[buy]
+    )
+
+
 def play_map(game, map_id, first_attack, seed, strain=None):
     # Transient extra fatigue for rounds actually played. Shared only within this series.
     if strain is None:
@@ -180,6 +229,11 @@ def play_map(game, map_id, first_attack, seed, strain=None):
     players, teamwork = zip(
         *(lineup(domain, rid, map_id or "depo", i) for i, rid in enumerate(rids))
     )
+    board = game.get("practiceBoard")
+    if board:
+        club = teams.index(game["practiceTeam"])
+        prepared = list(players)
+        prepared[club] = board_lineup(board, players[club], domain)
     # Correlated map-to-map execution varies with the consistency of the five.
     execution = [
         rng.gauss(0, 3 + (100 - sum(p["consistency"] for p in row) / 5) * 0.07)
@@ -206,6 +260,8 @@ def play_map(game, map_id, first_attack, seed, strain=None):
                 for _ in teams
             ]
             saved, losses = [[0] * 5 for _ in teams], [0, 0]
+        if board:
+            carried = sum(0 < value < 3000 for value in saved[club])
         powers, buys = [], []
         for side, row in enumerate(players):
             strength, buy = buy_for_team(
@@ -225,7 +281,18 @@ def play_map(game, map_id, first_attack, seed, strain=None):
                 + (0 if side == attack else CT_EDGE.get(map_id, 0))
             )
             buys.append(buy)
-        winner, alive, contributed = resolve_round(rng, powers, players, cash, stats)
+        called = board and board_applies(
+            board,
+            attack == club,
+            buys[club],
+            rounds[-1] if rounds and not reset else None,
+            club,
+            teams,
+            carried,
+        )
+        winner, alive, contributed = resolve_round(
+            rng, powers, prepared if called else players, cash, stats
+        )
         scores[winner] += 1
         for side in (0, 1):
             # Surviving opponents may also have taken non-lethal damage.
@@ -235,7 +302,9 @@ def play_map(game, map_id, first_attack, seed, strain=None):
             for i in range(5):
                 player = players[side][i]
                 pid = player["player"]
-                strain[pid] = min(player["capacity"], strain.get(pid, 0) + player["wear"])
+                strain[pid] = min(
+                    player["capacity"], strain.get(pid, 0) + player["wear"]
+                )
                 survived = i in alive[side]
                 stats[side][i]["kast"] += int(survived or i in contributed[side])
                 if not survived:
@@ -262,6 +331,8 @@ def play_map(game, map_id, first_attack, seed, strain=None):
                 reason="objective" if all(alive) else "elimination",
             )
         )
+        if called:
+            rounds[-1]["tactic"] = tactics.reference(board)
         if scores[winner] == target:
             break
     for row in players:

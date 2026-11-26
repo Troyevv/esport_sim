@@ -4,7 +4,7 @@ import type { Office } from "./StaffOffice";
 import type { Visual } from "./SceneIdentity";
 export type Decision = {
   id:string; kind:string; level:"required"|"warning"|"info"; title:string; detail:string;
-  action:"entry"|"calendar"|"play"|"match"|"retry"|"repair"|"inbox"|"overview";
+  action:"entry"|"calendar"|"play"|"match"|"retry"|"repair"|"inbox"|"overview"|"training";
   due:string; edition:string|null;
 };
 export type Act = (kind: string, value?: object, rejected?:(detail:string)=>void) => Promise<boolean>;
@@ -19,6 +19,7 @@ export type Summary = {
 export const fixtureMap = (e: Fixture) => e.bestOf ? "Map Veto" : ({de_dust2: "Dust II", depo: "Депо"}[e.mapId || "depo"] || e.mapId!.slice(3,4).toUpperCase() + e.mapId!.slice(4));
 type Simulation = { mode: "detailed" | "round"; version: number };
 export type Fixture = {
+  pcw?: boolean;
   simulation?: Simulation;
   mapId?: string;
   title?:string;
@@ -224,7 +225,7 @@ export const weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
 export const fixtureName = (c: Career, e: Fixture) =>
   e.kind === "review"
     ? e.title || "Итоги недели"
-    : e.teams.map((t) => c.teams[t]).join(" — ");
+    : (e.pcw ? "Пракк · " : "") + e.teams.map((t) => c.teams[t]).join(" — ");
 export const age = (born: string | null, now: string) =>
   born
     ? Number(now.slice(0, 4)) -

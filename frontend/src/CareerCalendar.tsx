@@ -6,13 +6,14 @@ import {
   isoDay,
   monday,
   weekdays,
+  useData,
   fixtureName,
   fixtureScore,
   type Career,
   type Fixture,
 } from "./careerData";
 import { Dialog, Glyph, Heading, Tabs } from "./GameUI";
-export function Calendar({ c, initial,tournament }: { c: Career; initial: string; tournament:(edition:string)=>void }) {
+export function Calendar({ c, initial,tournament, revision, training }: { revision:number; training:(day:string)=>void; c: Career; initial: string; tournament:(edition:string)=>void }) {
   const [selected, select] = useState(initial),
     [mode, setMode] = useState("Месяц"),
     [filter, setFilter] = useState("club"),
@@ -29,6 +30,8 @@ export function Calendar({ c, initial,tournament }: { c: Career; initial: string
         Math.ceil(
           (((dayAt(first).getUTCDay() + 6) % 7) + end.getUTCDate()) / 7,
         );
+  const preparation = useData<Record<string,string[]>>("/api/career/"+c.id+"/training-calendar?since="+start+"&count="+count,revision);
+  const sessions=preparation.data?.[selected]||[];
   const events = [...c.history, ...c.queue].filter(
     (e) => filter === "all" || e.kind === "review" || e.teams.includes(c.team),
   );
@@ -133,6 +136,7 @@ export function Calendar({ c, initial,tournament }: { c: Career; initial: string
                     </span>
                   ))}
                   {matches.length > 2 && <small>+{matches.length - 2}</small>}
+                  {!!preparation.data?.[d]?.length && <span className="cal-event">{preparation.data[d][0]}{preparation.data[d].length>1?" +"+(preparation.data[d].length-1):""}</span>}
                   {milestone && (
                     <span className="cal-event">{milestone.title}</span>
                   )}
@@ -146,12 +150,14 @@ export function Calendar({ c, initial,tournament }: { c: Career; initial: string
             <h2>{date(selected)}</h2>
           </div>
           {buttons(today)}
+          {preparation.error && <p role="alert">{preparation.error} <button className="btn sm" onClick={preparation.reload}>Повторить</button></p>}
+          {!!sessions.length && <div className="day-agenda-item"><h3>Подготовка команды</h3>{sessions.map((s,i)=><p key={i}>{s}</p>)}<button className="btn sm" onClick={()=>training(selected)}>Открыть расписание</button></div>}
           {notes.map((m) => (
             <div className="day-agenda-item" key={m.id||m.title}>
               {m.title}
             </div>
           ))}
-          {!today.length && !notes.length && (
+          {!today.length && !notes.length && !sessions.length && (
             <p className="panel-body muted">Событий нет.</p>
           )}
         </section>

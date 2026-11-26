@@ -1029,7 +1029,7 @@ def resolve_slots(c):
         spec = e["stages"][f["stage"]]
         if not registrations.flexible_round(e,spec):
             continue
-        occupied = {g["date"] for g in c["queue"] if g.get("edition") != e["id"] and set(f["teams"]).intersection(g["teams"])}
+        occupied = {g["date"] for g in c["queue"] if not g.get("pcw") and g.get("edition") != e["id"] and set(f["teams"]).intersection(g["teams"])}
         if f["date"] not in occupied:
             continue
         draw = e["draws"][f["stage"]][f["group"]]
@@ -1039,7 +1039,7 @@ def resolve_slots(c):
         limit = registrations.round_deadline(spec, row["round"], rounds)
         candidate = offset(f["date"], 1)
         while candidate <= limit:
-            if candidate not in occupied and not any(g is not f and g["date"] == candidate and
+            if candidate not in occupied and not any(g is not f and not g.get("pcw") and g["date"] == candidate and
                     set(f["teams"]).intersection(g["teams"]) for g in c["queue"]):
                 changed = True
                 f["date"] = row["date"] = candidate

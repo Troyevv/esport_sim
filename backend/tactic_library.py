@@ -11,7 +11,7 @@ class StalePlan(ValueError):
     pass
 
 
-def catalog(db):
+def plans(db):
     users = [
         dict(json.loads(body), familiarity=mastery)
         for body, mastery in db.execute("""
@@ -21,26 +21,36 @@ def catalog(db):
         WHERE t.body IS NOT NULL ORDER BY t.rowid DESC
     """)
     ]
+    return users + tactics.standards()
+
+
+def catalog(db):
     return dict(
         maps=[MAP,*[cs2_maps.description(m) for m in cs2_maps.installed()]],
         roles=ROLES,
         players=engine._NAMES["T"],
         buys=tactics.BUYS,
-        plans=users + tactics.standards(),
+        plans=plans(db),
     )
 
 
-def resolve(db, value):
+def resolve(db, value, *, pinned=False):
     if not isinstance(value, dict) or not isinstance(value.get("id"), str):
         raise ValueError("Выберите сохранённую тактику")
     ident = value["id"]
     if ident.startswith("std-"):
         plan = next((p for p in tactics.standards() if p["id"] == ident), None)
     else:
-        row = db.execute(
-            "SELECT body FROM tactic WHERE id=? ORDER BY revision DESC LIMIT 1",
-            (ident,),
-        ).fetchone()
+        if pinned:
+            row = db.execute(
+                "SELECT body FROM tactic WHERE id=? AND revision=?",
+                (ident, value.get("revision")),
+            ).fetchone()
+        else:
+            row = db.execute(
+                "SELECT body FROM tactic WHERE id=? ORDER BY revision DESC LIMIT 1",
+                (ident,),
+            ).fetchone()
         plan = json.loads(row[0]) if row and row[0] else None
     if not plan or plan["revision"] != value.get("revision"):
         raise StalePlan(

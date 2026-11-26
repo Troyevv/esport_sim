@@ -1,5 +1,6 @@
 """Career checkpoints share immutable database editions, round logs and match reports."""
 
+from copy import deepcopy
 import hashlib
 import json
 import os
@@ -8,7 +9,7 @@ from pathlib import Path
 from time import monotonic
 from uuid import uuid4
 
-from . import attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
+from . import training, training_center, attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -109,7 +110,7 @@ class CareerStore:
             """SELECT career,slot,body,digest FROM career_slot
             WHERE CASE WHEN json_valid(body) THEN
                 json_extract(body,'$.world.checkpointVersion') IN (4,5) OR
-                (json_type(body,'$.career')='object' AND json_type(body,'$.career.office') IS NULL)
+                (json_type(body,'$.career')='object' AND (json_type(body,'$.career.office') IS NULL OR json_type(body,'$.career.training') IS NULL))
             END"""
         )
         for cid, slot, body, digest in rows:
@@ -139,10 +140,11 @@ class CareerStore:
         if c:
             require(c["version"] == career.VERSION, "Несовместимая версия карьеры")
             require(c["id"] == cid, "Неверный идентификатор карьеры")
+            require(c.get("training", {}).get("version") == 1, "Несовместимая версия подготовки")
             self.pack(c["source"])
             if c.get("circuit") and game["version"] == 1:
                 competitions.resolve_slots(c)
-            for e in c["history"]:
+            for e in [*c["history"], *(p for p in c["training"]["practice"] if p.get("result"))]:
                 self.report(e["result"])
         if game["version"] == 2:
             checkpoints.validate_current(game)
@@ -236,15 +238,24 @@ class CareerStore:
             )
             facts = series.scouting_record(report)
         else:
-            points = series.verify_map(
-                report, teams, expected, event["seed"], event.get("mapId")
-            )
+            map_id = event.get("mapId")
+            if map_id == "depo" and report.get("simulation") == series.DETAILED:
+                map_id = None
+            points = series.verify_map(report, teams, expected, event["seed"], map_id)
         facts = dict(facts or {}, simulation=report.get("simulation", series.DETAILED))
         body = database.encode(report)
         digest = checksum(body)
         self.db.execute(
             "INSERT OR IGNORE INTO career_report VALUES(?,?)", (digest, body)
         )
+        training.match_practice(c, pack, event, report)
+        if event.get("pcw"):
+            c["training"]["practice"].append(dict(training.practice_summary(event, report), result=digest))
+            c["queue"].pop(0)
+            c["date"] = event["date"]
+            if c["progress"]:
+                c["progress"]["done"] += 1
+            return
         if edition:
             facts["rosterVersions"] = {t:edition["registrations"][t][-1]["version"] for t in teams}
         if "bestOf" in event:
@@ -306,9 +317,18 @@ class CareerStore:
                 require(not c["progress"], "Дождитесь завершения расчёта календаря")
                 staff.prepare_draft(c, self.pack(c["source"]), value)
                 self.save(state,"auto")
+            elif kind == "career-training":
+                require(not c["progress"] and state["world"]["version"] == 1, "Завершите встречу или расчёт календаря")
+                training_center.change(c, self.pack(c["source"]), self.db, value)
+                self.save(state, "auto")
             elif kind == "career-staff":
                 require(not c["progress"] and state["world"]["version"] == 1, "Завершите встречу или расчёт календаря")
-                staff.change(c, self.pack(c["source"]), value)
+                pack = self.pack(c["source"])
+                staff.change(c, pack, value)
+                if value.get("duty") == "practice":
+                    c["queue"] = [e for e in c["queue"] if not e.get("delegated")]
+                    c["training"].pop("plannedThrough", None)
+                    training.refresh_practices(c, pack)
                 self.save(state, "auto")
             elif kind == "career-entry":
                 require(not c["progress"] and state["world"]["version"]==1,"Завершите текущую встречу или расчёт")
@@ -405,6 +425,8 @@ class CareerStore:
                 e = c["queue"][0]
                 require(
                     not c["progress"]
+                    and e["kind"] == "match"
+                    and (not e.get("pcw") or (e["watch"] and not training.unavailable(c,e)))
                     and c["date"] == e["date"]
                     and (c["team"] in e["teams"] or e["id"]==c.get("watchFixture"))
                     and state["world"]["version"] == 1,
@@ -498,7 +520,7 @@ class CareerStore:
         )
         return dict(careers=list(menu.values()), active=info)
 
-    def work(self, state):
+    def work(self, state, pack=None):
         """Return a detached input; the worker never touches the server connection."""
         c = state.get("career")
         if not c or not c["progress"]:
@@ -507,10 +529,20 @@ class CareerStore:
             return (state["context"], c["id"], None), None
         e = c["queue"][0]
         token = (state["context"], c["id"], e["id"])
-        if attention.blockers(c,self.pack(c["source"]),state["world"]):
+        pack = pack if pack is not None else self.pack(c["source"])
+        if attention.blockers(c,pack,state["world"]):
+            return token, None
+        if c["training"]["nextDay"] < e["date"]:
+            # work() receives a detached read. Publish the prepared days only with
+            # their validated head fixture, including its run identity.
+            while c["training"]["nextDay"] < e["date"]:
+                training.run_day(c, pack, c["training"]["nextDay"])
+            training.freeze_day(c["training"])
+            token += (c["progress"].get("runId"), c["training"], c["office"])
+        if e.get("pcw") and training.unavailable(c, e):
             return token, None
         game = (
-            None if career.stops(c, e) or ("edition" in e and (competitions.fixture_conflicts(c,e) or competitions.missing_players(c,e,self.pack(c["source"])))) else career.initial(self.pack(c["source"]), c, e, detailed=False)
+            None if career.stops(c, e) or ("edition" in e and (competitions.fixture_conflicts(c,e) or competitions.missing_players(c,e,pack))) else career.initial(pack, c, e, detailed=False)
         )
         return token, game
 
@@ -532,9 +564,12 @@ class CareerStore:
             if (
                 not c
                 or not c["progress"]
-                or token != (state["context"], c["id"], c["queue"][0]["id"] if c["queue"] else None)
+                or (len(token) > 3 and token[3] != c["progress"].get("runId"))
+                or token[:3] != (state["context"], c["id"], c["queue"][0]["id"] if c["queue"] else None)
             ):
                 return False
+            if len(token) > 3 and not error:
+                c["training"], c["office"] = deepcopy(token[4:])
             if error:
                 c.update(progress=None, error=error)
             elif not c["queue"]:
@@ -546,7 +581,10 @@ class CareerStore:
                     c["progress"] = None
                 else:
                     c["date"] = e["date"]
-                    if e["kind"] == "review":
+                    if e.get("pcw") and training.unavailable(c, e):
+                        c["training"]["practice"].append(dict(e, cancelled="Официальный матч"))
+                        c["queue"].pop(0)
+                    elif e["kind"] == "review":
                         c["queue"].pop(0)
                         if "circuit" in c:
                             competitions.tick(c,pack)
@@ -561,7 +599,7 @@ class CareerStore:
             else:
                 self.record(c, report)
                 if batch:
-                    deadline = monotonic() + .025
+                    deadline = monotonic() + .050
                     while c["queue"] and c["queue"][0]["date"] == c["date"] and monotonic() < deadline:
                         _, next_game = self.work(state)
                         if next_game is None:

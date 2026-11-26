@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from . import competitions, cs2_maps, registrations, veto
+from . import training, competitions, cs2_maps, registrations, veto
 
 
 def item(kind, level, title, detail, action, due, *, event=None, key=None):
@@ -91,7 +91,7 @@ def fixture_items(c, pack, world):
     if not c["queue"]:
         return
     fixture = c["queue"][0]
-    if fixture["kind"] != "match":
+    if fixture["kind"] != "match" or (fixture.get("pcw") and (not fixture["watch"] or training.unavailable(c, fixture))):
         return
     edition = c.get("circuit", {}).get("editions", {}).get(fixture.get("edition"))
     if fixture["date"] > c["date"]:
@@ -132,7 +132,7 @@ def fixture_items(c, pack, world):
         yield item(
             "match",
             "required",
-            "Вас ждут в матч-центре",
+            "Запланирован просмотр пракка" if fixture.get("pcw") else "Вас ждут в матч-центре",
             fixture.get("title", c["club"]),
             "play",
             fixture["date"],
@@ -141,6 +141,9 @@ def fixture_items(c, pack, world):
 
 
 def notices(c, pack, world):
+    last = next(reversed(c.get("training", {}).get("days", {})), None)
+    if last:
+        yield item("training", "info", "Отчёт о подготовке", "Занятия и нагрузка игроков за " + last, "training", last)
     for msg in c["milestones"][-20:]:
         if msg["date"] == c["date"]:
             event = c.get("circuit", {}).get("editions", {}).get(msg.get("edition"))
