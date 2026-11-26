@@ -361,6 +361,11 @@ class CareerStore:
                 activate()
                 c["error"] = None
                 self.save(state,"auto")
+            elif kind == "career-pause":
+                require(c["progress"] and state["world"]["version"] == 1, "Расчёт календаря уже остановлен")
+                c["progress"] = None
+                state["context"] = str(uuid4())
+                self.save(state, "auto")
             elif kind in ("career-advance", "career-retry"):
                 require(state["world"]["version"] == 1, "Завершите активный матч")
                 pack = self.pack(c["source"])
@@ -483,7 +488,7 @@ class CareerStore:
             return (state["context"], c["id"], None), None
         e = c["queue"][0]
         token = (state["context"], c["id"], e["id"])
-        if e["date"] > c["progress"].get("through","9999") or attention.blockers(c,self.pack(c["source"]),state["world"]):
+        if attention.blockers(c,self.pack(c["source"]),state["world"]):
             return token, None
         game = (
             None if career.stops(c, e) or ("edition" in e and (competitions.fixture_conflicts(c,e) or competitions.missing_players(c,e,self.pack(c["source"])))) else career.initial(self.pack(c["source"]), c, e)
@@ -507,13 +512,8 @@ class CareerStore:
             elif report is None:
                 e = c["queue"][0]
                 pack = self.pack(c["source"])
-                through = c["progress"].get("through","9999")
                 if attention.blockers(c,pack,state["world"]):
                     c["progress"] = None
-                elif e["date"] > through:
-                    c.update(date=through, progress=None)
-                    c["milestones"].append(dict(date=through,title="Завершён недельный просмотр календаря",
-                                                body="Можно продолжить до следующего решения.",matches=None))
                 else:
                     c["date"] = e["date"]
                     if e["kind"] == "review":

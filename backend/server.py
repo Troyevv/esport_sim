@@ -61,6 +61,7 @@ class Command(BaseModel):
         "career-watch",
         "career-finish",
         "career-advance",
+        "career-pause",
     ]
     value: (
         StrictInt

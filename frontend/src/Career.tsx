@@ -447,8 +447,9 @@ function Manager({
         <div className="main-content" id="main-content">
           {c.progress && (
             <div className="cr-progress" role="status">
-              Расчёт встреч · {c.progress.done} / {c.progress.total}
-              <progress max={c.progress.total || 1} value={c.progress.done} />
+              Рассчитано встреч · {c.progress.done}
+              <progress aria-label="Расчёт календаря до следующего решения" />
+              <button className="btn" disabled={!enabled} onClick={()=>act("career-pause")}>Остановить расчёт</button>
             </div>
           )}
           {!tool && (!c.progress || required.length > 0) && <button className="attention-summary surface" data-blocked={!!required.length}

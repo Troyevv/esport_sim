@@ -236,3 +236,26 @@ def test_career_scene_contains_public_links_without_private_ratings(tmp_path):
         assert free_agent["teams"] == [] and "kit" not in free_agent["visual"]
     finally:
         store.db.close()
+
+
+def test_manual_calendar_pause_discards_pending_work_and_resumes_to_next_decision(tmp_path):
+    store = Store(tmp_path / "profile.sqlite")
+    start(store)
+    state = store.read()
+    c = state["career"]
+    fixture = next(e for e in c["queue"] if c["team"] in e["teams"])
+    fixture["date"] = "2025-05-22"
+    c["queue"] = [fixture]
+    with store.transaction():
+        store.write(state)
+    act(store, "career-advance")
+    old, _ = store.careers.work(store.read())
+    act(store, "career-pause")
+    assert store.read()["career"]["progress"] is None
+    act(store, "career-advance")
+    assert not store.careers.commit_work(old, None)
+    run_queue(store)
+    end = store.read()["career"]
+    assert end["date"] == fixture["date"] and end["progress"] is None
+    assert store.careers.detail(store.read())["active"]["attention"][0]["action"] == "play"
+    store.db.close()

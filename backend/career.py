@@ -179,11 +179,9 @@ def stops(c, event):
 
 def start_advance(c, *, administrative=False):
     require(not c["progress"], "Календарь уже рассчитывается")
-    through = (database.day(c["date"]) + timedelta(days=7)).isoformat()
-    until = next((i for i, e in enumerate(c["queue"]) if e["date"] > through or
-                  (e["kind"] == "match" and stops(c,e))), len(c["queue"]))
+    until = next((i for i, e in enumerate(c["queue"]) if e["kind"] == "match" and stops(c, e)), len(c["queue"]))
     require(administrative or until or c["queue"][0]["kind"] == "review" or c["date"] != c["queue"][0]["date"], "Вас ждут в матч-центре")
-    c.update(progress=dict(done=0, total=until, through=through), error=None)
+    c.update(progress=dict(done=0, total=until), error=None)
 
 
 def match_domain(pack, c, event, badges=None, portraits=None):
