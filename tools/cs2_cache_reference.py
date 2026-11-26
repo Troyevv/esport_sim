@@ -86,6 +86,10 @@ def extract(directory):
                 winner=winner.lower(),
                 reason=reason,
                 plant=plant,
+                plantSeconds=next(
+                    ((f["tick"] - start) / 64 for f in frames if f["bombActive"]), None
+                ),
+                touched=any(f["defusing"] for f in frames),
                 duration=(end - start) / 64,
                 survivingCT=alive["CT"],
                 radar=radar,

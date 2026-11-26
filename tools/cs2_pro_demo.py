@@ -30,6 +30,13 @@ def parse(path, rounds):
             throws.extend((int(tick), kind) for tick in records["tick"])
     if not throws:
         raise ValueError("No utility detonations in professional demo")
+
+    def ticks(event):
+        rows = parser.parse_event(event)
+        return list(map(int, rows["tick"])) if len(rows) else []
+
+    taps = ticks("bomb_begindefuse")
+    plants = ticks("bomb_planted")
     ends = [r["end_tick"] for r in rounds]
     players = parser.parse_ticks(["health", "team_num"], ticks=ends)
     # A round has one snapshot per phase, taken from the recorded server tick.
@@ -76,6 +83,10 @@ def parse(path, rounds):
                 winner=row["winner_side"],
                 reason=row["end_reason"],
                 plant=row["bomb_planted"],
+                plantSeconds=next(
+                    ((t - start) / 64 for t in plants if start <= t <= end), None
+                ),
+                touched=any(start <= t <= end for t in taps),
                 duration=(end - start) / 64,
                 grenades=dict(counter),
                 survivingCT=len(alive),
