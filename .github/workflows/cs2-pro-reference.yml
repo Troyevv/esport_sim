@@ -92,5 +92,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pro-cache-viewer
-          path: build/cache-replay/
+          name: pro-cache-opening
+          path: build/cache-replay/early/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pro-cache-closing
+          path: build/cache-replay/late/
