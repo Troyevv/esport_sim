@@ -473,6 +473,15 @@ def report_crossing(space, actor, squad, plan, smoke, now):
     from .match_ai import in_view, near_line, at
 
     order = assignment(plan, actor, squad)
+    opening = plan.get("opening", {}).get("jobs", {}).get(actor["id"], {})
+    if (not relief(plan,actor) and "peek" in opening and dist(xyz(actor), opening["peek"]) < 7
+            and actor["blind"] <= now and in_view(actor, at(opening["watch"]))):
+        point = opening["watch"]
+        if space.hit(xyz(actor), point, 1, 64) is None:
+            blocked = any(near_line(actor, at(point), fog, fog["radius"]) for fog in smoke)
+            seen = any(dist(xyz(actor["knowledge"][k]),point) < 28 for k in actor["visible"])
+            return dict(site=opening["site"],lane=order.get("lane",0),point=list(point),tick=now,
+                        state="obscured" if blocked else "contact" if seen else "watching")
     if (
         actor["blind"] > now
         or actor["reloadAt"]
@@ -697,3 +706,46 @@ def support_partner(plan, actor, squad, chemistry, skills):
         return need * readiness - dist(xyz(actor), xyz(mate)) / 100, -mate["slot"]
 
     return max(mates, key=priority)
+
+
+def duty_feedback(plan, actor, squad, now):
+    """Report changes in a guard's actual assignment to the existing sector radio."""
+    duty = relief(plan, actor)
+    opening = plan.get("opening", {}).get("jobs", {}).get(actor["id"], {})
+    order = duty or plan["orders"]["slots"][actor["slot"]]
+    goal = duty["hold"] if duty else opening.get("peek", order["hold"])
+    partner = opening.get("partner")
+    if actor.get("blockedTicks", 0) >= 5 or opening.get("withdrawn") and not duty:
+        state = "blocked"
+    elif partner and not any(p["id"] == partner for p in squad) and not duty:
+        state = "unsupported"
+    elif actor["visible"] and (duty or len(actor["visible"]) > 1 or actor["hp"] < 65):
+        state = "engaged"
+    elif dist(xyz(actor), goal) < 8:
+        state = "arrived" if duty else "ready"
+    elif duty:
+        state = "moving"
+    else:
+        return None
+    stamp = [order["site"], list(goal), state]
+    last = actor.get("lastDutyFeedback")
+    if last and last["stamp"] == stamp and now - last["tick"] < 35:
+        return None
+    actor["lastDutyFeedback"] = dict(stamp=stamp, tick=now)
+    return dict(feedback=True, state=state, point=list(xyz(actor)), site=order["site"],
+                lane=order.get("lane", 0), tick=now, duty=bool(duty))
+
+
+def opening_watch(actor, squad, now, skills):
+    """The listener or one nearby free guard checks a reported direction."""
+    reports = [r for r in actor["knowledge"].values() if r["source"] in ("Радио", "Слух")
+               and 0 <= now-r["tick"] <= 12+skills["game_reading"]//9
+               and dist(xyz(actor),xyz(r)) <= (94 if r.get("sound") else 80)]
+    for r in sorted(reports,key=lambda r:(not r.get("carryingC4"),r["source"]=="Слух",-r["tick"])):
+        if r.get("witness") == actor["id"]:
+            return r
+        candidates = [p for p in squad if p["hp"] and not p["visible"] and p["blind"] <= now
+                      and p["id"] != r.get("witness") and p["id"] != r.get("reporter")]
+        if candidates and min(candidates,key=lambda p:(dist(xyz(p),xyz(r)),p["slot"])) is actor:
+            return r
+    return None

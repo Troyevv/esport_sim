@@ -106,7 +106,7 @@ def test_background_and_observed_share_report_across_the_map_pool(tmp_path, name
     assert store.careers.report(frozen["history"][-1]["result"]) == expected
     store.db.close()
 
-@pytest.mark.parametrize("previous", ["cs2-bo1.14", "cs2-bo1.15", "cs2-bo1.16", "cs2-bo1.17", "cs2-bo1.18"])
+@pytest.mark.parametrize("previous", ["cs2-bo1.14", "cs2-bo1.15", "cs2-bo1.16", "cs2-bo1.17", "cs2-bo1.18", "cs2-bo1.19"])
 def test_recent_checkpoints_resume_from_the_recorded_tick(previous):
     state = match.initial(41000,map_id="de_nuke")
     match.advance(state)

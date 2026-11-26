@@ -540,6 +540,16 @@ def execute(space, w, a, squad, fire, travel):
         a["status"] = status + " · " + job["zone"]
         moved = dist(current, goal) > 3 and travel(a, goal, 2, fire)
         if not moved or dist(current, goal) < 24:
+            # Keep the designated route and the paired flash window. A guard on
+            # a stationary angle can turn to a recent sound or an ally's sight.
+            cast = job.get("throw", {})
+            awaiting_flash = cast.get("item") == "Свет" and "skip" not in cast and now < cast.get("land", now+1)
+            if not moved and not awaiting_flash:
+                report = cs2_defense.opening_watch(a, squad, now, w["player"]["skills"])
+                if report:
+                    look = xyz(report)
+                    a["status"] = ("Слушает направление" if report["source"] == "Слух"
+                                   else "Проверяет по радио") + " · " + job["zone"]
             a["heading"] = atan2(look[1] - a["y"], look[0] - a["x"])
         return ("move" if moved else "hold"), None
 

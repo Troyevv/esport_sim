@@ -233,6 +233,8 @@ def next_round(w):
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
+        for key in ("audioCalls","lastDutyFeedback"):
+            a.pop(key, None)
         a.pop("postWatch", None)
         if reset or not a["hp"]:
             a.update(
@@ -915,6 +917,7 @@ def advance(w):
                     )
             previous = a["status"]
             step_index = a.get("stepIndex", 0)
+            prior_position = cs2_maps.xyz(a) if space and side == "T" and w["phase"] == "live" else None
             intents.append((a, *ai.act(observation, a, squad, known_bomb, fire)))
             if space:
                 ai.cs2_play.cs2_defense.check_incoming(
@@ -929,7 +932,13 @@ def advance(w):
                 a.setdefault("routeReports",{})[a["id"]]=[site,now]
                 w["messages"].append(dict(team=side,sender=a["id"],blockedSite=site,
                                           due=now+ai.radio_delay(profile(w,a)["skills"])))
+            if space and side == "CT" and w["phase"] == "live" and now % 5 == a["slot"]:
+                call = ai.cs2_play.cs2_defense.duty_feedback(w["plans"]["CT"], a, squad, now)
+                if call:
+                    ai.send_sector(w, a, call)
             if intents[-1][1] == "move":
+                if prior_position and now % 5 == a["slot"] and ai.dist(prior_position,cs2_maps.xyz(a)) > 0.9:
+                    ai.heard_action(w, space, a, players, "Шаги", 88)
                 a["lastMove"] = now
                 a["movingTicks"] += 1
             if observation["plan"].get("board"):
@@ -976,6 +985,9 @@ def advance(w):
                            ai.near_line(a,target,p,3))
                 victim = min(crossed,key=lambda p: ai.distance(a,p),default=None)
             ai.shoot(w, a, target, victim, space)
+            if space and a["team"] == "T" and w["phase"] == "live":
+                radius = 75 if a["weapon"] in ("USP","M4A1-S") else 128
+                ai.heard_action(w,space,a,players,"Выстрел",radius)
             for listener in players:
                 # A passing shot is perceptible at the listener, even when the
                 # shooter is outside their vision or normal local audio radius.
@@ -995,6 +1007,7 @@ def advance(w):
                     listener["team"] != a["team"]
                     and listener["hp"]
                     and a["id"] not in listener["visible"]
+                    and not (space and listener["team"] == "CT" and w["phase"] == "live")
                     and ai.distance(a, listener) < 55
                 ):
                     # Sound identifies a sector, never a tracked live enemy position.

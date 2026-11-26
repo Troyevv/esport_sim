@@ -292,11 +292,29 @@ def direct_defense(space, w, plan, squad, leader):
     eliminated = {k["target"] for k in w["kills"]}
     reports = [r for r in leader["knowledge"].values() if r["id"] not in eliminated]
     counts = cs2_intel.pressure(space, reports, now)
+    calls = list(leader.get("sectorCalls", {}).values())
+    cs2_intel.sector_pressure(space, reports, calls, now, counts)
+    plan["unavailable"] = {
+        pid.split("/")[0]: call["site"] for pid, call in leader.get("sectorCalls", {}).items()
+        if call.get("duty") and call["state"] == "blocked" and 0 <= now - call["tick"] < 30
+    }
+    for pid, call in leader.get("sectorCalls", {}).items():
+        if call.get("duty") and call["state"] in ("moving","arrived") and now - call["tick"] < 25:
+            actor = next((p for p in squad if p["id"] == pid.split("/")[0]), None)
+            duty = cs2_defense.relief(plan,actor) if actor else None
+            if duty and duty["site"] == call["site"]:
+                duty["acknowledged"] = call["state"]
+                if call["state"] == "moving":
+                    duty.setdefault("arriveBy",call["tick"]+30)
     losses = {"A": [], "B": []}
     for mate in w["agents"]:
         if mate["team"] != "CT" or mate["hp"] or now - mate["lastHurt"] >= 75:
             continue
         lost_at = space.reported_site(xyz(mate))
+        if not lost_at:
+            job = plan.get("opening", {}).get("jobs", {}).get(mate["id"], {})
+            if job.get("peek") and dist(xyz(mate), job["peek"]) < 30:
+                lost_at = job["site"]
         if lost_at:
             losses[lost_at].append(mate["lastHurt"])
     for label, times in losses.items():
@@ -355,7 +373,27 @@ def direct_defense(space, w, plan, squad, leader):
     if on_site and (plan.get("backup") or {}).get("site") != on_site:
         plan.pop("backup", None)
         plan.pop("secondBackup", None)
+    # Weak evidence can start one support move. Keep it over a short radio
+    # gap, but release it on a newer conflicting contact or a checked approach.
+    reserve = plan.get("backup")
+    if reserve:
+        old_site = reserve["site"]
+        opposite = "B" if old_site == "A" else "A"
+        contradiction = any(r["source"] in ("Радио","Зрение") and now-r["tick"] < 30
+                            and space.reported_site(xyz(r)) == opposite for r in reports)
+        cleared = any(c["state"] == "watching" and c["site"] == old_site
+                      and reserve.get("lastEvidence",now) < c["tick"] <= now
+                      and any(dist(xyz(r),tuple(c["point"])) < 22 and r["tick"] < c["tick"]
+                              for r in reports) for c in calls)
+        if destination == old_site:
+            reserve["lastEvidence"] = now
+        elif on_site or contradiction or cleared:
+            reserve["arriveBy"] = now-1
+        elif now-reserve.get("lastEvidence",reserve.get("issued",now)) < 28:
+            destination = old_site
     coordinate_reserves(space, plan, squad, destination, counts, now, bomb_site)
+    if plan.get("backup"):
+        plan["backup"].setdefault("issued",now)
     commit_reserves(space, plan, squad, destination if full else None)
     cs2_openings.review(space, plan, squad, now, leader)
     current = {
@@ -389,6 +427,7 @@ def assign_backup(space, plan, squad, site, pressure):
     # The junction player can have this site's label and still be watching mid.
     # Count a mobile guard by their actual position, never by the nominal label.
     other = [a for a in squad if slots[a["slot"]]["site"] != site or a["slot"] == 4]
+    other = [a for a in other if plan.get("unavailable", {}).get(a["id"]) != site]
     if pressure < 1.65:
         # A previous round or an isolated sighting only repositions the
         # junction player. Keep both guards of the opposite site in place.
@@ -451,6 +490,7 @@ def reinforce_pair(space, plan, squad, site, pressure):
         return
     candidates = [a for a in squad if a["id"] != first["id"]
                   and (a["slot"] == 4 or (a in away and a["slot"] >= 2))]
+    candidates = [p for p in candidates if plan.get("unavailable", {}).get(p["id"]) != site]
     if not candidates:
         plan.pop("secondBackup", None)
         return
@@ -478,7 +518,8 @@ def coordinate_reserves(space, plan, squad, destination, counts, now, bomb_site=
         if not order or now > order.get("arriveBy", -1):
             return False
         actor = members.get(order["id"])
-        if not actor or actor.get("blockedTicks", 0) >= 5 or dist(xyz(actor), order["hold"]) < 8:
+        if (not actor or plan.get("unavailable", {}).get(order["id"]) == order["site"]
+                or dist(xyz(actor), order["hold"]) < 8):
             return False
         other = "B" if order["site"] == "A" else "A"
         if counts[other] >= 0.65 and counts[other] > counts[order["site"]]:
@@ -532,7 +573,7 @@ def commit_reserves(space, plan, squad, site):
     duties = {}
     for actor in squad:
         slot = actor["slot"]
-        if cs2_defense.relief(plan, actor) or (
+        if plan.get("unavailable", {}).get(actor["id"]) == site or cs2_defense.relief(plan, actor) or (
             slot != 4 and slots[slot]["site"] == site
         ):
             continue

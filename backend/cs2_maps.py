@@ -17,7 +17,7 @@ from .match_rules import BLAST_RADIUS, ROLES, UTILITY
 BUILD = 26879581
 # These rule revisions share map schema 2 and the same checkpoint migration.
 # The build ID and checkpoint version are validated independently on load.
-SUPPORTED_RULES = tuple(f"cs2-bo1.{version}" for version in range(19, 0, -1))
+SUPPORTED_RULES = tuple(f"cs2-bo1.{version}" for version in range(20, 0, -1))
 RULES, PREVIOUS_RULES = SUPPORTED_RULES[:2]
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
