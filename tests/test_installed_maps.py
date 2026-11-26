@@ -121,6 +121,8 @@ def test_nuke_anchors_and_floor_reports_before_contact():
         assert orders[i]["site"] == site
         assert any(space.hit(hold, space.centers[area], 1, 64) is None for area in space.plants[site])
     assert orders[4]["hold"] != orders[0]["hold"]
+    rafters = space.places[space.profile["guards"]["A"][0]]
+    assert min(abs(orders[0]["hold"][2] - space.centers[i][2]) for i in rafters) * cs2_maps.UNIT <= 72
 
 
 @pytest.mark.parametrize("scenario", ["Пистолетная","Эко","Частичная","Форс","Полная","Антиэко","Бонусная"])

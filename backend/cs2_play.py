@@ -339,6 +339,36 @@ def assign_backup(space, plan, squad, site, pressure):
     plan.pop("backup", None)
 
 
+def reinforce_pair(space, plan, squad, site, pressure):
+    """A confirmed group can draw a second defender while the weak anchor stays."""
+    first = plan.get("backup")
+    if not first or not site or pressure < 2.5:
+        plan.pop("secondBackup", None)
+        return
+    slots = plan["orders"]["slots"]
+    away = [a for a in squad if a["slot"] != 4 and slots[a["slot"]]["site"] != site]
+    if len(away) < 2:
+        plan.pop("secondBackup", None)
+        return
+    candidates = [a for a in squad if a["id"] != first["id"]
+                  and (a["slot"] == 4 or (a in away and a["slot"] >= 2))]
+    if not candidates:
+        plan.pop("secondBackup", None)
+        return
+    prior = plan.get("secondBackup")
+    if prior and prior["site"] == site and any(a["id"] == prior["id"] for a in candidates):
+        return
+    occupied = [slots[a["slot"]]["hold"] for a in squad if a["slot"] != 4 and slots[a["slot"]]["site"] == site]
+    occupied.append(first["hold"])
+    positions = space.angles(site, 1-plan["lane"], space.site_points[site], "site")
+    for actor in sorted(candidates, key=lambda a: (space.site_costs[site].get(a["navArea"],float("inf")), a["slot"])):
+        for goal, watch in positions:
+            if all(dist(goal, p) >= 6 for p in occupied) and space._reachable(xyz(actor), [goal], actor["navArea"]):
+                plan["secondBackup"] = dict(id=actor["id"], site=site, hold=list(goal), watch=list(watch))
+                return
+    plan.pop("secondBackup", None)
+
+
 def rendezvous(space, actor, mate, now):
     # Rendezvous on a walkable surface within trading distance. The
     # teammate's exact feet can be between NAV surfaces on a ladder.
@@ -374,7 +404,7 @@ def rendezvous(space, actor, mate, now):
 def seek_cover(space, actor, contact, allies, skills, now, fire, travel):
     """Break sight or finish reloading using only this player's last contact."""
     exposed = False
-    if contact and len(actor["visible"]) > 1 and actor.get("team") == "CT":
+    if contact and len(actor.get("visible", ())) > 1:
         engaged = sum(p is not actor and p["target"] in actor["visible"] and
                       dist(xyz(p),xyz(actor)) < 45 for p in allies)
         # A lone defender who cannot trade the opening can break contact and
@@ -720,6 +750,26 @@ def search_site(space, actor, site, now, allies=()):
     return goal or center
 
 
+def deny_plant(space, actor, allies, target, now, heard, plan):
+    """Deny an audible legal plant sector with a safe, timely utility landing."""
+    pos = xyz(actor)
+    flight = max(3, round(dist(pos, target) / 7))
+    if now + flight >= heard + RULES["plant"]:
+        return None
+    item = next((g for g in ("HE", "Огонь") if g in actor["utility"]
+                 and not any(dist(xyz(m), target) < UTILITY[g][0] for m in allies)
+                 and not any(c["item"] == g and now < c["end"] and dist(c["point"], target) < UTILITY[g][0]
+                             for c in plan.get("crossingCalls", ()))), None)
+    if item is None:
+        return None
+    x, y, z, _ = space.grenade(pos, target, flight)
+    if dist((x,y,z), target) >= UTILITY[item][0] / 2:
+        return None
+    plan.setdefault("crossingCalls", []).append(dict(item=item, point=list(target), end=now+flight+UTILITY[item][1]))
+    actor["status"] = "Срывает установку по звуку"
+    return "throw", dict(zip(("x", "y", "z"), target), utility=item)
+
+
 def crossing_utility(space, w, a, allies, order, site):
     """Use available cover and utility to open or deny the next crossing."""
     now, plan = w["tick"], w["plan"]
@@ -944,9 +994,10 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                     a["status"] = "Ждёт партнёра для выхода"
     else:
         site = order["site"]
-        backup = plan.get("backup")
-        if backup and backup["id"] == a["id"]:
-            site, goal, watch = backup["site"], backup["hold"], backup["watch"]
+        for backup in (plan.get("backup"), plan.get("secondBackup")):
+            if backup and backup["id"] == a["id"]:
+                site, goal, watch = backup["site"], backup["hold"], backup["watch"]
+                break
         a["status"] = f"Занимает {site}"
     if not w["action"] and (w["phase"] == "live" or (side == "CT" and a["heardSite"] and len(allies) >= 2 and w["deadline"]-now > RULES["defuse"] + 40)):
         intent = crossing_utility(space,w,a,allies,order,site)
@@ -968,6 +1019,17 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                 cue["peek"] = None
         if cue["peek"] is not None:
             goal, watch = cue["peek"], cue["watch"]
+            # Estimate the common plant surface from the audible bearing. A
+            # defender can deny the sound even when smoke obscures the peek.
+            if not cue.get("denialChecked") and now >= a["throwAt"]:
+                cue["denialChecked"] = True
+                points = [space.centers[i] for i in sorted(space.plants[cue["site"]])
+                          if not outside_bearing(space.centers[i], cue["bearing"])]
+                if points:
+                    target = min(points, key=lambda q: (sum(dist(q,p) for p in points), q))
+                    intent = deny_plant(space, a, allies, target, now, cue["tick"], plan)
+                    if intent:
+                        return intent
             a["status"] = "Проверяет звук установки"
     if side == "T" and w["phase"] == "live" and plan.get("probe") and "stations" not in plan["probe"] and not latest and not w["action"] and bomb and bomb["carrier"]:
         goal, watch = probe_intent(space, w, a, allies, goal, watch)

@@ -15,9 +15,9 @@ from .cs2_sites import BombSites
 from .match_rules import BLAST_RADIUS, ROLES
 
 BUILD = 26879581
-RULES = "cs2-bo1.10"
-PREVIOUS_RULES = "cs2-bo1.9"
-SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.8", "cs2-bo1.7", "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
+RULES = "cs2-bo1.11"
+PREVIOUS_RULES = "cs2-bo1.10"
+SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.9", "cs2-bo1.8", "cs2-bo1.7", "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )
@@ -504,6 +504,8 @@ class Map:
         eyes = {p: eye(p) for p in [*positions, *targets]}
         rays = [(eyes[p], eyes[q]) for p in positions for q in targets if 5 <= dist(p, q) <= 100]
         sights = self.collision.sight_many(rays)
+        # Keep the assigned platform when it offers both required sight lines.
+        # One standing hull separates a step from a different fighting level.
         ranked = []
         for pos in positions:
             seen = {q for q in targets if sights.get((eyes[pos], eyes[q]))}
@@ -524,7 +526,8 @@ class Map:
                 watch = next(iter(entries or plant_views), None) or self._watch(site,pos,variant)
                 joint = 0
             ranked.append((not bool(plant_views) if objectives else False,
-                           not bool(entries), -joint, -len(plant_views), -min(6, len(entries)),
+                           not bool(entries), abs(pos[2]-anchor[2])*UNIT > 72,
+                           -joint, -len(plant_views), -min(6, len(entries)),
                            pos not in covers, dist(pos, anchor), pos, watch))
         return [(pos, watch) for *_, pos, watch in sorted(ranked)]
 
@@ -561,7 +564,8 @@ class Map:
                 # Reward the second guard for covering part of the incoming
                 # route that the anchor cannot see from behind this geometry.
                 uncovered = sum(not visible.get((eyes[anchor],eyes[r])) for r in seen if r in entries)
-                ranked.append((q not in entries, -min(uncovered,4), -min(dist(plant,q),50),
+                ranked.append((abs(p[2]-wing[2])*UNIT > 72, q not in entries,
+                               -min(uncovered,4), -min(dist(plant,q),50),
                                dist(p,wing),cosine,p,q))
         best = {}
         for *_,p,q in sorted(ranked):

@@ -419,3 +419,19 @@ def test_planter_checks_exposed_angle_unless_partner_covers_it_or_clock_expires(
     assert prepare_plant(space,w,carrier,[carrier,mate],"A") == ("hold", None)
     w["deadline"] = 45
     assert prepare_plant(space,w,carrier,[carrier,mate],"A") == ("plant","A")
+
+
+def test_utility_denial_respects_heard_time_friendlies_and_prior_cover():
+    from types import SimpleNamespace
+    from backend.cs2_play import deny_plant
+
+    target = (40, 0, 0)
+    space = SimpleNamespace(grenade=lambda *_: (*target, []))
+    actor = dict(id="p", utility=["HE"], x=0, y=0, z=0)
+    friend = dict(x=35, y=1, z=0)
+    assert deny_plant(space, actor, [actor, friend], target, 100, 100, {}) is None
+    assert deny_plant(space, actor, [actor], target, 140, 100, {}) is None
+    plan = {}
+    kind, order = deny_plant(space, actor, [actor], target, 100, 100, plan)
+    assert kind == "throw" and order["utility"] == "HE"
+    assert deny_plant(space, actor, [actor], target, 101, 100, plan) is None

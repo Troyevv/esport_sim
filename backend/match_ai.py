@@ -272,7 +272,9 @@ def captain(w, squad, space=None):
                     destination = max(counts,key=counts.get)
                 else:
                     destination = plan.get("anticipated")
-            cs2_play.assign_backup(space,plan,squad,destination,max(counts.values()))
+            pressure = counts.get(destination, 0)
+            cs2_play.assign_backup(space,plan,squad,destination,pressure)
+            cs2_play.reinforce_pair(space,plan,squad,destination,pressure)
         if w["phase"] == "planted":
             # The announcement is public. Site identification travels with the beep.
             heard = leader["heardSite"]

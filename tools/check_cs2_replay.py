@@ -54,7 +54,7 @@ def main():
     # Record the approach as well as the finish so a divergence can be localized.
     seed = 41002
     pair = random.Random(seed).sample(sorted(career.roster_index(pack).values()), 2)
-    for teams, expected in ((pair, 514), (pair[::-1], 659)):
+    for teams, expected in ((pair, 514), (pair[::-1], 651)):
         state = match.initial(seed, database.match_input(pack, teams), teams, map_id="de_anubis")
         approach = []
         live = None
