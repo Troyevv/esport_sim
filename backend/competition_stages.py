@@ -127,6 +127,15 @@ def swiss_round(stage):
         if stage["round"] == 1:
             n = len(pool)//2
             pairs = [[a["team"], b["team"]] for a,b in zip(pool[:n], pool[n:], strict=True)]
+        elif len(pool)==6 and stage["round"]>=4:
+            priorities=("162534","162435","152634","152436","142635","142536","162345",
+                        "152346","132645","132546","142356","132456","123645","123546","123456")
+            pairs=None
+            for layout in priorities:
+                candidates=[(pool[int(a)-1],pool[int(b)-1]) for a,b in zip(layout[::2],layout[1::2],strict=True)]
+                if all(b["team"] not in a["opponents"] for a,b in candidates):
+                    pairs=[[a["team"],b["team"]] for a,b in candidates]
+                    break
         else:
             pairs = pair(pool)
         require(pairs is not None, "Не удалось сформировать швейцарский раунд")

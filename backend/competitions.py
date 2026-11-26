@@ -2,7 +2,7 @@
 import hashlib
 from copy import deepcopy
 
-from . import competition_stages as stages, registrations
+from . import competition_stages as stages, registrations, vrs
 from .competition_catalog import offset, season, seed_data
 from .database import day, require
 
@@ -40,6 +40,7 @@ def init(c, pack):
         if tid in c["teams"]:
             main = pack["rosters"][c["teams"][tid]]["players"]
             c["circuit"]["bench"][tid] = [p for p in row["players"]+row["reserves"] if p not in main]
+    publish(c,pack)
     add_season(c,pack,int(c["date"][:4]))
 
 
@@ -57,6 +58,11 @@ def add_season(c, pack, year):
             clock(c,reminder,"Завтра завершается регистрация")
     process_day(c,pack)
     clock(c,f"{year+1}-01-01","Новый сезон")
+    for month in range(1,13):
+        first=f"{year}-{month:02}-01"
+        publication=offset(first,(-day(first).weekday())%7)
+        if publication>c["date"]:
+            clock(c,publication,"Публикация VRS")
     order(c)
 
 
@@ -318,9 +324,9 @@ def completed(c,e,report):
 
 
 def tick(c,pack):
-    live=c["circuit"].get("live")
-    if live and live["completeWindow"] and day(c["date"]).weekday()==0 and day(c["date"]).day<=7:
-        c["circuit"]["snapshots"].setdefault(c["date"],deepcopy(live["rows"]))
+    if day(c["date"]).weekday()==0 and day(c["date"]).day<=7:
+        publish(c,pack)
+        c["circuit"]["snapshots"][c["date"]]=deepcopy(c["circuit"].get("live",{}).get("rows",[]))
     if c["date"].endswith("-01-01"):
         add_season(c,pack,int(c["date"][:4]))
     else:
@@ -331,7 +337,6 @@ def tick(c,pack):
 
 
 def publish(c,pack):
-    from . import vrs
     from .competition_catalog import DATA
     import json
     events={e["id"]:dict(end=e["end"],lastMatch=max((g.get("date",e["end"]) for d in e["draws"] for group in d
@@ -346,11 +351,16 @@ def publish(c,pack):
         matches.append(dict(date=e["date"],event=e["edition"],teams=e["teams"],winner=e["winnerTeamId"],
                             ranked=event["admission"]!="open",
                             fives=[event["registrations"][t][e["rosterVersions"][t]-1]["players"] for t in e["teams"]]))
-    rows=vrs.calculate(matches,events,c["date"],{pid:p["nationality"] for pid,p in pack["players"].items()},
-                       json.loads((DATA/"vrs-regions.json").read_bytes()))
+    raw=vrs.history()
+    countries={p:row["country"] for p,row in raw["players"].items()}
+    countries.update({p:r["nationality"] for p,r in pack["players"].items() if r["nationality"]})
+    rows=vrs.calculate(raw["matches"]+matches,{**raw["events"],**events},c["date"],countries,
+                       json.loads((DATA/"vrs-regions.json").read_bytes()),{p:r["name"] for p,r in pack["players"].items()})
     for r in rows:
-        r["name"]=pack["teams"][r["team"]]["name"]
-        r["nicks"]=[pack["players"][p]["name"] for p in r["core"]]
-    if rows:
-        c["circuit"]["live"]={"date":c["date"],"rows":rows,
-                             "completeWindow":(day(c["date"])-day(c["start"])).days>=180}
+        org=r["team"]
+        if org in pack["teams"]:
+            r["name"]=pack["teams"][org]["name"]
+        else:
+            r.update(name=raw["clubs"][org]["name"],team=raw["clubs"][org]["team"])
+    c["circuit"]["live"]={"date":c["date"],"rows":rows,
+                             "completeWindow":True}

@@ -346,7 +346,7 @@ class CareerStore:
             return dict(careers=list(menu.values()), active=None)
         pack = self.pack(c["source"])
         own = c["team"]
-        event = dict(teams=[own,next(t for t in c["teams"] if t!=own)])
+        event = dict(teams=[own,next(t for t in c["teams"] if t!=own and set(pack["rosters"][c["teams"][own]]["players"]).isdisjoint(pack["rosters"][c["teams"][t]]["players"]))])
         domain, _ = career.match_domain(
             pack, c, event, self.store.badges.index(pack), self.store.portraits
         )

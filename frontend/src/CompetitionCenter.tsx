@@ -107,7 +107,7 @@ export function CompetitionCenter(props:Props) {
   return <><button className="link-button" onClick={()=>select("")}>← Все соревнования</button>
     <Heading title={event.title} sub={event.place+" · "+span(event.start,event.end)}/>
     <div className="tc-facts surface">{[[event.organizer,"Организатор"],[money(event.prizes.reduce((a,b)=>a+b,0)),"Призовой фонд"],
-      [event.capacity,"Команд"],["Тир "+event.prestige,"Игровой престиж"]].map(([a,b])=><div key={b}><small>{b}</small><b>{a==="ESL"&&<img src="/competitions/esl.svg" alt=""/>}{a}</b></div>)}</div>
+      [event.capacity,"Команд"],["Тир "+event.prestige,"Игровой престиж"]].map(([a,b])=><div key={b}><small>{b}</small><b>{b==="Организатор" && event.organizer!=="CCT" && <img src={event.organizer==="ESL"?"/competitions/esl.svg":"/competitions/pgl.png"} alt=""/>}{a}</b></div>)}</div>
     <Tabs items={["Обзор","Участники","Сетки","Матчи","Статистика","Моя заявка"]} value={tab} change={show}/>
     {tab==="Обзор" && <section className="surface panel-body"><h2>Регламент</h2><p>{status[event.status]} · {admission[event.admission]} · {event.simulated?"Игровой сезон":"Календарь организатора"}.</p>
       <p>Фиксация состава {date(event.lock)}. Запасных до {event.rules.reserves}. Тактических тайм-аутов на карту: {event.rules.timeouts}.</p>

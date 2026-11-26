@@ -1276,7 +1276,7 @@ def project(w, view="full"):
                 else None
             ),
             remaining=w["remaining"],
-            timeoutLimit=RULES["timeouts"],
+            timeoutLimit=w.get("series",{}).get("profile",{}).get("timeouts",RULES["timeouts"]),
             pending=w["pending"],
             call=w["call"] if coach_view else None,
             calls=CALLS,
