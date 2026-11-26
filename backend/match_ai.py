@@ -272,9 +272,11 @@ def captain(w, squad, space=None):
                     destination = max(counts,key=counts.get)
                 else:
                     destination = plan.get("anticipated")
-            pressure = counts.get(destination, 0)
-            cs2_play.assign_backup(space,plan,squad,destination,pressure)
-            cs2_play.reinforce_pair(space,plan,squad,destination,pressure)
+            carrier_report = max((p for p in contacts if p.get("carryingC4")),
+                                 key=lambda p: p["tick"], default=None)
+            bomb_site = (space.reported_site(xyz(carrier_report))
+                         if carrier_report and now - carrier_report["tick"] < 35 else None)
+            cs2_play.coordinate_reserves(space, plan, squad, destination, counts, now, bomb_site)
         if w["phase"] == "planted":
             # The announcement is public. Site identification travels with the beep.
             heard = leader["heardSite"]

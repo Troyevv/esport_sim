@@ -232,6 +232,37 @@ def test_fifth_defender_can_reinforce_without_moving_the_anchor():
 
 
 
+def test_reserve_keeps_its_own_assignment_through_radio_silence():
+    from types import SimpleNamespace
+    from backend.cs2_play import coordinate_reserves
+
+    slots = [dict(site="A", hold=[0,0,0]), dict(site="B", hold=[80,0,0]),
+             dict(site="B", hold=[65,0,0])]
+    squad = [dict(id=i, slot=i, navArea=i, x=p["hold"][0], y=0, z=0) for i,p in enumerate(slots)]
+    plan = dict(lane=0, review=40, orders=dict(slots=slots))
+    goal = (12,0,0)
+    space = SimpleNamespace(
+        site_costs={"A": {0:0,1:70,2:50}}, site_points={"A":goal},
+        angles=lambda *args: [(goal, (20,0,0))],
+        _reachable=lambda origin, goals, area: goals[0], locate=lambda point:0,
+        path=lambda *args: [(40,0,0,1),(*goal,0)],
+    )
+    coordinate_reserves(space, plan, squad, "A", {"A":2,"B":0}, 10)
+    duty = plan["backup"]
+    assert duty["id"] == 2 and duty["arriveBy"] == 72
+    coordinate_reserves(space, plan, squad, None, {"A":0,"B":0}, 45)
+    assert plan["backup"] == duty
+    coordinate_reserves(space, plan, squad, None, {"A":0,"B":1}, 46)
+    assert "backup" not in plan
+    # An empty weak site or an expired route releases the same task.
+    plan["backup"] = duty
+    coordinate_reserves(space, plan, [squad[0],squad[2]], None, {"A":0,"B":0}, 47)
+    assert "backup" not in plan
+    plan["backup"] = duty
+    coordinate_reserves(space, plan, squad, None, {"A":0,"B":0}, duty["arriveBy"]+1)
+    assert "backup" not in plan
+
+
 def test_visible_contact_can_trigger_a_reachable_reload_shelter():
     from types import SimpleNamespace
     from backend.cs2_play import seek_cover

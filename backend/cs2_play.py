@@ -369,6 +369,55 @@ def reinforce_pair(space, plan, squad, site, pressure):
     plan.pop("secondBackup", None)
 
 
+def coordinate_reserves(space, plan, squad, destination, counts, now, bomb_site=None):
+    """Keep a confirmed support task through a radio gap while the other site is covered."""
+    slots = plan["orders"]["slots"]
+    members = {a["id"]: a for a in squad}
+
+    def en_route(order, other_reserve=None):
+        if not order or now > order.get("arriveBy", -1):
+            return False
+        actor = members.get(order["id"])
+        if not actor or actor.get("blockedTicks", 0) >= 5 or dist(xyz(actor), order["hold"]) < 8:
+            return False
+        other = "B" if order["site"] == "A" else "A"
+        if counts[other] >= 0.65 and counts[other] > counts[order["site"]]:
+            return False
+        return any(p is not actor and (not other_reserve or p["id"] != other_reserve["id"])
+                   and p["slot"] != 4 and slots[p["slot"]]["site"] == other for p in squad)
+
+    first = plan.get("backup")
+    second = plan.get("secondBackup")
+    if en_route(first, second):
+        destination = first["site"]
+    else:
+        assign_backup(space, plan, squad, destination, counts.get(destination, 0))
+
+    first = plan.get("backup")
+    if not (first and second and second.get("objectiveConfirmed")
+            and second["id"] != first["id"] and second["site"] == destination
+            and en_route(second, first)):
+        reinforce_pair(space, plan, squad, destination, counts.get(destination, 0))
+
+    for key, minimum in (("backup", 1.65), ("secondBackup", 2.5)):
+        order = plan.get(key)
+        if order and bomb_site == order["site"]:
+            order["objectiveConfirmed"] = True
+        if not order or "arriveBy" in order or counts[order["site"]] < minimum:
+            continue
+        actor = members[order["id"]]
+        pos, goal = xyz(actor), tuple(order["hold"])
+        route = space.path(actor["navArea"], pos, space.locate(goal), goal, frozenset())
+        if route is not None:
+            length = 0
+            for point in route:
+                length += dist(pos, point[:3])
+                pos = point[:3]
+            # Until the actor can walk the actual route and the captain reviews
+            # it again. The stationary objective is our own support angle.
+            order["arriveBy"] = now + round(length / 1.65) + (plan["review"] - now)
+
+
 def rendezvous(space, actor, mate, now):
     # Rendezvous on a walkable surface within trading distance. The
     # teammate's exact feet can be between NAV surfaces on a ladder.
