@@ -188,6 +188,8 @@ export function useSession(view: View) {
       };
       sessionStorage.setItem(storageKey, JSON.stringify(intent));
       const accepted = await settle(intent, false, rejected);
+      // Calendar publications stream immediately. Release the controls for pause.
+      if (accepted && (kind === "career-advance" || kind === "career-retry")) return true;
       // Read immediately as well as subscribing, so the next action uses the committed revision.
       const response = await request("/api/state?view=" + view);
       if (!response.ok) throw new Error();

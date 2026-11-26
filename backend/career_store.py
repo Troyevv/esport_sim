@@ -367,6 +367,9 @@ class CareerStore:
                 c["error"] = None
                 self.save(state,"auto")
             elif kind == "career-pause":
+                # The final background publication may beat the client's stop request.
+                if not c["progress"] and state["world"]["version"] == 1 and isinstance(value, dict) and isinstance(value.get("runId"), str):
+                    return
                 require(c["progress"] and state["world"]["version"] == 1, "Расчёт календаря уже остановлен")
                 if value:
                     require(isinstance(value, dict) and value.get("runId") == c["progress"].get("runId", state["context"]), "Начался другой расчёт календаря")

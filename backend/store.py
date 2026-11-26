@@ -330,8 +330,9 @@ class Store:
             progress = (state.get("career") or {}).get("progress")
             value = command.get("value")
             same_run_pause = (
-                command["kind"] == "career-pause" and progress and isinstance(value, dict)
-                and value.get("runId") == progress.get("runId", state["context"])
+                command["kind"] == "career-pause" and isinstance(value, dict)
+                and isinstance(value.get("runId"), str)
+                and (not progress or value["runId"] == progress.get("runId", state["context"]))
             )
             if command["context"] != state["context"] or (
                 command["revision"] != state["revision"] and not same_run_pause

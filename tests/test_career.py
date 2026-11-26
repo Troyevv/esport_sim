@@ -254,7 +254,9 @@ def test_manual_calendar_pause_discards_pending_work_and_resumes_to_next_decisio
     assert store.read()["career"]["progress"] is None
     act(store, "career-advance")
     assert not store.careers.commit_work(old, None)
+    late_pause = intent(store, "career-pause", {"runId":store.snapshot("full")["calendarProgress"]["runId"]})
     run_queue(store)
+    store.apply(late_pause)  # Natural stop and a concurrent manual stop converge.
     end = store.read()["career"]
     assert end["date"] == fixture["date"] and end["progress"] is None
     assert store.careers.detail(store.read())["active"]["attention"][0]["action"] == "play"
