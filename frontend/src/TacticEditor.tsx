@@ -130,7 +130,7 @@ export default function TacticEditor({
     return () => {
       live = false;
     };
-  }, [version, retry]);
+  }, [version, retry, frame.careerRevision]);
   useEffect(
     () => () => {
       request.current++;
@@ -324,9 +324,11 @@ export default function TacticEditor({
     if (!canDiscard()) return;
     setWorking(true);
     try {
+      const request = {side:plan!.side, buy:plan!.buy, map_id:plan!.map};
+      if (library?.planner && !(await act("career-tactic-draft",request))) return;
       const p = await readJSON<Plan>(
         "/api/tactics/proposal?" +
-          new URLSearchParams({ side: plan!.side, buy: plan!.buy, map_id: plan!.map }),
+          new URLSearchParams(request),
       );
       open(
         { ...p, id: crypto.randomUUID(), revision: 0, standard: false },
@@ -683,7 +685,7 @@ export default function TacticEditor({
                   Новая тактика
                 </button>
                 <button disabled={disabled} onClick={proposal}>
-                  Предложение штаба
+                  {library?.planner ? "План · " + library.planner : library?.planner === null ? "Подготовить свой вариант" : "Предложение штаба"}
                 </button>
               </div>
               <button

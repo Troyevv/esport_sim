@@ -2,10 +2,11 @@
 
 from copy import deepcopy
 
-from . import cs2_maps, engine, match, match_score, veto, world
+from . import staff, cs2_maps, engine, match, match_score, veto, world
 from .database import require
 
 VERSION = 1
+DETAILED = {"mode": "detailed", "version": 1}
 
 
 def initial(
@@ -17,15 +18,18 @@ def initial(
     *,
     profile=None,
     history=(),
+    jobs=None,
     today="2026-11-24",
+    detailed=True,
 ):
     profile = deepcopy(profile or veto.REGULATION)
     budget=profile.get("timeouts",match.RULES["timeouts"])
     require(type(budget) is int and 0 <= budget <= 6 and profile.get("timeoutScope","series") in ("map","series"), "Неверный лимит тайм-аутов")
-    missing = set(profile["pool"]) - set(cs2_maps.installed())
-    require(
-        not missing, "Установите карты выбранного пула: " + ", ".join(sorted(missing))
-    )
+    if detailed:
+        missing = set(profile["pool"]) - set(cs2_maps.installed())
+        require(
+            not missing, "Недоступны ресурсы карт: " + ", ".join(sorted(missing)) + ". Перезапустите игру для автоматического восстановления."
+        )
     domain = domain or world.exhibition(engine.initial(seed)["agents"])
     world.validate(domain)
     teams = [domain["rosters"][r]["team"] for r in rosters]
@@ -55,7 +59,23 @@ def initial(
         "winner": None,
         "evidence": veto.evidence(profile["pool"], teams, history, today),
     }
-    veto.advance(w)
+    if jobs is None:
+        # An exhibition has no career agenda. Select its best available specialist.
+        jobs = []
+        for team in teams:
+            candidates = []
+            for sid, row in domain["staff"].items():
+                if row["team"] == team:
+                    person = dict(role=staff.position(row["role"]), **staff.profile(sid, row))
+                    candidates.append((staff.quality(person, "veto"), sid, person["philosophy"]))
+            if candidates:
+                quality, sid, philosophy = max(candidates)
+                jobs.append(dict(team=team, person=sid, name=domain["staff"][sid]["name"], quality=quality, duty="veto", philosophy=philosophy))
+        auto = False
+    else:
+        auto = True
+    w["series"]["work"] = {t: {j["duty"]: j for j in jobs if j["team"] == t} for t in teams}
+    veto.advance(w, "staff" if auto and "veto" in w["series"]["work"][w["coachTeamId"]] else None)
     return w
 
 
@@ -65,6 +85,8 @@ def command(w, value):
     step = s["steps"][len(s["actions"])]
     require(step["team"] == w["coachTeamId"], "Ход соперника")
     if set(value) == {"delegate"} and value["delegate"] in ("captain", "staff"):
+        require(value["delegate"] != "staff" or "work" not in s or "veto" in s["work"][step["team"]],
+                "Нет доступного специалиста по Map Veto")
         veto.advance(w, value["delegate"])
     else:
         require(
@@ -132,15 +154,24 @@ def map_result(w):
 
 
 def verify_map(report, teams, expected, seed, map_id):
+    from . import round_sim
+
+    mode = report.get("simulation", DETAILED)
+    require(mode in (round_sim.MODE, DETAILED), "Неизвестная версия симуляции")
+    if mode == round_sim.MODE:
+        round_sim.validate(report, teams)
+    else:
+        require(
+            report["rules"] in (cs2_maps.SUPPORTED_RULES if map_id else (match.VERSION,))
+            and report["map"] == (cs2_maps.BUILD if map_id else match.MAP["version"]),
+            "Результат не соответствует версии подробной симуляции",
+        )
     points = {
         tid: sum(r["winnerTeamId"] == tid for r in report["rounds"]) for tid in teams
     }
     require(
         report["seed"] == seed
         and report.get("mapId") == map_id
-        and report["rules"]
-        in (cs2_maps.SUPPORTED_RULES if map_id else (match.VERSION,))
-        and report["map"] == (cs2_maps.BUILD if map_id else match.MAP["version"])
         and len(report["stats"]) == len(expected)
         and {row["player"]: row["teamId"] for row in report["stats"]} == expected
         and set(report["teams"]) == set(points)
@@ -184,6 +215,7 @@ def result(w):
     require(s["stage"] == "finished", "Серия ещё идёт")
     return {
         "seriesVersion": VERSION,
+        "simulation": w.get("simulation", DETAILED),
         "bestOf": s["bestOf"],
         "profile": s["profile"],
         "seed": s["seed"],
@@ -193,6 +225,8 @@ def result(w):
         "winnerTeamId": s["winner"],
         "maps": s["results"],
         "veto": s["actions"],
+        **({"preparation": {t:{d:{k:j[k] for k in ("person","quality")} for d,j in jobs.items()}
+                             for t,jobs in s["work"].items()}} if "work" in s else {}),
         "order": s["order"],
         "stats": total_stats(r["stats"] for r in s["results"]),
         "rounds": [row for r in s["results"] for row in r["rounds"]],
@@ -253,6 +287,8 @@ def project(w, view="full"):
         },
         results=[{"map": r["mapId"], "score": r["scoreByTeam"]} for r in s["results"]],
     )
+    public["specialists"] = {team: jobs["veto"].get("name", jobs["veto"]["person"])
+                             for team, jobs in s.get("work", {}).items() if "veto" in jobs}
     if s["stage"] in ("veto", "ready"):
         public["evidence"] = {
             t: {
@@ -262,7 +298,11 @@ def project(w, view="full"):
             for t, maps in s["evidence"].items()
         }
         if s["stage"] == "veto":
-            choice = veto.recommend(w, "staff")
+            advisor = s.get("work", {}).get(w["coachTeamId"], {}).get("veto")
+            public["staffAvailable"] = bool(advisor) or "work" not in s
+            if advisor:
+                public["advisor"] = public["specialists"][w["coachTeamId"]]
+            choice = veto.recommend(w, "staff" if public["staffAvailable"] else "captain")
             public["advice"] = choice
             if choice in s["profile"]["pool"]:
                 knowledge, assessed, fit = veto.map_fit(

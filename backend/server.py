@@ -50,15 +50,21 @@ class Command(BaseModel):
         "database-match",
         "career-create",
         "career-entry",
+        "career-staff",
+        "career-tactic-draft",
         "career-open",
         "career-exhibition",
         "career-lab",
         "career-save",
         "career-load",
         "career-play",
+        "career-quick",
         "career-watch",
         "career-finish",
         "career-advance",
+        "career-pause",
+        "career-repair",
+        "career-retry",
     ]
     value: (
         StrictInt
@@ -129,9 +135,9 @@ def create_app(
                         state = store.read()
                         try:
                             work = store.careers.work(state)
-                        except ValueError as exc:
+                        except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                             c = state["career"]
-                            token = (state["context"], c["id"], c["queue"][0]["id"])
+                            token = (state["context"], c["id"], c["queue"][0]["id"] if c["queue"] else None)
                             store.careers.commit_work(token,None,str(exc))
                             condition.notify_all()
                             continue
@@ -143,15 +149,17 @@ def create_app(
                     try:
                         if game:
                             report = await asyncio.to_thread(career.simulate, game)
-                    except (ValueError, ArithmeticError, KeyError) as exc:
+                    except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                         error = f"Не удалось рассчитать встречу: {exc}"
                     async with condition:
                         try:
-                            changed = store.careers.commit_work(token, report, error)
-                        except ValueError as exc:
+                            changed = store.careers.commit_batch(token, report, error)
+                        except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                             changed = store.careers.commit_work(token, None, str(exc))
                         if changed:
                             condition.notify_all()
+                    # A run of calendar-only reviews must also yield to pause and save.
+                    await asyncio.sleep(0)
 
             if manages_home:
 
@@ -304,7 +312,7 @@ def create_app(
         if not c or c["id"]!=career_id or "circuit" not in c:
             raise HTTPException(404,"В этой карьере нет турнирного календаря")
         pack=store.careers.pack(c["source"])
-        return dict(archive=competitions.vrs.archive(),editions=[dict(e, ownEligible=registrations.in_region(c, e, c["team"], pack),
+        return dict(archive=competitions.vrs.archive(),editions=[dict(e, conflicts=registrations.clashes(c,e,c["team"]), ownEligible=registrations.in_region(c, e, c["team"], pack),
                 draws=[[dict(d,standings=competitions.stages.table(d)) for d in stage] for stage in e["draws"]])
                 for e in c["circuit"]["editions"].values()],
                     available=registrations.available(c,c["team"],pack),live=c["circuit"].get("live"),
@@ -317,7 +325,7 @@ def create_app(
         if not active or active["id"] != career_id:
             raise HTTPException(404, "Карьера уже сменилась")
         pack = store.careers.pack(active["source"])
-        return career_scene.directory(pack, store.badges.index(pack), store.portraits)
+        return career_scene.directory(pack, store.badges.index(pack), store.portraits, active.get("office", {}).get("positions"))
 
     @app.get("/api/career/options/{key}/{revision}")
     async def career_options(key: str, revision: int):
@@ -410,12 +418,21 @@ def create_app(
         if c:
             pack = store.careers.pack(c["source"])
             ids = pack["rosters"][c["teams"][c["team"]]]["players"]
+            sid = c.get("office", {}).get("duties", {}).get("tactics")
+            result["planner"] = pack["staff"][sid]["name"] if sid else None
             result["players"] = [pack["players"][pid]["name"] for pid in ids]
         return result
 
     @app.get("/api/tactics/proposal")
     def proposal(side: Literal["T", "CT"], buy: str, map_id: str="depo"):
         try:
+            c = app.state.store.read().get("career")
+            if c and c.get("office", {}).get("duties", {}).get("tactics"):
+                from .staff import draft_job
+                prepared = draft_job(c,side,buy,map_id)
+                if not prepared:
+                    raise ValueError("Сначала поручите специалисту подготовить план")
+                return prepared["plan"]
             return tactics.propose(side, buy, secrets.randbits(32),map_id=map_id)
         except ValueError as err:
             raise HTTPException(422, str(err)) from err

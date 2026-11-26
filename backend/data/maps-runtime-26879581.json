@@ -1,0 +1,68 @@
+{
+  "de_ancient": {
+    "collision.bin": "ff0a618cb723f37fde6294f5617af117b288e8db711bda74a382a6071eef8d98",
+    "collision.json": "8177a066741a7a5a31493d2e4469843f7d69bcee61bfa4d3bb0174db6f5599f6",
+    "de_ancient.png": "cb6adca45e32ecff0b131f742c129324ba5e2dd695247f61d2d21d85ef2c581c",
+    "gameplay.json": "9d212bdd36f4534137464022c72ff27f63ffba15e30860af566dd0b92991a8db",
+    "provenance.json": "382cc30816aa387573e63eb4b60eaacd1ec620fe6b940508e05b24e31228b67b"
+  },
+  "de_anubis": {
+    "collision.bin": "efaf189dc1168a7b90b4077e779a6a67850946c3d57db70172575fe50f966f50",
+    "collision.json": "dcc51a2f59959795fc6cf88aded7ead216c61f3f5e64cbc6bed10315e84d2aed",
+    "de_anubis.png": "b8f07c36edb13e34dbfaabf9a74e057961ac4fb29545d98d16ff9b7c4e6d1206",
+    "gameplay.json": "3aaf7569164919c864f2a61fd4f1e266b1e34f1f53ac26a12f4fe250f203bb90",
+    "provenance.json": "e0a8e35748b5c3314185cb1f5e96af2b1b8cfdd10cf60f0f2d7e72507bd0fb19"
+  },
+  "de_cache": {
+    "collision.bin": "4a1f697f8587e6b7f65cb9aa7db9d83b536034931d69386077f4165f0b94c63d",
+    "collision.json": "61aac8977cf1b18628a10b93994cc41f65351604ef58ab468bcd417730817292",
+    "de_cache.png": "94c058b3deaa5cc24be81006322da3af1ef0bbded116160a3fcdea6d87227967",
+    "gameplay.json": "13b547cce34a3a7ff1a9f6c25300a29298b873547ae34d20302f8064ed4f65f5",
+    "provenance.json": "e7b5611bb2b9bb14b101d737d0876d4ed15d56b4584bd9188121c89a6718456c"
+  },
+  "de_dust2": {
+    "collision.bin": "d22a8f2383b53cba9555d307e7e142611b9c892b9f984f5f13c0b39b209184f8",
+    "collision.json": "8d8d81432351654761a78dacfce8e09dad6987b99dd3ebf5bf6e1b1b0bb82e93",
+    "de_dust2.png": "0828297130ce26db25a299806ff743df9104de634a3e64b52b358f6f4399354d",
+    "gameplay.json": "4637b964cd22b025f2f9516edf3b961db5e883f16ab0963075fc44905f2b0efe",
+    "provenance.json": "95fd96059790dc1724988adafa59ff620909a29fbcbbc3de2708913451eaeb35"
+  },
+  "de_inferno": {
+    "collision.bin": "ba152b011ddd4ce8551d38a711980174badf6ca7ecbb93d0f7dd1987d8e14d9d",
+    "collision.json": "83ec071c1b6047753324b3ed4cee890b7b057cf0f0db7415ff1e4fb5d68dabde",
+    "de_inferno.png": "53e1d660d5e61a9b876cc56725c2e891c56efcb788657520fa9c10fec321dce3",
+    "gameplay.json": "5f3bbb204b754b6246b3a3d429a3574571ea4dc39f2e0dedfdd93fad72a36b17",
+    "provenance.json": "345c2b3410465c2282f21da3a75fa53d3e703c691b56f49aa96b2ad855954f1c"
+  },
+  "de_mirage": {
+    "collision.bin": "a492a7ce2f8a2897d235281259e7fdab2456a96398a316e8eeeb6001167ce28a",
+    "collision.json": "6713008debed4880a9bb88ccd608e8e082c28cbe0714f304a46bc9aa0d04a085",
+    "de_mirage.png": "c8032f6c83ffca63c0a20ebdcc598a0e1aa618efd746e381e2db26f33a4a964f",
+    "gameplay.json": "2203195a9d873b4123b2d8fb9be89b84ee568679f6b9f8eaf0b4210fba5bfb41",
+    "provenance.json": "7981767be6fe09f97e39243a7e37bed73ea361631ccc617adc06ad89cd29bcee"
+  },
+  "de_nuke": {
+    "collision.bin": "bd2b34e20ac89fdeaf981a403e3af76ed7df84f5fde5306ad6a65a21e7f3a4dd",
+    "collision.json": "f9f994b1b95d996ed77a202100bc8efc50f712cc47e24d641777344841e59047",
+    "de_nuke.png": "21167d05292e80eebe7b068f0bba36a2e3f9116d154d96952a8366cdcc72e6b1",
+    "de_nuke_lower.png": "b8c4e659491ba79be60b7d3f9bc78bdaeb808afc2bae14bf3b25b1801220ebe0",
+    "gameplay.json": "fbceac98d9cdbb651f341ff3b6d3f198b094efe94f629962098337d7677ac912",
+    "provenance.json": "572ef29ff5bb9c3b70468196226501fe32d5010ba1454aeaff40cf7de9208167"
+  },
+  "de_train": {
+    "collision.bin": "f5a808bd6c4931ec64063f12eac0a2ab55577cb7155bfcc9d29f516a170bf01e",
+    "collision.json": "945b5860abd8cb950cbbef579000896b37f3f9f102252084cf86f1b4bfe6869e",
+    "de_train.png": "ccdb11d6f9fbfb7bf199dfa35d58b3e86131a2c872f38b67502d1be3759e912e",
+    "de_train_lower.png": "bc1aa9b1bbcceb06b8e82b7e0980ae11188aa1d460a2e799da9ecd8e21e4d67a",
+    "gameplay.json": "7b32a6669ad373975f311e3ba6bdbe3f832058efda64d6aac8e1a20eecdaebe0",
+    "provenance.json": "d690574e68a0be48df0c1014b297d91066f8ad8a15d46cd737b44436bb518666"
+  },
+  "de_vertigo": {
+    "collision.bin": "eb66430ed87fde2c144a94fafec7f7b7cea397b4bdf896f2b58fb359f018532f",
+    "collision.json": "e124c16ee3ef16ff4942d5f2bc8cee7b9b47c0810673c02f11b956f0a9c47c58",
+    "de_vertigo.png": "d2e2e18668f951f7d3b7c6a4fe4580632d5de253d0991f4b9639f9eca73264bf",
+    "de_vertigo_lower.png": "61639197f940d9702f6cb5476a38ae932a821170cdb6405f14733a5b83e32723",
+    "gameplay.json": "e804f9103169bfa64c032505c5d86d1d716060c0279f3b79f54bd1adee9b8ba3",
+    "provenance.json": "80277b50ead3858af15f782794fa127972eed90ab08ca304d6db2245f7d74275"
+  }
+}

@@ -481,7 +481,7 @@ def iem_usa(year):
                 year=year,
                 simulated=year != 2027,
                 lan=False,
-                modelDates=True,
+                modelDates=True, reschedule="withinRound",
             )
         )
     return events
@@ -631,7 +631,7 @@ def announced_lans(year):
             subregion=sub,
             admission="open",
             feeds=cq["id"],
-            modelDates=True,
+            modelDates=True, reschedule="withinRound",
             lan=False,
         )
         events.extend([cq, oq])

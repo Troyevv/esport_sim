@@ -16,7 +16,7 @@ from pathlib import Path
 import uvicorn
 from fastapi.responses import JSONResponse
 
-from backend.instance import launcher_lock, open_browser, open_existing, ready
+from backend.instance import LAUNCH_PROTOCOL, launcher_lock, open_browser, open_existing, ready
 from backend.paths import migrate_legacy, windows_data_dir
 from backend.server import create_app
 
@@ -126,7 +126,7 @@ async def serve(data, descriptor, listener, open_url):
             await asyncio.sleep(0.05)
         temporary = descriptor.with_suffix(".tmp")
         temporary.write_text(
-            json.dumps(dict(port=port, pid=os.getpid(), nonce=nonce)), encoding="utf-8"
+            json.dumps(dict(port=port, pid=os.getpid(), nonce=nonce, protocol=LAUNCH_PROTOCOL)), encoding="utf-8"
         )
         temporary.replace(descriptor)
         logging.info("Сервер готов на loopback, порт %s. Открываем браузер.", port)
@@ -155,6 +155,8 @@ def launch(data, open_url, legacy_source=None):
                 remove_descriptor(descriptor)
                 if legacy_source is not None:
                     migrate_legacy(legacy_source, data / "scenario.sqlite")
+                from backend.map_install import activate
+                activate()
                 with reserve_listener() as listener:
                     asyncio.run(serve(data, descriptor, listener, open_url))
                 return

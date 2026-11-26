@@ -32,6 +32,7 @@ export interface Plan extends PlanRef {
   familiarity?: number;
 }
 export interface Library {
+  planner?: string|null;
   maps: RadarMap[];
   roles: string[];
   players: string[];

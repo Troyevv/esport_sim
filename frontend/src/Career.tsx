@@ -1,4 +1,5 @@
-import { fixtureMap } from "./careerData";
+import { ManagerAttention } from "./ManagerAttention";
+import { fixtureMap, type Decision } from "./careerData";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Brand, Dialog, Glyph, Heading } from "./GameUI";
 import { Avatar } from "./SceneIdentity";
@@ -15,7 +16,8 @@ import {
   type Scene,
   type Summary,
 } from "./careerData";
-import { Load, NewCareer, Saves } from "./CareerForms";
+import { Load, MatchReport, NewCareer, Saves } from "./CareerForms";
+import { StaffOffice } from "./StaffOffice";
 import { CareerMenu } from "./CareerMenu";
 import { CompetitionCenter } from "./CompetitionCenter";
 import { Calendar } from "./CareerCalendar";
@@ -43,6 +45,8 @@ const sections = [
     "Моя команда",
     [
       ["Состав", "users"],
+      ["Тренерский штаб", "users"],
+      ["Скаутский отдел", "search"],
       ["Тактики", "crosshair"],
       ["Организация", "building"],
     ],
@@ -73,7 +77,7 @@ export default function CareerScreen(props: Props) {
   const { frame, act, screen, go, database, status, settings } = props;
   const res = useData<{ careers: Summary[]; active: Career | null }>(
     "/api/career",
-    frame.careerRevision,
+    frame.calendarProgress ? -1 : frame.careerRevision,
   );
   const [create, setCreate] = useState(false);
   const enabled = props.enabled && res.revision === (frame.careerRevision || 0);
@@ -124,10 +128,11 @@ export default function CareerScreen(props: Props) {
         }
       />
     );
-  return <Manager key={c.id} {...props} c={c} enabled={enabled} />;
+  return <Manager key={c.id} {...props} c={c} enabled={enabled} pauseEnabled={props.enabled && frame.careerId===c.id} />;
 }
-type Route = { page: string; profile?: Profile; edition?:string };
+type Route = { page: string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
 function Manager({
+  pauseEnabled,
   c,
   frame,
   enabled,
@@ -139,7 +144,9 @@ function Manager({
   tool,
   toolName,
   leaveTool,
-}: Props & { c: Career }) {
+}: Props & { c: Career; pauseEnabled:boolean }) {
+  const progress = frame.calendarProgress;
+  const currentDate = progress?.date || c.date;
   const directory = useData<Scene>("/api/career/" + c.id + "/scene");
   const [route, setRoute] = useState<Route>({ page: "Кабинет" }),
     [drawer, setDrawer] = useState(false),
@@ -165,6 +172,12 @@ function Manager({
     [motion, setMotion] = useState(
       () => localStorage.getItem("esport-sim/motion") !== "false",
     );
+  const [decisions, setDecisions] = useState(false);
+  const [quickResult, setQuickResult] = useState<string | null>(null);
+  const completedQuick = quickResult && c.history.find(e => e.id === quickResult);
+  const [decisionError, setDecisionError] = useState("");
+  const required = c.attention.filter(row=>row.level==="required");
+  const directMatch = required.length===1 && ["play","match"].includes(required[0].action);
   const directoryView = useDirectoryView();
   const historyStack = useRef<Route[]>([]);
   const scene = directory.data,
@@ -176,11 +189,11 @@ function Manager({
     setDrawer(false);
     setSearch(false);
   };
-  const to = (page: string, profile?: Profile, edition?:string) => {
+  const to = (page: string, profile?: Profile, edition?:string, entry?:Decision["action"]) => {
     closeOverlays();
     if (tool) leaveTool();
     historyStack.current.push(route);
-    setRoute({ page, profile, edition });
+    setRoute({ page, profile, edition, entry, jump: historyStack.current.length });
     window.scrollTo(0, 0);
   };
   const tournament = (id:string) => to("Соревнования",undefined,id);
@@ -202,17 +215,38 @@ function Manager({
     }
     if (route.page !== "Входящие" || tool) to("Входящие");
   };
-  const advance = async () => {
-    if (!enabled || c.progress) return;
-    if (frame.world.match || frame.world.series) {
-      leaveTool();
-      go("match");
-    } else if (ready) {
-      if (await act("career-play")) {
+  const repair = async () => {
+    setDecisionError("");
+    await act("career-repair",{},setDecisionError);
+  };
+  const resolve = async (row: Decision) => {
+    setDecisionError("");
+    if (row.action === "repair") return repair();
+    if (row.action === "retry") {
+      await act("career-retry",{},setDecisionError);
+      return;
+    }
+    setDecisions(false);
+    if (row.action === "match" || row.action === "play") {
+      if (row.action === "match" || await act("career-play",{},msg=>{setDecisionError(msg);setDecisions(true)})) {
         leaveTool();
         go("match");
       }
-    } else await act("career-advance");
+    } else if (row.edition) to("Соревнования",undefined,row.edition,row.action);
+    else showLetter(null);
+  };
+  const quick = async () => {
+    const fixture = c.queue[0];
+    if (fixture && await act("career-quick", {fixture:fixture.id}, msg=>{setDecisionError(msg);setDecisions(true)})) {
+      setDecisions(false);
+      setQuickResult(fixture.id);
+    }
+  };
+  const advance = async () => {
+    if (!enabled || progress) return;
+    if (directMatch) await resolve(required[0]);
+    else if (required.length) {setDecisionError("");setDecisions(true)}
+    else await act("career-advance",{},msg=>{setDecisionError(msg);setDecisions(true)});
   };
   const nav = (page: string) => {
     closeOverlays();
@@ -404,9 +438,9 @@ function Manager({
               <kbd className="shortcut">Ctrl K</kbd>
             </button>
             <div className="game-date cr-time">
-              <time>{date(c.date)}</time>
+              <time>{date(currentDate)}</time>
               <small>
-                {new Date(c.date + "T12:00:00Z").toLocaleDateString("ru", {
+                {new Date(currentDate + "T12:00:00Z").toLocaleDateString("ru", {
                   weekday: "long",
                   timeZone: "UTC",
                 })}
@@ -414,22 +448,37 @@ function Manager({
             </div>
             <button
               className="btn primary"
-              disabled={!enabled || !!c.progress}
+              disabled={!enabled || !!progress}
               onClick={advance}
             >
-              {frame.world.match || frame.world.series || ready ? "В матч-центр" : "Продолжить"}
+              {directMatch ? "В матч-центр" : required.length ? "Решения · " + required.length : "Продолжить"}
               <Glyph name="player-play" />
             </button>
           </div>
         </header>
         <div className="main-content" id="main-content">
-          {c.progress && (
+          {progress && (
             <div className="cr-progress" role="status">
-              Расчёт встреч · {c.progress.done} / {c.progress.total}
-              <progress max={c.progress.total || 1} value={c.progress.done} />
+              Рассчитано встреч · {progress.done}
+              <progress aria-label="Расчёт календаря до следующего решения" />
+              <button className="btn" disabled={!pauseEnabled} onClick={()=>act("career-pause",{runId:progress.runId})}>Остановить расчёт</button>
             </div>
           )}
-          {c.error && <p role="alert">{c.error}</p>}
+          {!tool && (!progress || required.length > 0) && <button className="attention-summary surface" data-blocked={!!required.length}
+            aria-label={"Открыть центр решений · обязательных: " + required.length} aria-describedby="decision-explanation"
+            onClick={()=>{setDecisionError("");setDecisions(true)}}>
+            <span id="decision-explanation"><strong>{required.length ? required[0].title : "Центр решений"}</strong>
+            <small>{required.length ? required[0].detail : "Обязательных решений нет"}</small></span>
+            <b>{required.length ? "Требуют внимания · " + required.length : "Открыть"}</b>
+          </button>}
+          {directMatch && required[0].action === "play" && !progress && <div className="quick-fixture surface">
+            <div><strong>{c.queue[0].teams.map(t=>c.teams[t]).join(" — ")}</strong><small>Расчёт по раундам с автоматическим выбором карт</small></div>
+            <button className="btn" disabled={!enabled} onClick={quick}>Быстро рассчитать матч</button>
+          </div>}
+          {completedQuick && <Dialog title="Матч завершён" close={()=>setQuickResult(null)}><MatchReport event={completedQuick} teams={c.teams} close={()=>setQuickResult(null)}/></Dialog>}
+          <ManagerAttention quick={quick} items={c.attention} open={decisions} close={()=>setDecisions(false)}
+            enabled={enabled && !progress} resolve={resolve} repair={repair} error={decisionError}
+            saves={()=>{setDecisions(false);to("Сохранения")}}/>
           <div key={active} className="screen-enter">
             {tool ||
               (active === "Календарь" ? (
@@ -487,6 +536,10 @@ function Manager({
                 </>
               ) : !scene || directory.error ? (
                 <Load {...directory} />
+              ) : route.profile?.group === "staff" && c.office.people[route.profile.id] ? (
+                <StaffOffice key={route.profile.id} {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial="Тренерский штаб" personId={route.profile.id}/>
+              ) : ["Тренерский штаб","Скаутский отдел"].includes(active) ? (
+                <StaffOffice {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial={active}/>
               ) : route.profile ? (
                 <EntityProfile
                   key={route.profile.group + route.profile.id}
@@ -517,7 +570,7 @@ function Manager({
                   }}
                 />
               ) : active === "Соревнования" || active === "Рейтинг VRS" ? (
-                <CompetitionCenter key={route.edition||"directory"} initialEdition={route.edition} {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
+                <CompetitionCenter key={(route.edition||"directory")+":"+route.jump} initialEdition={route.edition} initialEntry={route.entry==="entry" || route.entry==="calendar"} initialConflict={route.entry==="calendar"} {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
               ) : active === "База сцены" ? (
                 <Directory {...{ scene, open }} view={directoryView} />
               ) : active === "Матч-центр" ? (

@@ -398,3 +398,39 @@ def test_slow_subscriber_recovers_only_contiguous_observable_ticks(tmp_path):
         assert "motion" not in store.snapshot("T", (state["context"],16))["world"]
     finally:
         store.db.close()
+
+
+def test_calendar_recovery_actions_over_http(tmp_path, monkeypatch):
+    from backend import cs2_maps, map_install
+    from backend.store import Store
+
+    profile = tmp_path / "profile"
+    monkeypatch.setenv("ESPORT_SIM_MAPS", str(tmp_path / "obsolete"))
+    monkeypatch.setattr(map_install, "_profile_root", profile)
+    monkeypatch.setattr(cs2_maps, "_active_root", None)
+    db = tmp_path / "world.sqlite3"
+    store = Store(db)
+    pack = store.careers.pack(["austin-registration", 1])
+    team = next(t for t, data in pack["teams"].items() if data["name"] == "Vitality")
+    selection = dict(id=pack["id"], revision=1, team=team, name="Тренер", mode="owner", scope="full")
+    store.apply(envelope(store.read(), "career-create", selection))
+    state = store.read()
+    c = state["career"]
+    c["queue"] = [next(e for e in c["queue"] if team in e["teams"])]
+    c["error"] = "Расчёт прерван"
+    with store.transaction():
+        store.write(state)
+    store.db.close()
+    with local_server(db) as client:
+        rows = client.get("/api/career").json()["active"]["attention"]
+        assert any(r["action"] == "retry" for r in rows)
+        send(client, "career-repair")
+        assert set(cs2_maps.installed()) == set(cs2_maps.NAMES)
+        send(client, "career-retry")
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            career = client.get("/api/career").json()["active"]
+            if not career["progress"]:
+                break
+            time.sleep(0.02)
+        assert not career["progress"] and career["attention"][0]["action"] == "play"

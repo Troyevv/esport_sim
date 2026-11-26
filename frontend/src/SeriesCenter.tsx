@@ -26,6 +26,9 @@ export interface SeriesView {
   order: { map: string; picker: string | null; attack: string | null }[];
   evidence?: Record<string, Record<string, Evidence>>;
   advice?: string;
+  staffAvailable?: boolean;
+  specialists?: Record<string,string>;
+  advisor?: string;
   fit?: { knowledge: number; assessed: number; roles: number };
   results: { map: string; score: Record<string, number> }[];
   score: Record<string, number>;
@@ -446,7 +449,7 @@ export function VetoCenter({ frame, enabled, act }: Props) {
                 </div>
               )}
               <div className="veto-advice">
-                <small>РЕКОМЕНДАЦИЯ ШТАБА</small>
+                <small>{s.advisor ? "РЕКОМЕНДАЦИЯ · " + s.advisor : s.staffAvailable === false ? "РЕКОМЕНДАЦИЯ КАПИТАНА" : "РЕКОМЕНДАЦИЯ ШТАБА"}</small>
                 <strong>
                   {advice &&
                     (s.names[advice] ||
@@ -480,7 +483,7 @@ export function VetoCenter({ frame, enabled, act }: Props) {
               <details>
                 <summary>Делегировать оставшиеся ходы</summary>
                 <div className="veto-tools">
-                  {(["captain", "staff"] as const).map((by) => (
+                  {(["captain", "staff"] as const).filter(by => by !== "staff" || s.staffAvailable !== false).map((by) => (
                     <button
                       key={by}
                       className="btn"
@@ -518,7 +521,7 @@ export function VetoCenter({ frame, enabled, act }: Props) {
                               (
                                 {
                                   captain: "капитан",
-                                  staff: "штаб",
+                                  staff: (move.team && s.specialists?.[move.team]) || "штаб",
                                   manager: "вручную",
                                 } as Record<string, string>
                               )[a.by],

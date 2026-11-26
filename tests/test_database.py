@@ -33,6 +33,7 @@ def test_atomic_import_refuses_invalid_packages(tmp_path, field, value):
     assert {r["id"] for r in data.installed(store.db)} == {
         "austin-registration",
         data.RELEASE_ID,
+        data.STAFF_RELEASE,
     }
     assert all(r["revision"] == 1 for r in data.installed(store.db))
     with pytest.raises(ValueError, match="Повтор"):

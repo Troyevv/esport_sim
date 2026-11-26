@@ -107,8 +107,9 @@ def test_calendar_slots_switch_restart_and_finish(tmp_path, monkeypatch):
     act(store, "career-advance")
     run_queue(store)
     end = store.read()["career"]
-    assert end["milestones"][-1]["matches"] == len(end["history"])
-    assert end["date"] == "2025-05-16"
+    weekly = next(m for m in end["milestones"] if m["date"] == "2025-05-16" and m.get("matches"))
+    assert weekly["matches"] == sum(m["id"].startswith("00000000-") for m in end["history"])
+    assert end["date"] > weekly["date"]  # A weekly report does not block time.
     act(store, "career-lab")
     assert store.read()["world"] == lab
     act(store, "load")
@@ -223,6 +224,8 @@ def test_career_scene_contains_public_links_without_private_ratings(tmp_path):
             assert set(player).isdisjoint({"potential", "skills", "mapKnowledge", "roleMastery", "ratings"})
         for staff in result["staff"].values():
             assert "preparation" not in staff
+            assert len(staff["professional"]["attributes"]) == 24
+            assert len(staff["professional"]["ratings"]) == 8
         active = store.careers.detail(state)["active"]
         assert all(skills.HIDDEN.isdisjoint(p["skills"]) for p in active["roster"])
         assert 0 <= active["teamRating"] <= 100
@@ -233,3 +236,80 @@ def test_career_scene_contains_public_links_without_private_ratings(tmp_path):
         assert free_agent["teams"] == [] and "kit" not in free_agent["visual"]
     finally:
         store.db.close()
+
+
+def test_manual_calendar_pause_discards_pending_work_and_resumes_to_next_decision(tmp_path):
+    store = Store(tmp_path / "profile.sqlite")
+    start(store)
+    state = store.read()
+    c = state["career"]
+    fixture = next(e for e in c["queue"] if c["team"] in e["teams"])
+    fixture["date"] = "2025-05-22"
+    c["queue"] = [fixture]
+    with store.transaction():
+        store.write(state)
+    act(store, "career-advance")
+    old, _ = store.careers.work(store.read())
+    act(store, "career-pause")
+    assert store.read()["career"]["progress"] is None
+    act(store, "career-advance")
+    assert not store.careers.commit_work(old, None)
+    late_pause = intent(store, "career-pause", {"runId":store.snapshot("full")["calendarProgress"]["runId"]})
+    run_queue(store)
+    store.apply(late_pause)  # Natural stop and a concurrent manual stop converge.
+    end = store.read()["career"]
+    assert end["date"] == fixture["date"] and end["progress"] is None
+    assert store.careers.detail(store.read())["active"]["attention"][0]["action"] == "play"
+    store.db.close()
+
+
+def test_manager_quick_result_survives_retry_restart_and_old_slot(tmp_path, monkeypatch):
+    from backend import cs2_maps, veto
+
+    monkeypatch.setenv("ESPORT_SIM_MAPS", str(tmp_path / "no-geometry"))
+    path = tmp_path / "old.sqlite"
+    store = Store(path)
+    start(store)
+    state = store.read()
+    c = state["career"]
+    fixture = next(e for e in c["queue"] if c["team"] in e["teams"])
+    fixture["bestOf"] = 3
+    c.update(queue=[fixture], date=fixture["date"], seriesProfile=veto.REGULATION)
+    with store.transaction():
+        store.write(state)
+        store.careers.save(state, "2")
+    assert not cs2_maps.installed()
+    with pytest.raises(ValueError):
+        act(store, "career-quick", {"fixture":"obsolete"})
+    cmd = intent(store, "career-quick", {"fixture":fixture["id"]})
+    assert store.apply(cmd) == store.apply(cmd)
+    c = store.read()["career"]
+    assert len(c["history"]) == 1 and store.read()["world"]["version"] == 1
+    result = c["history"][0]["result"]
+    assert store.careers.report(result)["simulation"] == {"mode":"round", "version":1}
+    store.db.close()
+    store = Store(path)
+    assert store.read()["career"]["history"][0]["result"] == result
+    act(store, "career-load", {"slot":"2"})
+    act(store, "career-quick", {"fixture":fixture["id"]})
+    assert store.read()["career"]["history"][0]["result"] == result
+    store.db.close()
+
+
+def test_pause_targets_running_calendar_even_after_background_publication(tmp_path, monkeypatch):
+    monkeypatch.setenv("ESPORT_SIM_MAPS", str(tmp_path / "no-geometry"))
+    store = Store(tmp_path / "profile.sqlite")
+    start(store)
+    act(store, "career-advance")
+    frame = store.snapshot("full")
+    target = {"runId": frame["calendarProgress"]["runId"]}
+    pause = intent(store, "career-pause", target)
+    token, game = store.careers.work(store.read())
+    assert store.careers.commit_work(token, career.simulate(game))
+    assert store.read()["revision"] > pause["revision"]
+    store.apply(pause)
+    act(store, "career-advance")
+    with pytest.raises(ValueError, match="другой расчёт"):
+        act(store, "career-pause", target)
+    assert store.read()["career"]["progress"]
+    store.db.close()

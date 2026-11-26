@@ -17,7 +17,7 @@ def lineups():
 def source(key, revision):
     return (
         [key, revision, EDITION]
-        if key == database.RELEASE_ID and revision == 1
+        if key in database.NOVEMBER_EDITIONS and revision == 1
         else [key, revision]
     )
 

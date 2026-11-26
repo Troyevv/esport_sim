@@ -211,6 +211,8 @@ export function NewCareer({
   );
 }
 
+const buyName: Record<string,string> = {pistol:"пистолетный", full:"полная закупка", force:"форс", eco:"эко"};
+
 export function MatchReport({
   event,
   teams,
@@ -243,23 +245,34 @@ export function MatchReport({
       ) : (
         <>
           <p>
-            {date(event.date)} · {fixtureMap(event)} · {rounds} раундов
+            {date(event.date)} · {fixtureMap(event)} · Раунды: {rounds} · {data.data.simulation?.mode === "round" ? "Быстрый расчёт по раундам" : "Подробная симуляция"}
           </p>
           {data.data.maps && <ol className="series-order" aria-label="Итоги карт">
             {data.data.maps.map((m,i) => <li key={m.mapId}><small>Карта {i+1}</small>
               <strong>{fixtureMap({...event,bestOf:undefined,mapId:m.mapId})}</strong>
               <span>{event.teams.map(t => m.scoreByTeam[t]).join(" : ")}</span></li>)}
           </ol>}
+          {data.data.simulation?.mode === "round" && (data.data.maps || [{mapId:event.mapId || "depo", rounds:data.data.rounds}]).map(m=>(
+            <details className="cr-rounds" key={m.mapId}>
+              <summary>Раунды · {fixtureMap({...event,bestOf:undefined,mapId:m.mapId})}</summary>
+              <ol>{m.rounds.map(r=><li key={r.round}>
+                <strong>{r.score.join(" : ")}</strong> {teams[r.winnerTeamId]} · {r.side}
+                <small>{r.buys?.map((b,i)=>teams[event.teams[i]]+" · "+(buyName[b] || b)).join(" / ")}</small>
+              </li>)}</ol>
+            </details>
+          ))}
           {event.teams.map((tid, club) => (
             <table key={tid}>
               <caption>{teams[tid]}</caption>
               <thead>
                 <tr>
-                  <th>Игрок</th>
-                  <th>K</th>
-                  <th>D</th>
-                  <th>A</th>
-                  <th>ADR</th>
+                  <th scope="col">Игрок</th>
+                  <th scope="col">K</th>
+                  <th scope="col">D</th>
+                  <th scope="col">A</th>
+                  <th scope="col">ADR</th>
+                  <th scope="col">KAST</th>
+                  <th scope="col" title="Первые убийства / первые смерти">FK / FD</th>
                 </tr>
               </thead>
               <tbody>
@@ -274,6 +287,8 @@ export function MatchReport({
                       <td>{p.d}</td>
                       <td>{p.a}</td>
                       <td>{(p.damage / rounds).toFixed(1)}</td>
+                      <td>{Number.isFinite(p.kast) ? Math.round(100*p.kast/rounds)+"%" : "—"}</td>
+                      <td>{p.opening ?? "—"} / {p.openingDeaths ?? "—"}</td>
                     </tr>
                   ))}
               </tbody>

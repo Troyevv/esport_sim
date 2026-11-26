@@ -5,9 +5,10 @@ import json
 import os
 import sqlite3
 from pathlib import Path
+from time import monotonic
 from uuid import uuid4
 
-from . import career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
+from . import attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -106,7 +107,10 @@ class CareerStore:
         # Upgrade parked careers, manual slots and their backups in the same transaction as active.
         rows = self.db.execute(
             """SELECT career,slot,body,digest FROM career_slot
-            WHERE CASE WHEN json_valid(body) THEN json_extract(body,'$.world.checkpointVersion') END IN (4,5)"""
+            WHERE CASE WHEN json_valid(body) THEN
+                json_extract(body,'$.world.checkpointVersion') IN (4,5) OR
+                (json_type(body,'$.career')='object' AND json_type(body,'$.career.office') IS NULL)
+            END"""
         )
         for cid, slot, body, digest in rows:
             if checksum(body) != digest:
@@ -136,6 +140,8 @@ class CareerStore:
             require(c["version"] == career.VERSION, "Несовместимая версия карьеры")
             require(c["id"] == cid, "Неверный идентификатор карьеры")
             self.pack(c["source"])
+            if c.get("circuit") and game["version"] == 1:
+                competitions.resolve_slots(c)
             for e in c["history"]:
                 self.report(e["result"])
         if game["version"] == 2:
@@ -210,6 +216,9 @@ class CareerStore:
                     "Лишняя карта серии",
                 )
                 map_id = replay["order"][i]["map"]
+                require(item.get("simulation", series.DETAILED) == report.get("simulation", series.DETAILED), "Режим карты расходится с серией")
+                if item.get("simulation", {}).get("mode") == "round":
+                    require(item["firstAttackTeamId"] == replay["order"][i]["attack"], "Неверная стартовая сторона")
                 series.verify_map(
                     item, teams, expected, series.map_seed(event["seed"], i), map_id
                 )
@@ -230,6 +239,7 @@ class CareerStore:
             points = series.verify_map(
                 report, teams, expected, event["seed"], event.get("mapId")
             )
+        facts = dict(facts or {}, simulation=report.get("simulation", series.DETAILED))
         body = database.encode(report)
         digest = checksum(body)
         self.db.execute(
@@ -237,6 +247,8 @@ class CareerStore:
         )
         if edition:
             facts["rosterVersions"] = {t:edition["registrations"][t][-1]["version"] for t in teams}
+        if "bestOf" in event:
+            staff.record(c, staff.booked(c, pack, event), event["date"])
         career.complete(c, digest, points, report["winnerTeamId"], facts)
 
         if edition:
@@ -290,6 +302,14 @@ class CareerStore:
                 state["hasSave"] |= slot == "1"
             elif kind in ("career-load", "load"):
                 self.load(state, c["id"], slot)
+            elif kind == "career-tactic-draft":
+                require(not c["progress"], "Дождитесь завершения расчёта календаря")
+                staff.prepare_draft(c, self.pack(c["source"]), value)
+                self.save(state,"auto")
+            elif kind == "career-staff":
+                require(not c["progress"] and state["world"]["version"] == 1, "Завершите встречу или расчёт календаря")
+                staff.change(c, self.pack(c["source"]), value)
+                self.save(state, "auto")
             elif kind == "career-entry":
                 require(not c["progress"] and state["world"]["version"]==1,"Завершите текущую встречу или расчёт")
                 event = c.get("circuit",{}).get("editions",{}).get(value.get("edition"))
@@ -297,7 +317,23 @@ class CareerStore:
                 pack = self.pack(c["source"])
                 team = c["team"]
                 action = value.get("action")
-                if action=="accept":
+                if action in ("prioritise", "leave"):
+                    if action == "leave":
+                        competitions.leave(c, event, team, pack, "Решение менеджера")
+                    else:
+                        clashes = registrations.clashes(c, event, team)
+                        require(clashes and sorted(r["id"] for r in clashes) == value.get("release"),
+                                "Список конфликтов изменился. Обновите календарь.")
+                        for row in clashes:
+                            competitions.leave(c, c["circuit"]["editions"][row["id"]], team, pack,
+                                              "Приоритет: " + event["title"])
+                        if event["entries"].get(team) == "offered":
+                            require(c["date"] < event["replyBy"][team], "Срок подтверждения истёк")
+                            event["entries"][team] = "confirmed"
+                        elif event["entries"].get(team) not in registrations.COMMITTED:
+                            registrations.signup(c, event, team, pack)
+                    c["error"] = None
+                elif action=="accept":
                     registrations.signup(c,event,team,pack)
                 elif action=="withdraw":
                     fixture=c["queue"][0]
@@ -308,6 +344,7 @@ class CareerStore:
                 elif action=="confirm":
                     require(event["entries"].get(team)=="offered" and c["date"]<event["replyBy"][team],
                             "Срок подтверждения истёк")
+                    require(not registrations.conflict_for(c,event,team), "Разрешите конфликт календаря")
                     event["entries"][team]="confirmed"
                 elif action=="decline":
                     require(c["date"]<event["lock"] and event["entries"].get(team) in ("invited","accepted","offered","confirmed","qualified"),
@@ -321,10 +358,33 @@ class CareerStore:
                                          value.get("coach"),reason=value.get("reason","") if action=="replace" else None)
                 else:
                     raise ValueError("Неизвестное действие с заявкой")
+                c["error"] = None
                 self.save(state,"auto")
-            elif kind == "career-advance":
+            elif kind == "career-repair":
+                require(not c["progress"], "Дождитесь остановки расчёта")
+                from .map_install import activate
+                activate()
+                c["error"] = None
+                self.save(state,"auto")
+            elif kind == "career-pause":
+                # The final background publication may beat the client's stop request.
+                if not c["progress"] and state["world"]["version"] == 1 and isinstance(value, dict) and isinstance(value.get("runId"), str):
+                    return
+                require(c["progress"] and state["world"]["version"] == 1, "Расчёт календаря уже остановлен")
+                if value:
+                    require(isinstance(value, dict) and value.get("runId") == c["progress"].get("runId", state["context"]), "Начался другой расчёт календаря")
+                c["progress"] = None
+                state["context"] = str(uuid4())
+                self.save(state, "auto")
+            elif kind in ("career-advance", "career-retry"):
                 require(state["world"]["version"] == 1, "Завершите активный матч")
-                career.start_advance(c)
+                pack = self.pack(c["source"])
+                career.ensure_schedule(c,pack)
+                if kind == "career-retry":
+                    c["error"] = None
+                pending = attention.blockers(c,pack,state["world"])
+                require(not pending, pending[0]["title"] if pending else "")
+                career.start_advance(c, administrative=attention.autonomous_fixture(c,c["queue"][0],pack))
             elif kind=="career-watch":
                 require(not c["progress"] and state["world"]["version"]==1,"Завершите текущий матч или расчёт")
                 fixture=value.get("fixture")
@@ -332,6 +392,15 @@ class CareerStore:
                         "Матч уже сыгран или отсутствует в календаре")
                 c["watchFixture"]=fixture
                 self.save(state,"auto")
+            elif kind == "career-quick":
+                require(not c["progress"] and state["world"]["version"] == 1 and c["queue"], "Матч пока недоступен")
+                e = c["queue"][0]
+                pack = self.pack(c["source"])
+                pending = attention.blockers(c, pack, state["world"])
+                require(isinstance(value, dict) and e["id"] == value.get("fixture") and len(pending) == 1 and pending[0]["action"] == "play", "Обновите календарь и разрешите обязательные решения")
+                game = career.initial(pack, c, e, detailed=False)
+                self.record(c, career.simulate(game))
+                self.save(state, "auto")
             elif kind == "career-play":
                 e = c["queue"][0]
                 require(
@@ -341,7 +410,10 @@ class CareerStore:
                     and state["world"]["version"] == 1,
                     "Матч пока недоступен",
                 )
+                require(not ("edition" in e and competitions.fixture_conflicts(c, e)), "Разрешите конфликт календаря на странице турнира")
                 pack = self.pack(c["source"])
+                pending = [r for r in attention.blockers(c,pack,state["world"]) if r["action"] != "play"]
+                require(not pending, pending[0]["title"] if pending else "")
                 state.update(
                     world=career.initial(
                         pack, c, e, self.store.badges.index(pack), self.store.portraits
@@ -350,6 +422,8 @@ class CareerStore:
                     running=False,
                     speed=1,
                 )
+                if "bestOf" in e:
+                    staff.record(c, staff.booked(c, pack, e), e["date"])
                 if c["team"] not in e["teams"]:
                     state["world"]["series"]["spectator"]=True
                     veto.advance(state["world"],"captain")
@@ -419,6 +493,8 @@ class CareerStore:
                  if event["kind"]=="match" and own in event["teams"]), "depo")) ,
             competitions="circuit" in c,watchFixture=c.get("watchFixture"),
             slots=self.slots(c["id"]),
+            office=staff.overview(c, pack),
+            attention=attention.collect(c, pack, state["world"]),
         )
         return dict(careers=list(menu.values()), active=info)
 
@@ -427,42 +503,70 @@ class CareerStore:
         c = state.get("career")
         if not c or not c["progress"]:
             return None
+        if not c["queue"]:
+            return (state["context"], c["id"], None), None
         e = c["queue"][0]
         token = (state["context"], c["id"], e["id"])
+        if attention.blockers(c,self.pack(c["source"]),state["world"]):
+            return token, None
         game = (
-            None if career.stops(c, e) or ("edition" in e and competitions.missing_players(c,e,self.pack(c["source"]))) else career.initial(self.pack(c["source"]), c, e)
+            None if career.stops(c, e) or ("edition" in e and (competitions.fixture_conflicts(c,e) or competitions.missing_players(c,e,self.pack(c["source"])))) else career.initial(self.pack(c["source"]), c, e, detailed=False)
         )
         return token, game
 
-    def commit_work(self, token, report, error=None):
+    def commit_batch(self, token, report, error=None):
+        """Coalesce same-day background results in one durable checkpoint."""
+        if not report:
+            return self.commit_work(token, report, error)
+        try:
+            return self.commit_work(token, report, error, batch=True)
+        except (ValueError, ArithmeticError, KeyError, IndexError, OSError):
+            # The transaction rolled back. Commit just the head, so a bad later
+            # fixture is retried/reported under its own identity by the worker.
+            return self.commit_work(token, report, error)
+
+    def commit_work(self, token, report, error=None, *, batch=False):
         with self.store.transaction():
             state = self.store.read()
             c = state.get("career")
             if (
                 not c
                 or not c["progress"]
-                or token != (state["context"], c["id"], c["queue"][0]["id"])
+                or token != (state["context"], c["id"], c["queue"][0]["id"] if c["queue"] else None)
             ):
                 return False
             if error:
                 c.update(progress=None, error=error)
+            elif not c["queue"]:
+                career.ensure_schedule(c,self.pack(c["source"]))
             elif report is None:
                 e = c["queue"][0]
-                c["date"]=e["date"]
-                if "edition" in e and competitions.missing_players(c,e,self.pack(c["source"])):
-                    competitions.resolve_availability(c,e,self.pack(c["source"]))
-                    if c["team"] in e["teams"]:
-                        c["progress"]=None
+                pack = self.pack(c["source"])
+                if attention.blockers(c,pack,state["world"]):
+                    c["progress"] = None
                 else:
-                    c["progress"]=None
-                if e["kind"] == "review":
-                    c["queue"].pop(0)
-                    if "circuit" in c:
-                        competitions.tick(c,self.pack(c["source"]))
+                    c["date"] = e["date"]
+                    if e["kind"] == "review":
+                        c["queue"].pop(0)
+                        if "circuit" in c:
+                            competitions.tick(c,pack)
+                        else:
+                            self.weekly_review(c,e)
+                    elif "edition" in e and competitions.fixture_conflicts(c,e):
+                        competitions.settle_fixture_conflicts(c,e,pack)
+                    elif "edition" in e and competitions.missing_players(c,e,pack):
+                        competitions.resolve_availability(c,e,pack)
                     else:
-                        self.weekly_review(c,e)
+                        c["progress"] = None
             else:
                 self.record(c, report)
+                if batch:
+                    deadline = monotonic() + .025
+                    while c["queue"] and c["queue"][0]["date"] == c["date"] and monotonic() < deadline:
+                        _, next_game = self.work(state)
+                        if next_game is None:
+                            break
+                        self.record(c, career.simulate(next_game))
             state["sequence"] += 1
             state["revision"] += 1
             state["careerRevision"] += 1
