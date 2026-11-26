@@ -12,14 +12,35 @@ def conflicts(a, b):
 COMMITTED = {"accepted", "locked", "qualified", "confirmed"}
 
 
+def flexible_round(event, stage):
+    # Old saves predate the explicit schedule policy on these two modeled
+    # online qualifying profiles. An official day table always takes precedence.
+    policy = event.get("reschedule")
+    if policy is None and event.get("modelDates") and event.get("series") in ("iem-closed", "blast-open-qualifier"):
+        policy = "withinRound"
+    return policy == "withinRound" and event.get("lan") is False and not (
+        "roundDays" in stage or "groupDays" in stage)
+
+
+def round_deadline(stage, round_index, last_round):
+    start, end = map(date.fromisoformat, (stage["start"], stage["end"]))
+    if round_index == last_round:
+        return end.isoformat()
+    next_day = round((end - start).days * (round_index + 1) / last_round)
+    return (start + timedelta(days=next_day-1)).isoformat()
+
+
 def obligation_days(c, event, team):
     """Known fixtures, or admission to a particular stage before its draw exists."""
     if event.get("status") in ("cancelled", "finished"):
         return set()
     dates = {f["date"] for f in c.get("queue", []) if f.get("edition") == event["id"] and team in f["teams"]}
     # Results from this day still consume a competition day.
-    dates.update(f["date"] for f in reversed(c.get("history", []))
-                 if f["date"] == c["date"] and f.get("edition") == event["id"] and team in f["teams"])
+    for played in reversed(c.get("history", [])):
+        if played["date"] < c["date"]:
+            break
+        if played.get("edition") == event["id"] and team in played["teams"]:
+            dates.add(played["date"])
     stages = event.get("stages", [])
     index = next((int(i) for i, teams in event.get("direct", {}).items() if team in teams), 0)
     if stages and index >= len(event.get("draws", [])):
@@ -37,18 +58,33 @@ def obligation_days(c, event, team):
 
 
 def clashes(c, event, team):
-    target = obligation_days(c, event, team)
-    if not target:
-        return []
+    target = None
     result = []
     for other in c["circuit"]["editions"].values():
         if other["id"] == event["id"] or other["entries"].get(team) not in COMMITTED:
             continue
         if not conflicts(event, other):
             continue
+        if target is None:
+            target = obligation_days(c, event, team)
+            if not target:
+                break
         dates = sorted(target & obligation_days(c, other, team))
         if dates:
             result.append(dict(id=other["id"], title=other["title"], state=other["entries"][team], dates=dates))
+    if result and not event.get("draws"):
+        stage = event["stages"][0]
+        if flexible_round(event, stage) and stage["format"] == "single":
+            rounds = max(1, (event["capacity"]-1).bit_length() - (stage.get("advance",1)-1).bit_length())
+            last = round_deadline(stage, 0, rounds-1)
+            occupied = set().union(*(obligation_days(c, e, team) for e in c["circuit"]["editions"].values()
+                                     if e["id"] != event["id"] and e["entries"].get(team) in COMMITTED
+                                     and conflicts(e,event)))
+            candidate = date.fromisoformat(stage["start"]) + timedelta(days=1)
+            while candidate.isoformat() <= last:
+                if candidate.isoformat() not in occupied:
+                    return []
+                candidate += timedelta(days=1)
     return result
 
 

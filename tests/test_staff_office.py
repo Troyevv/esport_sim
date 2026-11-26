@@ -1,12 +1,10 @@
 import gzip
 import hashlib
 import json
-from copy import deepcopy
 
 import pytest
 
 from backend import career, competitions, competition_scene, cs2_maps, database, registrations, scene_portraits, staff, veto
-from backend.career_store import checksum
 from backend.store import Store
 from tools.import_scene import starter
 

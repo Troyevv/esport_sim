@@ -653,9 +653,7 @@ def auto_register(c, event, pack):
             continue
         if event["admission"] == "rankedOpen" and team not in regional_ranks:
             continue
-        if event.get("feeds") and team in c["circuit"]["editions"][event["feeds"]].get(
-            "invites", {}
-        ):
+        if event.get("feeds") and c["circuit"]["editions"][event["feeds"]]["entries"].get(team) in registrations.COMMITTED:
             continue
         if event["series"] == "cct-oq" and pack["teams"][team]["tier"] == 1:
             continue
@@ -672,8 +670,6 @@ def auto_register(c, event, pack):
             if others and all(priority_for(event, team) < priority_for(other, team) for other in others):
                 # Validate eligibility and capacity before releasing an accepted place.
                 registrations.signup(c, event, team, pack, prioritise={o["id"] for o in others})
-                for other in others:
-                    leave(c, other, team, pack, "Приоритет: " + event["title"])
             else:
                 registrations.signup(c, event, team, pack)
         except ValueError as exc:
@@ -706,6 +702,8 @@ def auto_register(c, event, pack):
         coach = staff.registered_coach(c, pack, team)
         try:
             registrations.submit(c, event, team, pack, players, reserve, coach)
+            for other in others:
+                leave(c, other, team, pack, "Приоритет: " + event["title"])
         except ValueError as exc:
             event["entries"][team] = "declined"
             event.setdefault("reasons", {})[team] = str(exc)
@@ -1002,6 +1000,8 @@ def leave(c, event, team, pack, reason):
         draw = event["draws"][fixture["stage"]][fixture["group"]]
         winner = next(t for t in fixture["teams"] if t != team)
         stages.record(draw, fixture["game"], winner, team)
+        if winner == c["team"]:
+            notice(c, event, "Техническая победа", "Соперник снялся с матча " + fixture["date"])
         draw["games"][fixture["game"]].update(administrative=True, reason=reason)
         c["queue"].remove(fixture)
         if c.get("watchFixture") == fixture["id"]:
@@ -1026,7 +1026,7 @@ def resolve_slots(c):
             continue
         e = events[f["edition"]]
         spec = e["stages"][f["stage"]]
-        if not e.get("modelDates") or e.get("lan", True) or "roundDays" in spec or "groupDays" in spec:
+        if not registrations.flexible_round(e,spec):
             continue
         occupied = {g["date"] for g in c["queue"] if g.get("edition") != e["id"] and set(f["teams"]).intersection(g["teams"])}
         if f["date"] not in occupied:
@@ -1035,9 +1035,7 @@ def resolve_slots(c):
         row = draw["games"][f["game"]]
         # Stop before a dependent round can begin, including unpublished games.
         rounds = max(g["round"] for g in draw["games"])
-        duration = (day(spec["end"]) - day(spec["start"])).days
-        limit = (offset(spec["start"], round(duration * (row["round"] + 1) / max(1, rounds)) - 1)
-                 if row["round"] < rounds else spec["end"])
+        limit = registrations.round_deadline(spec, row["round"], rounds)
         candidate = offset(f["date"], 1)
         while candidate <= limit:
             if candidate not in occupied and not any(g is not f and g["date"] == candidate and
@@ -1081,12 +1079,13 @@ def qualification_conflict(c, target, team):
         if (
             team == c["team"]
             or other["lock"] <= c["date"]
-            or tournament_priority(other) <= tournament_priority(target)
+            or priority_for(other, team) <= priority_for(target, team)
         ):
             return other
     for other in commitments:
-        other["entries"][team] = "declined"
-        other.setdefault("reasons", {})[team] = "Пройден отбор: " + target["title"]
+        # Only unlocked commitments reach this path. Refill an existing
+        # invitation pool or waiting list without recalculating its seeding.
+        leave(c, other, team, None, "Пройден отбор: " + target["title"])
     return None
 
 

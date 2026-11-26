@@ -228,9 +228,19 @@ if ($DesktopBrowser) {
 if (!(Test-Path (Join-Path $install 'EsportSim\TACTICS.md'))) { throw 'Tactics guide missing from archive.' }
 $personal = Invoke-RestMethod "$origin/api/database/personal-badges/status"
 if ($personal.mode -ne 'off' -or $personal.available -lt 167 -or $personal.ready -ne 0) { throw 'Packaged private logo catalog is missing or contains private files.' }
-$portraits = Invoke-RestMethod "$origin/api/portraits/scene-20261125-clubs/1/index"
-if ($portraits.PSObject.Properties.Name.Count -gt 0) { throw 'Fresh Windows profile unexpectedly contains private portrait art.' }
-$scene = (Invoke-RestMethod "$origin/api/database/scene-20261125-clubs/1").package
+$scene = (Invoke-RestMethod "$origin/api/database/scene-20261125-staff/1").package
+$portraits = Invoke-RestMethod "$origin/api/portraits/scene-20261125-staff/1/index"
+$people = @($scene.players.PSObject.Properties.Name) + @($scene.staff.PSObject.Properties.Name)
+if ($people.Count -ne $portraits.PSObject.Properties.Name.Count) { throw 'Packaged portrait coverage is incomplete.' }
+foreach ($id in $people) {
+    $head = $portraits.PSObject.Properties[$id].Value
+    if (!$head.synthetic -or $head.image -notmatch '^/api/portraits/generated/[0-9a-f]{64}$') {
+        throw "Missing generated appearance or unexpected private art for $id."
+    }
+}
+$sample = Invoke-WebRequest -UseBasicParsing -Uri ($origin + $head.image)
+if ($sample.Headers['Content-Type'] -notmatch 'image/webp' -or $sample.RawContentLength -lt 200) { throw 'Offline face bytes unavailable.' }
+if (!(Test-Path (Join-Path $install 'EsportSim\STAFF_R51.md'))) { throw 'Staff guide missing from archive.' }
 if ($scene.players.PSObject.Properties.Name.Count -lt 1500) { throw 'Offline player database missing from Windows distribution.' }
 $lineups = @($scene.rosters.PSObject.Properties | Where-Object { $_.Value.name -in @('Team Vitality','Team Falcons') } | ForEach-Object { $_.Name })
 if (!(Test-Path (Join-Path $install 'EsportSim\CAREER_R33.md'))) { throw 'Career guide missing.' }

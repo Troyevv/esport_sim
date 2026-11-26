@@ -78,6 +78,9 @@ def main(folder):
                              else row.get("ageEstimate") or (37 if group=="staff" else 23))
     for name,*_ in json.loads((DATA / "staff-20261125.json").read_bytes()):
         ages["staff-"+name.lower().replace(" ", "-").rstrip("-")] = 36
+    for sid,bio in json.loads((DATA / "staff-biographies.json").read_bytes()).items():
+        if bio.get("born"):
+            ages[sid] = 2026 - int(bio["born"][:4]) - (bio["born"][5:] > "11-25")
     faces = []
     seen = set()
     for sheet in sorted(folder.glob("r51-*.png")):

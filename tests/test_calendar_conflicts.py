@@ -42,7 +42,7 @@ def test_major_stage_commitment_and_withdrawal_preserve_history():
 
 
 def test_only_flexible_slot_moves_and_bracket_follows():
-    first=dict(id="a",entries={},modelDates=True,lan=False,stages=[dict(start="2026-10-01",end="2026-10-05")],
+    first=dict(id="a",entries={},reschedule="withinRound",modelDates=True,lan=False,stages=[dict(start="2026-10-01",end="2026-10-05")],
                draws=[[dict(games=[{"round":0}])]])
     fixed=dict(id="b",entries={},modelDates=False,stages=first["stages"],draws=deepcopy(first["draws"]))
     queue=[dict(id=key,edition=key,kind="match",teams=["us",key],date="2026-10-01",stage=0,group=0,game=0) for key in ("a","b")]
@@ -51,3 +51,24 @@ def test_only_flexible_slot_moves_and_bracket_follows():
     assert [f["edition"] for f in c["queue"]]==["b","a"]
     assert c["queue"][1]["date"]==first["draws"][0][0]["games"][0]["date"]=="2026-10-02"
     assert c["queue"][0]["date"]=="2026-10-01"
+
+
+def test_ai_withdraws_from_lower_priority_fixed_semifinal():
+    day = "2026-12-01"
+    stage = dict(name="Плей-офф", format="single", start=day, end="2026-12-04",
+                 advance=1, bestOf=3)
+    events = {}
+    c = dict(team="observer", date=day, circuit=dict(editions=events), queue=[])
+    for name, prestige in (("cup", 3), ("masters", 1)):
+        field = ["shared", *(f"{name}-{i}" for i in range(3))]
+        event = dict(id=name, title=name, lock=day, status="playing",
+                     prestige=prestige, prizes=[10000], stages=[stage], draws=[],
+                     entries=dict.fromkeys(field, "locked"))
+        events[name] = event
+        competitions.begin(c, event, field)
+    semifinal = next(f for f in c["queue"] if f["edition"] == "masters" and "shared" in f["teams"])
+    competitions.settle_fixture_conflicts(c, semifinal, {})
+    assert events["cup"]["entries"]["shared"] == "withdrawn"
+    assert events["masters"]["entries"]["shared"] == "locked"
+    assert competitions.fixture_conflicts(c, semifinal) == []
+    assert sum(bool(g.get("administrative")) for g in events["cup"]["draws"][0][0]["games"]) == 1

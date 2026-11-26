@@ -9,7 +9,7 @@ test("Ноябрьский срез, доступный флаг и клубна
   await page.goto("/?screen=lab");
   await page.getByRole("button", { name: "База сцены", exact: true }).click();
   await expect(page.getByLabel("Пакет и редакция")).toHaveValue(
-    "scene-20261125-clubs/1",
+    "scene-20261125-staff/1",
   );
   await page.getByLabel("Поиск", { exact: true }).fill("ZywOo");
   await page.locator(".db-list").getByRole("button", { name: /ZywOo/ }).click();
@@ -52,10 +52,14 @@ test("Ноябрьский срез, доступный флаг и клубна
   const comparison = page.getByRole("region", {
     name: "Сравнение формы · ZywOo",
   });
-  await expect(comparison.locator('[data-layer="placeholder"]')).toHaveCount(3);
+  const faces = comparison.locator('[data-layer="appearance"]');
+  await expect(faces).toHaveCount(3);
+  const heads = await faces.evaluateAll(nodes => nodes.map(node => node.getAttribute("href")));
+  expect(new Set(heads).size).toBe(1);
+  expect(heads[0]).toMatch(/^\/api\/portraits\/generated\/[a-f0-9]{64}$/);
   for (const name of ["Team Vitality", "Astralis", "Team Falcons"]) {
     await expect(
-      comparison.getByRole("img", { name: "ZywOo · форма " + name }),
+      comparison.getByRole("img", { name: "ZywOo · синтетический портрет · форма " + name }),
     ).toBeVisible();
   }
   await comparison.screenshot({ path: info.outputPath("zywoo-kits.png") });

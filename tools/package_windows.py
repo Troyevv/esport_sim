@@ -104,6 +104,7 @@ def main():
     for name in (
         "BO1.md",
         "COMPETITIONS_R43.md",
+        "STAFF_R51.md",
         "MAPS_R4.md",
         "MAPS_R4_QA.md",
         "MAPS_R4_AI.md",

@@ -28,10 +28,17 @@ test("Штаб, назначения и выбор между ECL и Major", asy
   await page.locator(".staff-tabs").getByRole("button",{name:"Обязанности"}).click();
   await page.getByLabel("Подготовка к Map Veto").selectOption("staff-mat");
   await expect(page.getByLabel("Подготовка к Map Veto")).toHaveValue("staff-mat");
+  await page.getByLabel("Подготовка тактик").selectOption("staff-mat");
+  await expect(page.getByLabel("Подготовка тактик")).toHaveValue("staff-mat");
   await capture("delegation");
   await page.locator(".staff-tabs").getByRole("button",{name:"Занятость"}).click();
   await expect(page.locator(".staff-office p").filter({hasText:"Подготовка к Map Veto"})).toHaveCount(1);
   await capture("workload");
+  await press("Тактики");
+  await press("План · MaT");
+  await expect(page.getByText("План штаба готов к редактированию")).toBeVisible();
+  page.once("dialog", dialog => dialog.accept());
+  await press("← К радару");
   await press("Соревнования");
   await page.getByRole("button",{name:/ESL Challenger League · Europe Cup 13/}).click();
   await press("Моя заявка");

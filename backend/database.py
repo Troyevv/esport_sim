@@ -41,7 +41,7 @@ MAPS = (
 )
 OPTIONAL = {
     "players": {"ageEstimate", "sample", "performance", "appearance"},
-    "staff": {"nationality", "photo", "publishedRole"},
+    "staff": {"nationality", "photo", "publishedRole", "born"},
     "teams": {
         "nationality",
         "logo",
@@ -274,6 +274,10 @@ def _validate(p):
                     label(r["nationality"])
                 if group == "staff":
                     validate_photo(r.get("photo"))
+                    if r.get("born") is not None:
+                        require(day(r["born"]) <= cutoff, "Дата рождения позже среза")
+                    if r.get("publishedRole") is not None:
+                        label(r["publishedRole"])
                 if group in ("teams", "organizations"):
                     validate_photo(r.get("logo"))
                 if group == "teams" and r.get("kit") is not None:
@@ -634,6 +638,14 @@ def install_staff_edition(db):
         pack["origins"][sid] = dict(status="confirmed", date=date, reference=url)
         pack["staff"][sid] = dict(name=name, realName=full, role=staff.ROLES[role], team=clubs[club],
                                   preparation=66, origin=sid, fields={"preparation": "scenario"})
+    for sid,bio in json.loads(STARTER.with_name("staff-biographies.json").read_bytes()).items():
+        row = pack["staff"][sid]
+        ref = sid+"-bio"
+        pack["origins"][ref] = dict(status="confirmed",date=pack["asOf"],reference=bio["source"])
+        for field in ("born","nationality"):
+            if field in bio:
+                row[field] = bio[field]
+                row["fields"][field] = ref
     lead = pack["staff"]["staff-tobiz"]
     lead["publishedRole"] = "Head of Talent Development"
     lead["fields"]["role"] = "scenario"

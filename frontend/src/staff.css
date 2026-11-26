@@ -22,3 +22,4 @@
 .staff-office progress {width:100%;accent-color:#83c9a6}
 .staff-job {border-top:1px solid var(--border,#394453);padding:8px 0}
 @media(max-width:620px){.staff-assignment{align-items:stretch;flex-direction:column}.staff-tabs button{padding:8px}.staff-office .panel-body{padding:14px}.staff-role{padding:14px}}
+.staff-archive-photo{display:block;max-width:100%;max-height:320px;object-fit:contain;margin:12px 0}

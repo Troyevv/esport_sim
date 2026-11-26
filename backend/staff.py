@@ -82,7 +82,7 @@ def office():
 def team_people(c, pack, team):
     overrides = c.get("office", {}).get("positions", {})
     return {sid: dict(id=sid, name=row["name"], realName=row.get("realName"),
-                      role=overrides.get(sid, position(row["role"])), publishedRole=row.get("publishedRole"), **profile(sid, row))
+                      born=row.get("born"), role=overrides.get(sid, position(row["role"])), publishedRole=row.get("publishedRole"), **profile(sid, row))
             for sid, row in pack["staff"].items() if row["team"] == team}
 
 

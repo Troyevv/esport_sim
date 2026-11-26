@@ -6,7 +6,7 @@ import { date, type Act, type Career, type Scene } from "./careerData";
 import "./staff.css";
 
 type Person = {
-  id: string; name: string; publishedRole?: string; realName: string | null; role: string; capacity: number;
+  id: string; name: string; born?: string; publishedRole?: string; realName: string | null; role: string; capacity: number;
   attributes: Record<string, number>; ratings: Record<string, number>;
   philosophy: Record<string, string>; suitability: Record<string, number>;
 };
@@ -54,10 +54,13 @@ export function StaffOffice({c, scene, act, enabled, initial, personId}: {
     {p ? <>
       <section className="surface staff-profile">
         {picture(p)}<div><small>Профиль сотрудника</small><h2>{p.realName || p.name}</h2>
-        <p>{office.roles[p.role]}</p>{p.publishedRole && <small>Должность в источнике · {p.publishedRole}</small>}{scene.staff[p.id]?.visual.head?.includes("/generated/") && <small>Синтетический портрет</small>}<span>{dayLoad(p.id)} / {p.capacity} ед. нагрузки сегодня</span></div>
-        {original && <a href={original.source} target="_blank" rel="noreferrer">Архивное фото · {original.author} · {original.license}</a>}
+        <p>{office.roles[p.role]}</p>{p.born && <small>Дата рождения · {date(p.born)}</small>}{p.publishedRole && <small>Должность в источнике · {p.publishedRole}</small>}{scene.staff[p.id]?.visual.head?.includes("/generated/") && <small>Синтетический портрет</small>}<span>{dayLoad(p.id)} / {p.capacity} ед. нагрузки сегодня</span></div>
         <Rating value={p.ratings[p.role]}/>
       </section>
+      {original && <details className="surface panel-body"><summary>Архивная фотография</summary>
+        <img className="staff-archive-photo" loading="lazy" src={original.image} alt={p.name}/>
+        <a href={original.source} target="_blank" rel="noreferrer">{original.author} · {original.license}</a>
+      </details>}
       <div className="staff-columns">
         <section className="surface panel-body"><h2>Ролевые рейтинги</h2>{Object.entries(office.roles).map(([key,title])=>
           <div className="staff-line" key={key}><span>{title}</span><Rating value={p.ratings[key]}/></div>)}</section>
