@@ -62,6 +62,8 @@ class Command(BaseModel):
         "career-finish",
         "career-advance",
         "career-pause",
+        "career-repair",
+        "career-retry",
     ]
     value: (
         StrictInt
