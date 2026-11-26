@@ -1,6 +1,6 @@
 """What an observer can report and the captain can infer from dated contacts."""
 
-from math import dist, hypot
+from math import cos, dist, hypot, pi, sin
 
 from .cs2_maps import xyz
 
@@ -8,12 +8,33 @@ from .cs2_maps import xyz
 def observe_contact(sight, opponent, prior, nearby, continuous):
     """Only the item in the visible player's hands and other nearby visible models."""
     sight["weapon"] = opponent["weapon"]
+    # Silhouette orientation is observable. The exact aim and target are private.
+    sight["bodySector"] = round(opponent["heading"] / (pi / 4)) % 8
     sight["groupSize"] = len(nearby)
     if continuous:
         delta = [v - old for v, old in zip(xyz(sight), xyz(prior))]
         speed = hypot(*delta)
         if speed > 0.05:
             sight["direction"] = [round(v / speed, 3) for v in delta]
+
+
+def duel_priority(observer, sight, focus, skills):
+    """Estimate exposure from the visible weapon, coarse facing and distance."""
+    from .match_rules import WEAPONS
+    delta = [a-b for a,b in zip(xyz(observer),xyz(sight))]
+    gap = hypot(*delta)
+    apparent = gap
+    if "bodySector" in sight:
+        heading = sight["bodySector"] * pi / 4
+        alignment = (delta[0]*cos(heading) + delta[1]*sin(heading))/max(1,hypot(*delta[:2]))
+        weapon = WEAPONS.get(sight.get("weapon"))
+        if weapon:
+            # Compare the apparent risk of looking away for an acquisition.
+            # A turned opponent must also turn before they can return fire.
+            facing_risk = (1 + alignment)/2
+            potential = weapon.damage / max(1,weapon.interval)
+            apparent /= 1 + facing_risk * potential * skills["game_reading"]/1000
+    return apparent - (skills["coordination"]/4 if sight["id"] in focus else 0)
 
 
 def pressure(space, contacts, now):

@@ -2,7 +2,7 @@
 
 from math import atan2, cos, dist, hypot, sin, tau
 from .cs2_maps import UNIT, xyz
-from . import match_performance as perf, world
+from . import cs2_defense, match_performance as perf, world
 from .match_rules import BLAST_RADIUS, RULES, UTILITY, equipment_value
 
 
@@ -317,7 +317,8 @@ def assign_backup(space, plan, squad, site, pressure):
     # Some maps have no authored cover markers on the site itself. Choosing the
     # nearest marker to the incoming player can then strand the reserve off-site.
     center = space.site_points[site]
-    angles = space.angles(site, plan["lane"], center, "site")
+    lane = plan.get("reliefLanes", {}).get(site,plan["lane"])
+    angles = space.angles(site, lane, center, "site")
     ordered = sorted(
         other,
         key=lambda p: (
@@ -333,7 +334,7 @@ def assign_backup(space, plan, squad, site, pressure):
             if space._reachable(xyz(actor), [target], actor["navArea"]) is None:
                 continue
             plan["backup"] = dict(
-                id=actor["id"], site=site, hold=list(target), watch=list(watch)
+                id=actor["id"], site=site, lane=lane, hold=list(target), watch=list(watch)
             )
             return
     plan.pop("backup", None)
@@ -360,11 +361,12 @@ def reinforce_pair(space, plan, squad, site, pressure):
         return
     occupied = [slots[a["slot"]]["hold"] for a in squad if a["slot"] != 4 and slots[a["slot"]]["site"] == site]
     occupied.append(first["hold"])
-    positions = space.angles(site, 1-plan["lane"], space.site_points[site], "site")
+    lane = 1-first.get("lane",plan["lane"])
+    positions = space.angles(site, lane, space.site_points[site], "site")
     for actor in sorted(candidates, key=lambda a: (space.site_costs[site].get(a["navArea"],float("inf")), a["slot"])):
         for goal, watch in positions:
             if all(dist(goal, p) >= 6 for p in occupied) and space._reachable(xyz(actor), [goal], actor["navArea"]):
-                plan["secondBackup"] = dict(id=actor["id"], site=site, hold=list(goal), watch=list(watch))
+                plan["secondBackup"] = dict(id=actor["id"], site=site, lane=lane, hold=list(goal), watch=list(watch))
                 return
     plan.pop("secondBackup", None)
 
@@ -459,6 +461,7 @@ def seek_cover(space, actor, contact, allies, skills, now, fire, travel):
         # A lone defender who cannot trade the opening can break contact and
         # re-engage with a partner. A confident entry can still take the duel.
         exposed = (len(actor["visible"]) > 1 + engaged and
+                   not cs2_defense.protected_by(space,actor,contact,allies) and
                    skills["positioning"] + skills["discipline"] > skills["aggression"] + skills["risk"])
     if contact and (actor["reloadAt"] or exposed or actor["hp"] < 35 and len(actor["visible"]) > 1):
         if now >= actor.get("coverReview", 0):
@@ -869,7 +872,8 @@ def crossing_utility(space, w, a, allies, order, site):
         x,y,z,_ = space.grenade(pos,p,flight)
         if dist((x,y,z),p)>8:
             continue
-        if defending and item == "Дым" and space.smokes_plant(site, (x,y,z)):
+        if defending and item == "Дым" and (space.smokes_plant(site, (x,y,z)) or
+                not cs2_defense.screen_safe(space, plan, a, allies, (x,y,z))):
             continue
         calls.append(dict(item=item, point=list(p), end=now+flight+UTILITY[item][1]))
         if defending:
@@ -884,10 +888,9 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
     side, slot = a["team"], a["slot"]
     orders = plan["orders"]["slots"]
     order = orders[slot]
-    if side == "CT" and w["phase"] == "live" and slot in (2, 3):
-        anchor = slot - 2
-        if not any(p["slot"] == anchor for p in allies):
-            order = orders[anchor]
+    holding = side == "CT" and w["phase"] == "live"
+    if holding:
+        order, sector_watch = cs2_defense.attention(space, plan, a, allies, w["player"], now)
     site = plan["site"]
     pos = xyz(a)
     recent = [p for p in a["knowledge"].values() if now - p["tick"] < 35]
@@ -1046,29 +1049,25 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                     a["status"] = "Ждёт партнёра для выхода"
     else:
         site = order["site"]
-        for backup in (plan.get("backup"), plan.get("secondBackup")):
-            if backup and backup["id"] == a["id"]:
-                site, goal, watch = backup["site"], backup["hold"], backup["watch"]
-                break
+        watch = sector_watch
         a["status"] = f"Занимает {site}"
-    if not w["action"] and (w["phase"] == "live" or (side == "CT" and a["heardSite"] and len(allies) >= 2 and w["deadline"]-now > RULES["defuse"] + 40)):
+    cue = a.get("plantCue")
+    checking_plant = holding and cue and 0 <= now-cue["tick"] < 30
+    if not checking_plant and not w["action"] and (w["phase"] == "live" or (side == "CT" and a["heardSite"] and len(allies) >= 2 and w["deadline"]-now > RULES["defuse"] + 40)):
         intent = crossing_utility(space,w,a,allies,order,site)
         if intent:
             return intent
-    cue = a.get("plantCue")
-    if side == "CT" and w["phase"] == "live" and cue and 0 <= now-cue["tick"] < 30:
+    if checking_plant:
+        aim = cs2_defense.check_carrier(space,a,allies,cue,now,skill["game_reading"])
+        if aim is not None:
+            a["heading"] = atan2(aim["y"]-pos[1],aim["x"]-pos[0])
+            a["status"] = "Проверяет последнее донесение о C4"
+            return "shoot",aim
         if "peek" not in cue:
-            points = [space.centers[i] for i in space.plants[cue["site"]]
+            points = [space.centers[i] for i in sorted(space.plants[cue["site"]])
                       if not outside_bearing(space.centers[i], cue["bearing"])]
-            if points:
-                target = min(points, key=lambda p: dist(p, pos))
-                angles = sorted((space.centers[i] for i in space.nearby_areas(pos, 18)),
-                                key=lambda p: dist(pos, p))
-                spots = [pos, *angles]
-                cue["peek"] = space._reachable(pos, (p for p in spots if space.hit(p, target, 1, 64) is None))
-                cue["watch"] = target
-            else:
-                cue["peek"] = None
+            cue["peek"],cue["watch"] = cs2_defense.plant_intercept(
+                space,a,allies,points,now,cue["tick"]+RULES["plant"])
         if cue["peek"] is not None:
             goal, watch = cue["peek"], cue["watch"]
             # Estimate the common plant surface from the audible bearing. A
@@ -1130,12 +1129,13 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                     if any(dist(xyz(p), crossing) < 21 for p in allies):
                         continue
                     grenade = next((g for g in ("Огонь", "Дым") if g in a["utility"]), None)
-                    if grenade == "Дым" and space.smokes_plant(site, tuple(crossing)):
+                    if grenade == "Дым" and (space.smokes_plant(site, tuple(crossing)) or
+                            not cs2_defense.screen_safe(space,plan,a,allies,crossing)):
                         continue
                     if grenade:
                         a["status"] = "Сдерживает выход на плент"
                         return "throw", dict(zip(("x","y","z"),crossing), utility=grenade)
-        if not anchor and dist(goal, xyz(latest)) < (55 - skill["discipline"] / 4) and dist(pos, xyz(latest)) > 6:
+        if not holding and not anchor and dist(goal, xyz(latest)) < (55 - skill["discipline"] / 4) and dist(pos, xyz(latest)) > 6:
             contact = xyz(latest)
             if space.hit(pos, contact, 1, 64) is None:
                 goal = pos
@@ -1173,8 +1173,8 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         )
         smoke = "Дым" in a["utility"]
         if engaged and dist(pos, xyz(latest)) > 25 and smoke and (
-            side == "T" or engaged["reloadAt"] or engaged["hp"] < 45
-            or not space.smokes_plant(site, tuple(xyz(latest)))
+            side == "T" or (not space.smokes_plant(site, tuple(xyz(latest))) and
+                cs2_defense.screen_safe(space,plan,a,allies,xyz(latest)))
         ):
             a["status"] = "Закрывает дымом контакт партнёра"
             return "throw", dict(latest, utility="Дым")
@@ -1214,15 +1214,16 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         allow_detour=True,
     )
     if moved:
-        if side == "CT" and not latest and dist(xyz(a), goal) < 22 + familiarity / 6:
+        if side == "CT" and (holding or not latest) and dist(xyz(a), goal) < 22 + familiarity / 6:
             # Strafe into the last stretch of the hold facing the known crossing.
             a["heading"] = atan2(watch[1]-a["y"], watch[0]-a["x"])
-        if latest and now - latest["tick"] < 12 + skill["positioning"] // 5:
-            a["heading"] = atan2(latest["y"] - a["y"], latest["x"] - a["x"])
+        if not holding and latest and now - latest["tick"] < 12 + skill["positioning"] // 5:
+            point = cs2_defense.anticipated(space,latest,now,skill["game_reading"])
+            a["heading"] = atan2(point[1]-a["y"],point[0]-a["x"])
         return "move", None
     # Watch an approach known to this team or turn toward the last reported contact.
-    if latest and now - latest["tick"] <= perf.pursuit_window(skill, latest["source"] == "Слух") and latest["tick"] >= a.get("heardUse", -1000):
-        watch = xyz(latest)
+    if not holding and latest and now - latest["tick"] <= perf.pursuit_window(skill, latest["source"] == "Слух") and latest["tick"] >= a.get("heardUse", -1000):
+        watch = cs2_defense.anticipated(space,latest,now,skill["game_reading"])
     a["heading"] = atan2(watch[1] - a["y"], watch[0] - a["x"]) + (0.6 - skill["discipline"] / 260) * sin(
         (now + 13 * slot) / 26
     )

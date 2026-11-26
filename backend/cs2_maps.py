@@ -15,9 +15,9 @@ from .cs2_sites import BombSites
 from .match_rules import BLAST_RADIUS, ROLES, UTILITY
 
 BUILD = 26879581
-RULES = "cs2-bo1.13"
-PREVIOUS_RULES = "cs2-bo1.12"
-SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.11", "cs2-bo1.10", "cs2-bo1.9", "cs2-bo1.8", "cs2-bo1.7", "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
+RULES = "cs2-bo1.14"
+PREVIOUS_RULES = "cs2-bo1.13"
+SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.12", "cs2-bo1.11", "cs2-bo1.10", "cs2-bo1.9", "cs2-bo1.8", "cs2-bo1.7", "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )
@@ -171,6 +171,9 @@ class Map:
         self.approach = lru_cache(maxsize=32)(partial(Map._approach, proxy(self)))
         self.contest = lru_cache(maxsize=4)(partial(Map._contest, proxy(self)))
         self.ingress = lru_cache(maxsize=4)(partial(Map._ingress, proxy(self)))
+        from . import cs2_defense
+        self.opening_screen = lru_cache(maxsize=512)(partial(cs2_defense.opening_screen, proxy(self)))
+        self.sector = lru_cache(maxsize=256)(partial(cs2_defense.corridor, proxy(self)))
         self.crossfire = lru_cache(maxsize=64)(partial(Map._crossfire, proxy(self)))
         self.smokes_plant = lru_cache(maxsize=1024)(partial(Map._smokes_plant, proxy(self)))
         self.angles = lru_cache(maxsize=128)(partial(Map._angles, proxy(self)))
@@ -373,7 +376,7 @@ class Map:
                     duty = "junction"
                 options = self.angles(defended, variant, hold, duty)
                 if i in (2,3):
-                    options = self.crossfire(defended,variant,hold,tuple(slots[i-2]["hold"]))
+                    options = self.crossfire(defended,variant,hold,tuple(slots[i-2]["hold"]), tuple(slots[i-2]["watch"]))
                 guards_view = dict(options)
                 # A second anchor or the rotator can share a callout. Take a
                 # separate reachable position before falling back to that spot.
@@ -450,6 +453,13 @@ class Map:
                     ),
                 )
             )
+            if side == "CT" and i in (2,3):
+                partner = slots[i-2]
+                screen = self.opening_screen(defended,variant,xyz(player),tuple(hold),
+                                             tuple(slots[-1]["watch"]),tuple(partner["hold"]),
+                                             tuple(partner["watch"]))
+                if screen:
+                    slots[-1]["screen"] = screen
         return dict(version=1, map=self.name, geometry=BUILD, slots=slots)
 
     def _ingress(self, site, variant):
@@ -522,26 +532,26 @@ class Map:
             plant_views = [q for q in objectives if q in seen]
             entries = [q for q in ingress if q in seen]
             if entries and plant_views:
-                # Count points inside the same forward cone as the entry.
-                # A clear ray behind the defender does not cover the planter.
-                def covered(q):
-                    dx, dy = q[0]-pos[0], q[1]-pos[1]
-                    length = hypot(dx, dy)
-                    return sum(dx*(p[0]-pos[0])+dy*(p[1]-pos[1]) >=
-                               0.64*length*hypot(p[0]-pos[0], p[1]-pos[1]) for p in plant_views)
-
-                watch = max(entries, key=covered)
-                joint = covered(watch)
+                # An anchor must be able to stop the carrier after the entry.
+                # Aim through both regions, including plant-facing angles from
+                # which the entry is still in view, as in the earlier defense.
+                from .cs2_defense import facing
+                def coverage(q):
+                    return (sum(facing(pos,q,p) for p in plant_views),
+                            sum(facing(pos,q,p) for p in entries))
+                scored = [(coverage(q),q) for q in [*plant_views,*entries]]
+                (joint,entrances),watch = max(scored, key=lambda entry: (
+                    all(entry[0]), entry[0], -dist(entry[1],plant)))
             else:
                 watch = next(iter(entries or plant_views), None) or self._watch(site,pos,variant)
-                joint = 0
+                joint, entrances = 0, len(entries)
             ranked.append((not bool(plant_views) if objectives else False,
-                           not bool(entries), abs(pos[2]-anchor[2])*UNIT > 72,
-                           -joint, -len(plant_views), -min(6, len(entries)),
-                           pos not in covers, dist(pos, anchor), pos, watch))
+                           not bool(entrances), abs(pos[2]-anchor[2])*UNIT > 72,
+                           -joint, -min(6,entrances), pos not in covers,
+                           dist(pos, anchor), pos, watch))
         return [(pos, watch) for *_, pos, watch in sorted(ranked)]
 
-    def _crossfire(self, site, variant, wing, anchor):
+    def _crossfire(self, site, variant, wing, anchor, anchor_watch=None):
         """Rank complementary angles from which a second guard can trade the anchor."""
         base = self.angles(site,variant,wing,"approach")
         entries = self.ingress(site,variant)
@@ -558,25 +568,10 @@ class Map:
         eyes = {p: eye(p) for p in [*targets,*positions]}
         pairs = [(eyes[p], eyes[q]) for p in positions for q in targets if 5 < dist(p,q) < 95]
         visible = self.collision.sight_many(pairs)
-        ranked = []
-        for p in candidates:
-            if not 7 < dist(p,anchor) < 52:
-                continue
-            seen = [q for q in targets if visible.get((eyes[p],eyes[q]))]
-            for q in seen:
-                if not visible.get((eyes[anchor],eyes[q])):
-                    continue
-                vectors = [[origin[j]-q[j] for j in range(3)] for origin in (p,anchor)]
-                cosine = sum(a*b for a,b in zip(*vectors)) / (dist(p,q)*dist(anchor,q))
-                if cosine >= 0.78:
-                    continue
-                # Watch the entry before it reaches a legal plant surface.
-                # Reward the second guard for covering part of the incoming
-                # route that the anchor cannot see from behind this geometry.
-                uncovered = sum(not visible.get((eyes[anchor],eyes[r])) for r in seen if r in entries)
-                ranked.append((abs(p[2]-wing[2])*UNIT > 72, q not in entries,
-                               -min(uncovered,4), -min(dist(plant,q),50),
-                               dist(p,wing),cosine,p,q))
+        from . import cs2_defense
+        seen = {p: [q for q in targets if visible.get((eyes[p],eyes[q]))] for p in positions}
+        ranked = cs2_defense.rank_crossfire(anchor, anchor_watch or plant,
+                                            candidates, seen, entries, wing, plant)
         best = {}
         for *_,p,q in sorted(ranked):
             best.setdefault(p,q)

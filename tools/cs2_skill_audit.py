@@ -37,6 +37,7 @@ PROFILES = (
 CONTEXT_PROFILES = (
     "high_form", "low_morale", "fatigued",
     "mechanics_only", "tactics_only", "weak_mechanics",
+    "weak_mechanics_captain", "weak_mechanics_teamplay",
 )
 
 
@@ -69,11 +70,15 @@ def lineups(pack, pair, order, name, profile):
                     s.update(
                         dict.fromkeys(TACTICS, 45 if profile == "mechanical" else 85)
                     )
-                if profile in ("mechanics_only", "weak_mechanics"):
+                if profile in ("mechanics_only", "weak_mechanics", "weak_mechanics_captain", "weak_mechanics_teamplay"):
                     s.update(dict.fromkeys(MECHANICS, 85 if profile == "mechanics_only" else 45))
+                if profile == "weak_mechanics_teamplay":
+                    s.update(dict.fromkeys(("communication", "coordination", "synchronization", "trades", "support"), 90))
+                if profile in TACTICS:
+                    s[profile] = 85
                 if profile == "tactics_only":
                     s.update(dict.fromkeys(TACTICS, 85))
-                if profile in ("captain", "executors"):
+                if profile in ("captain", "executors", "weak_mechanics_captain"):
                     if m["captain"]:
                         s.update(
                             dict.fromkeys(
@@ -83,7 +88,7 @@ def lineups(pack, pair, order, name, profile):
                                     "leadership",
                                     "adaptability",
                                 ),
-                                90 if profile == "captain" else 40,
+                                40 if profile == "executors" else 90,
                             )
                         )
                     elif profile == "executors":
@@ -216,7 +221,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--map", choices=cs2_maps.NAMES, required=True)
     parser.add_argument("--seeds", nargs="+", type=int, default=[41000, 59000])
-    parser.add_argument("--profiles", nargs="+", choices=PROFILES + CONTEXT_PROFILES, default=PROFILES)
+    parser.add_argument("--profiles", nargs="+", choices=PROFILES + CONTEXT_PROFILES + TACTICS, default=PROFILES)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]

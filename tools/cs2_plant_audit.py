@@ -1,6 +1,7 @@
 """Observer-only audit of CT sight lines at the instant a player starts planting."""
 
 import argparse
+from collections import Counter
 import gzip
 import json
 from math import dist
@@ -15,12 +16,25 @@ def record(name, seed, pack):
     game = match.initial(seed, database.match_input(pack, teams), teams, map_id=name)
     space = cs2_maps.get(name)
     attempts = []
+    defense = Counter()
     while game["phase"] != "finished":
         phase = game["phase"]
         match.advance(game)
         if phase == "live" and game["phase"] == "planted":
             assert attempts and attempts[-1]["round"] == game["round"]
             attempts[-1]["planted"] = True
+        # Observer sees the finished tick. Independent individual sight lists
+        # are sampled before installation without feeding any result to the AI.
+        if game["phase"] == "live" and game["tick"] % 10 == 0:
+            defense["liveSeconds"] += 1
+            targets = Counter(target for a in game["agents"] if a["team"] == "CT" and a["hp"]
+                              for target in a["visible"])
+            if targets:
+                defense["contactSeconds"] += 1
+                defense["sharedSeconds"] += max(targets.values()) >= 2
+            carrier = game["bomb"]["carrier"]
+            if carrier:
+                defense["carrierSeenSeconds"] += carrier in targets
         action = game["action"]
         if not action or action["kind"] != "plant" or action["start"] != game["tick"]:
             continue
@@ -52,6 +66,11 @@ def record(name, seed, pack):
                            for a in gaze for f in fog if f["team"] == "CT"),
                 tSmoke=any(match_ai.near_line(a, planter, f, f["radius"])
                           for a in gaze for f in fog if f["team"] == "T"),
+                screeningClouds=[
+                    dict(team=f["team"], player=f["player"],
+                         distanceHU=round(dist(cs2_maps.xyz(f),cs2_maps.xyz(planter))*cs2_maps.UNIT))
+                    for f in fog if any(match_ai.near_line(a,planter,f,f["radius"]) for a in gaze)
+                ],
                 unobscured=len(open_gaze),
                 nearby=sum(
                     dist(cs2_maps.xyz(a), cs2_maps.xyz(planter)) * cs2_maps.UNIT <= 600
@@ -61,7 +80,7 @@ def record(name, seed, pack):
             )
         )
     return dict(
-        map=name, seed=seed, teams=teams, rounds=len(game["history"]), attempts=attempts
+        map=name, seed=seed, teams=teams, rounds=len(game["history"]), defense=defense, attempts=attempts
     )
 
 

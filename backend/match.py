@@ -225,7 +225,7 @@ def next_round(w):
                      useTarget=None,useFloor=None,checkContact=None,checkPosition=None,
                      shelter=None,coverUntil=0,coverReview=0,bombSearch=None,coveredDefuser=None,coverPoint=None,revisedApproach=None,
                      rendezvous=None,plantCover=None,plantCheck=None,watchDevice=None,heardUse=-1000,
-                     seenDevice=None,beepBearing=None,plantCue=None,crossingReview=0,screenedOpening=False,friendlyUtility=[])
+                     seenDevice=None,beepBearing=None,plantCue=None,leftScreen=False,sectorReview=None,crossingReview=0,screenedOpening=False,friendlyUtility=[])
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
@@ -922,7 +922,14 @@ def advance(w):
         if kind == "throw":
             ai.throw(w, a, target, space)
         else:
-            ai.shoot(w, a, target, ids[target["id"]], space)
+            victim = ids.get(target.get("id"))
+            if space and "id" not in target:
+                # Collision is resolved by the world after all players commit
+                # their intents. An empty aim point consumes the same shot.
+                crossed = (p for p in players if p is not a and p["hp"] and
+                           ai.near_line(a,target,p,3))
+                victim = min(crossed,key=lambda p: ai.distance(a,p),default=None)
+            ai.shoot(w, a, target, victim, space)
             for listener in players:
                 if (
                     listener["team"] != a["team"]
