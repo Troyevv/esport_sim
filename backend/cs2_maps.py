@@ -17,11 +17,12 @@ from .match_rules import BLAST_RADIUS, ROLES, UTILITY
 BUILD = 26879581
 # These rule revisions share map schema 2 and the same checkpoint migration.
 # The build ID and checkpoint version are validated independently on load.
-SUPPORTED_RULES = tuple(f"cs2-bo1.{version}" for version in range(18, 0, -1))
+SUPPORTED_RULES = tuple(f"cs2-bo1.{version}" for version in range(19, 0, -1))
 RULES, PREVIOUS_RULES = SUPPORTED_RULES[:2]
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )
+CT_OPENINGS = json.loads(Path(__file__).with_name("data").joinpath("ct_openings.json").read_bytes())
 NAMES = dict(
     zip(
         PROFILES,
@@ -122,9 +123,19 @@ class Map:
             for ladder in data["ladders"]
             for p in (ladder["top"], ladder["bottom"])
         }
+        self.defense = CT_OPENINGS[name]
         self.places = resolve_anchors(
             self.profile,
-            named_stages(data, self.nav, self.profile),
+            named_stages(
+                data,
+                self.nav,
+                self.profile,
+                {
+                    label
+                    for _, seat, watch in self.defense["zones"].values()
+                    for label in (seat, watch)
+                },
+            ),
             self.nav,
             src["navSha256"],
         )
@@ -172,7 +183,9 @@ class Map:
         self.approach = lru_cache(maxsize=32)(partial(Map._approach, proxy(self)))
         self.contest = lru_cache(maxsize=4)(partial(Map._contest, proxy(self)))
         self.ingress = lru_cache(maxsize=4)(partial(Map._ingress, proxy(self)))
-        from . import cs2_defense
+        from . import cs2_defense, cs2_openings
+        self.zone_positions = lru_cache(maxsize=256)(partial(cs2_openings.positions, proxy(self)))
+        self.zone_lineup = lru_cache(maxsize=512)(partial(cs2_openings.lineup, proxy(self)))
         self.opening_screen = lru_cache(maxsize=512)(partial(cs2_defense.opening_screen, proxy(self)))
         self.sector = lru_cache(maxsize=256)(partial(cs2_defense.corridor, proxy(self)))
         self.crossfire = lru_cache(maxsize=64)(partial(Map._crossfire, proxy(self)))

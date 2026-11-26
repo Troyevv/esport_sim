@@ -1,0 +1,38 @@
+{
+  "de_dust2": {
+    "zones": {"Long": ["A", "LongA", "LongDoors"], "Short": ["A", "ShortStairs", "Catwalk"], "Mid": ["B", "MidDoors", "Middle"], "Tunnels": ["B", "UpperTunnel", "TunnelStairs"], "Doors": ["B", "BDoors", "LowerTunnel"]},
+    "plays": {"Long + Short": ["Long", "Tunnels", "Short", "Doors", "Mid"], "Два Long + Short": ["Long", "Tunnels", "Short", "Mid", "Long"], "Два Short": ["Short", "Tunnels", "Short", "Doors", "Mid"], "Пара в тоннелях": ["Long", "Tunnels", "Short", "Tunnels", "Mid"], "Проверка Mid": ["Long", "Doors", "Short", "Mid", "Mid"]}
+  },
+  "de_mirage": {
+    "zones": {"Ramp": ["A", "Stairs", "TRamp"], "Palace": ["A", "Scaffolding", "PalaceInterior"], "Connector": ["A", "Connector", "Middle"], "Window": ["A", "SnipersNest", "TopofMid"], "Short": ["B", "Catwalk", "Middle"], "Apps": ["B", "Truck", "Apartments"]},
+    "plays": {"Window и Connector": ["Ramp", "Apps", "Connector", "Short", "Window"], "Пара Connector": ["Palace", "Apps", "Connector", "Short", "Connector"], "Выход на Short": ["Ramp", "Apps", "Palace", "Short", "Short"], "Давление Ramp": ["Ramp", "Apps", "Ramp", "Short", "Window"]}
+  },
+  "de_inferno": {
+    "zones": {"Banana": ["B", "Banana", "LowerMid"], "Apps": ["A", "Balcony", "Apartments"], "Mid": ["A", "TopofMid", "Middle"], "Second": ["A", "Apartments", "SecondMid"], "Arch": ["A", "Arch", "TopofMid"], "Ruins": ["B", "Ruins", "Banana"]},
+    "plays": {"Двойная Banana": ["Apps", "Banana", "Mid", "Banana", "Arch"], "Проверка Second Mid": ["Second", "Banana", "Second", "Ruins", "Mid"], "Пара на Mid": ["Apps", "Banana", "Mid", "Ruins", "Mid"]}
+  },
+  "de_nuke": {
+    "zones": {"Yard": ["A", "Garage", "Outside"], "Hut": ["A", "Hut", "Lobby"], "Door": ["A", "Mini", "Squeaky"], "Ramp": ["B", "Ramp", "Trophy"], "Secret": ["B", "Secret", "Outside"], "Lobby": ["A", "Squeaky", "Lobby"]},
+    "plays": {"Контроль Outside": ["Hut", "Ramp", "Yard", "Secret", "Yard"], "Поджим Lobby": ["Lobby", "Ramp", "Door", "Secret", "Lobby"], "Пара Ramp": ["Hut", "Ramp", "Door", "Ramp", "Yard"]}
+  },
+  "de_ancient": {
+    "zones": {"Main": ["A", "SideHall", "MainHall"], "Donut": ["A", "SideEntrance", "Middle"], "Mid": ["A", "TopofMid", "Middle"], "Cave": ["B", "House", "Tunnel"], "Ramp": ["B", "Ramp", "Outside"]},
+    "plays": {"Пара в центре": ["Main", "Cave", "Mid", "Ramp", "Mid"], "Проверка Cave": ["Donut", "Cave", "Main", "Cave", "Mid"], "Давление Ramp": ["Main", "Ramp", "Donut", "Ramp", "Mid"]}
+  },
+  "de_anubis": {
+    "zones": {"Main": ["A", "Heaven", "Main"], "Water": ["A", "Walkway", "Canal"], "Mid": ["A", "MidDoors", "Bridge"], "Con": ["B", "Connector", "Water"], "BMain": ["B", "Bricks", "OutsideLong"]},
+    "plays": {"Двери и мост": ["Main", "BMain", "Mid", "Con", "Mid"], "Пара Canal": ["Water", "BMain", "Water", "Con", "Mid"], "Давление B Main": ["Main", "BMain", "Mid", "BMain", "Water"]}
+  },
+  "de_cache": {
+    "zones": {"AMain": ["A", "ForkLift", "AMain"], "Door": ["A", "Quad", "Squeaky"], "Mid": ["A", "Highway", "Mid"], "Vents": ["B", "Checkers", "Vents"], "Checkers": ["B", "Checkers", "BMain"]},
+    "plays": {"Highway и вентиляция": ["AMain", "Checkers", "Mid", "Vents", "Mid"], "Контроль Checkers": ["Door", "Checkers", "AMain", "Checkers", "Mid"], "Пара A Main": ["AMain", "Checkers", "AMain", "Vents", "Mid"]}
+  },
+  "de_train": {
+    "zones": {"Ivy": ["A", "Ivy", "Alley"], "Main": ["A", "ElectricalBox", "TMain"], "Pop": ["A", "LongDog", "TStairs"], "Upper": ["B", "Entrance", "TSideUpper"], "Lower": ["B", "BackofB", "Entrance"]},
+    "plays": {"Давление Ivy": ["Ivy", "Lower", "Main", "Upper", "Ivy"], "Контроль Popdog": ["Main", "Lower", "Pop", "Upper", "Pop"], "Пара на B": ["Ivy", "Upper", "Pop", "Upper", "Main"]}
+  },
+  "de_vertigo": {
+    "zones": {"Ramp": ["A", "ARamp", "Pit"], "Side": ["A", "Scaffolding", "Side"], "Mid": ["B", "TopofMid", "Mid"], "Stairs": ["B", "BPlatform", "TCorridorUp"], "Ladder": ["B", "LadderTop", "LadderBottom"]},
+    "plays": {"Пара на рампе": ["Ramp", "Stairs", "Side", "Mid", "Ramp"], "Давление в центре": ["Ramp", "Stairs", "Side", "Mid", "Mid"], "Проверка лестницы": ["Ramp", "Ladder", "Side", "Stairs", "Ladder"]}
+  }
+}

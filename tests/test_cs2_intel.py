@@ -105,11 +105,11 @@ def test_velocity_estimate_uses_only_observed_reacquisitions_and_freezes_sent_ev
                   speed=1, direction=[1,0,0], motionRun=10)
     reacquired = dict(report,tick=20,x=2)
     learn_motion(observer,reacquired,report)
-    assert reacquired["motionHistory"] == {"3":(0.2,1)}
+    assert reacquired["motionHistory"] == {"3":[0.2,1]}
     assert expected_travel(reacquired,10,85) < expected_travel(reacquired,10,65)
     later = dict(report,tick=30,x=12)
     learn_motion(observer,later,reacquired)
-    assert reacquired["motionHistory"] == {"3":(0.2,1)}
-    assert later["motionHistory"] == {"3":(1.2,2)}
+    assert reacquired["motionHistory"] == {"3":[0.2,1]}
+    assert later["motionHistory"] == {"3":[1.2,2]}
     learn_motion(observer,dict(later,tick=40),dict(later,source="Слух"))
-    assert observer["motionHistory"] == {"3":(1.2,2)}
+    assert observer["motionHistory"] == {"3":[1.2,2]}

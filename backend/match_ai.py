@@ -813,6 +813,10 @@ def throw(w, a, target, space=None):
         cue=dict(**at(point(target)),end=now+flight+10)
         w["messages"].append(dict(team=a["team"],sender=a["id"],friendlyUtility=cue,
                                   due=now+radio_delay(world.match_player(w,a)["skills"])))
+    if target.get("openingZone"):
+        job = w["plans"]["CT"]["opening"]["jobs"][a["id"]]
+        job["throw"]["land"] = effect["land"]
+        effect.update(openingZone=job["zone"], supported=job["throw"]["forPlayer"])
     w["effects"].append(effect)
     w["recentEffects"].append(effect)
     emit(

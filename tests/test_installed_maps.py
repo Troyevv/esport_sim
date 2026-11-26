@@ -106,7 +106,7 @@ def test_background_and_observed_share_report_across_the_map_pool(tmp_path, name
     assert store.careers.report(frozen["history"][-1]["result"]) == expected
     store.db.close()
 
-@pytest.mark.parametrize("previous", ["cs2-bo1.14", "cs2-bo1.15", "cs2-bo1.16", "cs2-bo1.17"])
+@pytest.mark.parametrize("previous", ["cs2-bo1.14", "cs2-bo1.15", "cs2-bo1.16", "cs2-bo1.17", "cs2-bo1.18"])
 def test_recent_checkpoints_resume_from_the_recorded_tick(previous):
     state = match.initial(41000,map_id="de_nuke")
     match.advance(state)
@@ -329,3 +329,70 @@ def test_retake_wait_ends_when_the_partner_or_time_is_lost():
             state["tick"] = 130
         assert cs2_retake.staging(state, a, [a] if alone else [a, b]) is None
         assert duty["done"]
+
+
+def test_pair_waits_for_real_flash_and_checks_before_releasing_escort():
+    from backend import cs2_openings
+    from tools.cs2_opening_audit import record
+    from math import dist
+    from random import Random
+
+    pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
+    teams = Random(843).sample(sorted(career.roster_index(pack).values()), 2)
+    # Exactly the normal economy and captain call used in the 40-second audit.
+    row = record(pack, teams, "de_dust2", 15)
+    flashes = [
+        e
+        for e in row["events"]
+        if e.get("openingZone")
+        and e["utility"] == "Свет"
+        and e["supported"] != e["player"]
+    ]
+    assert flashes
+    first_contact = min(e["tick"] for e in row["events"] if e["kind"] == "contact")
+    slots = {pid: i for i, (pid, _, _) in enumerate(row["agents"])}
+
+    def followed_signal(e):
+        who = e["supported"]
+        departure = row["jobs"][who].get("departed", 0)
+        time = departure - row["start"]
+        if not (0 <= departure - e["land"] <= 15 and 0 < time < first_contact):
+            return False
+
+        def position(tick):
+            _, players = min(row["frames"], key=lambda frame: abs(frame[0] - tick))
+            return players[slots[who]][:3]
+
+        return dist(position(time), position(time + 10)) > 4
+
+    assert any(followed_signal(e) for e in flashes)
+
+    plan = dict(
+        opening=dict(
+            quiet=False,
+            focus=["Long"],
+            jobs={
+                "scout": dict(
+                    zone="Long", watch=[10, 0, 0], role="разведка", partner="escort"
+                ),
+                "escort": dict(
+                    zone="Long",
+                    partner="scout",
+                    handoff=dict(zone="Short"),
+                    role="страховка",
+                ),
+            },
+            reports={"scout": dict(zone="Long", observed=11, due=14)},
+        )
+    )
+    squad = [dict(id="scout"), dict(id="escort")]
+    captain = dict(id="scout", knowledge={})
+    cs2_openings.review(None, plan, squad, 13, captain)
+    assert "handoff" in plan["opening"]["jobs"]["escort"]
+    captain["knowledge"]["T1"] = dict(x=10, y=2, z=0, tick=13, source="Радио")
+    cs2_openings.review(None, plan, squad, 14, captain)
+    assert "handoff" in plan["opening"]["jobs"]["escort"]
+    plan["opening"]["reports"]["scout"].update(observed=21, due=24)
+    cs2_openings.review(None, plan, squad, 24, captain)
+    assert plan["opening"]["jobs"]["escort"]["zone"] == "Short"
+    assert plan["opening"]["jobs"]["scout"]["holdsFor"] == "escort"

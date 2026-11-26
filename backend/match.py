@@ -4,7 +4,7 @@ from collections import Counter
 from copy import deepcopy
 from math import atan2
 
-from . import cs2_defense, cs2_economy, cs2_maps, checkpoints, engine, match_inventory, match_score, tactics, world
+from . import cs2_openings, cs2_economy, cs2_maps, checkpoints, engine, match_inventory, match_score, tactics, world
 from . import match_performance as perf
 from .world import match_player as profile
 from . import match_ai as ai
@@ -451,8 +451,15 @@ def begin_live(w):
             if side == "CT" and not board:
                 predicted = ai.cs2_play.defensive_read(w, igl) if not call else None
                 site = plan["site"] = predicted or site
-                style = cs2_defense.deployment(
-                    space, plan, squad, w["domain"]["players"], igl, predicted, plan["reinforce"]
+                style = cs2_openings.draft(
+                    space,
+                    plan,
+                    squad,
+                    w["domain"]["players"],
+                    igl,
+                    predicted,
+                    plan["reinforce"],
+                    w["domain"]["chemistry"],
                 )
             if side == "T" and not board and style in ("Сбор", "Контроль карты"):
                 plan["probe"] = ai.cs2_play.default_probe(space, squad, w["bomb"]["carrier"], plan, now, w["domain"])
@@ -500,10 +507,23 @@ def begin_live(w):
             # The captain can switch sites during the opening call. Give each role
             # the utility for the final approach within its agreed spending limit.
             strategy["needs"] = {
-                a["id"]: cs2_economy.items_for(a, site, space.profile, board) for a in squad
+                a["id"]: cs2_economy.items_for(a, site, space.profile, board)
+                for a in squad
             }
             w["plans"][side]["economy"] = strategy
+            if opening := plan.get("opening"):
+                for actor in squad:
+                    task = opening["jobs"][actor["id"]]
+                    if opening["quiet"] or task["zone"] not in opening["focus"]:
+                        continue
+                    wanted = cs2_openings.priority(task)
+                    existing = strategy["needs"][actor["id"]]
+                    strategy["needs"][actor["id"]] = (
+                        wanted + [g for g in existing if g not in wanted]
+                    )[:4]
             cs2_economy.buy(w, squad, strategy, purchase, board)
+            if plan.get("opening"):
+                cs2_openings.equip(space, plan, squad)
             continue
         rifle = "AK-47" if side == "T" else "M4A1-S"
         smg = "MAC-10" if side == "T" else "MP9"
@@ -879,11 +899,27 @@ def advance(w):
                     else None
                 ),
             )
+            if (
+                side == "CT"
+                and w["phase"] == "live"
+                and (opening := observation["plan"].get("opening"))
+            ):
+                job = opening["jobs"][a["id"]]
+                if "peek" in job and ai.distance(a, ai.at(job["peek"])) < 6:
+                    sight = ai.at(job["watch"])
+                    observation["openingSight"] = space.clear(a, sight) and not any(
+                        f["kind"] == "Дым"
+                        and f["land"] <= now < f["end"]
+                        and ai.near_line(a, sight, f, f["radius"])
+                        for f in w["effects"]
+                    )
             previous = a["status"]
             step_index = a.get("stepIndex", 0)
             intents.append((a, *ai.act(observation, a, squad, known_bomb, fire)))
             if space:
-                ai.cs2_play.cs2_defense.check_incoming(a,intents[-1][1],now,observation["player"]["skills"])
+                ai.cs2_play.cs2_defense.check_incoming(
+                    a, intents[-1][1], now, observation["player"]["skills"]
+                )
             if space and a.get("lastBlockedTick") != now:
                 a["blockedTicks"] = 0
             if (space and side=="T" and w["phase"]=="live" and a.get("blockedTicks",0)>=20

@@ -36,7 +36,7 @@ def learn_motion(observer, sight, prior):
             bucket = str(elapsed.bit_length() - 1)
             total, count = memory.get(bucket, (0, 0))
             fraction = max(0, min(1, length / (elapsed * prior["speed"])))
-            memory[bucket] = (total + fraction, count + 1)
+            memory[bucket] = [total + fraction, count + 1]
     if "motionRun" in sight and memory:
         # This snapshot accompanies the dated report. Subsequent observations
         # can change personal experience without rewriting the squad's memory.

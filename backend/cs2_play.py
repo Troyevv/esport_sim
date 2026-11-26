@@ -2,7 +2,7 @@
 
 from math import atan2, cos, dist, hypot, sin, tau
 from .cs2_maps import UNIT, xyz
-from . import cs2_defense, cs2_intel, cs2_retake, match_performance as perf, world
+from . import cs2_defense, cs2_intel, cs2_openings, cs2_retake, match_performance as perf, world
 from .match_rules import BLAST_RADIUS, RULES, UTILITY, equipment_value
 
 
@@ -357,6 +357,7 @@ def direct_defense(space, w, plan, squad, leader):
         plan.pop("secondBackup", None)
     coordinate_reserves(space, plan, squad, destination, counts, now, bomb_site)
     commit_reserves(space, plan, squad, destination if full else None)
+    cs2_openings.review(space, plan, squad, now, leader)
     current = {
         p["id"]: duty["site"] for p in squad if (duty := cs2_defense.relief(plan, p))
     }
@@ -1136,7 +1137,7 @@ def crossing_utility(space, w, a, allies, order, site):
             arrival = min(costs.get(i,float("inf")) for i in space.attack_spawns) / (2*UNIT)
             elapsed = now-plan["start"]
             opening = plan.setdefault("openingThrows", {})
-            if (site in opening or a.get("screenedOpening") or elapsed > arrival+55 or elapsed+35 < arrival
+            if (plan.get("opening") or site in opening or a.get("screenedOpening") or elapsed > arrival+55 or elapsed+35 < arrival
                     or plan["buy"] in ("Эко", "Частичная") and len(a["utility"]) == 1):
                 return None
         if flash_support:
@@ -1191,6 +1192,10 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
     orders = plan["orders"]["slots"]
     order = orders[slot]
     holding = side == "CT" and w["phase"] == "live"
+    if holding and plan.get("opening"):
+        intent = cs2_openings.execute(space, w, a, allies, fire, travel)
+        if intent:
+            return intent
     if holding:
         order, sector_watch = cs2_defense.attention(space, plan, a, allies, w["player"], now)
     site = plan["site"]
