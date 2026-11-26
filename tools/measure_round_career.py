@@ -17,7 +17,7 @@ from backend import attention, career, competitions, database
 from backend.store import Store
 
 
-def measure(path, days, compare=None, reports=None):
+def measure(path, days, compare=None, reports=None, scouting=False):
     store = Store(path)
     pack = store.careers.pack([database.STAFF_RELEASE, 1])
     team = next(t for t, r in pack["teams"].items() if r["name"] == "Aurora Gaming")
@@ -148,9 +148,16 @@ def measure(path, days, compare=None, reports=None):
             per_day[c["date"]] += perf_counter() - step
         wall = perf_counter() - start
     times["remainingServiceAndTransactions"] = wall - sum(times.values())
+    scout_results = {}
+    if scouting:
+        from .measure_scouting import metrics
+        active_pack = store.careers.pack(c["source"])
+        scout_results = dict(scouting=metrics(c, active_pack), players=len(active_pack["players"]),
+                             snapshotMiB=round(len(json.dumps(c, ensure_ascii=False).encode())/2**20,3))
     print(
         json.dumps(
             dict(
+                **scout_results,
                 platform=platform.platform(),
                 python=platform.python_version(),
                 date=c["date"],
@@ -193,6 +200,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--reports", type=Path, help="Write the comparison sample for calibration"
     )
+    parser.add_argument("--scouting", action="store_true", help="Measure private knowledge and accuracy after the run")
     opts = parser.parse_args()
     with TemporaryDirectory() as tmp:
         measure(
@@ -200,4 +208,5 @@ if __name__ == "__main__":
             1 if opts.compare else opts.days,
             opts.compare,
             opts.reports,
+            opts.scouting,
         )

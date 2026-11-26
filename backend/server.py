@@ -51,6 +51,7 @@ class Command(BaseModel):
         "career-create",
         "career-entry",
         "career-staff",
+        "career-scouting",
         "career-training",
         "career-tactic-draft",
         "career-open",
@@ -320,6 +321,36 @@ def create_app(
                 for e in c["circuit"]["editions"].values()],
                     available=registrations.available(c,c["team"],pack),live=c["circuit"].get("live"),
                     snapshots={**competitions.seed_data()["snapshots"], **c["circuit"]["snapshots"]})
+
+    def scouting_career(career_id):
+        store = app.state.store
+        c = store.read().get("career")
+        if not c or c["id"] != career_id:
+            raise HTTPException(404, "Карьера не открыта")
+        return c, store.careers.pack(c["source"])
+
+    @app.get("/api/career/{career_id}/scouting")
+    async def scouting_center(career_id: str):
+        from . import scouting
+        return scouting.center(*scouting_career(career_id))
+
+    @app.get("/api/career/{career_id}/scouting/{pid}")
+    async def scouting_profile(career_id: str, pid: str):
+        from . import scouting
+        c, pack = scouting_career(career_id)
+        if pid not in pack["players"]:
+            raise HTTPException(404, "Игрок не найден")
+        club = scouting.read_club(c, pack, c["team"])
+        return scouting.visible(c, pack, c["team"], club, pid, c["date"])
+
+    @app.get("/api/career/{career_id}/scouting/{pid}/{version}")
+    async def scouting_report(career_id: str, pid: str, version: int):
+        from . import scouting
+        c, pack = scouting_career(career_id)
+        report = scouting.dossier_report(scouting.read_club(c, pack, c["team"]), pack, pid, c["date"], version)
+        if not report:
+            raise HTTPException(404, "Отчёт не найден")
+        return report
 
     @app.get("/api/career/{career_id}/training-calendar")
     async def training_calendar(career_id: str, since: str, count: int):

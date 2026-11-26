@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import training, round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
+from . import scouting, training, round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
 from .database import require
 
 VERSION = 1
@@ -87,6 +87,7 @@ def create(pack, options):
     )
     c = dict(
         version=VERSION,
+        scouting=scouting.new(),
         office=staff.office(),
         training=training.new(pack["asOf"]),
         id=str(uuid4()),
@@ -188,6 +189,7 @@ def start_advance(c, *, administrative=False):
 
 
 def match_domain(pack, c, event, badges=None, portraits=None):
+    manager_players = training.members(c, pack, c["team"])
     rosters = [c["teams"][team] for team in event["teams"]]
     if event.get("edition"):
         edition = c["circuit"]["editions"][event["edition"]]
@@ -204,12 +206,21 @@ def match_domain(pack, c, event, badges=None, portraits=None):
             coaches.add(version["coach"])
         pack = dict(pack, rosters=frozen, staff={k:v for k,v in pack["staff"].items() if k in coaches})
         rosters = list(frozen)
+    if event.get("pcw"):
+        lineups = scouting.practice_rosters(c, pack, event)
+        practice = {}
+        for rid in rosters:
+            r = pack["rosters"][rid]
+            ids = lineups[r["team"]]
+            practice[rid] = dict(r, players=ids, captain=r["captain"] if r["captain"] in ids else ids[0])
+        pack = dict(pack, rosters=practice)
     domain = database.match_input(pack, rosters, badges)
     if "training" in c:
         training.overlay(domain, c["training"])
     domain["authority"]["mode"] = c["mode"]
     if c["team"] in domain["teams"]:
         domain["authority"]["organization"] = domain["teams"][c["team"]]["organization"]
+    domain["managerPlayers"] = list(manager_players)
     if portraits:
         for pid, portrait in portraits.index(
             {pid: pack["players"][pid] for pid in domain["players"]}

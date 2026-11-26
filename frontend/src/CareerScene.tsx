@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { range, type Knowledge } from "./ScoutingCenter";
 import { StaffSkills } from "./StaffOffice";
 import { Avatar, Flag } from "./SceneIdentity";
 import {
@@ -14,6 +15,7 @@ import {
   age,
   date,
   groupTitle,
+  useData,
   type Career,
   type Group,
   type Profile,
@@ -350,11 +352,14 @@ export function EntityProfile({
   open,
   profile,
   back,
-}: Props & { profile: Profile; back: () => void }) {
+  revision=0,
+}: Props & { profile: Profile; back: () => void; revision?:number }) {
   const [tab, setTab] = useState("Обзор");
   const [chosenRole, setRole] = useState("");
   const { group, id } = profile,
     item = scene[group][id];
+  const scouting=useData<Knowledge>(group==="players"?"/api/career/"+c.id+"/scouting/"+encodeURIComponent(id):null,revision);
+  const assessment=scouting.data;
   if (!item) return <p role="alert">Запись отсутствует в редакции карьеры.</p>;
   const player = group === "players" ? scene.players[id] : null,
     own = player ? c.roster.find((p) => p.id === id) : null,
@@ -504,7 +509,7 @@ export function EntityProfile({
         {player && (
           <div className="profile-rating">
             <div className="profile-rating-top">
-              <span className="ovr large">{rating ?? "—"}</span>
+              <span className={"ovr large"+(rating===undefined && assessment?.current?" scout-range":"")}>{rating ?? range(assessment?.current)}</span>
               <span>Ролевой OVR</span>
             </div>
             {own && (
@@ -523,6 +528,7 @@ export function EntityProfile({
           </div>
         )}
       </section>
+      {player && <section className="surface panel-body"><h2>Знания организации</h2>{scouting.error?<p role="alert">{scouting.error}</p>:assessment?<><p>{assessment.inSquad?"Текущие навыки известны штабу":assessment.level} · Изученность {assessment.score}/100 · наблюдений {assessment.count}</p><p>Оценка потенциала · {range(assessment.potential)}{assessment.last && " · последнее наблюдение "+date(assessment.last)}</p></>:<p>Загрузка оценок…</p>}</section>}
       {player && (
         <Tabs
           items={["Обзор", "Характеристики · 58", "Статистика", "Контракт"]}
@@ -544,12 +550,12 @@ export function EntityProfile({
                     <span>{skillLabels[k]}</span>
                     <strong
                       title={
-                        own?.skills[k] === undefined
+                        own?.skills[k] === undefined && !assessment?.skills[k]
                           ? "Нет доступной оценки"
                           : undefined
                       }
                     >
-                      {own?.skills[k] ?? "—"}
+                      {own?.skills[k] ?? range(assessment?.skills[k])}
                     </strong>
                   </div>
                 ))}

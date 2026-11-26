@@ -225,7 +225,7 @@ function App() {
             enabled={enabled}
             screen={screen === "menu" ? "menu" : "hub"}
             go={go}
-            database={() => showDatabase(true)}
+            database={async () => { if (!frame.careerId || await act("career-lab")) showDatabase(true) }}
             board={() => showBoard(true)}
             status={status}
             settings={settings}

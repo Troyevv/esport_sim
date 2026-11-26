@@ -522,7 +522,11 @@ def coach_job(c, team, day, event_id, duty, competency, person, used, jobs):
 def daily_team(c, pack, team, day, official, reserved, ledger, claimed):
     state = c["training"]
     people, owners = roster_staff(c, pack, team)
-    ids = [pid for pid in members(c, pack, team) if pid not in claimed]
+    from . import scouting
+    visitors = scouting.guests(c, team, day, official | reserved)
+    away = {t["player"] for t in c.get("scouting", {}).get("trials", []) if t["status"] == "active"
+            and t["origin"] == team and team not in official | reserved and t["start"] <= day <= t["end"]}
+    ids = [pid for pid in [*members(c, pack, team), *visitors] if pid not in claimed and pid not in away]
     claimed.update(ids)
     jobs, used = [], {}
     for j in ledger.get(team, []):
@@ -585,6 +589,8 @@ def daily_team(c, pack, team, day, official, reserved, ledger, claimed):
             old = row["fatigue"]
             before = row["skills"].copy() if metrics else {}
             develop(state, pack, pid, session, grade, day, load)
+            if pid in visitors and load > 0:
+                scouting.session(c, pack, team, pid, day, i, kind, grade)
             if metrics:
                 delta = row["fatigue"] - old
                 metrics[pid]["load" if delta >= 0 else "recovery"] += abs(delta)
@@ -594,7 +600,7 @@ def daily_team(c, pack, team, day, official, reserved, ledger, claimed):
                     if k in PUBLIC
                     and v != before.get(k, pack["players"][pid]["skills"][k])
                 }
-                if diff:
+                if diff and pid not in visitors:
                     changes[pid] = diff
         if kind in ("synergy", "team", "attack", "defense", "retake"):
             train_together(state, team, students, 0.25 + grade / 110)
@@ -632,8 +638,8 @@ def daily_team(c, pack, team, day, official, reserved, ledger, claimed):
     if team == c["team"]:
         state["days"][day] = dict(
             sessions=reports,
-            metrics=metrics,
-            fatigue={p: round(state["players"][p]["fatigue"], 1) for p in ids},
+            metrics={p: v for p, v in metrics.items() if p not in visitors},
+            fatigue={p: round(state["players"][p]["fatigue"], 1) for p in ids if p not in visitors},
         )
         if date.fromisoformat(day).weekday() == 6:
             state["weekStats"][day] = {
@@ -642,7 +648,7 @@ def daily_team(c, pack, team, day, official, reserved, ledger, claimed):
                     for k, v in state["players"][p]["skills"].items()
                     if k in PUBLIC
                 }
-                for p in ids
+                for p in ids if p not in visitors
             }
     return jobs
 
@@ -659,10 +665,12 @@ def practice_pairs(c, pack, day, official, reserved, *, manager_only=False):
     group = rotation[weekday::groups]
     if manager_only and c["team"] not in group:
         return
+    loaned = {trial["origin"] for trial in c.get("scouting", {}).get("trials", [])
+              if trial["status"] == "active" and trial["start"] <= day <= trial["end"]}
     pool = [
         t
         for t in group
-        if t not in official | reserved
+        if t not in official | reserved | loaned
         and (
             t != c["team"]
             or (
@@ -739,6 +747,8 @@ def run_day(c, pack, day):
     teams = [c["team"], *sorted(c["teams"].keys() - {c["team"]})]
     for ev in practice_pairs(c, pack, day, official, reserved):
         report = career.simulate(career.initial(pack, c, ev, detailed=False))
+        from . import scouting
+        scouting.played(c, pack, ev, report)
         match_practice(c, pack, ev, report)
         reserved.update(ev["teams"])
     ledger = {}
@@ -748,6 +758,8 @@ def run_day(c, pack, day):
     for team in teams:
         jobs.extend(daily_team(c, pack, team, day, official, reserved, ledger, claimed))
     staff.record(c, jobs, day)
+    from . import scouting
+    scouting.daily(c, pack, day)
     state["plans"].pop(day, None)
     if day in state.get("skipped", []):
         state["skipped"].remove(day)

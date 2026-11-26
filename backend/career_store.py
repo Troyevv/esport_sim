@@ -9,7 +9,7 @@ from pathlib import Path
 from time import monotonic
 from uuid import uuid4
 
-from . import training, training_center, attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
+from . import scouting, training, training_center, attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -110,7 +110,7 @@ class CareerStore:
             """SELECT career,slot,body,digest FROM career_slot
             WHERE CASE WHEN json_valid(body) THEN
                 json_extract(body,'$.world.checkpointVersion') IN (4,5) OR
-                (json_type(body,'$.career')='object' AND (json_type(body,'$.career.office') IS NULL OR json_type(body,'$.career.training') IS NULL))
+                (json_type(body,'$.career')='object' AND (json_type(body,'$.career.office') IS NULL OR json_type(body,'$.career.training') IS NULL OR json_type(body,'$.career.scouting') IS NULL))
             END"""
         )
         for cid, slot, body, digest in rows:
@@ -141,6 +141,7 @@ class CareerStore:
             require(c["version"] == career.VERSION, "Несовместимая версия карьеры")
             require(c["id"] == cid, "Неверный идентификатор карьеры")
             require(c.get("training", {}).get("version") == 1, "Несовместимая версия подготовки")
+            require(c.get("scouting", {}).get("version") == 1, "Несовместимая версия скаутинга")
             self.pack(c["source"])
             if c.get("circuit") and game["version"] == 1:
                 competitions.resolve_slots(c)
@@ -173,10 +174,11 @@ class CareerStore:
         event = c["queue"][0]
         pack = self.pack(c["source"])
         edition = c["circuit"]["editions"][event["edition"]] if "edition" in event else None
+        lineups = scouting.practice_rosters(c, pack, event) if event.get("pcw") else {}
         expected = {
             pid: tid
             for tid in event["teams"]
-            for pid in (edition["registrations"][tid][-1]["players"] if edition else pack["rosters"][c["teams"][tid]]["players"])
+            for pid in (edition["registrations"][tid][-1]["players"] if edition else lineups.get(tid, pack["rosters"][c["teams"][tid]]["players"]))
         }
         teams = event["teams"]
         require(
@@ -248,6 +250,7 @@ class CareerStore:
         self.db.execute(
             "INSERT OR IGNORE INTO career_report VALUES(?,?)", (digest, body)
         )
+        scouting.played(c, pack, event, report)
         training.match_practice(c, pack, event, report)
         if event.get("pcw"):
             c["training"]["practice"].append(dict(training.practice_summary(event, report), result=digest))
@@ -317,6 +320,10 @@ class CareerStore:
                 require(not c["progress"], "Дождитесь завершения расчёта календаря")
                 staff.prepare_draft(c, self.pack(c["source"]), value)
                 self.save(state,"auto")
+            elif kind == "career-scouting":
+                require(not c["progress"] and state["world"]["version"] == 1, "Завершите встречу или расчёт календаря")
+                scouting.change(c, self.pack(c["source"]), value)
+                self.save(state, "auto")
             elif kind == "career-training":
                 require(not c["progress"] and state["world"]["version"] == 1, "Завершите встречу или расчёт календаря")
                 training_center.change(c, self.pack(c["source"]), self.db, value)
@@ -538,7 +545,8 @@ class CareerStore:
             while c["training"]["nextDay"] < e["date"]:
                 training.run_day(c, pack, c["training"]["nextDay"])
             training.freeze_day(c["training"])
-            token += (c["progress"].get("runId"), c["training"], c["office"])
+            scouting.freeze(c["scouting"])
+            token += (c["progress"].get("runId"), c["training"], c["office"], c["scouting"], c["milestones"])
         if e.get("pcw") and training.unavailable(c, e):
             return token, None
         game = (
@@ -569,7 +577,7 @@ class CareerStore:
             ):
                 return False
             if len(token) > 3 and not error:
-                c["training"], c["office"] = deepcopy(token[4:])
+                c["training"], c["office"], c["scouting"], c["milestones"] = deepcopy(token[4:])
             if error:
                 c.update(progress=None, error=error)
             elif not c["queue"]:

@@ -236,7 +236,7 @@ def player_report(data, ident):
     report = dict(id=ident, name=player["name"])
     for key, roster in data["rosters"].items():
         org = data["teams"][roster["team"]]["organization"]
-        if org == organization and any(m["player"] == ident for m in lineup(data, key)):
+        if ident in data.get("managerPlayers", (ident,)) and org == organization and any(m["player"] == ident for m in lineup(data, key)):
             visible = {
                 k: v for k, v in player["skills"].items() if k not in skills.HIDDEN
             }
