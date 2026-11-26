@@ -134,6 +134,22 @@ def sim(folder, n):
     return report
 
 
+def spending_by_funds(wallets):
+    """Freeze-time spend share for team purses below 15k, 15–25k and 25k or more."""
+    bands = [[], [], []]
+    for spent, remaining in wallets:
+        if spent is None or remaining is None:
+            continue
+        opening = spent + remaining
+        if opening > 0:
+            band = (opening >= 15000) + (opening >= 25000)
+            bands[band].append(100 * spent / opening)
+    return [
+        dict(n=len(band), medianPct=round(st.median(band), 1) if band else None)
+        for band in bands
+    ]
+
+
 def professional(pro, n):
     g = [r for r in pro if r[0] == n]
     rr = [
@@ -152,6 +168,9 @@ def professional(pro, n):
     res = rates(rr)
     res.update(
         games=len({x[1] for x in g}),
+        spendingByFunds=spending_by_funds(
+            wallet for r in g for wallet in zip(r[10:12], r[13:15])
+        ),
         purchases=st.median(spend for r in g for spend in r[10:12]),
         pocket=st.median(balance for r in g for balance in r[13:15]),
         zero=round(
@@ -221,20 +240,25 @@ def raw_professional(files):
         plants = [r for r in rows if r["plant"]]
         plant_times = [r["plantSeconds"] for r in plants if r.get("plantSeconds") is not None]
         touches_known = bool(plants) and all(r.get("touched") is not None for r in plants)
-        spending, balances = [], []
+        spending, balances, wallets = [], [], []
         for r in rows:
             for side in ("T", "CT"):
                 squad = [a for a in (r.get("wallets") or {}).values() if a["side"] == side]
                 if len(squad) != 5:
                     continue
+                spent = remaining = None
                 if all(a["spent"] is not None for a in squad):
-                    spending.append(sum(a["spent"] for a in squad))
+                    spent = sum(a["spent"] for a in squad)
+                    spending.append(spent)
                 if all(a["remaining"] is not None for a in squad):
-                    balances.append(sum(a["remaining"] for a in squad))
+                    remaining = sum(a["remaining"] for a in squad)
+                    balances.append(remaining)
+                wallets.append((spent, remaining))
         data[games[0]["map"]] = dict(
             plantSeconds=round(st.median(plant_times), 1) if plant_times else None,
             touched=sum(r["touched"] for r in plants) if touches_known else None,
             plantedRounds=len(plants),
+            spendingByFunds=spending_by_funds(wallets),
             purchases=st.median(spending) if spending else None,
             zero=round(100 * spending.count(0) / len(spending), 1) if spending else None,
             pocket=st.median(balances) if balances else None,
@@ -291,6 +315,9 @@ def main():
                         for e in r["economy"].values()
                     ]
                     stats.update(
+                        spendingByFunds=spending_by_funds(
+                            (e["spend"], e["pocket"]) for e in accounts
+                        ),
                         scenarios=collections.Counter(e["scenario"] for e in accounts),
                         purchases=st.median(e["spend"] for e in accounts),
                         pocket=st.median(e["pocket"] for e in accounts),
