@@ -234,7 +234,7 @@ function Manager({
         leaveTool();
         go("match");
       }
-    } else if (row.action === "training") {setDay(row.due);to("Тренировочный центр")}
+    } else if (row.action === "training") {setDay(row.due);to("Тренировочный центр",undefined,undefined,"training")}
     else if (row.edition) to("Соревнования",undefined,row.edition,row.action);
     else showLetter(null);
   };
@@ -242,7 +242,8 @@ function Manager({
     const fixture = c.queue[0];
     if (fixture && await act("career-quick", {fixture:fixture.id}, msg=>{setDecisionError(msg);setDecisions(true)})) {
       setDecisions(false);
-      setQuickResult(fixture.id);
+      if (fixture.pcw) {setDay(fixture.date);to("Тренировочный центр",undefined,undefined,"training")}
+      else setQuickResult(fixture.id);
     }
   };
   const advance = async () => {
@@ -485,7 +486,7 @@ function Manager({
           <div key={active} className="screen-enter">
             {tool ||
               (active === "Календарь" ? (
-                <Calendar key={day} c={c} initial={day} tournament={tournament}/>
+                <Calendar key={day} c={c} initial={day} tournament={tournament} revision={frame.careerRevision||0} training={d=>{setDay(d);to("Тренировочный центр")}}/>
               ) : active === "Входящие" ? (
                 <Inbox
                   box={box}
@@ -542,7 +543,7 @@ function Manager({
               ) : route.profile?.group === "staff" && c.office.people[route.profile.id] ? (
                 <StaffOffice key={route.profile.id} {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial="Тренерский штаб" personId={route.profile.id}/>
               ) : active === "Тренировочный центр" ? (
-                <TrainingCenter {...{c,act}} initial={day} revision={frame.careerRevision||0} enabled={enabled && !progress && !frame.world.series && !frame.world.match}/>
+                <TrainingCenter key={route.jump} {...{c,act}} reports={route.entry==="training"} initial={day} revision={frame.careerRevision||0} enabled={enabled && !progress && !frame.world.series && !frame.world.match}/>
               ) : ["Тренерский штаб","Скаутский отдел"].includes(active) ? (
                 <StaffOffice {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial={active}/>
               ) : route.profile ? (

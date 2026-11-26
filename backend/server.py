@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
-from . import training_center, competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
+from . import training, training_center, competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
@@ -134,18 +134,19 @@ def create_app(
                     await wake_calendar.wait()
                     async with condition:
                         state = store.read()
-                        try:
-                            pack = store.careers.pack(state["career"]["source"]) if state.get("career") and state["career"]["progress"] else None
-                            work = await asyncio.to_thread(store.careers.work, state, pack)
-                        except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
-                            c = state["career"]
-                            token = (state["context"], c["id"], c["queue"][0]["id"] if c["queue"] else None)
-                            store.careers.commit_work(token,None,str(exc))
-                            condition.notify_all()
-                            continue
-                        if not work:
+                        c = state.get("career")
+                        if not c or not c["progress"]:
                             wake_calendar.clear()
                             continue
+                        token = (state["context"], c["id"], c["queue"][0]["id"] if c["queue"] else None)
+                    try:
+                        pack = store.careers.pack(c["source"])
+                        work = await asyncio.to_thread(store.careers.work, state, pack)
+                    except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
+                        async with condition:
+                            store.careers.commit_work(token,None,str(exc))
+                            condition.notify_all()
+                        continue
                     token, game = work
                     report, error = None, None
                     try:
@@ -320,6 +321,17 @@ def create_app(
                     available=registrations.available(c,c["team"],pack),live=c["circuit"].get("live"),
                     snapshots={**competitions.seed_data()["snapshots"], **c["circuit"]["snapshots"]})
 
+    @app.get("/api/career/{career_id}/training-calendar")
+    async def training_calendar(career_id: str, since: str, count: int):
+        store = app.state.store
+        c = store.read().get("career")
+        if not c or c["id"] != career_id:
+            raise HTTPException(404, "Карьера уже сменилась")
+        try:
+            return training_center.calendar(c, store.careers.pack(c["source"]), since, count)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
     @app.get("/api/career/{career_id}/training")
     async def training_week(career_id: str, week: str):
         store = app.state.store
@@ -434,6 +446,10 @@ def create_app(
             sid = c.get("office", {}).get("duties", {}).get("tactics")
             result["planner"] = pack["staff"][sid]["name"] if sid else None
             result["players"] = [pack["players"][pid]["name"] for pid in ids]
+            for board in result["plans"]:
+                key = training.tactic_key(board)
+                board["familiarity"] = round(sum(training.lookup(c["training"], "players", pid)
+                    .get("tactics", {}).get(key, 0) for pid in ids) / len(ids))
         return result
 
     @app.get("/api/tactics/proposal")

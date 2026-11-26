@@ -11,7 +11,7 @@ class StalePlan(ValueError):
     pass
 
 
-def catalog(db):
+def plans(db):
     users = [
         dict(json.loads(body), familiarity=mastery)
         for body, mastery in db.execute("""
@@ -21,12 +21,16 @@ def catalog(db):
         WHERE t.body IS NOT NULL ORDER BY t.rowid DESC
     """)
     ]
+    return users + tactics.standards()
+
+
+def catalog(db):
     return dict(
         maps=[MAP,*[cs2_maps.description(m) for m in cs2_maps.installed()]],
         roles=ROLES,
         players=engine._NAMES["T"],
         buys=tactics.BUYS,
-        plans=users + tactics.standards(),
+        plans=plans(db),
     )
 
 

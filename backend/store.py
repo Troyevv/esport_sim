@@ -8,6 +8,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
 
+from pydantic_core import from_json, to_json
+
 from . import cs2_maps, database, checkpoints, engine, match, tactic_library
 from . import career, career_store, series, staff, training
 from .match_rules import LEGACY_VERSION, PREVIOUS_VERSION, SCOREBOT_VERSION
@@ -211,9 +213,7 @@ class Store:
             raise
 
     def read(self):
-        return json.loads(
-            self.db.execute("SELECT body FROM active WHERE id=1").fetchone()[0]
-        )
+        return from_json(self.db.execute("SELECT body FROM active WHERE id=1").fetchone()[0], cache_strings="keys")
 
     def write(self, state):
         # Completed rounds are immutable and shared by the active game and save slot.
@@ -226,7 +226,7 @@ class Store:
                 )
             world["archive"] = []
         self.db.execute(
-            "INSERT OR REPLACE INTO active VALUES(1,?)", (json.dumps(state, ensure_ascii=False, separators=(",", ":")),)
+            "INSERT OR REPLACE INTO active VALUES(1,?)", (to_json(state, inf_nan_mode="constants").decode(),)
         )
 
     def tick(self):

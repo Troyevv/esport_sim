@@ -323,7 +323,12 @@ class CareerStore:
                 self.save(state, "auto")
             elif kind == "career-staff":
                 require(not c["progress"] and state["world"]["version"] == 1, "Завершите встречу или расчёт календаря")
-                staff.change(c, self.pack(c["source"]), value)
+                pack = self.pack(c["source"])
+                staff.change(c, pack, value)
+                if value.get("duty") == "practice":
+                    c["queue"] = [e for e in c["queue"] if not e.get("delegated")]
+                    c["training"].pop("plannedThrough", None)
+                    training.refresh_practices(c, pack)
                 self.save(state, "auto")
             elif kind == "career-entry":
                 require(not c["progress"] and state["world"]["version"]==1,"Завершите текущую встречу или расчёт")
@@ -420,6 +425,8 @@ class CareerStore:
                 e = c["queue"][0]
                 require(
                     not c["progress"]
+                    and e["kind"] == "match"
+                    and (not e.get("pcw") or (e["watch"] and not training.unavailable(c,e)))
                     and c["date"] == e["date"]
                     and (c["team"] in e["teams"] or e["id"]==c.get("watchFixture"))
                     and state["world"]["version"] == 1,
@@ -530,6 +537,7 @@ class CareerStore:
             # their validated head fixture, including its run identity.
             while c["training"]["nextDay"] < e["date"]:
                 training.run_day(c, pack, c["training"]["nextDay"])
+            training.freeze_day(c["training"])
             token += (c["progress"].get("runId"), c["training"], c["office"])
         if e.get("pcw") and training.unavailable(c, e):
             return token, None
@@ -591,7 +599,7 @@ class CareerStore:
             else:
                 self.record(c, report)
                 if batch:
-                    deadline = monotonic() + .025
+                    deadline = monotonic() + .050
                     while c["queue"] and c["queue"][0]["date"] == c["date"] and monotonic() < deadline:
                         _, next_game = self.work(state)
                         if next_game is None:

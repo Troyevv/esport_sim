@@ -166,12 +166,12 @@ def schedule(c):
 
 def ensure_schedule(c, pack):
     """Repopulate the calendar boundary of a parked career before advancing it."""
-    if c["queue"]:
-        return
-    if "circuit" in c:
-        competitions.add_season(c, pack, int(c["date"][:4]))
-    else:
-        schedule(c)
+    if not any(not e.get("pcw") for e in c["queue"]):
+        if "circuit" in c:
+            competitions.add_season(c, pack, int(c["date"][:4]))
+        else:
+            schedule(c)
+    training.refresh_practices(c, pack)
 
 
 def stops(c, event):
@@ -233,14 +233,20 @@ def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
             game["simulation"] = round_sim.MODE
         return game
     if not detailed:
-        return dict(simulation=round_sim.MODE, seed=event["seed"], domain=domain, rosterIds=rosters, mapId=event.get("mapId"))
-    return match.initial(
+        game = dict(simulation=round_sim.MODE, seed=event["seed"], domain=domain, rosterIds=rosters, mapId=event.get("mapId"))
+        if event.get("pcw") and event.get("board"):
+            game.update(practiceBoard=event["board"], practiceTeam=c["team"])
+        return game
+    game = match.initial(
         event["seed"],
         domain,
         rosters,
         c["team"] if c["team"] in event["teams"] else None,
         map_id=event.get("mapId","depo"),
     )
+    if event.get("pcw") and event.get("board"):
+        match.assign(game, event["board"])
+    return game
 
 
 def simulate(game):

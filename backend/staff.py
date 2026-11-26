@@ -187,8 +187,9 @@ def capacity(person):
 
 
 def quality(person, duty):
+    keys = DUTIES[duty][2].split()
     return round(
-        0.8 * mean(person["attributes"][key] for key in DUTIES[duty][2].split())
+        0.8 * (sum(person["attributes"][key] for key in keys) / len(keys))
         + 0.2 * person["ratings"][person["role"]]
     )
 
