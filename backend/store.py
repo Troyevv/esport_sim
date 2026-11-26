@@ -138,6 +138,8 @@ class Store:
         game = state["world"]
         if game["version"] != 2:
             return False
+        if "series" in game:
+            checkpoints.validate_round_logs(self.db, game)
         old_version = game.get("checkpointVersion", 1)
         if old_version < checkpoints.VERSION:
             if old_version == 1:
@@ -226,6 +228,11 @@ class Store:
                 series.finish_map(world)
                 state["revision"] += 1
             finished = state.get("career") and map_ended and world.get("series", {}).get("stage", "finished") == "finished"
+            if map_ended and not state.get("career") and world.get("series", {}).get("winner"):
+                report = series.result(world)
+                state.setdefault("exhibitions", []).append(dict(
+                    source=world["domain"]["source"], date=world["series"]["date"],
+                    teams=report["teams"], **series.scouting_record(report)))
             if finished:
                 self.careers.record(state["career"], career.result(world))
                 state["careerRevision"] += 1
@@ -239,6 +246,7 @@ class Store:
 
     def snapshot(self, view, previous=None):
         state = self.read()
+        state.pop("exhibitions", None)
         c = state.pop("career", None)
         if c:
             state["careerId"] = c["id"]
@@ -369,6 +377,7 @@ class Store:
                 saved = {
                     key: state[key] for key in ("world", "speed", "running", "version")
                 }
+                saved["exhibitions"] = state.get("exhibitions", [])
                 self.db.execute(
                     "INSERT OR REPLACE INTO slot VALUES(1,?)", (json.dumps(saved),)
                 )
@@ -378,6 +387,7 @@ class Store:
                 if not row:
                     raise Conflict("Нет сохранения")
                 saved = self.restore_checkpoint("slot", row[0])
+                state.pop("exhibitions", None)
                 state.update(saved)
                 state["context"] = str(uuid4())
             elif kind in ("timeout", "call", "resume"):
@@ -396,6 +406,10 @@ class Store:
                     "seed",
                 }:
                     raise ValueError("Укажите редакцию пакета, составы и seed")
+                database.require(
+                    not ("bestOf" in value and "map" in value),
+                    "Выберите одну карту или формат вето",
+                )
                 seed = value["seed"]
                 database.require(
                     type(seed) is int and 0 <= seed <= 2147483647, "Некорректный seed"
@@ -414,8 +428,25 @@ class Store:
                 for pid, portrait in cached.items():
                     if not domain["players"][pid]["visual"].get("head"):
                         domain["players"][pid]["visual"]["head"] = portrait["image"]
-                game = (series.initial(seed, value["bestOf"], domain, value["rosters"]) if "bestOf" in value
-                        else match.initial(seed, domain, value["rosters"], map_id=value.get("map","depo")))
+                history = [
+                    e
+                    for e in state.get("exhibitions", [])
+                    if e["source"] == domain["source"]
+                ]
+                game = (
+                    series.initial(
+                        seed,
+                        value["bestOf"],
+                        domain,
+                        value["rosters"],
+                        history=history,
+                        today=pack["asOf"],
+                    )
+                    if "bestOf" in value
+                    else match.initial(
+                        seed, domain, value["rosters"], map_id=value.get("map", "depo")
+                    )
+                )
                 state.update(
                     world=game,
                     running=False,
@@ -423,17 +454,28 @@ class Store:
                     context=str(uuid4()),
                 )
             elif kind in ("reset", "match"):
-                use_series = kind == "match" and isinstance(value, dict) and set(value) == {"seed", "bestOf"}
-                if use_series:
-                    best_of, value = value["bestOf"], value["seed"]
-                map_id="depo"
-                if kind=="match" and isinstance(value,dict) and set(value)=={"seed","map"}:
-                    map_id,value=value["map"],value["seed"]
+                options = value if isinstance(value, dict) and kind == "match" else {}
+                if options:
+                    database.require(
+                        set(options) in ({"map", "seed"}, {"bestOf", "seed"}),
+                        "Укажите карту или формат матча",
+                    )
+                    value = options["seed"]
                 if type(value) is not int or not 0 <= value <= 2147483647:
                     raise ValueError("Seed должен быть целым числом от 0 до 2147483647")
+                if kind == "reset":
+                    game = engine.initial(value)
+                elif "bestOf" in options:
+                    history = [
+                        e
+                        for e in state.get("exhibitions", [])
+                        if e["source"]["id"] == "depo-exhibition"
+                    ]
+                    game = series.initial(value, options["bestOf"], history=history)
+                else:
+                    game = match.initial(value, map_id=options.get("map", "depo"))
                 state.update(
-                    world=series.initial(value,best_of) if use_series else
-                          match.initial(value,map_id=map_id) if kind=="match" else engine.initial(value),
+                    world=game,
                     running=False,
                     speed=min(8, state["speed"]) if kind == "reset" else 1,
                     context=str(uuid4()),

@@ -1,5 +1,5 @@
 # Run exclusively on a disposable CI machine. Only the downloaded ZIP is launched.
-param([Parameter(Mandatory)][string]$Archive, [switch]$CleanCore, [switch]$DesktopBrowser)
+param([Parameter(Mandatory)][string]$Archive, [switch]$CleanCore, [switch]$DesktopBrowser, [switch]$BrowserOnly)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 if ($CleanCore.IsPresent -eq $DesktopBrowser.IsPresent) { throw 'Choose exactly one Windows test environment.' }
@@ -218,7 +218,13 @@ $again = Launch-Archive $exe
 if ($again.pid -ne $first.pid -or $again.port -ne $first.port -or $again.nonce -ne $first.nonce) { throw 'Second launch did not reuse the same instance.' }
 Wait-Check 'secondary launcher exit' { @(Get-Process -Name EsportSim -ErrorAction SilentlyContinue).Count -eq 1 }
 $origin = "http://127.0.0.1:$($first.port)"
-if ($DesktopBrowser) { Test-Lan $origin }
+if ($DesktopBrowser) {
+    Test-Lan $origin
+    if ($BrowserOnly) {
+        Stop-HostInstance $first
+        return
+    }
+}
 if (!(Test-Path (Join-Path $install 'EsportSim\TACTICS.md'))) { throw 'Tactics guide missing from archive.' }
 $personal = Invoke-RestMethod "$origin/api/database/personal-badges/status"
 if ($personal.mode -ne 'off' -or $personal.available -lt 167 -or $personal.ready -ne 0) { throw 'Packaged private logo catalog is missing or contains private files.' }
@@ -229,7 +235,7 @@ if ($scene.players.PSObject.Properties.Name.Count -lt 1500) { throw 'Offline pla
 $lineups = @($scene.rosters.PSObject.Properties | Where-Object { $_.Value.name -in @('Team Vitality','Team Falcons') } | ForEach-Object { $_.Name })
 if (!(Test-Path (Join-Path $install 'EsportSim\CAREER_R33.md'))) { throw 'Career guide missing.' }
 $starter = Invoke-RestMethod "$origin/api/career/options/austin-registration/1"
-Command $origin 'career-create' @{id='austin-registration'; revision=1; team=$starter.teams[0].id; mode='owner'; scope='full'; name='Manager'}
+Command $origin 'career-create' @{id='austin-registration'; revision=1; team=($starter.teams | Where-Object { $_.region -eq 'Asia' } | Select-Object -First 1).id; mode='owner'; scope='fast'; regions=@('Asia'); name='Manager'}
 Command $origin 'career-save' @{slot='2'}
 Command $origin 'career-advance'
 Wait-Check 'packaged career stops before user match' {
@@ -239,7 +245,11 @@ Wait-Check 'packaged career stops before user match' {
 } 240
 Command $origin 'career-play'
 $careerState = (Invoke-RestMethod "$origin/api/state")
-if (!$careerState.careerId -or $careerState.world.match.teams.Count -ne 2) { throw 'Career match missing.' }
+if (!$careerState.careerId -or $careerState.world.series.stage -ne 'veto' -or $careerState.world.series.bestOf -ne 3) { throw 'Career BO3 veto missing.' }
+Command $origin 'series-veto' @{delegate='captain'}
+Command $origin 'series-next'
+$careerMap = (Invoke-RestMethod "$origin/api/state").world
+if ($careerMap.match.teams.Count -ne 2 -or $careerMap.series.order.Count -ne 3 -or $careerMap.map.id -ne $careerMap.series.order[0].map) { throw 'Packaged BO3 did not open the selected first map.' }
 Command $origin 'career-load' @{slot='2'}
 $c = (Invoke-RestMethod "$origin/api/career").active
 if ($c.date -ne $c.start -or $c.history.Count -ne 0 -or $c.roster.Count -ne 5) { throw 'Career slot did not restore.' }

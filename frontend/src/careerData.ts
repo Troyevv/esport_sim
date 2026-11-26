@@ -69,6 +69,7 @@ type Team = {
 export type Options = { date: string; teams: Team[] };
 export type Catalog = { id: string; title: string; revision: number }[];
 export type Report = {
+  maps?: { mapId: string; scoreByTeam: Record<string, number> }[];
   stats: {
     player: string;
     name: string;

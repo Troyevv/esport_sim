@@ -1,4 +1,4 @@
-"""Calendar of independent exhibition BO1s on a pinned edition of the scene."""
+"""Calendar of independent exhibitions on a pinned edition of the scene."""
 
 import hashlib
 from datetime import timedelta

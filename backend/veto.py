@@ -1,4 +1,5 @@
 """Versioned exhibition regulations and decisions from each team's scouting view."""
+
 from datetime import date
 from random import Random
 from statistics import mean
@@ -6,60 +7,122 @@ from statistics import mean
 from . import cs2_maps, skills, world
 from .database import require
 
-ACTIVE = ("de_ancient", "de_anubis", "de_cache", "de_dust2", "de_inferno", "de_mirage", "de_nuke")
+ACTIVE = (
+    "de_ancient",
+    "de_anubis",
+    "de_cache",
+    "de_dust2",
+    "de_inferno",
+    "de_mirage",
+    "de_nuke",
+)
 # Gameplay preferences for exhibition scouting, not measured professional win rates.
 ROLE_FIT = {
-    "de_ancient": "entry support", "de_anubis": "lurker support", "de_cache": "entry awper",
-    "de_dust2": "awper rifler", "de_inferno": "support entry", "de_mirage": "awper lurker",
-    "de_nuke": "lurker support", "de_train": "awper support", "de_vertigo": "entry rifler",
+    "de_ancient": "entry support",
+    "de_anubis": "lurker support",
+    "de_cache": "entry awper",
+    "de_dust2": "awper rifler",
+    "de_inferno": "support entry",
+    "de_mirage": "awper lurker",
+    "de_nuke": "lurker support",
+    "de_train": "awper support",
+    "de_vertigo": "entry rifler",
 }
 REGULATION = {
-    "id": "exhibition.202611.1", "pool": list(ACTIVE), "first": "draw",
+    "id": "exhibition.202611.1",
+    "pool": list(ACTIVE),
+    "first": "draw",
     "formats": {
         "1": ["ban"] * 6,
         "3": ["ban", "ban", "pick", "pick", "ban", "ban"],
         "5": ["ban", "ban", "pick", "pick", "pick", "pick"],
     },
-    "pickSide": "opponent", "deciderSide": "second",
+    "pickSide": "opponent",
+    "deciderSide": "second",
 }
 
 
 def sequence(profile, best_of, teams, seed):
     require(type(best_of) is int and best_of in (1, 3, 5), "Неизвестный формат серии")
     pool = profile["pool"]
-    moves = profile["formats"][str(best_of)]
-    require(len(set(pool)) == len(pool) and set(pool) <= cs2_maps.NAMES.keys()
-            and len(moves) == len(pool) - 1 and moves.count("pick") == best_of - 1
-            and set(moves) <= {"pick", "ban"}, "Неверная последовательность регламента")
-    require(profile["first"] in ("home", "away", "draw") and profile["pickSide"] in ("picker", "opponent")
-            and profile["deciderSide"] in ("first", "second"), "Неверное право выбора")
+    schedule = profile["formats"][str(best_of)]
+    # A profile may name the acting slot explicitly, including consecutive bans by one club.
+    moves = [item["kind"] if isinstance(item, dict) else item for item in schedule]
+    actors = [
+        item["actor"] if isinstance(item, dict) else i % 2
+        for i, item in enumerate(schedule)
+    ]
+    require(
+        all(type(actor) is int and actor in (0, 1) for actor in actors),
+        "Неизвестный участник вето",
+    )
+    require(
+        len(set(pool)) == len(pool)
+        and set(pool) <= cs2_maps.NAMES.keys()
+        and len(moves) == len(pool) - 1
+        and moves.count("pick") == best_of - 1
+        and set(moves) <= {"pick", "ban"},
+        "Неверная последовательность регламента",
+    )
+    require(
+        profile["first"] in ("home", "away", "draw")
+        and profile["pickSide"] in ("picker", "opponent")
+        and profile["deciderSide"] in ("first", "second"),
+        "Неверное право выбора",
+    )
     first = {"home": 0, "away": 1, "draw": Random(seed).randrange(2)}[profile["first"]]
     steps = []
     for i, move in enumerate(moves):
-        actor = (first + i) % 2
-        steps.append(dict(kind=move, team=teams[actor]))
+        actor = first ^ actors[i]
+        steps.append({"kind": move, "team": teams[actor]})
         if move == "pick":
-            steps.append(dict(kind="side", team=teams[actor ^ (profile["pickSide"] == "opponent")]))
-    return steps + [dict(kind="decider", team=None),
-                    dict(kind="side", team=teams[first ^ (profile["deciderSide"] == "second")])]
+            steps.append(
+                {
+                    "kind": "side",
+                    "team": teams[actor ^ (profile["pickSide"] == "opponent")],
+                }
+            )
+    return steps + [
+        {"kind": "decider", "team": None},
+        {"kind": "side", "team": teams[first ^ (profile["deciderSide"] == "second")]},
+    ]
 
 
 def evidence(pool, teams, history, today):
     """Only completed public results and recorded veto actions available by match day."""
-    result = {t: {m: dict(games=0, wins=0, picks=0, bans=0, weight=0., weightedWins=0.,
-                          attackWins=0, attackRounds=0, defenseWins=0, defenseRounds=0)
-                  for m in pool} for t in teams}
+    result = {
+        t: {
+            m: {
+                "games": 0,
+                "wins": 0,
+                "picks": 0,
+                "bans": 0,
+                "weight": 0.0,
+                "weightedWins": 0.0,
+                "attackWins": 0,
+                "attackRounds": 0,
+                "defenseWins": 0,
+                "defenseRounds": 0,
+            }
+            for m in pool
+        }
+        for t in teams
+    }
     for event in history:
         age = (date.fromisoformat(today) - date.fromisoformat(event["date"])).days
         if age < 0:
             continue
         weight = 0.5 ** (age / 90)
         for action in event.get("veto", []):
-            if action["kind"] in ("pick", "ban") and action["team"] in result and action["map"] in pool:
+            if (
+                action["kind"] in ("pick", "ban")
+                and action["team"] in result
+                and action["map"] in pool
+            ):
                 result[action["team"]][action["map"]][action["kind"] + "s"] += 1
         facts = event.get("maps", [])
         if not facts and event.get("mapId") and event.get("winnerTeamId"):
-            facts = [dict(map=event["mapId"], winner=event["winnerTeamId"])]
+            facts = [{"map": event["mapId"], "winner": event["winnerTeamId"]}]
         for fact in facts:
             for team in set(event["teams"]).intersection(teams):
                 if fact["map"] not in pool:
@@ -91,27 +154,44 @@ def recommend(w, delegate):
     captain = next(p["skills"] for m, p in people if m["captain"])
     opponent = next(t for t in s["teams"] if t != team)
     scouting = s["evidence"]
-    rng = Random(f'{s["seed"]}/{index}/{delegate}')
+    rng = Random(f"{s['seed']}/{index}/{delegate}")
     if step["kind"] == "side":
         row = scouting[team][s["order"][-1]["map"]]
+
         def side_value(prefix):
-            return (row[prefix+"Wins"] + 4) / (row[prefix+"Rounds"] + 8)
-        attack = side_value("attack") - side_value("defense") + (captain["aggression"] - 50) / 500
-        return "T" if attack + rng.uniform(-.06, .06) > 0 else "CT"
+            return (row[prefix + "Wins"] + 4) / (row[prefix + "Rounds"] + 8)
+
+        attack = (
+            side_value("attack")
+            - side_value("defense")
+            + (captain["aggression"] - 50) / 500
+        )
+        return "T" if attack + rng.uniform(-0.06, 0.06) > 0 else "CT"
+
     def value(map_id):
         own, other = scouting[team][map_id], scouting[opponent][map_id]
         knowledge = mean(p["mapKnowledge"].get(map_id[3:], 50) for _, p in people)
-        suited = [skills.role_rating(p["skills"], m["role"]) for m, p in people
-                  if m["role"] in ROLE_FIT.get(map_id, "").split()]
-        prior = .5 + (knowledge-50)/160 + ((mean(suited) if suited else 50)-50)/350
+        suited = [
+            skills.role_rating(p["skills"], m["role"])
+            for m, p in people
+            if m["role"] in ROLE_FIT.get(map_id, "").split()
+        ]
+        prior = (
+            0.5 + (knowledge - 50) / 160 + ((mean(suited) if suited else 50) - 50) / 350
+        )
+
         def estimate(row, prior):
-            return (row["weightedWins"] + 5 * prior)/(row["weight"] + 5)
-        preference = lambda row: (row["picks"]-row["bans"])/(5+row["picks"]+row["bans"])
-        analysis = .7 if delegate == "staff" else .35 + captain["game_reading"]/180
-        advantage = estimate(own, prior) - analysis * estimate(other, .5)
-        advantage += .09 * (preference(own) - analysis * preference(other))
-        noise = .025 + captain["risk"]/1200
+            return (row["weightedWins"] + 5 * prior) / (row["weight"] + 5)
+
+        preference = lambda row: (
+            (row["picks"] - row["bans"]) / (5 + row["picks"] + row["bans"])
+        )
+        analysis = 0.7 if delegate == "staff" else 0.35 + captain["game_reading"] / 180
+        advantage = estimate(own, prior) - analysis * estimate(other, 0.5)
+        advantage += 0.09 * (preference(own) - analysis * preference(other))
+        noise = 0.025 + captain["risk"] / 1200
         return advantage + rng.uniform(-noise, noise)
+
     choose = min if step["kind"] == "ban" else max
     return choose(available(s), key=value)
 
@@ -122,13 +202,15 @@ def apply(s, value, by):
     if kind == "side":
         require(value in ("T", "CT"), "Выберите стартовую сторону")
         item = s["order"][-1]
-        item["attack"] = team if value == "T" else next(t for t in s["teams"] if t != team)
+        item["attack"] = (
+            team if value == "T" else next(t for t in s["teams"] if t != team)
+        )
         event = dict(**step, map=item["map"], side=value, by=by)
     else:
         require(value in available(s), "Карта уже выбрана или отсутствует в пуле")
         event = dict(**step, map=value, by=by)
         if kind != "ban":
-            s["order"].append(dict(map=value, picker=team, attack=None))
+            s["order"].append({"map": value, "picker": team, "attack": None})
     s["actions"].append(event)
     if len(s["actions"]) == len(s["steps"]):
         s["stage"] = "ready"

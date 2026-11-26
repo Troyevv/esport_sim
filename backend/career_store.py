@@ -7,7 +7,7 @@ import sqlite3
 from pathlib import Path
 from uuid import uuid4
 
-from . import career, checkpoints, cs2_maps, database, engine, match, series, veto, world
+from . import career, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -79,6 +79,8 @@ class CareerStore:
             k: state[k] for k in ("world", "running", "speed", "version", "hasSave")
         }
         data["career"] = c
+        if not c:
+            data["exhibitions"] = state.get("exhibitions", [])
         body = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
         # Retain the preceding known-good checkpoint when replacing a slot.
         old = self.db.execute(
@@ -135,11 +137,8 @@ class CareerStore:
         if game["version"] == 2:
             checkpoints.validate_current(game)
             match.validate_bindings(game)
-            for key in game.get("logs", []):
-                log = self.db.execute(
-                    "SELECT body FROM round_log WHERE digest=?", (key,)
-                ).fetchone()
-                require(log and checksum(log[0]) == key, "Повреждён журнал матча")
+            checkpoints.validate_round_logs(self.db, game)
+        state.pop("exhibitions", None)
         state.update(saved, context=str(uuid4()))
         state["hasSave"] = (
             bool(
@@ -167,73 +166,71 @@ class CareerStore:
             for pid in pack["rosters"][c["teams"][tid]]["players"]
         }
         teams = event["teams"]
-        require(event["kind"] == "match" and report["teams"] == teams, "Результат не соответствует встрече")
+        require(
+            event["kind"] == "match" and set(report["teams"]) == set(teams),
+            "Результат не соответствует встрече",
+        )
         facts = None
         if "bestOf" in event:
             best = event["bestOf"]
             profile = c["seriesProfile"]
-            require(report.get("seriesVersion") == series.VERSION and report["bestOf"] == best
-                    and report["profile"] == profile and report["seed"] == event["seed"],
-                    "Регламент не соответствует встрече")
-            replay = dict(profile=profile, teams=teams, steps=veto.sequence(profile,best,teams,event["seed"]),
-                          actions=[], order=[], stage="veto")
+            require(
+                report.get("seriesVersion") == series.VERSION
+                and report["bestOf"] == best
+                and report["profile"] == profile
+                and report["seed"] == event["seed"],
+                "Регламент не соответствует встрече",
+            )
+            replay = dict(
+                profile=profile,
+                teams=teams,
+                steps=veto.sequence(profile, best, teams, event["seed"]),
+                actions=[],
+                order=[],
+                stage="veto",
+            )
             for action in report["veto"]:
                 require(replay["stage"] == "veto", "Лишний ход вето")
                 veto.apply(replay, action.get("side", action["map"]), action["by"])
-            require(replay["stage"] == "ready" and replay["actions"] == report["veto"]
-                    and replay["order"] == report["order"], "Нарушен порядок вето")
+            require(
+                replay["stage"] == "ready"
+                and replay["actions"] == report["veto"]
+                and replay["order"] == report["order"],
+                "Нарушен порядок вето",
+            )
             points = dict.fromkeys(teams, 0)
-            facts = dict(maps=[], veto=report["veto"])
             for i, item in enumerate(report["maps"]):
-                require(i < best and max(points.values()) < best//2+1, "Лишняя карта серии")
+                require(
+                    i < best and max(points.values()) < best // 2 + 1,
+                    "Лишняя карта серии",
+                )
                 map_id = replay["order"][i]["map"]
-                self.verify_map(item, teams, expected, series.map_seed(event["seed"], i), map_id)
+                series.verify_map(
+                    item, teams, expected, series.map_seed(event["seed"], i), map_id
+                )
                 points[item["winnerTeamId"]] += 1
-                sides = {t: dict(attackWins=0, defenseWins=0, attackRounds=0, defenseRounds=0) for t in teams}
-                for r in item["rounds"]:
-                    for t in teams:
-                        won = r["winnerTeamId"] == t
-                        prefix = "attack" if (r["side"] == "T") == won else "defense"
-                        sides[t][prefix+"Rounds"] += 1
-                        sides[t][prefix+"Wins"] += int(won)
-                facts["maps"].append(dict(map=map_id, winner=item["winnerTeamId"], sides=sides))
-            require(max(points.values()) == best//2+1 and points == report["scoreByTeam"]
-                    and report["score"] == [points[t] for t in teams]
-                    and report["winnerTeamId"] == max(points,key=points.get)
-                    and report["stats"] == series.total_stats(r["stats"] for r in report["maps"])
-                    and report["rounds"] == [row for r in report["maps"] for row in r["rounds"]],
-                    "Результат серии не соответствует картам")
+            require(
+                max(points.values()) == best // 2 + 1
+                and points == report["scoreByTeam"]
+                and report["score"] == [points[t] for t in teams]
+                and report["winnerTeamId"] == max(points, key=points.get)
+                and report["stats"]
+                == series.total_stats(r["stats"] for r in report["maps"])
+                and report["rounds"]
+                == [row for r in report["maps"] for row in r["rounds"]],
+                "Результат серии не соответствует картам",
+            )
+            facts = series.scouting_record(report)
         else:
-            points = self.verify_map(report, teams, expected, event["seed"], event.get("mapId"))
+            points = series.verify_map(
+                report, teams, expected, event["seed"], event.get("mapId")
+            )
         body = database.encode(report)
         digest = checksum(body)
         self.db.execute(
             "INSERT OR IGNORE INTO career_report VALUES(?,?)", (digest, body)
         )
         career.complete(c, digest, points, report["winnerTeamId"], facts)
-
-    @staticmethod
-    def verify_map(report, teams, expected, seed, map_id):
-        points = {
-            tid: sum(r["winnerTeamId"] == tid for r in report["rounds"])
-            for tid in teams
-        }
-        require(
-            report["seed"] == seed
-            and report.get("mapId") == map_id
-            and report["rules"] in (cs2_maps.SUPPORTED_RULES if map_id else (match.VERSION,))
-            and report["map"] == (cs2_maps.BUILD if map_id else match.MAP["version"])
-            and len(report["stats"]) == len(expected)
-            and {row["player"]: row["teamId"] for row in report["stats"]} == expected
-            and set(report["teams"]) == set(points)
-            and report["score"] == [points[t] for t in report["teams"]]
-            and points == report["scoreByTeam"]
-            and len(set(points.values())) == 2
-            and report["winnerTeamId"] == max(points, key=points.get)
-            and sum(points.values()) == len(report["rounds"]),
-            "Результат не соответствует встрече календаря",
-        )
-        return points
 
     def change(self, state, kind, value):
         c = state.get("career")
@@ -251,6 +248,7 @@ class CareerStore:
             pack = self.pack([value["id"], value["revision"]])
             new = career.create(pack, value)
             self.save(state, "auto")
+            state.pop("exhibitions", None)
             state.update(
                 career=new,
                 world=engine.initial(0),

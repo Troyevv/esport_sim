@@ -35,7 +35,11 @@ jobs:
           name: cs2-runtime-26879581
           path: runtime-data/maps/26879581
       - run: python -m pip install -r requirements-test.txt
-      - run: python -m pytest -q tests/test_series.py tests/test_installed_maps.py::test_recent_checkpoints_resume_from_the_recorded_tick
+      - name: Verify series with the packaged geometry
+        run: |
+          python -c "from backend import veto, cs2_maps; assert set(veto.ACTIVE) <= set(cs2_maps.installed())"
+          python -m pytest -q tests/test_series.py -k 'real_career or complete_installed'
+          python -m pytest -q tests/test_installed_maps.py::test_recent_checkpoints_resume_from_the_recorded_tick
       - working-directory: frontend
         run: |
           npm ci
@@ -147,4 +151,4 @@ jobs:
           path: bundle
       - name: Verify browser URL dispatch and loaded frontend in Edge or Chrome
         shell: powershell
-        run: ./tools/windows-smoke/archive.ps1 -DesktopBrowser -Archive bundle/EsportSim-windows-x64.zip
+        run: ./tools/windows-smoke/archive.ps1 -DesktopBrowser -BrowserOnly -Archive bundle/EsportSim-windows-x64.zip

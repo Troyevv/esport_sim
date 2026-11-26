@@ -28,6 +28,22 @@ def put_round(db, events):
     return digest
 
 
+def validate_round_logs(db, game):
+    groups = game.get("series", {}).get("roundLogs", [])
+    if "series" in game:
+        expected = len(game["series"]["results"]) - int(game.get("phase") == "finished")
+        if len(groups) != expected:
+            raise CheckpointError("Неполная история журналов серии")
+    for i, keys in enumerate(groups):
+        if len(keys) != len(game["series"]["results"][i]["rounds"]):
+            raise CheckpointError("Неполный журнал завершённой карты")
+    for keys in [*groups, game.get("logs", [])]:
+        for key in keys:
+            row = db.execute("SELECT body FROM round_log WHERE digest=?", (key,)).fetchone()
+            if not row or hashlib.sha256(row[0].encode()).hexdigest() != key:
+                raise CheckpointError("Повреждён журнал матча")
+
+
 def upgrade_match(db, world):
     """Upgrade both unmarked PR formats, including saves continued between builds."""
     logs = world.get("logs", [])

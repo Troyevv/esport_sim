@@ -244,6 +244,11 @@ export function MatchReport({
           <p>
             {date(event.date)} · {fixtureMap(event)} · {rounds} раундов
           </p>
+          {data.data.maps && <ol className="series-order" aria-label="Итоги карт">
+            {data.data.maps.map((m,i) => <li key={m.mapId}><small>Карта {i+1}</small>
+              <strong>{fixtureMap({...event,bestOf:undefined,mapId:m.mapId})}</strong>
+              <span>{event.teams.map(t => m.scoreByTeam[t]).join(" : ")}</span></li>)}
+          </ol>}
           {event.teams.map((tid, club) => (
             <table key={tid}>
               <caption>{teams[tid]}</caption>
