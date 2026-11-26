@@ -210,10 +210,15 @@ function Manager({
     }
     if (route.page !== "Входящие" || tool) to("Входящие");
   };
+  const repair = async () => {
+    setDecisionError("");
+    await act("career-repair",{},setDecisionError);
+  };
   const resolve = async (row: Decision) => {
     setDecisionError("");
-    if (row.action === "repair" || row.action === "retry") {
-      await act(row.action === "repair" ? "career-repair" : "career-retry",{},setDecisionError);
+    if (row.action === "repair") return repair();
+    if (row.action === "retry") {
+      await act("career-retry",{},setDecisionError);
       return;
     }
     setDecisions(false);
@@ -447,13 +452,14 @@ function Manager({
             </div>
           )}
           {!tool && (!c.progress || required.length > 0) && <button className="attention-summary surface" data-blocked={!!required.length}
+            aria-label={"Открыть центр решений · обязательных: " + required.length} aria-describedby="decision-explanation"
             onClick={()=>{setDecisionError("");setDecisions(true)}}>
-            <span><strong>{required.length ? required[0].title : "Центр решений"}</strong>
+            <span id="decision-explanation"><strong>{required.length ? required[0].title : "Центр решений"}</strong>
             <small>{required.length ? required[0].detail : "Обязательных решений нет"}</small></span>
             <b>{required.length ? "Требуют внимания · " + required.length : "Открыть"}</b>
           </button>}
           <ManagerAttention items={c.attention} open={decisions} close={()=>setDecisions(false)}
-            enabled={enabled && !c.progress} resolve={resolve} error={decisionError}
+            enabled={enabled && !c.progress} resolve={resolve} repair={repair} error={decisionError}
             saves={()=>{setDecisions(false);to("Сохранения")}}/>
           <div key={active} className="screen-enter">
             {tool ||

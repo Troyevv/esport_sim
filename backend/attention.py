@@ -1,6 +1,6 @@
 """Live manager decisions, derived from the same career and regulations as their actions."""
 
-from datetime import date, timedelta
+from datetime import date
 
 from . import competitions, cs2_maps, registrations, veto
 

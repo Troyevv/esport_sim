@@ -22,6 +22,9 @@ RULES, PREVIOUS_RULES = SUPPORTED_RULES[:2]
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )
+RUNTIME_FILES = json.loads(
+    Path(__file__).with_name("data").joinpath(f"maps-runtime-{BUILD}.json").read_bytes()
+)
 NAMES = dict(
     zip(
         PROFILES,
@@ -69,7 +72,8 @@ def root():
 
 
 def installed():
-    return [m for m in PROFILES if (root() / m / "provenance.json").is_file()]
+    directory = root()
+    return [m for m in PROFILES if all((directory / m / file).is_file() for file in RUNTIME_FILES[m])]
 
 
 @lru_cache(maxsize=2)

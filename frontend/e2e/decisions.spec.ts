@@ -47,7 +47,10 @@ test("Aurora · приоритет турнира, центр решений и 
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await page.screenshot({ path: info.outputPath("manager-decisions.png") });
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("manager-decisions.png"),
+  });
   await center.getByRole("button", { name: "Открыть заявку" }).click();
   await press("Сохранить заявку");
   await expect(button("Продолжить")).toBeVisible();

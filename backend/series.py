@@ -25,7 +25,7 @@ def initial(
     require(type(budget) is int and 0 <= budget <= 6 and profile.get("timeoutScope","series") in ("map","series"), "Неверный лимит тайм-аутов")
     missing = set(profile["pool"]) - set(cs2_maps.installed())
     require(
-        not missing, "Установите карты выбранного пула: " + ", ".join(sorted(missing))
+        not missing, "Недоступны ресурсы карт: " + ", ".join(sorted(missing)) + ". Перезапустите игру для автоматического восстановления."
     )
     domain = domain or world.exhibition(engine.initial(seed)["agents"])
     world.validate(domain)

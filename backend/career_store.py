@@ -364,6 +364,7 @@ class CareerStore:
             elif kind in ("career-advance", "career-retry"):
                 require(state["world"]["version"] == 1, "Завершите активный матч")
                 pack = self.pack(c["source"])
+                career.ensure_schedule(c,pack)
                 if kind == "career-retry":
                     c["error"] = None
                 pending = attention.blockers(c,pack,state["world"])
@@ -478,6 +479,8 @@ class CareerStore:
         c = state.get("career")
         if not c or not c["progress"]:
             return None
+        if not c["queue"]:
+            return (state["context"], c["id"], None), None
         e = c["queue"][0]
         token = (state["context"], c["id"], e["id"])
         if e["date"] > c["progress"].get("through","9999") or attention.blockers(c,self.pack(c["source"]),state["world"]):
@@ -494,11 +497,13 @@ class CareerStore:
             if (
                 not c
                 or not c["progress"]
-                or token != (state["context"], c["id"], c["queue"][0]["id"])
+                or token != (state["context"], c["id"], c["queue"][0]["id"] if c["queue"] else None)
             ):
                 return False
             if error:
                 c.update(progress=None, error=error)
+            elif not c["queue"]:
+                career.ensure_schedule(c,self.pack(c["source"]))
             elif report is None:
                 e = c["queue"][0]
                 pack = self.pack(c["source"])

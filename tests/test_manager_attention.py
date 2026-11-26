@@ -1,6 +1,5 @@
 from copy import deepcopy
 from uuid import uuid4
-from zipfile import ZipFile
 
 import pytest
 
@@ -133,3 +132,50 @@ def test_map_restore_repairs_real_assets_without_rewriting_healthy_files(
     collision.write_bytes(b"damaged after start")
     with pytest.raises(ValueError, match="восстановить карту"):
         map_install.restore(tmp_path, tmp_path / "missing distribution")
+
+
+def test_rival_calendar_clash_is_resolved_by_the_rival(monkeypatch):
+    monkeypatch.setattr(cs2_maps, "installed", lambda: list(cs2_maps.NAMES))
+    pack = {
+        "rosters": {
+            t: {"players": [t + str(i) for i in range(5)]}
+            for t in ("aurora", "rival", "third")
+        }
+    }
+    fixtures = [
+        dict(
+            kind="match",
+            id=k,
+            date="2026-12-03",
+            edition=k,
+            teams=teams,
+            bestOf=3,
+            stage=0,
+        )
+        for k, teams in (("cup", ["aurora", "rival"]), ("open", ["rival", "third"]))
+    ]
+    events = {
+        f["edition"]: dict(
+            id=f["edition"], title=f["edition"],
+            rules={"pool": ["de_nuke"]},
+            stages=[{}],
+            registrations={t: [pack["rosters"][t]] for t in f["teams"]},
+        )
+        for f in fixtures
+    }
+    c = dict(
+        date="2026-12-03",
+        club="Aurora Gaming", progress=None,
+        team="aurora",
+        teams={t: t for t in pack["rosters"]},
+        circuit=dict(editions=events, bench={}),
+        queue=fixtures,
+    )
+    assert attention.autonomous_fixture(c, fixtures[0], pack)
+    assert not list(attention.fixture_items(c, pack, {}))
+    career.start_advance(c, administrative=True)
+    assert c["progress"] is not None
+    c["queue"] = fixtures[:1]
+    assert [r["action"] for r in attention.fixture_items(c, pack, {})] == ["play"]
+    events["cup"]["registrations"]["aurora"] = [{"players": ["absent"]}]
+    assert [r["kind"] for r in attention.fixture_items(c, pack, {})] == ["replace"]

@@ -133,7 +133,7 @@ def create_app(
                             work = store.careers.work(state)
                         except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                             c = state["career"]
-                            token = (state["context"], c["id"], c["queue"][0]["id"])
+                            token = (state["context"], c["id"], c["queue"][0]["id"] if c["queue"] else None)
                             store.careers.commit_work(token,None,str(exc))
                             condition.notify_all()
                             continue

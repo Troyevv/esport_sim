@@ -82,7 +82,14 @@ try {
     $cache = Join-Path $env:LOCALAPPDATA 'EsportSim/maps/26879581/de_nuke/collision.json'
     [IO.File]::WriteAllText($cache,'damaged')
     Batch 'start'
+    $previous = Instance
+    $previous.PSObject.Properties.Remove('protocol')
+    [IO.File]::WriteAllText($descriptor, ($previous | ConvertTo-Json -Compress))
+    Batch 'start'
     $fresh = Instance
+    if ($fresh.nonce -eq $previous.nonce -or !$fresh.protocol) { throw 'Update reused an obsolete live server.' }
+    $afterUpdate = Invoke-RestMethod "http://127.0.0.1:$($fresh.port)/api/state"
+    if (!$afterUpdate.hasSave) { throw 'Updating a live installation lost its save.' }
     Test-AuroraTournament "http://127.0.0.1:$($fresh.port)"
     Stop-Game
     Batch 'stop'

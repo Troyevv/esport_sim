@@ -1,7 +1,6 @@
 """Validate the pinned R4.1 runtime and restore missing or damaged files offline."""
 
 import hashlib
-import json
 import logging
 import os
 import shutil
@@ -13,9 +12,7 @@ from zipfile import BadZipFile, ZipFile
 from . import cs2_maps
 
 BUILD = str(cs2_maps.BUILD)
-MANIFEST = json.loads(
-    Path(__file__).with_name("data").joinpath(f"maps-runtime-{BUILD}.json").read_bytes()
-)
+MANIFEST = cs2_maps.RUNTIME_FILES
 
 
 def matches(path, digest):

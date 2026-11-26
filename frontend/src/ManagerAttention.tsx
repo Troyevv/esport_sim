@@ -16,6 +16,7 @@ export function ManagerAttention({
   open,
   close,
   resolve,
+  repair,
   enabled,
   error,
   saves,
@@ -25,6 +26,7 @@ export function ManagerAttention({
   close: () => void;
   enabled: boolean;
   resolve: (item: Decision) => void;
+  repair: () => void;
   error: string;
   saves: () => void;
 }) {
@@ -62,6 +64,15 @@ export function ManagerAttention({
                     {actionLabel[row.action]}
                   </button>
                   {row.action === "retry" && (
+                    <button
+                      className="btn"
+                      disabled={!enabled}
+                      onClick={repair}
+                    >
+                      Проверить ресурсы карт
+                    </button>
+                  )}
+                  {row.action === "retry" && (
                     <button className="btn" onClick={saves}>
                       Открыть сохранения
                     </button>
@@ -77,6 +88,7 @@ export function ManagerAttention({
         {error && (
           <section>
             <p role="alert">{error}</p>
+            <button className="btn" disabled={!enabled} onClick={repair}>Проверить ресурсы карт</button>
             <button className="btn" onClick={saves}>
               Открыть сохранения
             </button>

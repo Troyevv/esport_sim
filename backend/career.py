@@ -163,6 +163,16 @@ def schedule(c):
     c["week"] += 1
 
 
+def ensure_schedule(c, pack):
+    """Repopulate the calendar boundary of a parked career before advancing it."""
+    if c["queue"]:
+        return
+    if "circuit" in c:
+        competitions.add_season(c, pack, int(c["date"][:4]))
+    else:
+        schedule(c)
+
+
 def stops(c, event):
     return event["kind"] == "review" or c["team"] in event["teams"] or event["id"]==c.get("watchFixture")
 
