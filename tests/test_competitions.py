@@ -238,7 +238,12 @@ def test_qualifier_carries_versions_and_excludes_other_branch(scene):
     q = events["cct-contenders-2026-oq1"]
     target = events[q["feeds"]]
     team = next(
-        t for t in q["registrations"] if not registrations.conflict_for(c, target, t)
+        t
+        for t, versions in q["registrations"].items()
+        if not registrations.conflict_for(c, target, t)
+        and not registrations.player_conflict(
+            c, target, t, versions[-1]["players"], versions[-1]["reserves"]
+        )
     )
     c["date"] = q["end"]
     competitions.finish(c, q, [team])
