@@ -211,11 +211,11 @@ def test_fifth_defender_can_reinforce_without_moving_the_anchor():
     squad = [dict(id=f"p{i}", slot=i, navArea=i, x=x, y=0, z=0)
              for i, x in enumerate((0, 50, 60))]
     space = SimpleNamespace(
-        holds={"A": [(0, (0, 0, 0)), (3, pos)]}, site_costs={"A": {0: 0, 1: 7, 2: 8}},
-        route=lambda *args: [3],
-        _reachable=lambda origin, goals: goals[0],
-        ingress=lambda *args: [(15, 0, 0)],
-        hit=lambda *args: None,
+        site_costs={"A": {0: 0, 1: 7, 2: 8}},
+        angles=lambda site, lane, center, duty: [
+            ((0, 0, 0), (8, 0, 0)), (pos, (15, 0, 0))
+        ],
+        _reachable=lambda origin, goals, area: goals[0],
         site_points={"A": pos},
     )
     assign_backup(space, plan, squad, "A", 2)

@@ -417,6 +417,15 @@ def begin_live(w):
                 site = space.site_at(ai.point(plant)) if space else tactics.zone_at(plant["x"], plant["y"])
         lane=0
         if space:
+            # Pick the budget once after choosing the board and intended site.
+            # Its label, role orders, wallet limits and the emitted call must agree.
+            requested = None
+            if board:
+                requested = w.get("previewBuy") or board["buy"]
+            strategy = cs2_economy.decision(
+                w, squad, call, site=site, profile=space.profile, board=board, requested=requested
+            )
+            buy = strategy["scenario"]
             site,style,lane=ai.cs2_play.opening(space,w,squad,igl,profile(w,igl),buy,site,style,call)
             if board and plant:
                 site=space.site_at(ai.point(plant))
@@ -477,10 +486,12 @@ def begin_live(w):
                     if len(a["utility"]) < 2:
                         purchase(w, a, item)
         if space:
-            requested = w.get("previewBuy") if board else None
-            strategy = cs2_economy.decision(w, squad, call, site=site, profile=space.profile,
-                                            board=board, requested=requested)
-            w["plans"][side].update(economy=strategy, buy=strategy["scenario"])
+            # The captain can switch sites during the opening call. Give each role
+            # the utility for the final approach within its agreed spending limit.
+            strategy["needs"] = {
+                a["id"]: cs2_economy.items_for(a, site, space.profile, board) for a in squad
+            }
+            w["plans"][side]["economy"] = strategy
             cs2_economy.buy(w, squad, strategy, purchase, board)
             continue
         rifle = "AK-47" if side == "T" else "M4A1-S"

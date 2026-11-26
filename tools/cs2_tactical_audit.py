@@ -44,9 +44,12 @@ def run(name, seed, order, pack, replay):
             )
             row["economy"] = {}
             purchases = [e for e in game["events"] if e["kind"] == "buy"]
+            announced = {e["team"]: e["buy"] for e in game["events"] if e["kind"] == "plan"}
             for side in ("T", "CT"):
                 members = [a for a in game["agents"] if a["team"] == side]
                 plan = game["plans"][side]["economy"]
+                if announced[side] != plan["scenario"]:
+                    raise ValueError((name, seed, side, "announced budget differs from purchases"))
                 spent = {a["id"]: before[a["id"]][0] - a["cash"] for a in members}
                 if any(v < 0 or v > plan["limit"][pid] for pid, v in spent.items()):
                     raise ValueError((name, seed, side, plan, spent))

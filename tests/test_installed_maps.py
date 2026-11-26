@@ -165,3 +165,25 @@ def test_map_default_assigns_three_sectors_and_uses_delivered_readiness():
     assert not probe.get("released")
     cs2_play.release_probe(space,plan,squad,[],160)
     assert probe["released"] == 160
+
+
+def test_dust_reserve_can_cover_a_legal_plant_after_anchor_loss():
+    from backend import cs2_play
+
+    game = match.initial(41000, map_id="de_dust2")
+    match.begin_live(game)
+    space = cs2_maps.get(game["mapId"])
+    squad = [p for p in game["agents"] if p["team"] == "CT"]
+    plan = game["plans"]["CT"]
+    for site in ("A", "B"):
+        orders = plan["orders"]["slots"]
+        remaining = [p for p in squad if p["slot"] >= 2 or orders[p["slot"]]["site"] != site]
+        cs2_play.assign_backup(space, plan, remaining, site, 2)
+        reserve = plan["backup"]
+        hold = tuple(reserve["hold"])
+        actor = next(p for p in remaining if p["id"] == reserve["id"])
+        assert space._reachable(cs2_maps.xyz(actor), [hold], actor["navArea"]) == hold
+        assert any(
+            space.hit(hold, space.centers[area], 1, 64) is None
+            for area in space.plants[site]
+        )

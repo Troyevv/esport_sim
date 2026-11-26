@@ -267,29 +267,25 @@ def assign_backup(space, plan, squad, site, pressure):
     ):
         return
     guards = [slots[p["slot"]] for p in squad if p["slot"] != 4 and slots[p["slot"]]["site"] == site]
-    candidates = list(space.holds[site])
-    if not candidates:
-        candidates = [(i, space.centers[i]) for i in space.plants[site]]
-    routes = []
-    for actor in other:
-        pos = xyz(actor)
-        for area, target in candidates:
+    # Rank covering angles by their view of the legal plant surfaces and entry.
+    # Some maps have no authored cover markers on the site itself. Choosing the
+    # nearest marker to the incoming player can then strand the reserve off-site.
+    center = space.site_points[site]
+    angles = space.angles(site, plan["lane"], center, "site")
+    ordered = sorted(
+        other,
+        key=lambda p: (
+            space.site_costs[site].get(p["navArea"], float("inf")),
+            dist(xyz(p), center),
+            p["slot"],
+        ),
+    )
+    for actor in ordered:
+        for target, watch in angles:
             if any(dist(target, guard["hold"]) < 6 for guard in guards):
                 continue
-            route = space.route(actor["navArea"], area)
-            if route is not None:
-                cost = space.site_costs[site].get(actor["navArea"],float("inf")) / UNIT
-                routes.append((cost, dist(pos, target), actor["slot"], target))
-    by_slot = {p["slot"]: p for p in other}
-    for _, _, index, target in sorted(routes):
-        actor = by_slot[index]
-        if space._reachable(xyz(actor), [target]) is not None:
-            visible = [
-                q
-                for q in space.ingress(site, plan["lane"])
-                if dist(q, target) > 6 and space.hit(target, q, 1, 64) is None
-            ]
-            watch = visible[0] if visible else space.site_points[site]
+            if space._reachable(xyz(actor), [target], actor["navArea"]) is None:
+                continue
             plan["backup"] = dict(
                 id=actor["id"], site=site, hold=list(target), watch=list(watch)
             )
