@@ -400,8 +400,9 @@ function Registration({
       <h2>Заявка · {c.club}</h2>
       <p>
         {status[state] || admission[event.admission]} · Регистрация с{" "}
-        {date(event.opens)}. Приём заявок до {date(event.applyBy || event.lock)}
-        . Фиксация {date(event.lock)}.
+        {date(event.opens)} · Приём заявок до{" "}
+        {date(event.applyBy || event.lock)}
+        {" · "}Фиксация {date(event.lock)}
       </p>
       {!allowed && <p>Ограничение по региону: {event.region}.</p>}
       {before && state === "offered" && (

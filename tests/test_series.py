@@ -252,6 +252,7 @@ def test_real_career_tournament_report_uses_registration(tmp_path):
     act(store,"career-create",dict(id=pack["id"],revision=1,scope="full",name="Тренер",mode="owner",team=team))
     state=store.read()
     c=state["career"]
+    pack = store.careers.pack(c["source"])
     # Isolate the actual first open qualifier from preceding unrelated tournaments.
     edition=c["circuit"]["editions"]["cct-contenders-2026-oq1"]
     c["date"]=edition["lock"]

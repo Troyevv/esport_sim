@@ -8,9 +8,18 @@ test("Ноябрьская карьера · отбор, заявка, сохр�
   const button = (name: string) =>
     page.getByRole("button", { name, exact: true });
   const press = async (name: string) => {
-    const target = button(name);
+    const target =
+      name === "Входящие"
+        ? page.getByRole("button", { name: /^Входящие/ }).first()
+        : button(name);
     if (
-      ["Соревнования", "Сохранения", "Рейтинг VRS"].includes(name) &&
+      [
+        "Соревнования",
+        "Сохранения",
+        "Рейтинг VRS",
+        "Входящие",
+        "← Главное меню",
+      ].includes(name) &&
       !(await target.isVisible()) &&
       (await button("Открыть навигацию").isVisible())
     )
@@ -72,4 +81,35 @@ test("Ноябрьская карьера · отбор, заявка, сохр�
   await press("Сетки");
   await expect(page.getByText("До начала карьеры").first()).toBeVisible();
   await capture("major");
+  await press("Входящие");
+  await page
+    .locator(".inbox-item")
+    .filter({ hasText: "DraculaN Season 8" })
+    .first()
+    .click();
+  await press("Открыть турнир");
+  await expect(
+    page.getByRole("heading", { name: "DraculaN Season 8", exact: true }),
+  ).toBeVisible();
+  await press("Сохранения");
+  await page
+    .locator(".cr-save")
+    .filter({ hasText: "Слот 1" })
+    .getByRole("button", { name: "Загрузить" })
+    .click();
+  await press("Соревнования");
+  await page
+    .getByRole("button", {
+      name: /CCT Contenders Europe 12 · открытая квалификация 1/,
+    })
+    .click();
+  await press("Моя заявка");
+  await expect(page.getByText("Версия 1", { exact: true })).toBeVisible();
+
+  // All Playwright scenarios share one home server. Return it to the lab for the next client.
+  await press("← Главное меню");
+  await press("Стенд симуляции");
+  await expect(
+    page.getByRole("heading", { name: "Тактический радар" }),
+  ).toBeVisible();
 });
