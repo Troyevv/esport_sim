@@ -1020,6 +1020,7 @@ def priority_for(event, team):
 
 def resolve_slots(c):
     """Only modeled online windows allow a later day in the same round."""
+    changed = False
     events = c["circuit"]["editions"]
     for f in c["queue"]:
         if "edition" not in f:
@@ -1040,12 +1041,14 @@ def resolve_slots(c):
         while candidate <= limit:
             if candidate not in occupied and not any(g is not f and g["date"] == candidate and
                     set(f["teams"]).intersection(g["teams"]) for g in c["queue"]):
+                changed = True
                 f["date"] = row["date"] = candidate
                 if c["team"] in f["teams"]:
                     notice(c, e, "Изменение расписания", "Свободный игровой день: " + candidate)
                 break
             candidate = offset(candidate, 1)
     order(c)
+    return changed
 
 
 def fixture_conflicts(c, fixture):

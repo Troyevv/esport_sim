@@ -54,8 +54,18 @@ def _root(override, local_data):
     return Path(__file__).resolve().parents[1] / "runtime-data" / "maps" / str(BUILD)
 
 
+_active_root = None
+
+
+def use_runtime(folder):
+    global _active_root
+    _active_root = folder
+    _load.cache_clear()
+    _description.cache_clear()
+
+
 def root():
-    return _root(os.environ.get("ESPORT_SIM_MAPS"), os.environ.get("LOCALAPPDATA"))
+    return _active_root or _root(os.environ.get("ESPORT_SIM_MAPS"), os.environ.get("LOCALAPPDATA"))
 
 
 def installed():

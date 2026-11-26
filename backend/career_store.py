@@ -7,7 +7,7 @@ import sqlite3
 from pathlib import Path
 from uuid import uuid4
 
-from . import staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
+from . import attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -139,6 +139,8 @@ class CareerStore:
             require(c["version"] == career.VERSION, "Несовместимая версия карьеры")
             require(c["id"] == cid, "Неверный идентификатор карьеры")
             self.pack(c["source"])
+            if c.get("circuit") and game["version"] == 1:
+                competitions.resolve_slots(c)
             for e in c["history"]:
                 self.report(e["result"])
         if game["version"] == 2:
@@ -351,10 +353,22 @@ class CareerStore:
                                          value.get("coach"),reason=value.get("reason","") if action=="replace" else None)
                 else:
                     raise ValueError("Неизвестное действие с заявкой")
+                c["error"] = None
                 self.save(state,"auto")
-            elif kind == "career-advance":
+            elif kind == "career-repair":
+                require(not c["progress"], "Дождитесь остановки расчёта")
+                from .map_install import activate
+                activate()
+                c["error"] = None
+                self.save(state,"auto")
+            elif kind in ("career-advance", "career-retry"):
                 require(state["world"]["version"] == 1, "Завершите активный матч")
-                career.start_advance(c)
+                pack = self.pack(c["source"])
+                if kind == "career-retry":
+                    c["error"] = None
+                pending = attention.blockers(c,pack,state["world"])
+                require(not pending, pending[0]["title"] if pending else "")
+                career.start_advance(c, administrative=attention.autonomous_fixture(c,c["queue"][0],pack))
             elif kind=="career-watch":
                 require(not c["progress"] and state["world"]["version"]==1,"Завершите текущий матч или расчёт")
                 fixture=value.get("fixture")
@@ -373,6 +387,8 @@ class CareerStore:
                 )
                 require(not ("edition" in e and competitions.fixture_conflicts(c, e)), "Разрешите конфликт календаря на странице турнира")
                 pack = self.pack(c["source"])
+                pending = [r for r in attention.blockers(c,pack,state["world"]) if r["action"] != "play"]
+                require(not pending, pending[0]["title"] if pending else "")
                 state.update(
                     world=career.initial(
                         pack, c, e, self.store.badges.index(pack), self.store.portraits
@@ -453,6 +469,7 @@ class CareerStore:
             competitions="circuit" in c,watchFixture=c.get("watchFixture"),
             slots=self.slots(c["id"]),
             office=staff.overview(c, pack),
+            attention=attention.collect(c, pack, state["world"]),
         )
         return dict(careers=list(menu.values()), active=info)
 
@@ -463,6 +480,8 @@ class CareerStore:
             return None
         e = c["queue"][0]
         token = (state["context"], c["id"], e["id"])
+        if e["date"] > c["progress"].get("through","9999") or attention.blockers(c,self.pack(c["source"]),state["world"]):
+            return token, None
         game = (
             None if career.stops(c, e) or ("edition" in e and (competitions.fixture_conflicts(c,e) or competitions.missing_players(c,e,self.pack(c["source"])))) else career.initial(self.pack(c["source"]), c, e)
         )
@@ -482,21 +501,28 @@ class CareerStore:
                 c.update(progress=None, error=error)
             elif report is None:
                 e = c["queue"][0]
-                c["date"]=e["date"]
-                if "edition" in e and competitions.fixture_conflicts(c, e):
-                    competitions.settle_fixture_conflicts(c, e, self.pack(c["source"]))
-                elif "edition" in e and competitions.missing_players(c,e,self.pack(c["source"])):
-                    competitions.resolve_availability(c,e,self.pack(c["source"]))
-                    if c["team"] in e["teams"]:
-                        c["progress"]=None
+                pack = self.pack(c["source"])
+                through = c["progress"].get("through","9999")
+                if attention.blockers(c,pack,state["world"]):
+                    c["progress"] = None
+                elif e["date"] > through:
+                    c.update(date=through, progress=None)
+                    c["milestones"].append(dict(date=through,title="Завершён недельный просмотр календаря",
+                                                body="Можно продолжить до следующего решения.",matches=None))
                 else:
-                    c["progress"]=None
-                if e["kind"] == "review":
-                    c["queue"].pop(0)
-                    if "circuit" in c:
-                        competitions.tick(c,self.pack(c["source"]))
+                    c["date"] = e["date"]
+                    if e["kind"] == "review":
+                        c["queue"].pop(0)
+                        if "circuit" in c:
+                            competitions.tick(c,pack)
+                        else:
+                            self.weekly_review(c,e)
+                    elif "edition" in e and competitions.fixture_conflicts(c,e):
+                        competitions.settle_fixture_conflicts(c,e,pack)
+                    elif "edition" in e and competitions.missing_players(c,e,pack):
+                        competitions.resolve_availability(c,e,pack)
                     else:
-                        self.weekly_review(c,e)
+                        c["progress"] = None
             else:
                 self.record(c, report)
             state["sequence"] += 1

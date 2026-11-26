@@ -138,6 +138,8 @@ type Directory = {
 };
 type Props = {
   initialEdition?: string;
+  initialEntry?: boolean;
+  initialConflict?: boolean;
   c: Career;
   scene: Scene;
   act: Act;
@@ -356,6 +358,7 @@ function Registration({
   c,
   scene,
   available,
+  initialConflict,
   act,
   enabled,
 }: Omit<Props, "rankings" | "revision"> & {
@@ -369,7 +372,7 @@ function Registration({
     [coach, setCoach] = useState(old?.coach || ""),
     [reason, setReason] = useState(""),
     [alert, setAlert] = useState(""),
-    [decision, setDecision] = useState<"calendar"|"leave"|null>(null);
+    [decision, setDecision] = useState<"calendar"|"leave"|null>(initialConflict && event.conflicts.length ? "calendar" : null);
   const state = event.entries[c.team],
     before = c.date >= event.opens && c.date < event.lock,
     locked = state === "locked" && event.status === "playing",
@@ -439,7 +442,7 @@ function Registration({
           {state==="invited" || state==="offered" ? "Отклонить приглашение" : locked ? "Снять команду с турнира" : "Отменить участие"}
         </button>
       )}
-      {!!event.conflicts.length && (before || locked) && <button className="btn" disabled={!enabled}
+      {!!event.conflicts.length && (before || ["accepted","confirmed","qualified","locked"].includes(state)) && <button className="btn" disabled={!enabled}
         onClick={()=>setDecision("calendar")}>Разрешить конфликт календаря</button>}
       {decision && <Dialog title={decision==="calendar" ? "Конфликт календаря" : "Отказ от участия"} close={()=>setDecision(null)}>
         <div className="panel-body tc-decision">
@@ -616,7 +619,7 @@ export function CompetitionCenter(props: Props) {
     revision,
   );
   const [picked, select] = useState(props.initialEdition || ""),
-    [tab, show] = useState("Обзор"),
+    [tab, show] = useState(props.initialEntry ? "Моя заявка" : "Обзор"),
     [archive, setArchive] = useState(false);
   const [report, openReport] = useState("");
   const [region, filterRegion] = useState("Все регионы"),

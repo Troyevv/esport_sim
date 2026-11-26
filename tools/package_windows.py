@@ -79,17 +79,17 @@ def main():
     dist = ROOT / "dist"
     output = dist / "EsportSim"
     from json import loads
-    maps = loads((ROOT / "backend/data/maps_202611_tactics.json").read_bytes())
-    runtime = build / "runtime-maps"
-    for name in maps:
-        provenance = loads((runtime / name / "provenance.json").read_bytes())
-        if (provenance["map"] != name or int(provenance["steamBuild"]) != 26879581
-                or provenance["unresolvedModels"]):
-            raise RuntimeError(f"{name}: неполный импорт карты")
-        target = output / "maps/26879581" / name
-        target.mkdir(parents=True, exist_ok=True)
-        for file in ("provenance.json", "gameplay.json", "collision.json", "collision.bin", *provenance["radars"]):
-            shutil.copyfile(runtime / name / file, target / file)
+    manifest = loads((ROOT / "backend/data/maps-runtime-26879581.json").read_bytes())
+    source = ROOT / "resources/cs2/26879581"
+    target = output / "resources/cs2/26879581"
+    target.mkdir(parents=True, exist_ok=True)
+    for name, expected in manifest.items():
+        archive = source / (name + ".zip")
+        with zipfile.ZipFile(archive) as files:
+            for path, digest in expected.items():
+                if hashlib.sha256(files.read(path)).hexdigest() != digest:
+                    raise RuntimeError(f"Повреждён ресурс {name}/{path}")
+        shutil.copyfile(archive, target / archive.name)
     for file in ("EsportSim.exe", "_internal/frontend/dist/index.html"):
         if not (output / file).is_file():
             raise RuntimeError(f"В сборке отсутствует {file}")

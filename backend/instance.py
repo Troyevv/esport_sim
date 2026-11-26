@@ -5,8 +5,12 @@ import json
 import logging
 import os
 import subprocess
+import time
 from contextlib import contextmanager
 from pathlib import Path
+
+
+LAUNCH_PROTOCOL = "r51-calendar-maps.1"
 
 
 @contextmanager
@@ -81,6 +85,22 @@ def open_existing(descriptor, open_url):
     except (FileNotFoundError, ValueError):
         return False
     if ready(data["port"], data["nonce"]):
+        if data.get("protocol") != LAUNCH_PROTOCOL:
+            port, nonce = data["port"], data["nonce"]
+            client = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+            try:
+                client.request("POST", "/api/host/shutdown", headers={
+                    "Origin": f"http://127.0.0.1:{port}", "X-EsportSim-Instance": nonce})
+                if client.getresponse().status != 200:
+                    raise RuntimeError("Закройте предыдущий сервер через stop.bat и повторите запуск обновления.")
+            finally:
+                client.close()
+            deadline = time.monotonic() + 25
+            while ready(port,nonce):
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("Предыдущий сервер ещё сохраняет игру. Повторите запуск обновления.")
+                time.sleep(.15)
+            return False
         open_url(f"http://127.0.0.1:{data['port']}/")
         return True
     return False

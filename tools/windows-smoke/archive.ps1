@@ -2,6 +2,7 @@
 param([Parameter(Mandatory)][string]$Archive, [switch]$CleanCore, [switch]$DesktopBrowser, [switch]$BrowserOnly)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+. (Join-Path $PSScriptRoot 'tournament.ps1')
 if ($CleanCore.IsPresent -eq $DesktopBrowser.IsPresent) { throw 'Choose exactly one Windows test environment.' }
 
 function Wait-Check([string]$Description, [scriptblock]$Check, [int]$Seconds=60) {
@@ -336,5 +337,6 @@ try {
 } finally { $occupied.Stop() }
 $last = Launch-Archive $exe
 if ($last.port -ne 8765) { throw 'Default port not reclaimed after shutdown.' }
+Test-AuroraTournament "http://127.0.0.1:$($last.port)"
 Stop-HostInstance $last
 Write-Output 'Verified occupied port, durable save across extractions, released port and final relaunch.'

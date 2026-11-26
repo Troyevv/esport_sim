@@ -1,4 +1,5 @@
-import { fixtureMap } from "./careerData";
+import { ManagerAttention } from "./ManagerAttention";
+import { fixtureMap, type Decision } from "./careerData";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Brand, Dialog, Glyph, Heading } from "./GameUI";
 import { Avatar } from "./SceneIdentity";
@@ -129,7 +130,7 @@ export default function CareerScreen(props: Props) {
     );
   return <Manager key={c.id} {...props} c={c} enabled={enabled} />;
 }
-type Route = { page: string; profile?: Profile; edition?:string };
+type Route = { page: string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
 function Manager({
   c,
   frame,
@@ -168,6 +169,10 @@ function Manager({
     [motion, setMotion] = useState(
       () => localStorage.getItem("esport-sim/motion") !== "false",
     );
+  const [decisions, setDecisions] = useState(false);
+  const [decisionError, setDecisionError] = useState("");
+  const required = c.attention.filter(row=>row.level==="required");
+  const directMatch = required.length===1 && ["play","match"].includes(required[0].action);
   const directoryView = useDirectoryView();
   const historyStack = useRef<Route[]>([]);
   const scene = directory.data,
@@ -179,11 +184,11 @@ function Manager({
     setDrawer(false);
     setSearch(false);
   };
-  const to = (page: string, profile?: Profile, edition?:string) => {
+  const to = (page: string, profile?: Profile, edition?:string, entry?:Decision["action"]) => {
     closeOverlays();
     if (tool) leaveTool();
     historyStack.current.push(route);
-    setRoute({ page, profile, edition });
+    setRoute({ page, profile, edition, entry, jump: historyStack.current.length });
     window.scrollTo(0, 0);
   };
   const tournament = (id:string) => to("Соревнования",undefined,id);
@@ -205,17 +210,26 @@ function Manager({
     }
     if (route.page !== "Входящие" || tool) to("Входящие");
   };
-  const advance = async () => {
-    if (!enabled || c.progress) return;
-    if (frame.world.match || frame.world.series) {
-      leaveTool();
-      go("match");
-    } else if (ready) {
-      if (await act("career-play")) {
+  const resolve = async (row: Decision) => {
+    setDecisionError("");
+    if (row.action === "repair" || row.action === "retry") {
+      await act(row.action === "repair" ? "career-repair" : "career-retry",{},setDecisionError);
+      return;
+    }
+    setDecisions(false);
+    if (row.action === "match" || row.action === "play") {
+      if (row.action === "match" || await act("career-play",{},msg=>{setDecisionError(msg);setDecisions(true)})) {
         leaveTool();
         go("match");
       }
-    } else await act("career-advance");
+    } else if (row.edition) to("Соревнования",undefined,row.edition,row.action);
+    else showLetter(null);
+  };
+  const advance = async () => {
+    if (!enabled || c.progress) return;
+    if (directMatch) await resolve(required[0]);
+    else if (required.length) {setDecisionError("");setDecisions(true)}
+    else await act("career-advance",{},msg=>{setDecisionError(msg);setDecisions(true)});
   };
   const nav = (page: string) => {
     closeOverlays();
@@ -420,7 +434,7 @@ function Manager({
               disabled={!enabled || !!c.progress}
               onClick={advance}
             >
-              {frame.world.match || frame.world.series || ready ? "В матч-центр" : "Продолжить"}
+              {directMatch ? "В матч-центр" : required.length ? "Решения · " + required.length : "Продолжить"}
               <Glyph name="player-play" />
             </button>
           </div>
@@ -432,7 +446,15 @@ function Manager({
               <progress max={c.progress.total || 1} value={c.progress.done} />
             </div>
           )}
-          {c.error && <p role="alert">{c.error}</p>}
+          {!tool && (!c.progress || required.length > 0) && <button className="attention-summary surface" data-blocked={!!required.length}
+            onClick={()=>{setDecisionError("");setDecisions(true)}}>
+            <span><strong>{required.length ? required[0].title : "Центр решений"}</strong>
+            <small>{required.length ? required[0].detail : "Обязательных решений нет"}</small></span>
+            <b>{required.length ? "Требуют внимания · " + required.length : "Открыть"}</b>
+          </button>}
+          <ManagerAttention items={c.attention} open={decisions} close={()=>setDecisions(false)}
+            enabled={enabled && !c.progress} resolve={resolve} error={decisionError}
+            saves={()=>{setDecisions(false);to("Сохранения")}}/>
           <div key={active} className="screen-enter">
             {tool ||
               (active === "Календарь" ? (
@@ -524,7 +546,7 @@ function Manager({
                   }}
                 />
               ) : active === "Соревнования" || active === "Рейтинг VRS" ? (
-                <CompetitionCenter key={route.edition||"directory"} initialEdition={route.edition} {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
+                <CompetitionCenter key={(route.edition||"directory")+":"+route.jump} initialEdition={route.edition} initialEntry={route.entry==="entry" || route.entry==="calendar"} initialConflict={route.entry==="calendar"} {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
               ) : active === "База сцены" ? (
                 <Directory {...{ scene, open }} view={directoryView} />
               ) : active === "Матч-центр" ? (

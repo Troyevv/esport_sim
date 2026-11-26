@@ -76,11 +76,17 @@ def free_opening_day(event, occupied):
 def clashes(c, event, team):
     target = None
     bookings = {}
+    fixtures = None
     for other in c["circuit"]["editions"].values():
         if other["id"] == event["id"] or other["entries"].get(team) not in COMMITTED:
             continue
         if not conflicts(event, other):
-            continue
+            # A later draw may spill outside the advertised tournament dates.
+            # A dated fixture remains binding in both the UI and the worker.
+            if fixtures is None:
+                fixtures = {f.get("edition") for f in c.get("queue",[]) if team in f["teams"]}
+            if other["id"] not in fixtures and event["id"] not in fixtures:
+                continue
         if target is None:
             target = obligation_days(c, event, team)
             if not target:

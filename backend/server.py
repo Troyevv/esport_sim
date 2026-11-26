@@ -131,7 +131,7 @@ def create_app(
                         state = store.read()
                         try:
                             work = store.careers.work(state)
-                        except ValueError as exc:
+                        except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                             c = state["career"]
                             token = (state["context"], c["id"], c["queue"][0]["id"])
                             store.careers.commit_work(token,None,str(exc))
@@ -145,12 +145,12 @@ def create_app(
                     try:
                         if game:
                             report = await asyncio.to_thread(career.simulate, game)
-                    except (ValueError, ArithmeticError, KeyError) as exc:
+                    except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                         error = f"Не удалось рассчитать встречу: {exc}"
                     async with condition:
                         try:
                             changed = store.careers.commit_work(token, report, error)
-                        except ValueError as exc:
+                        except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                             changed = store.careers.commit_work(token, None, str(exc))
                         if changed:
                             condition.notify_all()

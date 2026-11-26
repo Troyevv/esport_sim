@@ -1,6 +1,7 @@
 # Exercise the user's BAT entry points in a fresh checkout with a Unicode path.
 param([Parameter(Mandatory)][string]$PackagedExe)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'tournament.ps1')
 $sample = (Resolve-Path 'tests/portrait_samples/studio-1.jpg').Path
 $head = Join-Path $env:TEMP 'esportsim-portrait-smoke.png'
 $ml = Start-Process -FilePath $PackagedExe -ArgumentList "--prepare-head `"$sample`" `"$head`"" -PassThru
@@ -39,6 +40,7 @@ if ($LASTEXITCODE) { throw 'Cannot restore legacy profile fixture' }
 $occupied = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 8765)
 try {
     $occupied.Start()
+    $env:ESPORT_SIM_MAPS = Join-Path $env:RUNNER_TEMP 'removed old maps folder'
     Batch 'start'
     $initial = Instance
     $before = @(Stamps)
@@ -76,6 +78,12 @@ try {
     if (!$state.hasSave -or $state.context -ne ($body | ConvertFrom-Json).context) { throw 'EXE did not recover the source save' }
     Batch 'start'
     if ((Instance).pid -ne $owner.pid) { throw 'BAT did not reuse the running EXE' }
+    Stop-Game
+    $cache = Join-Path $env:LOCALAPPDATA 'EsportSim/maps/26879581/de_nuke/collision.json'
+    [IO.File]::WriteAllText($cache,'damaged')
+    Batch 'start'
+    $fresh = Instance
+    Test-AuroraTournament "http://127.0.0.1:$($fresh.port)"
     Stop-Game
     Batch 'stop'
     if ($other.HasExited) { throw 'Unrelated Python process was terminated' }

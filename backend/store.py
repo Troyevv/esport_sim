@@ -181,7 +181,12 @@ class Store:
         label = "активный сценарий" if table == "active" else "ручное сохранение"
         try:
             state = json.loads(body)
-            if self.upgrade_checkpoint(state, table, body):
+            changed = self.upgrade_checkpoint(state, table, body)
+            c = state.get("career")
+            if c and c.get("circuit") and state["world"]["version"] == 1:
+                from .competitions import resolve_slots
+                changed = resolve_slots(c) or changed
+            if changed:
                 self.db.execute(
                     f"UPDATE {table} SET body=? WHERE id=1", (json.dumps(state),)
                 )
@@ -496,6 +501,8 @@ class Store:
                 )
             else:
                 raise ValueError("Неизвестная команда")
+            if state.get("career") and kind in ("series-veto", "series-next"):
+                state["careerRevision"] = state.get("careerRevision", 0) + 1
             state["revision"] += 1
             state["sequence"] += 1
             self.write(state)

@@ -2,6 +2,11 @@ import { useState, useEffect } from "react";
 import { serverURL } from "./session";
 import type { Office } from "./StaffOffice";
 import type { Visual } from "./SceneIdentity";
+export type Decision = {
+  id:string; kind:string; level:"required"|"warning"|"info"; title:string; detail:string;
+  action:"entry"|"calendar"|"play"|"match"|"retry"|"repair"|"inbox"|"overview";
+  due:string; edition:string|null;
+};
 export type Act = (kind: string, value?: object, rejected?:(detail:string)=>void) => Promise<boolean>;
 export type Summary = {
   id: string;
@@ -47,6 +52,7 @@ export type Player = {
 };
 export type Career = Summary & {
   office: Office;
+  attention: Decision[];
   team: string;
   teams: Record<string, string>;
   start: string;

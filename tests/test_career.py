@@ -107,8 +107,9 @@ def test_calendar_slots_switch_restart_and_finish(tmp_path, monkeypatch):
     act(store, "career-advance")
     run_queue(store)
     end = store.read()["career"]
-    assert end["milestones"][-1]["matches"] == len(end["history"])
-    assert end["date"] == "2025-05-16"
+    weekly = next(m for m in end["milestones"] if m["date"] == "2025-05-16" and m.get("matches"))
+    assert weekly["matches"] == sum(m["id"].startswith("00000000-") for m in end["history"])
+    assert end["date"] > weekly["date"]  # A weekly report does not block time.
     act(store, "career-lab")
     assert store.read()["world"] == lab
     act(store, "load")
