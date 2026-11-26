@@ -61,6 +61,7 @@ export type Career = Summary & {
   roster: Player[];
   teamRating: number;
   competitions?: boolean;
+  watchFixture?:string|null;
   slots: (Summary & { slot: string })[];
 };
 type Team = {

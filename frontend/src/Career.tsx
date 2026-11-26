@@ -170,7 +170,7 @@ function Manager({
   const scene = directory.data,
     box = letters(c),
     unread = box.filter((m) => !read.includes(m.id)).length;
-  const next = c.queue.find((e) => e.teams.includes(c.team)),
+  const next = c.queue.find((e) => e.teams.includes(c.team) || e.id===c.watchFixture),
     ready = !!next && next.date === c.date && c.queue[0]?.id === next.id;
   const closeOverlays = () => {
     setDrawer(false);

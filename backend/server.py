@@ -56,6 +56,7 @@ class Command(BaseModel):
         "career-save",
         "career-load",
         "career-play",
+        "career-watch",
         "career-finish",
         "career-advance",
     ]
@@ -303,7 +304,7 @@ def create_app(
         if not c or c["id"]!=career_id or "circuit" not in c:
             raise HTTPException(404,"В этой карьере нет турнирного календаря")
         pack=store.careers.pack(c["source"])
-        return dict(editions=list(c["circuit"]["editions"].values()),
+        return dict(archive=competitions.vrs.archive(),editions=list(c["circuit"]["editions"].values()),
                     available=registrations.available(c,c["team"],pack),live=c["circuit"].get("live"),
                     snapshots={**competitions.seed_data()["snapshots"], **c["circuit"]["snapshots"]})
 

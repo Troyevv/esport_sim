@@ -162,7 +162,7 @@ def schedule(c):
 
 
 def stops(c, event):
-    return event["kind"] == "review" or c["team"] in event["teams"]
+    return event["kind"] == "review" or c["team"] in event["teams"] or event["id"]==c.get("watchFixture")
 
 
 def start_advance(c):
@@ -239,6 +239,8 @@ def result(game):
 
 def complete(c, digest, points, winner, facts=None):
     event = c["queue"].pop(0)
+    if event["id"]==c.get("watchFixture"):
+        c.pop("watchFixture")
     c["history"].append(
         dict(
             **event,

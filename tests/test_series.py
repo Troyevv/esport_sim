@@ -240,3 +240,37 @@ def test_complete_installed_series_with_timeouts_and_map_reset(best):
     assert sum(r["k"] for r in report["stats"]) == sum(
         r["k"] for m in report["maps"] for r in m["stats"]
     )
+
+
+@pytest.mark.skipif(not set(veto.ACTIVE)<=set(cs2_maps.installed()),reason="Требуется игровой пул R4.1")
+def test_real_career_tournament_report_uses_registration(tmp_path):
+    """A real R4.3 fixture through background simulation, persistence and stage advancement."""
+    from backend import database, competitions
+    store=Store(tmp_path/"cup.sqlite")
+    pack=store.careers.pack([database.RELEASE_ID,1])
+    team=next(t for t,row in pack["teams"].items() if row["name"]=="SINNERS Esports")
+    act(store,"career-create",dict(id=pack["id"],revision=1,scope="full",name="Тренер",mode="owner",team=team))
+    state=store.read()
+    c=state["career"]
+    # Isolate the actual first open qualifier from preceding unrelated tournaments.
+    edition=c["circuit"]["editions"]["cct-contenders-2026-oq1"]
+    c["date"]=edition["lock"]
+    competitions.lock(c,edition,pack)
+    fixture=next(e for e in c["queue"] if e.get("edition")==edition["id"])
+    c["queue"]=[fixture]+[e for e in c["queue"] if e!=fixture and e["date"]>=c["date"]]
+    c.update(progress=dict(done=0,total=1))
+    store.write(state)
+    token,game=store.careers.work(state)
+    result=career.simulate(game)
+    assert store.careers.commit_work(token,result)
+    assert not store.careers.commit_work(token,result)
+    saved=store.read()["career"]
+    record=saved["history"][-1]
+    assert record["rosterVersions"]=={t:1 for t in fixture["teams"]}
+    assert {r["player"] for r in result["stats"]}=={
+        pid for t in fixture["teams"] for pid in edition["registrations"][t][-1]["players"]}
+    edition=saved["circuit"]["editions"][edition["id"]]
+    assert edition["draws"][0][0]["games"][fixture["game"]]["winner"]==record["winnerTeamId"]
+    assert sum(r["k"] for r in edition["stats"].values())==sum(r["k"] for r in result["stats"])
+    assert store.careers.report(record["result"])==result
+    store.db.close()

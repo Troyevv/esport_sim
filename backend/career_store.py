@@ -295,10 +295,23 @@ class CareerStore:
                 action = value.get("action")
                 if action=="accept":
                     registrations.signup(c,event,team,pack)
+                elif action=="withdraw":
+                    fixture=c["queue"][0]
+                    require(fixture.get("edition")==event["id"] and fixture["date"]==c["date"] and
+                            team in competitions.missing_players(c,fixture,pack),"Ваша пятёрка допущена или матч ещё не наступил")
+                    competitions.resolve_availability(c,fixture,pack,withdraw=True)
+                    c["error"]=None
+                elif action=="confirm":
+                    require(event["entries"].get(team)=="offered" and c["date"]<event["replyBy"][team],
+                            "Срок подтверждения истёк")
+                    event["entries"][team]="confirmed"
                 elif action=="decline":
-                    require(c["date"]<event["lock"] and event["entries"].get(team) in ("invited","accepted"),
+                    require(c["date"]<event["lock"] and event["entries"].get(team) in ("invited","accepted","offered","confirmed"),
                             "Отказ недоступен")
                     event["entries"][team]="declined"
+                    if event.get("invitePools") and not event.get("inviteClosed"):
+                        competitions.refill_invites(c,event)
+                    competitions.process_day(c,pack)
                 elif action in ("submit","replace"):
                     registrations.submit(c,event,team,pack,value.get("players"),value.get("reserves"),
                                          value.get("coach"),reason=value.get("reason","") if action=="replace" else None)
@@ -308,12 +321,19 @@ class CareerStore:
             elif kind == "career-advance":
                 require(state["world"]["version"] == 1, "Завершите активный матч")
                 career.start_advance(c)
+            elif kind=="career-watch":
+                require(not c["progress"] and state["world"]["version"]==1,"Завершите текущий матч или расчёт")
+                fixture=value.get("fixture")
+                require(fixture is None or any(e["id"]==fixture and "edition" in e for e in c["queue"]),
+                        "Матч уже сыгран или отсутствует в календаре")
+                c["watchFixture"]=fixture
+                self.save(state,"auto")
             elif kind == "career-play":
                 e = c["queue"][0]
                 require(
                     not c["progress"]
                     and c["date"] == e["date"]
-                    and c["team"] in e["teams"]
+                    and (c["team"] in e["teams"] or e["id"]==c.get("watchFixture"))
                     and state["world"]["version"] == 1,
                     "Матч пока недоступен",
                 )
@@ -326,6 +346,9 @@ class CareerStore:
                     running=False,
                     speed=1,
                 )
+                if c["team"] not in e["teams"]:
+                    state["world"]["series"]["spectator"]=True
+                    veto.advance(state["world"],"captain")
             elif kind == "career-finish":
                 require(state["world"].get("phase") == "finished" and
                         state["world"].get("series", {}).get("stage", "finished") == "finished", "Матч ещё идёт")
@@ -390,7 +413,7 @@ class CareerStore:
             teamRating=world.team_rating(domain,c["teams"][own],next(
                 (event.get("mapId","depo").removeprefix("de_") for event in c["queue"]
                  if event["kind"]=="match" and own in event["teams"]), "depo")) ,
-            competitions="circuit" in c,
+            competitions="circuit" in c,watchFixture=c.get("watchFixture"),
             slots=self.slots(c["id"]),
         )
         return dict(careers=list(menu.values()), active=info)
@@ -403,7 +426,7 @@ class CareerStore:
         e = c["queue"][0]
         token = (state["context"], c["id"], e["id"])
         game = (
-            None if career.stops(c, e) else career.initial(self.pack(c["source"]), c, e)
+            None if career.stops(c, e) or ("edition" in e and competitions.missing_players(c,e,self.pack(c["source"]))) else career.initial(self.pack(c["source"]), c, e)
         )
         return token, game
 
@@ -421,7 +444,13 @@ class CareerStore:
                 c.update(progress=None, error=error)
             elif report is None:
                 e = c["queue"][0]
-                c.update(progress=None, date=e["date"])
+                c["date"]=e["date"]
+                if "edition" in e and competitions.missing_players(c,e,self.pack(c["source"])):
+                    competitions.resolve_availability(c,e,self.pack(c["source"]))
+                    if c["team"] in e["teams"]:
+                        c["progress"]=None
+                else:
+                    c["progress"]=None
                 if e["kind"] == "review":
                     c["queue"].pop(0)
                     if "circuit" in c:
