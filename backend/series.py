@@ -20,6 +20,8 @@ def initial(
     today="2026-11-24",
 ):
     profile = deepcopy(profile or veto.REGULATION)
+    budget=profile.get("timeouts",match.RULES["timeouts"])
+    require(type(budget) is int and 0 <= budget <= 6 and profile.get("timeoutScope","series") in ("map","series"), "Неверный лимит тайм-аутов")
     missing = set(profile["pool"]) - set(cs2_maps.installed())
     require(
         not missing, "Установите карты выбранного пула: " + ", ".join(sorted(missing))
@@ -90,7 +92,8 @@ def next_map(w):
         map_id=item["map"],
         first_attack=item["attack"],
     )
-    game["remaining"] = w.get("remaining", game["remaining"])
+    budget = s["profile"].get("timeouts",game["remaining"])
+    game["remaining"] = budget if s["profile"].get("timeoutScope")=="map" else w.get("remaining",budget)
     game["openingTimeouts"] = game["remaining"]
     s["stage"] = "playing"
     game["series"] = s
@@ -351,7 +354,7 @@ def validate(w):
             "Последняя карта расходится с итоговым протоколом",
         )
         require(
-            0 <= w["remaining"] <= w["openingTimeouts"] <= match.RULES["timeouts"],
+            0 <= w["remaining"] <= w["openingTimeouts"] <= s["profile"].get("timeouts",match.RULES["timeouts"]),
             "Повреждён бюджет тайм-аутов",
         )
         expected = "finished" if winner else "interval" if ended else "playing"

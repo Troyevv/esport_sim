@@ -7,7 +7,7 @@ import sqlite3
 from pathlib import Path
 from uuid import uuid4
 
-from . import career, checkpoints, database, engine, match, series, veto, world
+from . import career, competitions, registrations, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -160,10 +160,11 @@ class CareerStore:
     def record(self, c, report):
         event = c["queue"][0]
         pack = self.pack(c["source"])
+        edition = c["circuit"]["editions"][event["edition"]] if "edition" in event else None
         expected = {
             pid: tid
             for tid in event["teams"]
-            for pid in pack["rosters"][c["teams"][tid]]["players"]
+            for pid in (edition["registrations"][tid][-1]["players"] if edition else pack["rosters"][c["teams"][tid]]["players"])
         }
         teams = event["teams"]
         require(
@@ -173,7 +174,7 @@ class CareerStore:
         facts = None
         if "bestOf" in event:
             best = event["bestOf"]
-            profile = c["seriesProfile"]
+            profile = edition["rules"] if edition else c["seriesProfile"]
             require(
                 report.get("seriesVersion") == series.VERSION
                 and report["bestOf"] == best
@@ -230,7 +231,14 @@ class CareerStore:
         self.db.execute(
             "INSERT OR IGNORE INTO career_report VALUES(?,?)", (digest, body)
         )
+        if edition:
+            facts["rosterVersions"] = {t:edition["registrations"][t][-1]["version"] for t in teams}
         career.complete(c, digest, points, report["winnerTeamId"], facts)
+
+        if edition:
+            competitions.completed(c,event,report)
+            if edition["status"]=="finished":
+                competitions.publish(c,pack)
 
     def change(self, state, kind, value):
         c = state.get("career")
@@ -278,6 +286,25 @@ class CareerStore:
                 state["hasSave"] |= slot == "1"
             elif kind in ("career-load", "load"):
                 self.load(state, c["id"], slot)
+            elif kind == "career-entry":
+                require(not c["progress"] and state["world"]["version"]==1,"Завершите текущую встречу или расчёт")
+                event = c.get("circuit",{}).get("editions",{}).get(value.get("edition"))
+                require(event, "Неизвестное соревнование")
+                pack = self.pack(c["source"])
+                team = c["team"]
+                action = value.get("action")
+                if action=="accept":
+                    registrations.signup(c,event,team,pack)
+                elif action=="decline":
+                    require(c["date"]<event["lock"] and event["entries"].get(team) in ("invited","accepted"),
+                            "Отказ недоступен")
+                    event["entries"][team]="declined"
+                elif action in ("submit","replace"):
+                    registrations.submit(c,event,team,pack,value.get("players"),value.get("reserves"),
+                                         value.get("coach"),reason=value.get("reason","") if action=="replace" else None)
+                else:
+                    raise ValueError("Неизвестное действие с заявкой")
+                self.save(state,"auto")
             elif kind == "career-advance":
                 require(state["world"]["version"] == 1, "Завершите активный матч")
                 career.start_advance(c)
@@ -319,7 +346,7 @@ class CareerStore:
             return dict(careers=list(menu.values()), active=None)
         pack = self.pack(c["source"])
         own = c["team"]
-        event = next(e for e in c["queue"] if own in e["teams"])
+        event = dict(teams=[own,next(t for t in c["teams"] if t!=own)])
         domain, _ = career.match_domain(
             pack, c, event, self.store.badges.index(pack), self.store.portraits
         )
@@ -363,6 +390,7 @@ class CareerStore:
             teamRating=world.team_rating(domain,c["teams"][own],next(
                 (event.get("mapId","depo").removeprefix("de_") for event in c["queue"]
                  if event["kind"]=="match" and own in event["teams"]), "depo")) ,
+            competitions="circuit" in c,
             slots=self.slots(c["id"]),
         )
         return dict(careers=list(menu.values()), active=info)
@@ -396,13 +424,10 @@ class CareerStore:
                 c.update(progress=None, date=e["date"])
                 if e["kind"] == "review":
                     c["queue"].pop(0)
-                    played = sum(
-                        m["id"].split("-")[0] == e["id"].split("-")[0]
-                        for m in reversed(c["history"])
-                    )
-                    c["milestones"].append(
-                        dict(date=e["date"], title="Итоги недели", matches=played)
-                    )
+                    if "circuit" in c:
+                        competitions.tick(c,self.pack(c["source"]))
+                    else:
+                        self.weekly_review(c,e)
             else:
                 self.record(c, report)
             state["sequence"] += 1
@@ -412,3 +437,8 @@ class CareerStore:
             if not c["progress"]:
                 self.save(state, "auto")
         return True
+
+    @staticmethod
+    def weekly_review(c,e):
+        played = sum(m["id"].split("-")[0] == e["id"].split("-")[0] for m in reversed(c["history"]))
+        c["milestones"].append(dict(date=e["date"], title="Итоги недели", matches=played))

@@ -17,6 +17,7 @@ import {
 } from "./careerData";
 import { Load, NewCareer, Saves } from "./CareerForms";
 import { CareerMenu } from "./CareerMenu";
+import { CompetitionCenter } from "./CompetitionCenter";
 import { Calendar } from "./CareerCalendar";
 import { Dashboard, Inbox, letters } from "./CareerHome";
 import {
@@ -34,6 +35,8 @@ const sections = [
       ["Кабинет", "home"],
       ["Входящие", "inbox"],
       ["Календарь", "calendar"],
+      ["Соревнования","trophy"],
+      ["Рейтинг VRS","users"],
     ],
   ],
   [
@@ -336,7 +339,7 @@ function Manager({
             <div key={caption}>
               <div className="nav-caption">{caption}</div>
               <nav className="nav-list">
-                {items.map(([label, icon]) => navButton(label, icon))}
+                {items.filter(([label])=>c.competitions || !["Соревнования","Рейтинг VRS"].includes(label)).map(([label, icon]) => navButton(label, icon))}
               </nav>
             </div>
           ))}
@@ -512,6 +515,8 @@ function Manager({
                     setSort,
                   }}
                 />
+              ) : active === "Соревнования" || active === "Рейтинг VRS" ? (
+                <CompetitionCenter {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
               ) : active === "База сцены" ? (
                 <Directory {...{ scene, open }} view={directoryView} />
               ) : active === "Матч-центр" ? (
@@ -521,7 +526,7 @@ function Manager({
                     {next && (
                       <>
                         <h2>{next.teams.map((t) => c.teams[t]).join(" — ")}</h2>
-                        <p>{date(next.date)} · Выставочный BO{next.bestOf ?? 1} · {fixtureMap(next)}</p>
+                        <p>{date(next.date)} · {next.title || "Выставочный"} BO{next.bestOf ?? 1} · {fixtureMap(next)}</p>
                         <button
                           className="btn"
                           onClick={() => calendar(next.date)}

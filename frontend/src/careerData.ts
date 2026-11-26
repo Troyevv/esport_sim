@@ -13,6 +13,8 @@ export type Summary = {
 export const fixtureMap = (e: Fixture) => e.bestOf ? "Map Veto" : ({de_dust2: "Dust II", depo: "Депо"}[e.mapId || "depo"] || e.mapId!.slice(3,4).toUpperCase() + e.mapId!.slice(4));
 export type Fixture = {
   mapId?: string;
+  title?:string;
+  edition?:string;
   bestOf?: number;
   kind: "match" | "review";
   id: string;
@@ -53,11 +55,12 @@ export type Career = Summary & {
   queue: Fixture[];
   history: Fixture[];
   regions: string[];
-  milestones: { date: string; title: string; matches: number | null }[];
+  milestones: { date: string; title: string; body?:string; matches: number | null }[];
   progress: { done: number; total: number } | null;
   error: string | null;
   roster: Player[];
   teamRating: number;
+  competitions?: boolean;
   slots: (Summary & { slot: string })[];
 };
 type Team = {
@@ -202,7 +205,7 @@ export const monday = (iso: string) =>
 export const weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 export const fixtureName = (c: Career, e: Fixture) =>
   e.kind === "review"
-    ? "Итоги недели"
+    ? e.title || "Итоги недели"
     : e.teams.map((t) => c.teams[t]).join(" — ");
 export const age = (born: string | null, now: string) =>
   born

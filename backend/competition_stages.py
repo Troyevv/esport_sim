@@ -1,0 +1,154 @@
+"""Persisted stage draws. Only admitted participants and completed fixtures resolve slots."""
+
+
+from .database import require
+
+
+def bracket_seeds(size):
+    seeds = [0]
+    while len(seeds) < size:
+        edge = len(seeds) * 2 - 1
+        seeds = [item for seed in seeds for item in (seed, edge - seed)]
+    return seeds
+
+
+def draw(format_, teams, advance=1, *, bronze=False):
+    require(len(set(teams)) == len(teams) and teams, "Некорректный посев")
+    stage = dict(format=format_, teams=list(teams), games=[], advance=advance, round=0)
+    if format_ == "swiss":
+        require(len(teams) == 16 and advance == 8, "Для швейцарского этапа нужны 16 команд")
+        swiss_round(stage)
+        return stage
+    if format_ == "roundRobin":
+        wheel = list(teams)
+        if len(wheel) % 2:
+            wheel.append(None)
+        for rnd in range(len(wheel) - 1):
+            for a, b in zip(wheel[:len(wheel)//2], reversed(wheel[len(wheel)//2:])):
+                if a and b:
+                    game(stage, [a, b], rnd, "Группа")
+            wheel = [wheel[0], wheel[-1], *wheel[1:-1]]
+        return stage
+    require(format_ in ("single", "double"), "Неизвестный формат этапа")
+    size = 1 << (len(teams) - 1).bit_length()
+    slots = [teams[i] if i < len(teams) else None for i in bracket_seeds(size)]
+    lower = []
+    rnd = 0
+    while len(slots) > advance:
+        upper = [game(stage, slots[i:i+2], rnd, "Верхняя сетка" if format_ == "double" else "Плей-офф")
+                 for i in range(0, len(slots), 2)]
+        drops = [("loser", i) for i in upper]
+        slots = [("winner", i) for i in upper]
+        if format_ == "double":
+            if lower:
+                # Cross the halves on injection so an upper rematch is deferred.
+                drops.reverse()
+                lower = [("winner", game(stage, [a,b], rnd+1, "Нижняя сетка"))
+                         for a,b in zip(lower,drops,strict=True)]
+            else:
+                lower = drops
+            if len(lower) > 1:
+                lower = [("winner", game(stage, lower[i:i+2], rnd+2, "Нижняя сетка"))
+                         for i in range(0,len(lower),2)]
+        elif bronze and len(drops) == 2:
+            game(stage, drops, rnd+1, "За третье место")
+        rnd += 2 if format_ == "double" else 1
+    if format_ == "double" and lower:
+        slots = [("winner", game(stage, [slots[0],lower[0]], rnd, "Гранд-финал"))]
+    stage["outputs"] = slots
+    return stage
+
+
+def game(stage, slots, rnd, label):
+    index = len(stage["games"])
+    stage["games"].append(dict(slots=list(slots), round=rnd, label=label))
+    return index
+
+
+def resolve(stage, slot):
+    if isinstance(slot, (tuple, list)):
+        side, index = slot
+        parent = stage["games"][index]
+        return (side in parent, parent.get(side))
+    return True, slot
+
+
+def ready(stage):
+    available = []
+    for i, row in enumerate(stage["games"]):
+        if "winner" in row or "fixture" in row:
+            continue
+        resolved = [resolve(stage, s) for s in row["slots"]]
+        if not all(done for done, _ in resolved):
+            continue
+        teams = [t for _, t in resolved if t]
+        if len(teams) < 2:
+            row.update(winner=next(iter(teams), None), loser=None, bye=True)
+        else:
+            available.append((i,teams))
+    return available
+
+
+def table(stage):
+    records = {t:dict(team=t,wins=0,losses=0,opponents=[]) for t in stage["teams"]}
+    for g in stage["games"]:
+        a, b = g.get("winner"), g.get("loser")
+        if a and b:
+            records[a]["wins"] += 1
+            records[b]["losses"] += 1
+            records[a]["opponents"].append(b)
+            records[b]["opponents"].append(a)
+    for row in records.values():
+        row["buchholz"] = sum(records[o]["wins"]-records[o]["losses"] for o in row["opponents"])
+    return sorted(records.values(), key=lambda row:(-row["wins"],row["losses"],-row["buchholz"]))
+
+
+def swiss_round(stage):
+    standings = table(stage)
+    stage["round"] += 1
+    pools = {}
+    for row in standings:
+        if max(row["wins"], row["losses"]) < 3:
+            pools.setdefault((row["wins"],row["losses"]), []).append(row)
+    for (wins, losses), pool in pools.items():
+        def pair(rows):
+            if not rows:
+                return []
+            first = rows[0]
+            # First round pairs upper and lower seed halves. Later rounds
+            # prefer the lowest remaining seed, backtracking to prevent repeats.
+            for j in range(len(rows)-1, 0, -1):
+                if rows[j]["team"] in first["opponents"]:
+                    continue
+                tail = pair(rows[1:j]+rows[j+1:])
+                if tail is not None:
+                    return [[first["team"], rows[j]["team"]], *tail]
+            return None
+        if stage["round"] == 1:
+            n = len(pool)//2
+            pairs = [[a["team"], b["team"]] for a,b in zip(pool[:n], pool[n:], strict=True)]
+        else:
+            pairs = pair(pool)
+        require(pairs is not None, "Не удалось сформировать швейцарский раунд")
+        for teams in pairs:
+            i = game(stage,teams,stage["round"]-1,f"Раунд {stage['round']} · {wins}–{losses}")
+            stage["games"][i]["deciding"] = max(wins, losses) == 2
+
+
+def finish_round(stage):
+    if any("winner" not in g for g in stage["games"]):
+        return None
+    if stage["format"] == "swiss" and stage["round"] < 5:
+        swiss_round(stage)
+        return None
+    if "outputs" in stage:
+        return [team for slot in stage["outputs"] if (team := resolve(stage, slot)[1])]
+    return [r["team"] for r in table(stage)[:stage["advance"]]]
+
+
+def record(stage, index, winner, loser):
+    row = stage["games"][index]
+    require("winner" not in row and winner != loser and
+            {resolve(stage, s)[1] for s in row["slots"]} == {winner,loser},
+            "Результат не соответствует сетке")
+    row.update(winner=winner, loser=loser)

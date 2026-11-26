@@ -31,10 +31,10 @@ export function letters(c: Career): Letter[] {
     date: m.date,
     title: m.title,
     from: c.organization || c.club,
-    body:
+    body:m.body || (
       m.matches === null
         ? c.character + " · " + position(c.mode) + " · " + c.club
-        : "Сыграно матчей за неделю: " + m.matches + ".",
+        : "Сыграно матчей за неделю: " + m.matches + "."),
   }));
   for (const e of c.history.filter((e) => e.teams.includes(c.team)))
     box.push({
@@ -53,7 +53,7 @@ export function letters(c: Career): Letter[] {
       title: "Ближайший соперник",
       from: "Календарь",
       body:
-        fixtureName(c, next) + " · " + date(next.date) + " · Выставочный BO" + (next.bestOf ?? 1) + ".",
+        fixtureName(c, next) + " · " + date(next.date) + " · "+(next.title||"Выставочный")+" BO" + (next.bestOf ?? 1) + ".",
       event: next,
     });
   return box.reverse().sort((a, b) => b.date.localeCompare(a.date));
@@ -232,7 +232,7 @@ export function Dashboard({
                 ))}
               </div>
               <div className="match-preview-foot">
-                <span>Выставочная встреча</span>
+                <span>{next.title||"Выставочная встреча"}</span>
                 <button className="btn" onClick={() => calendar(next.date)}>
                   Открыть календарь <Glyph name="calendar" />
                 </button>

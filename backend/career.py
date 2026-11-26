@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import cs2_maps, database, match, series, veto, world
+from . import competitions, registrations, cs2_maps, database, match, series, veto, world
 from .database import require
 
 VERSION = 1
@@ -59,6 +59,7 @@ def create(pack, options):
         isinstance(team, str) and team in available,
         "У клуба нет полной пятёрки на дату базы",
     )
+    circuit = pack["id"] == database.RELEASE_ID and pack["asOf"] == "2026-11-25"
     ranked = any(t["tier"] for t in pack["teams"].values())
     participants = {}
     registered = set()
@@ -71,13 +72,13 @@ def create(pack, options):
         ),
     ]:
         t = pack["teams"][tid]
-        if tid != team and (
+        if not circuit and tid != team and (
             (scope == "fast" and t["region"] not in regions)
             or (scope == "standard" and ranked and t["tier"] not in (1, 2))
         ):
             continue
         members = pack["rosters"][available[tid]]["players"]
-        if registered.isdisjoint(members):
+        if circuit or registered.isdisjoint(members):
             participants[tid] = available[tid]
             registered.update(members)
     require(
@@ -104,7 +105,10 @@ def create(pack, options):
         milestones=[dict(date=pack["asOf"], title="Назначение в клуб", matches=None)],
     )
     c["mapPool"] = cs2_maps.installed()
-    schedule(c)
+    if circuit:
+        competitions.init(c,pack)
+    else:
+        schedule(c)
     return c
 
 
@@ -164,12 +168,27 @@ def stops(c, event):
 def start_advance(c):
     require(not c["progress"], "Календарь уже рассчитывается")
     until = next(i for i, e in enumerate(c["queue"]) if stops(c, e))
-    require(until or c["date"] != c["queue"][0]["date"], "Вас ждут в матч-центре")
+    require(until or c["queue"][0]["kind"] == "review" or c["date"] != c["queue"][0]["date"], "Вас ждут в матч-центре")
     c.update(progress=dict(done=0, total=until), error=None)
 
 
 def match_domain(pack, c, event, badges=None, portraits=None):
     rosters = [c["teams"][team] for team in event["teams"]]
+    if event.get("edition"):
+        edition = c["circuit"]["editions"][event["edition"]]
+        frozen = {}
+        coaches = set()
+        for tid in event["teams"]:
+            version = edition["registrations"][tid][-1]
+            require(set(version["players"]) <= set(registrations.available(c, tid, pack)),
+                    "В заявке недоступен игрок. Требуется экстренная замена.")
+            rid = f"{edition['id']}.{tid}.{version['version']}"
+            club = pack["rosters"][c["teams"][tid]]
+            frozen[rid] = dict(team=tid,players=list(version["players"]),date=version["date"],
+                               captain=club["captain"] if club["captain"] in version["players"] else None)
+            coaches.add(version["coach"])
+        pack = dict(pack, rosters=frozen, staff={k:v for k,v in pack["staff"].items() if k in coaches})
+        rosters = list(frozen)
     domain = database.match_input(pack, rosters, badges)
     domain["authority"]["mode"] = c["mode"]
     if c["team"] in domain["teams"]:
@@ -189,7 +208,7 @@ def initial(pack, c, event, badges=None, portraits=None):
     if "bestOf" in event:
         return series.initial(event["seed"], event["bestOf"], domain, rosters,
                               c["team"] if c["team"] in event["teams"] else None,
-                              profile=c["seriesProfile"], history=c["history"], today=event["date"])
+                              profile=(c["circuit"]["editions"][event["edition"]]["rules"] if event.get("edition") else c["seriesProfile"]), history=c["history"], today=event["date"])
     return match.initial(
         event["seed"],
         domain,
@@ -233,5 +252,5 @@ def complete(c, digest, points, winner, facts=None):
     c["date"] = event["date"]
     if c["progress"]:
         c["progress"]["done"] += 1
-    if c["team"] in event["teams"]:
+    if "circuit" not in c and c["team"] in event["teams"]:
         schedule(c)
