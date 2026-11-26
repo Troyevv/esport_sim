@@ -149,3 +149,75 @@ def test_stationary_personal_sight_does_not_need_an_invented_motion_vector():
         )
         is None
     )
+
+
+def test_guard_reports_only_the_visible_entrance_and_reports_smoke_without_enemy_ids():
+    from math import pi
+
+    point = (24, 0, 0)
+    actor = dict(
+        id="CT1",
+        slot=0,
+        x=0,
+        y=0,
+        z=0,
+        heading=pi,
+        blind=0,
+        reloadAt=0,
+        ammo=20,
+        visible=[],
+        knowledge={},
+    )
+    plan = dict(orders=dict(slots=[order("A", (0, 0, 0), point)]))
+    space = SimpleNamespace(ingress=lambda *_: [point], hit=lambda *_: None)
+    assert defense.report_crossing(space, actor, [actor], plan, [], 10) is None
+    actor["heading"] = 0
+    smoke = [dict(x=12, y=0, z=0, radius=3)]
+    result = defense.report_crossing(space, actor, [actor], plan, smoke, 10)
+    assert result == dict(
+        site="A", lane=0, point=list(point), tick=10, state="obscured"
+    )
+    assert (
+        defense.report_crossing(space, actor, [actor], plan, [], 10)["state"]
+        == "watching"
+    )
+
+
+def test_support_uses_recent_radio_and_checks_geometry_between_landing_and_friend():
+    from backend.cs2_play import assist_contact
+
+    actor = dict(team="CT", x=0, y=0, z=0, utility=["HE"])
+    mate = dict(x=60, y=2, z=0, reloadAt=0, hp=100)
+    sight = dict(x=60, y=0, z=0, tick=10, source="Радио")
+    squad = [actor, mate]
+    space = SimpleNamespace(
+        grenade=lambda start, end, ticks: (*end, 0), hit=lambda *_: None
+    )
+
+    def decide(now, report):
+        return assist_contact(
+            space,
+            actor,
+            [mate],
+            report,
+            squad,
+            {},
+            now,
+            dict(game_reading=75),
+            "planted",
+        )
+
+    assert decide(11, sight) is None
+    space.hit = lambda start, end, *_: True if end[1] == 2 else None
+    assert decide(11, sight)[1]["utility"] == "HE"
+    assert decide(28, sight) is None
+    assert decide(11, dict(sight, source="Слух")) is None
+
+
+def test_pressure_request_expires_without_creating_an_opponent():
+    space = SimpleNamespace(
+        reported_site=lambda origin: "A" if origin == (2, 3, 0) else "B"
+    )
+    leader = dict(squadPressure={"CT2": dict(origin=[2, 3, 0], tick=40)})
+    assert defense.help_site(space, leader, 41) == "A"
+    assert defense.help_site(space, leader, 70) is None

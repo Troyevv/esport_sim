@@ -822,6 +822,70 @@ def deny_plant(space, actor, allies, target, now, heard, plan):
     return "throw", dict(zip(("x", "y", "z"), target), utility=item)
 
 
+def assist_contact(space, actor, partners, reported, squad, plan, now, skills, phase):
+    """Cover a teammate's ongoing encounter using the last received visual report."""
+    if (
+        not partners
+        or reported["source"] not in ("Радио", "Зрение")
+        or not 0 <= now - reported["tick"] < 15
+    ):
+        return None
+    point = cs2_defense.anticipated(space, reported, now, skills["game_reading"])
+    pos = xyz(actor)
+    gap = dist(pos, point)
+    if gap < 16:
+        return None
+    flight = max(3, round(gap / 7))
+    x, y, z, _ = space.grenade(pos, point, flight)
+    landing = (x, y, z)
+    calls = plan.setdefault("crossingCalls", [])
+    needy = all(m["reloadAt"] or m["hp"] < 45 for m in partners)
+    options = ("Дым", "Свет", "HE") if needy else ("Свет", "HE", "Огонь")
+    for item in options:
+        radius = UTILITY[item][0]
+        if item not in actor["utility"] or dist(landing, point) >= radius:
+            continue
+        if any(
+            c["end"] > now and c["item"] == item and dist(c["point"], landing) < radius
+            for c in calls
+        ):
+            continue
+        if item == "Дым":
+            from .match_ai import at, near_line
+
+            if any(
+                m not in partners
+                and m is not actor
+                and (sight := m.get("knowledge", {}).get(m.get("target")))
+                and near_line(m, sight, at(landing), radius)
+                for m in squad
+            ):
+                continue
+            if (
+                phase == "live"
+                and actor["team"] == "CT"
+                and not cs2_defense.screen_safe(space, plan, actor, squad, landing)
+            ):
+                continue
+        elif any(
+            dist(xyz(m), landing) < radius
+            and space.hit(landing, xyz(m), 1, 5, 64) is None
+            for m in squad
+        ):
+            continue
+        if (
+            item in ("HE", "Свет", "Огонь")
+            and space.hit(landing, point, 1, 5, 64) is not None
+        ):
+            continue
+        calls.append(
+            dict(item=item, point=list(landing), end=now + flight + UTILITY[item][1])
+        )
+        actor["status"] = "Помогает гранатой в контакте партнёра"
+        return "throw", dict(zip(("x", "y", "z"), point), utility=item)
+    return None
+
+
 def crossing_utility(space, w, a, allies, order, site):
     """Use available cover and utility to open or deny the next crossing."""
     now, plan = w["tick"], w["plan"]
@@ -842,8 +906,12 @@ def crossing_utility(space, w, a, allies, order, site):
         targets = space.ingress(site, lane)
         # Deny an opening race or respond to a report of pressure. Do not
         # continually refresh an empty lane throughout a quiet round.
-        pressure = any(now-r["tick"] < 35 and space.reported_site(xyz(r)) == site
-                       for r in a["knowledge"].values())
+        reports = [r for r in a["knowledge"].values() if now-r["tick"]<35 and
+                   (space.reported_site(xyz(r))==site or any(dist(xyz(r),p)<16 for p in targets))]
+        pressure = bool(reports)
+        if pressure:
+            # Deny this reported approach rather than the doorway closest to the thrower.
+            targets = sorted(targets,key=lambda p:min(dist(p,xyz(r)) for r in reports))
         if not pressure:
             # Estimate arrival from legal opposing spawns. A screen that burns
             # out before anyone could cross spends the anchor's only denial.
@@ -860,7 +928,9 @@ def crossing_utility(space, w, a, allies, order, site):
         # The potential beneficiary must be near enough to take the crossing.
         if not feint and not any(m is not a and dist(xyz(m),pos) < 35 for m in allies):
             return None
-    candidates = sorted((p for p in targets if 24 < dist(pos,p)<68),key=lambda p:dist(pos,p))
+    candidates = [p for p in targets if 24<dist(pos,p)<68]
+    if not defending or not pressure:
+        candidates.sort(key=lambda p:dist(pos,p))
     for p in candidates[:16 if defending else 8]:
         item = next((g for g in gadgets if g in a["utility"]
                      and not any(c["item"] == g and dist(c["point"],p) < UTILITY[g][0] for c in calls)
@@ -1159,28 +1229,15 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                     a.update(checkContact=key, checkPosition=peek)
                 goal = a["checkPosition"] or goal
             a["status"] = "Проверяет сообщение о контакте"
-    if (
-        w["phase"] == "live"
-        and latest
-        and not w["action"]
-        and a["utility"]
-        and now >= a["throwAt"]
-        and (
-            a["playingRole"] == "support" or skill["coordination"] + familiarity >= 145
-        )
-        and latest["source"] != "Слух"
-        and now - latest["tick"] < 15
-    ):
-        engaged = next(
-            (p for p in allies if p is not a and p["target"] == latest["id"]), None
-        )
-        smoke = "Дым" in a["utility"]
-        if engaged and dist(pos, xyz(latest)) > 25 and smoke and (
-            side == "T" or (not space.smokes_plant(site, tuple(xyz(latest))) and
-                cs2_defense.screen_safe(space,plan,a,allies,xyz(latest)))
-        ):
-            a["status"] = "Закрывает дымом контакт партнёра"
-            return "throw", dict(latest, utility="Дым")
+    if (latest and not w["action"] and not checking_plant and a["utility"] and
+            now>=max(a["throwAt"],a.get("assistReview",0)) and now-latest["tick"]<15 and
+            (a["playingRole"]=="support" or skill["coordination"]+familiarity>=145)):
+        partners = [p for p in allies if p is not a and p["target"]==latest["id"]]
+        if partners:
+            a["assistReview"]=now+5
+            assist = assist_contact(space,a,partners,latest,allies,plan,now,skill,w["phase"])
+            if assist:
+                return assist
     if side == "T" and w["phase"] == "live" and a["status"].startswith("Выход на "):
         repair = a.get("revisedApproach")
         original_goal = list(goal)

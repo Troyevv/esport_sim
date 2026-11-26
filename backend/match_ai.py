@@ -14,6 +14,7 @@ from .match_rules import (
     POSITIONS,
     RULES,
     UTILITY,
+    THROW_RECOVERY,
     WEAPONS,
     role_orders,
 )
@@ -95,8 +96,12 @@ def observe(w, players, space=None):
         w["messages"].remove(message)
         for a in players:
             if a["team"] == message["team"] and a["id"] != message["sender"]:
+                if "crossing" in message:
+                    a.setdefault("sectorCalls",{})[message["sender"]] = message["crossing"]
+                    continue
                 if "pressure" in message:
                     call = message["pressure"]
+                    a.setdefault("squadPressure",{})[message["sender"]] = call
                     # A nearby partner can cover the reported sector. The call
                     # contains the teammate’s position and an octant, not a target.
                     if dist(point(a),call["origin"]) < 35:
@@ -125,9 +130,27 @@ def observe(w, players, space=None):
         f for f in w["effects"] if f["kind"] == "Дым" and f["land"] <= now < f["end"]
     ]
     if space:
-        pairs=[(a,b) for a in players if a["blind"]<=now for b in players
-               if b["team"]!=a["team"] and in_view(a,b)]
-        visible=space.visible_pairs(pairs)
+        opponents = {"CT": [], "T": []}
+        for agent in players:
+            opponents["CT" if agent["team"]=="T" else "T"].append(agent)
+        pairs = []
+        for a in players:
+            if a["blind"]>now:
+                continue
+            x,y = a["x"],a["y"]
+            dx,dy = cos(a["heading"]),sin(a["heading"])
+            for b in opponents[a["team"]]:
+                vx,vy = b["x"]-x,b["y"]-y
+                dot = vx*dx+vy*dy
+                if dot>=0 and 4*dot*dot>=vx*vx+vy*vy:
+                    pairs.append((a,b))
+        visible = space.visible_pairs(pairs)
+        observed_by = {a["id"]:[] for a in players}
+        for a,b in pairs:
+            if (a["id"],b["id"]) in visible and not any(
+                near_line(a,b,fog,fog["radius"]) for fog in smoke
+            ):
+                observed_by[a["id"]].append(b)
     for a in players:
         previous = a["visible"]
         a["visible"] = []
@@ -136,9 +159,10 @@ def observe(w, players, space=None):
         }
         if a["blind"] > now:
             continue
-        observed = [b for b in players if b["team"] != a["team"]
-                    and ((a["id"], b["id"]) in visible if space else engine.sees(a, b))
-                    and not any(near_line(a, b, fog, fog["radius"]) for fog in smoke)]
+        observed = observed_by[a["id"]] if space else [
+            b for b in players if b["team"]!=a["team"] and engine.sees(a,b)
+            and not any(near_line(a,b,fog,fog["radius"]) for fog in smoke)
+        ]
         for b in observed:
             sight = dict(id=b["id"], **at(point(b)), tick=now, source="Зрение")
             prior = a["knowledge"].get(b["id"])
@@ -184,6 +208,17 @@ def observe(w, players, space=None):
                     round=w["round"],
                     text=f"В раунде {w['round']} я видел {b['name']} в секторе {b['x'] // 40 + 1}. Стоит перепроверить подход.",
                 )
+
+
+    if space and w.get("phase")=="live" and now%5==0 and (plan:=w.get("plans",{}).get("CT")) and plan.get("orders",{}).get("slots"):
+        squad = [p for p in players if p["team"]=="CT"]
+        observer = next((p for p in squad if p["slot"]==(now//5)%5),None)
+        if observer:
+            call = cs2_play.cs2_defense.report_crossing(space,observer,squad,plan,smoke,now)
+            if call:
+                observer.setdefault("sectorCalls",{})[observer["id"]]=call
+                w["messages"].append(dict(team="CT",sender=observer["id"],crossing=call,
+                                     due=now+radio_delay(world.match_player(w,observer)["skills"])))
 
 
 def captain(w, squad, space=None):
@@ -284,7 +319,7 @@ def captain(w, squad, space=None):
                 if max(counts.values()) >= 0.65 and counts["A"] != counts["B"]:
                     destination = max(counts,key=counts.get)
                 else:
-                    destination = plan.get("anticipated")
+                    destination = cs2_play.cs2_defense.help_site(space,leader,now) or plan.get("anticipated")
             carrier_report = max((p for p in contacts if p.get("carryingC4")),
                                  key=lambda p: p["tick"], default=None)
             bomb_site = (space.reported_site(xyz(carrier_report))
@@ -810,7 +845,7 @@ def throw(w, a, target, space=None):
         **{k: v for k, v in effect.items() if k not in ("team", "kind")},
         utility=name,
     )
-    a.update(throwAt=now + 45, ready=now + 5, status="Бросает гранату")
+    a.update(throwAt=now + 45, ready=now + THROW_RECOVERY, status="Бросает гранату")
 
 
 def apply_effects(w, ids, space=None):

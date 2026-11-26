@@ -3,7 +3,7 @@
 from math import dist, hypot
 
 from .cs2_maps import xyz
-from .match_rules import UTILITY
+from .match_rules import THROW_RECOVERY, UTILITY
 
 
 def facing(origin, watch, point):
@@ -428,6 +428,50 @@ def rank_crossfire(anchor, anchor_watch, positions, visible, entries, wing, plan
     return ranked
 
 
+def report_crossing(space, actor, squad, plan, smoke, now):
+    """Report one entrance the guard physically watches, including an obscured approach."""
+    from .match_ai import in_view, near_line, at
+
+    order = assignment(plan, actor, squad)
+    if (
+        actor["blind"] > now
+        or actor["reloadAt"]
+        or not actor["ammo"]
+        or dist(xyz(actor), order["hold"]) > 12
+    ):
+        return None
+    entries = space.ingress(order["site"], order.get("lane", 0))
+    pos = xyz(actor)
+    points = sorted(entries, key=lambda p: dist(p, order["watch"]))
+    for point in points:
+        mark = at(point)
+        if not in_view(actor, mark) or space.hit(pos, point, 1, 64) is not None:
+            continue
+        blocked = any(near_line(actor, mark, f, f["radius"]) for f in smoke)
+        contact = any(
+            dist(xyz(actor["knowledge"][k]), point) < 18 for k in actor["visible"]
+        )
+        return dict(
+            site=order["site"],
+            lane=order.get("lane", 0),
+            point=list(point),
+            tick=now,
+            state="contact" if contact else "obscured" if blocked else "watching",
+        )
+    return None
+
+
+def help_site(space, leader, now):
+    """Select a nearby guard's request for assistance with no inferred enemy count."""
+    calls = [
+        r for r in leader.get("squadPressure", {}).values() if 0 <= now - r["tick"] < 30
+    ]
+    if not calls:
+        return None
+    newest = max(calls, key=lambda r: r["tick"])
+    return space.reported_site(tuple(newest["origin"]))
+
+
 def brief(space, plan, squad, leader, player, now):
     """Assign the relief lane by observed pressure and the squad's actual coverage."""
     skills = player["skills"]
@@ -447,15 +491,19 @@ def brief(space, plan, squad, leader, player, now):
             covered = set()
             for mate in guards:
                 order = assignment(plan, mate, squad)
+                if order.get("lane", lane) != lane:
+                    continue
+                call = leader.get("sectorCalls", {}).get(mate["id"])
+                if call and call["site"] == site and call["lane"] == lane and 0 <= now-call["tick"] < 35:
+                    if call["state"] == "watching":
+                        covered.add(tuple(call["point"]))
+                    continue
+                # Until a report arrives, the position and facing of an available
+                # teammate support only a conservative estimate of his field.
                 if dist(xyz(mate), order["hold"]) < 8 and not mate["reloadAt"]:
-                    covered.update(
-                        space.sector(
-                            site,
-                            order.get("lane", lane),
-                            tuple(order["hold"]),
-                            tuple(order["watch"]),
-                        )
-                    )
+                    from .match_ai import at, in_view
+                    covered.update(p for p in space.sector(site,lane,tuple(order["hold"]),tuple(order["watch"]))
+                                   if in_view(mate,at(p)))
             evidence = 0
             for report in reports:
                 age = now - report["tick"]
@@ -475,7 +523,7 @@ def brief(space, plan, squad, leader, player, now):
                 if report["source"] in ("Граната", "Слух"):
                     confidence /= 2
                 evidence += confidence * (1 + movement * skills["game_reading"] / 100)
-            unguarded = 1 - sum(p in covered for p in route) / len(route)
+            unguarded = 1 - sum(p in covered for p in route)/len(route)
             # A captain with limited familiarity relies more on direct reports.
             scores.append(
                 evidence
@@ -519,7 +567,7 @@ def contact_grenade(space, actor, contact, visible, allies, player, plan, now, p
     backup = any(p is not actor and p["target"] == contact["id"] for p in allies)
     vulnerable = bool(actor["reloadAt"] or actor["hp"] < 45)
     ready_in = max(0, max(actor["ready"], actor["reloadAt"]) - now)
-    shots = min(actor["ammo"], max(0, 1 + (flight - ready_in) // spec.interval))
+    shots = min(actor["ammo"], max(0, 1 + (THROW_RECOVERY - 1 - ready_in) // spec.interval))
     chance = perf.accuracy(player, actor, spec, gap, actor["burst"], now) / 100
     opportunity = shots * spec.damage * chance
     choices = []
@@ -528,7 +576,8 @@ def contact_grenade(space, actor, contact, visible, allies, player, plan, now, p
         if item == "Ложная":
             continue
         affected = [p for p in visible if distance(p, contact) < radius]
-        friends = [p for p in allies if distance(p, contact) < radius]
+        friends = [p for p in allies if distance(p, contact) < radius
+                   and space.hit(xyz(contact),xyz(p),1,5,64) is None]
         if item == "Дым":
             if (
                 not vulnerable

@@ -225,7 +225,7 @@ def next_round(w):
                      useTarget=None,useFloor=None,checkContact=None,checkPosition=None,
                      shelter=None,coverUntil=0,coverReview=0,bombSearch=None,coveredDefuser=None,coverPoint=None,revisedApproach=None,
                      rendezvous=None,plantCover=None,plantCheck=None,watchDevice=None,heardUse=-1000,
-                     seenDevice=None,beepBearing=None,plantCue=None,leftScreen=False,sectorReview=None,incoming=None,pressureCall=None,nextPressureCall=0,crossingReview=0,screenedOpening=False,friendlyUtility=[])
+                     seenDevice=None,beepBearing=None,plantCue=None,leftScreen=False,sectorReview=None,incoming=None,pressureCall=None,nextPressureCall=0,sectorCalls={},squadPressure={},screenedOpening=False,friendlyUtility=[])
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
@@ -942,6 +942,7 @@ def advance(w):
                     listener["incoming"] = dict(tick=now,bearing=ai.cs2_play.sound_bearing(listener,a))
                     if now >= listener.get("nextPressureCall",0):
                         delay = ai.radio_delay(profile(w,listener)["skills"])
+                        listener.setdefault("squadPressure",{})[listener["id"]] = dict(listener["incoming"],origin=list(ai.point(listener)))
                         listener["nextPressureCall"] = now + 10 + delay
                         w["messages"].append(dict(team=listener["team"],sender=listener["id"],
                             pressure=dict(listener["incoming"],origin=list(ai.point(listener))),
