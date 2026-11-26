@@ -74,3 +74,24 @@ def test_bomb_report_is_dated_and_sound_is_not_a_second_player():
     assert cs2_intel.pressure(space, [sight, sound], 102)["A"] > 1.65
     assert cs2_intel.pressure(space, [sight, sound], 150)["A"] < 1
     assert cs2_intel.pressure(space, [sight, sound], 176)["A"] == 0
+
+
+def test_repeated_group_reports_do_not_multiply_the_enemy_count():
+    space = SightLines(None)
+    sight = dict(id="T1", x=10, y=0, z=0, tick=20, source="Радио", groupSize=3)
+    reports = [sight, dict(sight,id="T2"), dict(sight,id="T3")]
+    assert cs2_intel.pressure(space, [sight], 20)["A"] == 3
+    assert cs2_intel.pressure(space, reports, 20)["A"] == 3
+    assert cs2_intel.pressure(space, reports, 91)["A"] < 1
+
+
+def test_defensive_opening_uses_only_own_identified_sites():
+    from backend.cs2_play import defensive_read
+
+    w = dict(siteHistory={"attack":[["B", True]] * 6})
+    captain = dict(teamId="defence")
+    assert defensive_read(w,captain) is None
+    w["defensiveHistory"] = {"defence":["A","B",None]}
+    assert defensive_read(w,captain) is None
+    w["defensiveHistory"]["defence"] = ["A", None, "A"]
+    assert defensive_read(w,captain) == "A"

@@ -266,7 +266,13 @@ def captain(w, squad, space=None):
                 plan["reinforceUntil"] = last_report + 75
             elif now > plan.get("reinforceUntil", plan["start"] + 75):
                 plan["reinforce"] = None
-            cs2_play.assign_backup(space,plan,squad,plan["reinforce"],max(counts.values()))
+            destination = plan["reinforce"]
+            if not destination:
+                if max(counts.values()) >= 0.65 and counts["A"] != counts["B"]:
+                    destination = max(counts,key=counts.get)
+                else:
+                    destination = plan.get("anticipated")
+            cs2_play.assign_backup(space,plan,squad,destination,max(counts.values()))
         if w["phase"] == "planted":
             # The announcement is public. Site identification travels with the beep.
             heard = leader["heardSite"]

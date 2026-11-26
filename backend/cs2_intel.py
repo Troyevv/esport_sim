@@ -19,6 +19,7 @@ def observe_contact(sight, opponent, prior, nearby, continuous):
 def pressure(space, contacts, now):
     """Aggregate unique opponents. Evidence loses value as they have time to move."""
     counts = dict.fromkeys(("A", "B"), 0.0)
+    groups = dict.fromkeys(("A","B"),0.0)
     seen = {}
     for report in contacts:
         old = seen.get(report["id"])
@@ -30,9 +31,14 @@ def pressure(space, contacts, now):
             continue
         pos = xyz(report)
         site = space.reported_site(pos)
+        approach_only = not site
+        if approach_only:
+            site = space.entry_sites.get(space.locate(pos)) if hasattr(space,"entry_sites") else None
         if not site:
             continue
         weight = (1 - age / 75) * (0.45 if report["source"] == "Граната" else 1)
+        if approach_only:
+            weight *= 0.7
         if report.get("carryingC4"):
             weight *= 2
         direction = report.get("direction")
@@ -44,7 +50,10 @@ def pressure(space, contacts, now):
                 alignment = sum(d * v for d, v in zip(direction, offset)) / length
                 weight *= 1 + 0.25 * alignment
         counts[site] += weight
-    return counts
+        # Several observers can report the same group. Its observed size is a
+        # lower bound, never an extra group added to already named opponents.
+        groups[site] = max(groups[site], report.get("groupSize",0)*(1-age/75)*(0.7 if approach_only else 1))
+    return {site:max(counts[site],groups[site]) for site in counts}
 
 
 def sniper_lane(space, reports, order, now):

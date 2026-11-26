@@ -55,6 +55,19 @@ def opening(space, w, squad, captain, player, buy, site, style, call):
     return site, style, lane
 
 
+def defensive_read(w, captain):
+    """Debrief only sites actually identified by our defenders in previous rounds."""
+    history = w.get("defensiveHistory", {}).get(captain["teamId"], [])
+    if len(history) < 2 or history[-1] is None:
+        return None
+    last = history[-1]
+    # Recent evidence for a repeated site warrants moving the spare defender;
+    # an unidentified or mixed sequence leaves the normal junction assignment.
+    if history[-3:].count(last) < 2:
+        return None
+    return last
+
+
 def default_probe(space, squad, carrier, plan, now, domain=None):
     """Split an information default between the primary approach, mid and the flank."""
     site = plan["site"]
@@ -132,6 +145,9 @@ def hold_sector(space, w, a, allies, fire, travel):
         a["heading"] = atan2(q[1]-pos[1],q[0]-pos[0])
         latency = 1 + (100-player["skills"]["execution"])//25
         probe["reports"][a["id"]] = now+latency+(100-player["skills"]["communication"])//12
+    if "check" in station and now < probe["reports"][a["id"]]:
+        q = station["check"]
+        a["heading"] = atan2(q[1]-pos[1], q[0]-pos[0])
     utility = crossing_utility(space,w,a,allies,plan["orders"]["slots"][a["slot"]],station.get("sector", plan["site"]))
     return utility or ("hold", None)
 
@@ -275,6 +291,10 @@ def assign_backup(space, plan, squad, site, pressure):
     # The junction player can have this site's label and still be watching mid.
     # Count a mobile guard by their actual position, never by the nominal label.
     other = [a for a in squad if slots[a["slot"]]["site"] != site or a["slot"] == 4]
+    if pressure < 1.65:
+        # A previous round or an isolated sighting only repositions the
+        # junction player. Keep both guards of the opposite site in place.
+        other = [a for a in other if a["slot"] == 4]
     # Release the mobile defender before the only player watching the other plant.
     reserves = [a for a in other if a["slot"] >= 2]
     if reserves:
@@ -721,8 +741,14 @@ def crossing_utility(space, w, a, allies, order, site):
         # continually refresh an empty lane throughout a quiet round.
         pressure = any(now-r["tick"] < 35 and space.reported_site(xyz(r)) == site
                        for r in a["knowledge"].values())
-        if not pressure and (now-plan["start"] > 200 or a.get("screenedOpening")):
-            return None
+        if not pressure:
+            # Estimate arrival from legal opposing spawns. A screen that burns
+            # out before anyone could cross spends the anchor's only denial.
+            costs, _ = space.contest(site,plan["lane"])
+            arrival = min(costs.get(i,float("inf")) for i in space.attack_spawns) / (2*UNIT)
+            elapsed = now-plan["start"]
+            if a.get("screenedOpening") or elapsed > arrival+35 or elapsed+35 < arrival:
+                return None
         gadgets = ("Огонь","Дым")
     else:
         labels = space.profile["guards"][site]
@@ -898,7 +924,8 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                 partners = [
                     p
                     for p in allies
-                    if p is not a and plan["orders"]["slots"][p["slot"]]["via"] == route
+                    if p is not a and
+                    plan["orders"]["slots"][p["slot"]].get("lane",plan["orders"]["slots"][p["slot"]]["via"]) == order.get("lane",route)
                 ]
                 # Read the progress of the pair on the same entry. Familiar
                 # partners and experienced executors can stage a tighter trade.

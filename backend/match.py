@@ -444,6 +444,8 @@ def begin_live(w):
         if space:
             plan = w["plans"][side]
             plan["lane"] = lane
+            if side == "CT" and not call and not board:
+                plan["anticipated"] = ai.cs2_play.defensive_read(w, igl)
             if side == "T" and not board and style in ("Сбор", "Контроль карты"):
                 plan["probe"] = ai.cs2_play.default_probe(space, squad, w["bomb"]["carrier"], plan, now, w["domain"])
         emit(
@@ -626,6 +628,11 @@ def finish_round(w, side, reason):
         history=w.setdefault("siteHistory",{}).setdefault(attack,[])
         history.append([w["plans"]["T"]["site"],side=="T"])
         del history[:-6]
+        guards = [a for a in w["agents"] if a["team"] == "CT"]
+        identified = next((a["heardSite"] for a in guards if a.get("heardSite")), None)
+        defence = w.setdefault("defensiveHistory", {}).setdefault(guards[0]["teamId"], [])
+        defence.append(identified)
+        del defence[:-4]
     kills = w["kills"]
     for a in w["agents"]:
         player = profile(w, a)

@@ -15,9 +15,9 @@ from .cs2_sites import BombSites
 from .match_rules import BLAST_RADIUS, ROLES
 
 BUILD = 26879581
-RULES = "cs2-bo1.9"
-PREVIOUS_RULES = "cs2-bo1.8"
-SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.7", "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
+RULES = "cs2-bo1.10"
+PREVIOUS_RULES = "cs2-bo1.9"
+SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.8", "cs2-bo1.7", "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )
@@ -127,6 +127,10 @@ class Map:
             self.nav,
             src["navSha256"],
         )
+        approaches = {site: {area for route in self.profile[site] for label in route[-2:]
+                            for area in self.places[label]} for site in ("A", "B")}
+        self.entry_sites = {i: site for site, areas in approaches.items()
+                            for i in areas - approaches["B" if site == "A" else "A"]}
         self.centers = {}
         self.plants = {"A": [], "B": []}
         self.cover = []
@@ -176,6 +180,10 @@ class Map:
         self.use_floors = lru_cache(maxsize=256)(partial(Map._use_floors, proxy(self)))
 
     @cached_property
+    def attack_spawns(self):
+        return tuple(self.spawn("T", i)[2] for i in range(len(self.spawns["T"])))
+
+    @cached_property
     def collision(self):
         from .cs2_collision import Collision
 
@@ -220,9 +228,27 @@ class Map:
         # Both teams know legal spawns. Estimate a race to the final approach
         # without knowing which opposing spawn or opening a player actually drew.
         label = self.profile[site][lane][-1]
-        costs = self.nav.routes_through([self.places[label]]).costs
+        center = self.site_points[site]
+        entrances = [q for q in self.ingress(site,lane) if dist(q,center) < 60]
+        if not entrances:
+            entrances = [self.centers[i] for i in sorted(self.places[label])]
+        # Leaving the last doorway is the contested event. A defender can
+        # already cover it from the site without ever entering that doorway.
+        crossing = min(entrances, key=lambda q:abs(30-dist(q,center)))
+        entry = self.locate(crossing)
+        costs = self.nav.routes_through([[entry] if entry is not None else self.places[label]]).costs
         guards = [self.spawn("CT", i)[2] for i in range(len(self.spawns["CT"]))]
-        return costs, min((costs.get(i,float("inf")) for i in guards),default=0)
+        candidates = sorted(set(self.nearby_areas(center,52)) |
+                            {i for label in self.profile["guards"][site] for i in self.places[label]})
+        def eye(q):
+            x,y,z=self.world(q)
+            return x,y,z+64
+        end = eye(crossing)
+        positions = [(i,(eye(self.centers[i]),end)) for i in candidates if 5 < dist(self.centers[i],crossing) < 95]
+        visible = self.collision.sight_many([line for _,line in positions])
+        defensible = [i for i,line in positions if visible.get(line)]
+        defence = self.nav.routes_through([defensible]).costs if defensible else costs
+        return costs, min((defence.get(i,float("inf")) for i in guards),default=0)
 
     def _escape(self, bomb):
         goals = [
@@ -408,6 +434,7 @@ class Map:
                     hold=list(hold),
                     plant=list(plant),
                     site=defended,
+                    lane=variant,
                     watch=list(
                         guards_view.get(hold) or self._watch(defended, hold, variant)
                     ),
@@ -504,32 +531,40 @@ class Map:
     def _crossfire(self, site, variant, wing, anchor):
         """Rank complementary angles from which a second guard can trade the anchor."""
         base = self.angles(site,variant,wing,"approach")
-        targets = list(dict.fromkeys([*self.ingress(site,variant), *self.ingress(site,1-variant),
-                                      self.site_points[site]]))
-        targets = [q for q in targets if 5 < dist(q,anchor) < 75 and self.hit(anchor,q,1,64) is None]
+        entries = self.ingress(site,variant)
+        targets = list(dict.fromkeys([*entries, *self.ingress(site,1-variant)]))
         if not targets:
             return base
-        candidates = list(dict.fromkeys([p for p,_ in base[:24]] +
-                                         [p for _,p in self.holds[site] if 8<dist(p,anchor)<42]))
+        plant = self.site_points[site]
+        near = {p for i in self.nearby_areas(anchor,45) if 8 < dist(p:=self.centers[i],anchor) < 45}
+        candidates = sorted(near | {p for p,_ in base[:24]} | {p for _,p in self.holds[site]})
         def eye(p):
-            x,y,z=self.world(p)
+            x,y,z = self.world(p)
             return x,y,z+64
-        pairs = [(eye(p),eye(q)) for p in candidates for q in targets if 5<dist(p,q)<95]
+        positions = [anchor, *candidates]
+        eyes = {p: eye(p) for p in [*targets,*positions]}
+        pairs = [(eyes[p], eyes[q]) for p in positions for q in targets if 5 < dist(p,q) < 95]
         visible = self.collision.sight_many(pairs)
         ranked = []
         for p in candidates:
-            if dist(p,anchor)<7:
+            if not 7 < dist(p,anchor) < 52:
                 continue
-            for q in targets:
-                if not visible.get((eye(p),eye(q))):
+            seen = [q for q in targets if visible.get((eyes[p],eyes[q]))]
+            for q in seen:
+                if not visible.get((eyes[anchor],eyes[q])):
                     continue
-                # Two near-collinear guns present one angle to the entry player.
                 vectors = [[origin[j]-q[j] for j in range(3)] for origin in (p,anchor)]
                 cosine = sum(a*b for a,b in zip(*vectors)) / (dist(p,q)*dist(anchor,q))
-                if cosine < 0.78:
-                    ranked.append((dist(p,wing),cosine,p,q))
+                if cosine >= 0.78:
+                    continue
+                # Watch the entry before it reaches a legal plant surface.
+                # Reward the second guard for covering part of the incoming
+                # route that the anchor cannot see from behind this geometry.
+                uncovered = sum(not visible.get((eyes[anchor],eyes[r])) for r in seen if r in entries)
+                ranked.append((q not in entries, -min(uncovered,4), -min(dist(plant,q),50),
+                               dist(p,wing),cosine,p,q))
         best = {}
-        for _,_,p,q in sorted(ranked):
+        for *_,p,q in sorted(ranked):
             best.setdefault(p,q)
         for p,q in base:
             best.setdefault(p,q)
