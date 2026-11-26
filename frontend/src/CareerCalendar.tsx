@@ -42,7 +42,7 @@ export function Calendar({ c, initial }: { c: Career; initial: string }) {
     rows.map((e) => (
       <div className="day-agenda-item" key={e.id}>
         <small className="event-time">
-          {date(e.date)} · {e.kind === "match" ? "BO1" : "Клуб"}
+          {date(e.date)} · {e.kind === "match" ? "BO"+(e.bestOf ?? 1) : "Клуб"}
         </small>
         <h3>{fixtureName(c, e)}</h3>
         {e.score && (

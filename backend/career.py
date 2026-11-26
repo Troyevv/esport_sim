@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import cs2_maps, database, match, match_score, world
+from . import cs2_maps, database, match, series, veto, world
 from .database import require
 
 VERSION = 1
@@ -111,6 +111,8 @@ def create(pack, options):
 def schedule(c):
     if not c.get("mapPool"):
         c["mapPool"] = cs2_maps.installed()
+    if "seriesProfile" not in c and set(veto.ACTIVE) <= set(c["mapPool"]):
+        c["seriesProfile"] = veto.REGULATION
     week = c["week"]
     start = database.day(c["start"]) + timedelta(days=7 * week)
     # Rotate opponents without allocating a season or creating a competition.
@@ -138,7 +140,8 @@ def schedule(c):
                 date=day.isoformat(),
                 teams=[home, away],
                 seed=seed,
-                **({"mapId":c["mapPool"][seed%len(c["mapPool"])]} if c.get("mapPool") else {}),
+                **({"bestOf": (3, 1, 5)[(week+i) % 3]} if c.get("seriesProfile") else
+                   {"mapId": c["mapPool"][seed % len(c["mapPool"])]} if c.get("mapPool") else {}),
             )
         )
     c["queue"].append(
@@ -183,6 +186,10 @@ def match_domain(pack, c, event, badges=None, portraits=None):
 
 def initial(pack, c, event, badges=None, portraits=None):
     domain, rosters = match_domain(pack, c, event, badges, portraits)
+    if "bestOf" in event:
+        return series.initial(event["seed"], event["bestOf"], domain, rosters,
+                              c["team"] if c["team"] in event["teams"] else None,
+                              profile=c["seriesProfile"], history=c["history"], today=event["date"])
     return match.initial(
         event["seed"],
         domain,
@@ -193,43 +200,30 @@ def initial(pack, c, event, badges=None, portraits=None):
 
 
 def simulate(game):
+    if "series" in game:
+        veto.advance(game, "captain")
+        while game["series"]["stage"] != "finished":
+            if game["series"]["stage"] != "playing":
+                game = series.next_map(game)
+            while game["phase"] != "finished":
+                match.advance(game)
+            series.finish_map(game)
+        return series.result(game)
     while game["phase"] != "finished":
         match.advance(game)
     return result(game)
 
 
 def result(game):
-    require(game.get("phase") == "finished", "Матч ещё идёт")
-    return dict(
-        teams=match_score.team_ids(game),
-        score=game["score"],
-        scoreByTeam=game["scoreByTeam"],
-        winnerTeamId=game["winnerTeamId"],
-        rules=game["rules"],
-        map=game["map_version"],
-        **({"mapId":game["mapId"]} if game.get("mapId") else {}),
-        seed=game["seed"],
-        rounds=game["history"],
-        ticks=game["tick"],
-        events=game["serial"],
-        stats=[
-            dict(
-                player=a["playerId"],
-                name=a["name"],
-                club=a["club"],
-                teamId=a["teamId"],
-                **game["stats"][a["id"]],
-            )
-            for a in game["agents"]
-        ],
-    )
+    return series.result(game) if "series" in game else series.map_result(game)
 
 
-def complete(c, digest, points, winner):
+def complete(c, digest, points, winner, facts=None):
     event = c["queue"].pop(0)
     c["history"].append(
         dict(
             **event,
+            **(facts or {}),
             score=[points[t] for t in event["teams"]],
             scoreByTeam=points,
             winnerTeamId=winner,

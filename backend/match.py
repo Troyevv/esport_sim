@@ -79,7 +79,7 @@ def init_performance(a, now):
     )
 
 
-def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, *, map_id="depo"):
+def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, *, map_id="depo", first_attack=None):
     space = None if map_id=="depo" else cs2_maps.get(map_id)
     agents = [engine.spawn_slot(seed, side, slot, side_index*5+slot)
               for side_index,side in enumerate(("T","CT")) for slot in range(5)]
@@ -120,6 +120,10 @@ def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, 
         coach_id,
     )
     match_score.initialize(w)
+    if first_attack is not None:
+        if first_attack not in match_score.team_ids(w):
+            raise ValueError("Неизвестная стартующая команда")
+        w["firstAttackTeamId"] = first_attack
     next_round(w)
     return w
 
@@ -361,7 +365,7 @@ def assign(w, board):
         and w["tick"] == 0
         and w["phase"] == "freeze"
         and not w.get("started")
-        and w["remaining"] == RULES["timeouts"]
+        and w["remaining"] == w.get("openingTimeouts", RULES["timeouts"])
     ):
         w.setdefault("playbook", {})[side + "/" + buy] = board
     else:
@@ -1261,7 +1265,7 @@ def project(w, view="full"):
             pregame=not w.get("started")
             and w["tick"] == 0
             and w["phase"] == "freeze"
-            and w["remaining"] == RULES["timeouts"],
+            and w["remaining"] == w.get("openingTimeouts", RULES["timeouts"]),
             nextBuy=(
                 board_categories(w,
                     next_buy(

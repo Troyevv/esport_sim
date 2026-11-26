@@ -53,7 +53,7 @@ export function letters(c: Career): Letter[] {
       title: "Ближайший соперник",
       from: "Календарь",
       body:
-        fixtureName(c, next) + " · " + date(next.date) + " · Выставочный BO1.",
+        fixtureName(c, next) + " · " + date(next.date) + " · Выставочный BO" + (next.bestOf ?? 1) + ".",
       event: next,
     });
   return box.reverse().sort((a, b) => b.date.localeCompare(a.date));
@@ -200,7 +200,7 @@ export function Dashboard({
             <span className="eyebrow">Следующий матч</span>
             {next && (
               <span className="match-preview-header">
-                {date(next.date)} <span className="pill">BO1</span>
+                {date(next.date)} <span className="pill">BO{next.bestOf ?? 1}</span>
               </span>
             )}
           </div>

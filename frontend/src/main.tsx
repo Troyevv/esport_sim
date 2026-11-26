@@ -1,3 +1,4 @@
+import { FormatSelect, VetoCenter } from "./SeriesCenter";
 import MapSelect from "./MapSelect";
 import { Brand } from "./GameUI";
 import { useEffect, useState } from "react";
@@ -74,6 +75,7 @@ function takePairingCode() {
 }
 
 function App() {
+  const [format, setFormat] = useState(0);
   const [mapId, setMapId] = useState("depo");
   const [screen, go] = useState<"menu" | "hub" | "lab" | "match">(() =>
     new URLSearchParams(location.search).get("screen") === "lab"
@@ -147,7 +149,8 @@ function App() {
       }}
     />
   );
-  const match = showMatch && !board && world?.match && frame && (
+  const veto = showMatch && !board && world?.series && !world.match && frame && <VetoCenter frame={frame} act={act} enabled={enabled}/>;
+  const match = veto || showMatch && !board && world?.match && frame && (
     <MatchCenter
       openBoard={() => showBoard(true)}
       key={frame.context}
@@ -187,7 +190,7 @@ function App() {
         >
           {frame?.careerId ? "← Карьера" : "← Главное меню"}
         </button>
-        {world?.match?.phase === "finished" && frame?.careerId && (
+        {world?.match?.phase === "finished" && (!world.series || world.series.winner) && frame?.careerId && (
           <button
             className="primary"
             disabled={!enabled}
@@ -250,7 +253,7 @@ function App() {
             База сцены
           </button>
         )}
-        {playingLab && !database && !board && !world?.match && (
+        {playingLab && !database && !board && !world?.match && !world?.series && (
           <div className="intro">
             <div>
               <div className="eyebrow">
@@ -260,14 +263,15 @@ function App() {
             </div>
             {world && (
               <div className="board-buttons">
-                <MapSelect value={mapId} change={setMapId} />
+                <FormatSelect format={format} change={setFormat}/>
+                {!format && <MapSelect value={mapId} change={setMapId} />}
                 <button onClick={() => showBoard(true)}>Редактор тактик</button>
                 <button
                   className="primary"
                   disabled={!enabled || !validSeed}
-                  onClick={() => act("match", {seed: Number(seed), map: mapId})}
+                  onClick={() => act("match", {seed: Number(seed), ...(format ? {bestOf:format} : {map:mapId})})}
                 >
-                  Открыть матч BO1
+                  {format ? "Начать вето BO"+format : "Открыть матч BO1"}
                 </button>
               </div>
             )}
@@ -328,7 +332,7 @@ function App() {
           !database &&
           !board &&
           world &&
-          !world.match &&
+          !world.match && !world.series &&
           frame && (
             <div className="dashboard">
               <div className="column">

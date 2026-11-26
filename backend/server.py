@@ -39,6 +39,8 @@ class Command(BaseModel):
         "save",
         "load",
         "match",
+        "series-veto",
+        "series-next",
         "timeout",
         "call",
         "resume",
