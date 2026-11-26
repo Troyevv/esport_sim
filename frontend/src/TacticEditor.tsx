@@ -56,7 +56,7 @@ const draftKey = "tactics-draft:" + serverURL("/").origin;
 function readDraft(): Plan | null {
   try {
     const plan = JSON.parse(sessionStorage.getItem(draftKey) || "null");
-    return plan?.format === 1 &&
+    return [1,2].includes(plan?.format) &&
       Array.isArray(plan.slots) &&
       plan.slots.length === 5 &&
       plan.slots.every(Array.isArray)
@@ -487,6 +487,7 @@ export default function TacticEditor({
                 <strong>Спарринг · один раунд против «Контура»</strong>
                 <span>
                   Seed 42 · {plan.buy} · {Math.floor(tick / 10)} с
+                  {preview.economy && ` · закуплено на $${preview.economy.spent.toLocaleString("ru-RU")} · дропов ${preview.economy.drops}`}
                 </span>
                 <div className="board-buttons">
                   <button

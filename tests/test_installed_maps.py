@@ -121,3 +121,27 @@ def test_nuke_anchors_and_floor_reports_before_contact():
         assert orders[i]["site"] == site
         assert any(space.hit(hold, space.centers[area], 1, 64) is None for area in space.plants[site])
     assert orders[4]["hold"] != orders[0]["hold"]
+
+
+@pytest.mark.parametrize("scenario", ["Пистолетная","Эко","Частичная","Форс","Полная","Антиэко","Бонусная"])
+def test_economy_plan_runs_in_private_preview(scenario):
+    plan = tactics.propose("CT",scenario,42,map_id="de_nuke")
+    preview = tactic_preview.simulate(plan)
+    assert preview["economy"]["scenario"] == scenario
+    assert (preview["economy"]["spent"] == 0) == (scenario == "Эко")
+
+
+def test_existing_double_smoke_plan_remains_playable():
+    plan = tactics.propose("T","Оружейная",42,map_id="de_nuke")
+    smoke = dict(plan["slots"][0][0],kind="throw",utility="Дым")
+    plan.update(format=1,slots=[[smoke,smoke.copy()],[],[],[],[]])
+    tactics.validate(plan)
+    game = match.initial(42,map_id="de_nuke")
+    board = dict(plan,id="legacy-smokes",revision=1)
+    game.update(round=2,nextBoard=board,previewBuy="Полная")
+    for agent in game["agents"]:
+        agent["cash"]=6500
+    match.begin_live(game)
+    assert game["agents"][0]["utility"].count("Дым")==2
+    with pytest.raises(ValueError):
+        tactics.validate(dict(plan,format=2))

@@ -38,7 +38,7 @@ def validate(plan):
     if (
         not isinstance(plan, dict)
         or type(plan.get("format")) is not int
-        or plan["format"] != 1
+        or plan["format"] not in (1,2)
     ):
         raise ValueError("Неизвестный формат тактики")
     ident = plan.get("map")
@@ -46,7 +46,7 @@ def validate(plan):
     if (ident, plan.get("geometry")) != ((space.name,cs2_maps.BUILD) if space else (MAP["id"], MAP["version"])):
         raise ValueError("Выбрана другая карта или версия геометрии")
     side, buy = plan.get("side"), plan.get("buy")
-    if side not in ("T", "CT") or buy not in BUYS:
+    if side not in ("T", "CT") or buy not in (BUYS if space else LEGACY_BUYS):
         raise ValueError("Выберите сторону и тип закупки")
     name = plan.get("name")
     if not isinstance(name, str) or not 1 <= len(name.strip()) <= 64:
@@ -97,8 +97,8 @@ def validate(plan):
                 grenades.append(item)
                 if (
                     buy == "Эко"
-                    or len(grenades) > (4 if space else 2)
-                    or (space and grenades.count(item) > (2 if item == "Свет" else 1))
+                    or len(grenades) > (4 if space and plan["format"]==2 else 2)
+                    or (space and plan["format"]==2 and grenades.count(item) > (2 if item == "Свет" else 1))
                     or (buy == BUYS[0] and sum(PRICES[g] for g in grenades) > 800)
                 ):
                     raise ValueError(
@@ -150,7 +150,7 @@ def propose(side, buy, seed, site=None, map_id="depo"):
             else:
                 steps.append(step("hold",order["hold"],seconds=rng.randrange(2,6)))
             slots.append(steps)
-        return validate(dict(format=1,map=map_id,geometry=cs2_maps.BUILD,side=side,buy=buy,
+        return validate(dict(format=2,map=map_id,geometry=cs2_maps.BUILD,side=side,buy=buy,
                              name=("Выход " if side=="T" else "Контроль ")+site,slots=slots))
     slots = []
     for i in range(5):

@@ -165,10 +165,10 @@ def buy(w, squad, strategy, purchase, board):
             return True
         return False
 
-    def grenades(a, required):
+    def grenades(a, required, legacy=False):
         for g in (Counter(required) - Counter(a["utility"])).elements():
             if len(a["utility"]) < 4 and a["utility"].count(g) < (
-                2 if g == "Свет" else 1
+                2 if legacy or g == "Свет" else 1
             ):
                 pay(a, g)
 
@@ -185,6 +185,7 @@ def buy(w, squad, strategy, purchase, board):
                     for s in board["slots"][a["slot"]]
                     if s["kind"] == "throw"
                 ],
+                legacy=board["format"]==1,
             )
     if budget == PISTOL:
         # Assign support utility and a CT kit before others buy Kevlar.

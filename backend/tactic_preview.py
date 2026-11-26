@@ -27,6 +27,12 @@ def simulate(draft):
                     a["armor"] = 75
     world["playbook"] = {board["side"] + "/" + board["buy"]: board}
     match.begin_live(world)
+    summary = {}
+    if world.get("mapId"):
+        purchases = [e for e in world["events"] if e["kind"]=="buy" and e["team"]==board["side"]]
+        plan=world["plans"][board["side"]]
+        summary["economy"] = dict(scenario=plan["economy"]["scenario"],spent=sum(e["price"] for e in purchases),
+                                  drops=sum(e["player"]!=e["recipient"] for e in purchases))
     frames = []
     while True:
         frames.append(
@@ -36,6 +42,7 @@ def simulate(draft):
             break
         match.advance(world)
     return dict(
+        **summary,
         frames=frames,
         tickMs=100,
         events=[

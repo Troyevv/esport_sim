@@ -105,6 +105,7 @@ def main():
         "BO1.md",
         "MAPS_R4.md",
         "MAPS_R4_QA.md",
+        "MAPS_R4_AI.md",
         "CAREER_R33.md",
         "INTERFACE_R34.md",
         "INTERFACE_R34_QA.md",
@@ -140,7 +141,7 @@ def main():
     shutil.copytree(ROOT / "docs" / "screenshots" / "r34", screenshots / "r34", dirs_exist_ok=True)
     shutil.copyfile(ROOT / "docs" / "screenshots" / "r41-bo1.webp", screenshots / "r41-bo1.webp")
     for source in sorted((ROOT / "docs" / "screenshots").glob("*.png")):
-        if not source.name.startswith(("r2-", "r32-", "r33-")):
+        if not source.name.startswith(("r2-", "r32-", "r33-", "r41-")):
             continue
         shutil.copyfile(source, screenshots / source.name)
     archive = dist / "EsportSim-windows-x64.zip"
