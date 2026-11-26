@@ -3,7 +3,7 @@
 import argparse
 import json
 import platform
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
 from random import Random
@@ -28,6 +28,8 @@ def metrics(c, pack):
     levels, errors, forecast_errors, widths, covered = Counter(), [], [], [], []
     costs, peaks, authors, observations, orgs = 0, [], set(), 0, set()
     counts, attempts, working_days, staffed = Counter(), Counter(), 0, 0
+    changes = transitions = 0
+    recent_errors, recent_widths = [], []
     by_count = {"1": [], "2–4": [], "5+": []}
     for team in [c["team"], *pack["teams"]]:
         office = scouting.org(pack, team)
@@ -43,9 +45,13 @@ def metrics(c, pack):
             peaks.append(job["peak"])
             working_days += job["days"]
         levels[reports.LEVELS[0]] += len(pack["players"]) - len(club["dossiers"])
+        workdays = defaultdict(lambda: defaultdict(set))
         for pid, d in club["dossiers"].items():
             view = scouting.knowledge(club, pack, c["date"], pid)
             levels[view["level"]] += 1
+            if team != c["team"]:
+                for o in d["observations"]:
+                    workdays[o["author"]][o["reviewed"]].add(pid)
             observations += len(d["observations"])
             counts.update(o["source"] for o in d["observations"])
             base = pack["players"][pid]
@@ -58,13 +64,26 @@ def metrics(c, pack):
             by_count[
                 "1" if view["count"] == 1 else "2–4" if view["count"] < 5 else "5+"
             ].append((errors[-1], hi - lo))
+            if view["age"] <= 30:
+                recent_errors.append(errors[-1])
+                recent_widths.append(hi - lo)
             widths.append(hi - lo)
             covered.append(lo <= ovr <= hi)
             if base["potential"] is not None:
                 forecast_errors.append(
                     abs(reports.mid(view["potential"]) - base["potential"])
                 )
+        for days in workdays.values():
+            ordered = [days[day] for day in sorted(days)]
+            for before, after in zip(ordered, ordered[1:]):
+                transitions += 1
+                changes += before.isdisjoint(after)
     return dict(
+        aiCandidateChanges=changes,
+        aiWorkdayTransitions=transitions,
+        freshDossiers=len(recent_errors),
+        freshMeanOVRError=round(mean(recent_errors), 2) if recent_errors else None,
+        freshMeanOVRWidth=round(mean(recent_widths), 2) if recent_widths else None,
         organizations=len(orgs),
         departmentsWithReports=staffed,
         sources=counts,

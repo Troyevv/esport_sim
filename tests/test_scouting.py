@@ -362,8 +362,12 @@ def test_career_api_disclosure_and_noninterference(tmp_path, monkeypatch):
             s.write(state)
         # Private PCW schedules and box scores belong to participating clubs.
         away = [t for t in pack["teams"] if t != team][:2]
-        fixture = dict(id="private-pcw", date=c["date"], teams=away, pcw=True, kind="match")
-        state["career"]["training"]["practice"].append(dict(fixture, result="private-digest"))
+        fixture = dict(
+            id="private-pcw", date=c["date"], teams=away, pcw=True, kind="match"
+        )
+        state["career"]["training"]["practice"].append(
+            dict(fixture, result="private-digest")
+        )
         state["career"]["queue"].append(fixture)
         with s.transaction():
             s.write(state)
@@ -469,8 +473,11 @@ def test_incoming_club_permission_and_archive_isolation(game):
     assert report["evidence"][0]["event"] == ev["id"]
     other_club = sc.read_club(c, pack, other)
     assert all(t["id"] != view["tasks"][-1]["id"] for t in other_club["tasks"])
-    assert all(o["name"] != report["author"] for d in other_club["dossiers"].values() for o in d["observations"])
-
+    assert all(
+        o["name"] != report["author"]
+        for d in other_club["dossiers"].values()
+        for o in d["observations"]
+    )
 
 
 def test_active_bulk_rolls_back_and_slots_restore_independent_archives(game):
@@ -493,3 +500,160 @@ def test_active_bulk_rolls_back_and_slots_restore_independent_archives(game):
     assert s.read()["career"]["scouting"] == expected
     command(s, "career-load", dict(slot="2"))
     assert s.read()["career"]["scouting"] == expected
+
+
+def test_context_uses_rounds_and_public_peers_without_inventing_skills(game):
+    from backend import scout_sources
+
+    _, pack, c = game
+    teams = list(c["teams"])[:2]
+    pid = training.members(c, pack, teams[0])[0]
+    event = dict(id="series", date=c["date"], teams=teams)
+    row = dict(
+        player=pid,
+        teamId=teams[0],
+        k=15,
+        d=10,
+        a=6,
+        damage=1450,
+        opening=3,
+        openingDeaths=2,
+        hs=8,
+        kast=16,
+    )
+    # The aggregate map score says little about the distribution of rounds.
+    protocol = dict(
+        scoreByTeam={teams[0]: 2, teams[1]: 1},
+        rounds=[dict(winnerTeamId=t) for t in [teams[0]] * 30 + [teams[1]] * 20],
+        stats=[row],
+    )
+    context = scout_sources.competition_context(pack, event, protocol)
+    opposite = dict(
+        protocol,
+        rounds=[dict(winnerTeamId=t) for t in [teams[0]] * 20 + [teams[1]] * 30],
+    )
+    assert (
+        context[teams[0]]["reference"]
+        > scout_sources.competition_context(pack, event, opposite)[teams[0]][
+            "reference"
+        ]
+    )
+    changed = dict(
+        pack, teams={**pack["teams"], teams[1]: dict(pack["teams"][teams[1]], tier=1)}
+    )
+    weak = dict(
+        pack, teams={**pack["teams"], teams[1]: dict(pack["teams"][teams[1]], tier=3)}
+    )
+    assert (
+        scout_sources.competition_context(changed, event, protocol)[teams[0]][
+            "reference"
+        ]
+        > scout_sources.competition_context(weak, event, protocol)[teams[0]][
+            "reference"
+        ]
+    )
+    a, level = r.performance_signals(row, 50, "entry", context[teams[0]])
+    assert level != r.performance_signals(row, 50, "support", context[teams[0]])[1]
+    assert "calling" not in a and "sniper_rifles" not in a
+    person = next(iter(sc.observers(c, pack, c["team"]).values()))
+    fact = dict(
+        id="rating",
+        source="archive",
+        date=c["date"],
+        basis="Rating",
+        sample=35,
+        maps=132,
+        signals={},
+        level=70,
+    )
+    obs = r.observation(fact, person, 50, True)
+    view = r.assessment([obs], c["date"])
+    assert view["skills"] == {} and view["current"] and view["score"] < 38
+    assert obs["weight"] > obs["exposure"]
+    assert r.describe(view, pack["players"][pid], [obs], [], [])["strength"] is None
+
+
+def test_delegated_screening_follows_active_subject_without_timer_reports(game):
+    _, pack, c = game
+    team = c["team"]
+    pid = next(p for p, t in sc.membership(pack).items() if t != team)
+    club = sc.department()
+    search = sc.make_task(c, c["date"], "search", None, {}, None, 1, 14)
+    search.update(status="complete", results=[pid])
+    club["tasks"].append(search)
+    c["scouting"]["public"][pid] = [dict(date=c["date"])]
+    sc.plan_department(c, pack, team, club, c["date"])
+    task = club["tasks"][-1]
+    assert task["kind"] == "player" and task["target"] == [pid]
+    assert task["due"] == training.offset(c["date"], 41)
+    assert not club["dossiers"]
+
+
+def test_same_tape_replays_without_foreign_truth_and_preserves_old_opinion(game):
+    _, pack, c = game
+    team = c["team"]
+    pid = next(pid for pid in pack["players"] if not sc.employed(c, pack, team, pid))
+    person = next(iter(sc.observers(c, pack, team).values()))
+    fact = dict(
+        id="verified",
+        date=c["date"],
+        source="match",
+        basis="Протокол",
+        sample=24,
+        signals={"entry": 68, "aim": 75},
+        level=72,
+        rawLevel=59,
+        context=True,
+    )
+    player = pack["players"][pid]
+    altered = dict(
+        pack,
+        players={
+            **pack["players"],
+            pid: dict(player, skills=dict.fromkeys(skills.KEYS, 0), potential=100),
+        },
+    )
+
+    def evaluate(edition):
+        club = sc.department()
+        sc.record_observation(
+            deepcopy(c), edition, team, club, pid, person, fact, c["date"]
+        )
+        dossier = club["dossiers"][pid]
+        current = sc.dossier_report(club, edition, pid, c["date"], 1)
+        # Published reports from the first PR keep their original scoring formula.
+        dossier["versions"][0].pop("model")
+        old = sc.dossier_report(club, edition, pid, c["date"], 1)
+        assert (
+            old["current"]
+            == r.assessment(
+                dossier["observations"],
+                c["date"],
+                player["born"],
+                player["role"],
+                model=1,
+            )["current"]
+        )
+        return current
+
+    assert evaluate(pack) == evaluate(altered)
+
+
+def test_calendar_checkpoint_rejects_concurrent_change_and_retry(game):
+    store, _, c = game
+    command(store, "career-advance")
+    prepared = store.calendar_checkpoint()
+    token, world = store.careers.work(prepared[1])
+    report = career.simulate(world) if world else None
+    # A second writer commits while the simulation works outside the calendar lock.
+    latest = store.read()
+    latest["career"]["milestones"].append(dict(title="Поступивший отчёт", date=c["date"]))
+    with store.transaction():
+        store.write(latest)
+    assert not store.careers.commit_batch(token, report, prepared=prepared)
+    assert store.read()["career"]["milestones"][-1]["title"] == "Поступивший отчёт"
+    fresh = store.calendar_checkpoint()
+    token, world = store.careers.work(fresh[1])
+    report = career.simulate(world) if world else None
+    assert store.careers.commit_batch(token, report, prepared=fresh)
+    assert not store.careers.commit_batch(token, report, prepared=fresh)

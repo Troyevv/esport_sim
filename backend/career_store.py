@@ -554,20 +554,24 @@ class CareerStore:
         )
         return token, game
 
-    def commit_batch(self, token, report, error=None):
+    def commit_batch(self, token, report, error=None, *, prepared=None):
         """Coalesce same-day background results in one durable checkpoint."""
         if not report:
             return self.commit_work(token, report, error)
         try:
-            return self.commit_work(token, report, error, batch=True)
+            return self.commit_work(token, report, error, batch=True, prepared=prepared)
         except (ValueError, ArithmeticError, KeyError, IndexError, OSError):
             # The transaction rolled back. Commit just the head, so a bad later
             # fixture is retried/reported under its own identity by the worker.
             return self.commit_work(token, report, error)
 
-    def commit_work(self, token, report, error=None, *, batch=False):
+    def commit_work(self, token, report, error=None, *, batch=False, prepared=None):
         with self.store.transaction():
-            state = self.store.read()
+            if prepared is not None and prepared[0] != self.store.calendar_stamp():
+                return False
+            # The calendar owns this detached checkpoint. Reuse it only while the
+            # committed world is unchanged. Recovery always starts from SQLite.
+            state = prepared[1] if prepared is not None and not error else self.store.read()
             c = state.get("career")
             if (
                 not c

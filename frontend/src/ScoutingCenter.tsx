@@ -92,7 +92,8 @@ type Report = Knowledge & {
   version: number;
   published: string;
   author: string;
-  strength: string;
+  strength: string | null;
+  roleEvidence?: string;
   weakness: string | null;
   role: string | null;
   style: string;
@@ -244,9 +245,10 @@ function ReportBody({ url }: { url: string }) {
         {Object.entries({
           "Текущий OVR": range(r.current),
           Потенциал: range(r.potential),
-          "Сильная сторона": skillLabels[r.strength],
+          "Сильная сторона": r.strength && skillLabels[r.strength],
           "Зона развития": r.weakness && skillLabels[r.weakness],
           Роль: roles[r.role || ""],
+          ...(r.roleEvidence ? { "Основания оценки роли": r.roleEvidence } : {}),
           Стиль: r.style,
           "Характер в игре": r.character,
           "Язык в симуляции": r.language,

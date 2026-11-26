@@ -115,8 +115,10 @@ def measure(path, days, compare=None, reports=None, scouting=False):
         start = perf_counter()
         while True:
             step = perf_counter()
-            state = store.read()
+            prepared = store.calendar_checkpoint()
+            state = prepared[1]
             c = state["career"]
+            step_day = c["date"]
             if (
                 date.fromisoformat(c["date"]) - date.fromisoformat(c["start"])
             ).days >= days:
@@ -144,8 +146,8 @@ def measure(path, days, compare=None, reports=None, scouting=False):
                     if report:
                         sample.append(report)
                 else:
-                    assert store.careers.commit_batch(token, report)
-            per_day[c["date"]] += perf_counter() - step
+                    assert store.careers.commit_batch(token, report, prepared=prepared)
+            per_day[step_day] += perf_counter() - step
         wall = perf_counter() - start
     times["remainingServiceAndTransactions"] = wall - sum(times.values())
     scout_results = {}

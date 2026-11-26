@@ -1,7 +1,7 @@
 """Scouting on the career calendar. Public performances and club dossiers have separate owners."""
 
 import base64
-import json
+from pydantic_core import from_json
 import zlib
 from collections import defaultdict
 
@@ -80,7 +80,7 @@ def visible(c, pack, team, club, pid, day):
 def read_club(c, pack, team):
     saved = c["scouting"]["clubs"].get(org(pack, team))
     if isinstance(saved, str):
-        return json.loads(zlib.decompress(base64.b64decode(saved)))
+        return from_json(zlib.decompress(base64.b64decode(saved)))
     return saved if saved is not None else department()
 
 
@@ -563,6 +563,7 @@ def dossier_report(club, pack, pid, day, version=None):
         entry["day"],
         pack["players"][pid]["born"],
         pack["players"][pid]["role"],
+        model=entry.get("model", 1),
     )
     return dict(
         **view,
@@ -587,6 +588,7 @@ def publish(dossier, player, evidence, day, lineup, trial_start=None):
         [reports.LANGUAGES.get(p["nationality"]) for p in lineup],
     )
     version = dict(
+        model=2,
         number=len(dossier["versions"]) + 1,
         count=len(dossier["observations"]),
         basisCount=len(evidence),
@@ -606,13 +608,82 @@ def publish(dossier, player, evidence, day, lineup, trial_start=None):
     return summary
 
 
+def club_reference(c, pack, team, pid, fact, day, lineup):
+    """Link observed performance to the scale the staff knows from its own registered five."""
+    if pid in lineup or reports.ordinal(day) - reports.ordinal(fact["date"]) > 90:
+        return fact
+    rating = fact["id"].startswith("rating/")
+    if not rating and fact["source"] != "match":
+        return fact
+    role = pack["players"][pid].get("role")
+    offsets = []
+    for peer in lineup:
+        player = pack["players"][peer]
+        if rating:
+            record = player.get("performance")
+            if (
+                not record
+                or record["maps"] < 10
+                or record["version"] != pack["players"][pid]["performance"]["version"]
+            ):
+                continue
+            measured = reports.published_level(record["rating"])
+        else:
+            matches = [
+                m
+                for m in sources.public_rows(c["scouting"], peer)
+                if m.get("level") is not None
+                and m["date"] <= day
+                and reports.ordinal(day) - reports.ordinal(m["date"]) <= 90
+            ]
+            if matches:
+                measured = sum(m["level"] for m in matches) / len(matches)
+            elif (
+                fact.get("context")
+                and player["role"] == role
+                and pack["teams"][team].get("tier") in sources.TIER_REFERENCE
+            ):
+                # A staff member can anchor an observed performance to a known player
+                # in the same role, even before its own team has played this season.
+                measured = sources.TIER_REFERENCE[pack["teams"][team]["tier"]]
+            else:
+                continue
+        # These are the same visible, current role attributes shown to this employer.
+        peer_role = player["role"] or "rifler"
+        weights = skills.ROLE_WEIGHTS[peer_role]
+        trained = training.lookup(c["training"], "players", peer).get("skills", {})
+        own_rating = sum(
+            w * trained.get(k, player["skills"][k]) for k, w in weights.items()
+        ) / sum(weights.values())
+        weight = 1 if role == peer_role else 0.4
+        offsets.append((max(-24, min(24, own_rating - measured)), weight))
+    if not offsets:
+        return fact
+    # Shrink the correction when there are few comparable players or only other roles.
+    mass = sum(w for _, w in offsets)
+    correction = sum(d * w for d, w in offsets) / (1 + mass)
+    return dict(
+        fact,
+        level=reports.points(fact["level"] + correction),
+        **(
+            {"rawLevel": reports.points(fact["rawLevel"] + correction)}
+            if "rawLevel" in fact
+            else {}
+        ),
+        basis=f'{fact["basis"]} · сравнение с игроками своего клуба ({len(offsets)})',
+    )
+
+
 def record_observation(c, pack, team, club, pid, person, fact, day):
     d = club["dossiers"].setdefault(pid, dict(observations=[], versions=[]))
     region = identity(pack, pid, day)["region"] or "unknown"
     coverage = club["regions"].setdefault(person["id"], {})
     local = region == scout_region(pack, team, person["id"])
     familiar = min(100, (55 if local else 10) + coverage.get(region, 0))
-    lineup = [pack["players"][p] for p in squad(c, pack, team)]
+    members = squad(c, pack, team)
+    lineup = [pack["players"][p] for p in members]
+    if "level" in fact:
+        fact = club_reference(c, pack, team, pid, fact, day, members)
     lang = reports.LANGUAGES.get(pack["players"][pid]["nationality"])
     obs = reports.observation(
         fact,
@@ -702,6 +773,38 @@ def find_observation(c, pack, team, club, task, person, day, pool):
     return None
 
 
+def plan_department(c, pack, team, club, day):
+    """Screen a region, then follow a promising active player through several fixtures."""
+    tasks = club["tasks"]
+    last = tasks[-1] if tasks else {}
+    region = pack["teams"][team]["region"]
+    if last.get("kind") == "search":
+        candidates = set(last["results"])
+        candidates.update(club["lists"].get("Кандидаты", [])[-8:])
+        suitable = []
+        for pid in sorted(candidates):
+            tape = sources.public_rows(c["scouting"], pid)
+            if not tape or tape[-1]["date"] < training.offset(day, -28):
+                continue
+            view = knowledge(club, pack, day, pid)
+            if view["score"] >= 88:
+                continue
+            if any(t["kind"] == "player" and t["target"] == [pid] for t in tasks[-3:]):
+                continue
+            estimate = reports.mid(view["current"]) if view["current"] else 50
+            suitable.append((estimate, tape[-1]["date"], pid))
+        if suitable:
+            pid = max(suitable)[2]
+            # A follow-up stays assigned even on dates when there is no new appearance.
+            task = make_task(c, day, "player", [pid], {}, None, 2, 42)
+            tasks.append(task)
+            c["scouting"].setdefault("watch", {})[org(pack, team)] = pid
+            return
+    criteria = {"region": region} if region and staff.draw(team, day) % 3 else {}
+    tasks.append(make_task(c, day, "search", None, criteria, None, 1, 14))
+    c["scouting"].setdefault("watch", {}).pop(org(pack, team), None)
+
+
 def duty(c, pack, team, day, club, pool, ledger, trials, *, automatic):
     people = observers(c, pack, team)
     duties = c["office"]["duties"] if team == c["team"] else {}
@@ -734,14 +837,16 @@ def duty(c, pack, team, day, club, pool, ledger, trials, *, automatic):
     chief = people.get(duties.get("dispatch"))
     if automatic and chief is None:
         chief = next((p for p in people.values() if p["role"] == "chief_scout"), None)
+    for task in club["tasks"]:
+        if task["status"] == "active" and task["due"] < day:
+            task["status"] = "complete"
+            task.pop("archive", None)
     if (
         (automatic or chief or duties.get("search"))
         and pool
         and not any(t["status"] == "active" for t in club["tasks"])
     ):
-        region = pack["teams"][team]["region"]
-        criteria = {"region": region} if region and staff.draw(team, day) % 3 else {}
-        club["tasks"].append(make_task(c, day, "search", None, criteria, None, 1, 14))
+        plan_department(c, pack, team, club, day)
     tasks = [t for t in club["tasks"] if t["status"] == "active" and t["due"] >= day]
     for trial in trials:
         if trial["start"] > day:
@@ -906,6 +1011,8 @@ def daily(c, pack, day):
         )
     )
     jobs, processed = [], set()
+    yesterday = training.offset(day, -1)
+    watch = state.get("watch", {})
     for team in [c["team"], *c["teams"], *pack["teams"]]:
         key = org(pack, team)
         if key in processed:
@@ -918,7 +1025,12 @@ def daily(c, pack, day):
             and not by_team[team]
             and (reports.ordinal(day) + zlib.crc32(key.encode())) % 7
         ):
-            continue
+            pid = watch.get(key)
+            if not pid:
+                continue
+            recent = sources.public_rows(state, pid)
+            if not recent or recent[-1]["date"] < yesterday:
+                continue
         club = read_club(c, pack, team)
         jobs.extend(
             duty(

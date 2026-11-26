@@ -231,6 +231,15 @@ class Store:
             self.db.rollback()
             raise
 
+    def calendar_stamp(self):
+        # total_changes includes rollbacks on this connection. data_version catches
+        # commits from another connection. A spurious retry is safe in either case.
+        return self.db.total_changes, self.db.execute("PRAGMA data_version").fetchone()[0]
+
+    def calendar_checkpoint(self):
+        stamp = self.calendar_stamp()
+        return stamp, self.read()
+
     def read(self):
         return self.bulk.expand(from_json(self.db.execute("SELECT body FROM active WHERE id=1").fetchone()[0], cache_strings="keys"))
 

@@ -134,7 +134,8 @@ def create_app(
                 while True:
                     await wake_calendar.wait()
                     async with condition:
-                        state = store.read()
+                        prepared = store.calendar_checkpoint()
+                        state = prepared[1]
                         c = state.get("career")
                         if not c or not c["progress"]:
                             wake_calendar.clear()
@@ -145,7 +146,7 @@ def create_app(
                         work = await asyncio.to_thread(store.careers.work, state, pack)
                     except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                         async with condition:
-                            store.careers.commit_work(token,None,str(exc))
+                            store.careers.commit_work(token,None,str(exc), prepared=prepared)
                             condition.notify_all()
                         continue
                     token, game = work
@@ -157,7 +158,7 @@ def create_app(
                         error = f"Не удалось рассчитать встречу: {exc}"
                     async with condition:
                         try:
-                            changed = store.careers.commit_batch(token, report, error)
+                            changed = store.careers.commit_batch(token, report, error, prepared=prepared)
                         except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                             changed = store.careers.commit_work(token, None, str(exc))
                         if changed:
