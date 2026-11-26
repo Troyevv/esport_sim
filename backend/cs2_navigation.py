@@ -1,7 +1,7 @@
 """Offline navigation in Source 2 world coordinates (Hammer units, Z up)."""
 
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from heapq import heapify, heappop, heappush
 from math import dist, floor
 
@@ -33,6 +33,16 @@ class Crossing:
     enter: tuple
     ladder: int | None = None
     alternatives: tuple = ()
+    _hash: int = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self):
+        # A static portal is reused in millions of physical path-cache lookups.
+        # Its alternate XY/Z segments are immutable throughout the map lifetime.
+        geometry = (self.area, self.leave, self.enter, self.ladder, self.alternatives)
+        object.__setattr__(self, "_hash", hash(geometry))
+
+    def __hash__(self):
+        return self._hash
 
 
 def _point(a, b, t):
