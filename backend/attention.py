@@ -94,6 +94,11 @@ def fixture_items(c, pack, world):
     if fixture["kind"] != "match":
         return
     edition = c.get("circuit", {}).get("editions", {}).get(fixture.get("edition"))
+    if fixture["date"] > c["date"]:
+        return
+    own = c["team"] in fixture["teams"]
+    if not own and fixture["id"] != c.get("watchFixture"):
+        return
     pool = (
         (edition["rules"] if edition else c.get("seriesProfile", veto.REGULATION))[
             "pool"
@@ -107,18 +112,12 @@ def fixture_items(c, pack, world):
     if missing:
         yield item(
             "resources",
-            "required",
+            "warning",
             "Восстановите ресурсы карт",
-            "Для календарной встречи нужны " + ", ".join(sorted(missing)),
+            "Для наблюдения за матчем нужны " + ", ".join(sorted(missing)),
             "repair",
             c["date"],
         )
-        return
-    if fixture["date"] > c["date"]:
-        return
-    own = c["team"] in fixture["teams"]
-    if not own and fixture["id"] != c.get("watchFixture"):
-        return
     if edition and own and c["team"] in competitions.missing_players(c, fixture, pack):
         yield item(
             "replace",

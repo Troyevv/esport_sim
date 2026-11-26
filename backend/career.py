@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import staff, competitions, registrations, cs2_maps, database, match, series, veto, world
+from . import round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
 from .database import require
 
 VERSION = 1
@@ -215,16 +215,20 @@ def match_domain(pack, c, event, badges=None, portraits=None):
     return domain, rosters
 
 
-def initial(pack, c, event, badges=None, portraits=None):
+def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
     domain, rosters = match_domain(pack, c, event, badges, portraits)
     if "bestOf" in event:
         jobs = staff.booked(c, pack, event)
         game = series.initial(event["seed"], event["bestOf"], domain, rosters,
                               c["team"] if c["team"] in event["teams"] else None,
-                              profile=(c["circuit"]["editions"][event["edition"]]["rules"] if event.get("edition") else c["seriesProfile"]), history=c["history"], today=event["date"], jobs=jobs)
+                              profile=(c["circuit"]["editions"][event["edition"]]["rules"] if event.get("edition") else c["seriesProfile"]), history=c["history"], today=event["date"], jobs=jobs, detailed=detailed)
         if event.get("edition"):
             game["series"]["tournament"]=c["circuit"]["editions"][event["edition"]]["title"]
+        if not detailed:
+            game["simulation"] = round_sim.MODE
         return game
+    if not detailed:
+        return dict(simulation=round_sim.MODE, seed=event["seed"], domain=domain, rosterIds=rosters, mapId=event.get("mapId"))
     return match.initial(
         event["seed"],
         domain,
@@ -235,6 +239,21 @@ def initial(pack, c, event, badges=None, portraits=None):
 
 
 def simulate(game):
+    if game.get("simulation") == round_sim.MODE:
+        if "series" not in game:
+            first = game["domain"]["rosters"][game["rosterIds"][0]]["team"]
+            return round_sim.play_map(game, game["mapId"], first, game["seed"])
+        s = game["series"]
+        veto.advance(game, "captain")
+        for i, entry in enumerate(s["order"]):
+            report = round_sim.play_map(game, entry["map"], entry["attack"], series.map_seed(s["seed"], i))
+            s["results"].append(report)
+            winner = report["winnerTeamId"]
+            s["score"][winner] += 1
+            if s["score"][winner] == s["bestOf"] // 2 + 1:
+                s.update(winner=winner, stage="finished")
+                break
+        return series.result(game)
     if "series" in game:
         veto.advance(game, "captain")
         while game["series"]["stage"] != "finished":
@@ -243,14 +262,16 @@ def simulate(game):
             while game["phase"] != "finished":
                 match.advance(game)
             series.finish_map(game)
-        return series.result(game)
+        return result(game)
     while game["phase"] != "finished":
         match.advance(game)
     return result(game)
 
 
 def result(game):
-    return series.result(game) if "series" in game else series.map_result(game)
+    if "series" in game:
+        return series.result(game)
+    return dict(series.map_result(game), simulation=series.DETAILED)
 
 
 def complete(c, digest, points, winner, facts=None):

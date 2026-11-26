@@ -259,3 +259,36 @@ def test_manual_calendar_pause_discards_pending_work_and_resumes_to_next_decisio
     assert end["date"] == fixture["date"] and end["progress"] is None
     assert store.careers.detail(store.read())["active"]["attention"][0]["action"] == "play"
     store.db.close()
+
+
+def test_manager_quick_result_survives_retry_restart_and_old_slot(tmp_path, monkeypatch):
+    from backend import cs2_maps, veto
+
+    monkeypatch.setenv("ESPORT_SIM_MAPS", str(tmp_path / "no-geometry"))
+    path = tmp_path / "old.sqlite"
+    store = Store(path)
+    start(store)
+    state = store.read()
+    c = state["career"]
+    fixture = next(e for e in c["queue"] if c["team"] in e["teams"])
+    fixture["bestOf"] = 3
+    c.update(queue=[fixture], date=fixture["date"], seriesProfile=veto.REGULATION)
+    with store.transaction():
+        store.write(state)
+        store.careers.save(state, "2")
+    assert not cs2_maps.installed()
+    with pytest.raises(ValueError):
+        act(store, "career-quick", {"fixture":"obsolete"})
+    cmd = intent(store, "career-quick", {"fixture":fixture["id"]})
+    assert store.apply(cmd) == store.apply(cmd)
+    c = store.read()["career"]
+    assert len(c["history"]) == 1 and store.read()["world"]["version"] == 1
+    result = c["history"][0]["result"]
+    assert store.careers.report(result)["simulation"] == {"mode":"round", "version":1}
+    store.db.close()
+    store = Store(path)
+    assert store.read()["career"]["history"][0]["result"] == result
+    act(store, "career-load", {"slot":"2"})
+    act(store, "career-quick", {"fixture":fixture["id"]})
+    assert store.read()["career"]["history"][0]["result"] == result
+    store.db.close()

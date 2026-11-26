@@ -6,6 +6,7 @@ from . import staff, cs2_maps, engine, match, match_score, veto, world
 from .database import require
 
 VERSION = 1
+DETAILED = {"mode": "detailed", "version": 1}
 
 
 def initial(
@@ -19,14 +20,16 @@ def initial(
     history=(),
     jobs=None,
     today="2026-11-24",
+    detailed=True,
 ):
     profile = deepcopy(profile or veto.REGULATION)
     budget=profile.get("timeouts",match.RULES["timeouts"])
     require(type(budget) is int and 0 <= budget <= 6 and profile.get("timeoutScope","series") in ("map","series"), "Неверный лимит тайм-аутов")
-    missing = set(profile["pool"]) - set(cs2_maps.installed())
-    require(
-        not missing, "Недоступны ресурсы карт: " + ", ".join(sorted(missing)) + ". Перезапустите игру для автоматического восстановления."
-    )
+    if detailed:
+        missing = set(profile["pool"]) - set(cs2_maps.installed())
+        require(
+            not missing, "Недоступны ресурсы карт: " + ", ".join(sorted(missing)) + ". Перезапустите игру для автоматического восстановления."
+        )
     domain = domain or world.exhibition(engine.initial(seed)["agents"])
     world.validate(domain)
     teams = [domain["rosters"][r]["team"] for r in rosters]
@@ -151,15 +154,24 @@ def map_result(w):
 
 
 def verify_map(report, teams, expected, seed, map_id):
+    from . import round_sim
+
+    mode = report.get("simulation", DETAILED)
+    require(mode in (round_sim.MODE, DETAILED), "Неизвестная версия симуляции")
+    if mode == round_sim.MODE:
+        round_sim.validate(report, teams)
+    else:
+        require(
+            report["rules"] in (cs2_maps.SUPPORTED_RULES if map_id else (match.VERSION,))
+            and report["map"] == (cs2_maps.BUILD if map_id else match.MAP["version"]),
+            "Результат не соответствует версии подробной симуляции",
+        )
     points = {
         tid: sum(r["winnerTeamId"] == tid for r in report["rounds"]) for tid in teams
     }
     require(
         report["seed"] == seed
         and report.get("mapId") == map_id
-        and report["rules"]
-        in (cs2_maps.SUPPORTED_RULES if map_id else (match.VERSION,))
-        and report["map"] == (cs2_maps.BUILD if map_id else match.MAP["version"])
         and len(report["stats"]) == len(expected)
         and {row["player"]: row["teamId"] for row in report["stats"]} == expected
         and set(report["teams"]) == set(points)
@@ -203,6 +215,7 @@ def result(w):
     require(s["stage"] == "finished", "Серия ещё идёт")
     return {
         "seriesVersion": VERSION,
+        "simulation": w.get("simulation", DETAILED),
         "bestOf": s["bestOf"],
         "profile": s["profile"],
         "seed": s["seed"],

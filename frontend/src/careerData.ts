@@ -17,7 +17,9 @@ export type Summary = {
   date: string;
 };
 export const fixtureMap = (e: Fixture) => e.bestOf ? "Map Veto" : ({de_dust2: "Dust II", depo: "Депо"}[e.mapId || "depo"] || e.mapId!.slice(3,4).toUpperCase() + e.mapId!.slice(4));
+type Simulation = { mode: "detailed" | "round"; version: number };
 export type Fixture = {
+  simulation?: Simulation;
   mapId?: string;
   title?:string;
   agenda?: {edition:string;tournament:string;title:string}[];
@@ -81,8 +83,10 @@ type Team = {
 };
 export type Options = { circuit?:boolean; date: string; teams: Team[] };
 export type Catalog = { id: string; title: string; revision: number }[];
+export type RoundSummary = { round: number; winnerTeamId: string; side: string; score: number[]; buys?: string[] };
 export type Report = {
-  maps?: { mapId: string; scoreByTeam: Record<string, number> }[];
+  simulation?: Simulation;
+  maps?: { mapId: string; scoreByTeam: Record<string, number>; rounds: RoundSummary[] }[];
   stats: {
     player: string;
     name: string;
@@ -92,8 +96,11 @@ export type Report = {
     d: number;
     a: number;
     damage: number;
+    kast: number;
+    opening: number;
+    openingDeaths?: number;
   }[];
-  rounds: unknown[];
+  rounds: RoundSummary[];
 };
 export const scopes: Record<string, string> = {
   fast: "Быстрый",

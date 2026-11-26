@@ -324,3 +324,14 @@
 .decision-list p,.decision-list time { margin:0; font-size:.86rem }
 .decision-list [data-level=required] h3 { color:#edb85c }
 @media(max-width:600px) { .attention-summary { flex-wrap:wrap } .decision-list article .btn { width:100% } }
+
+.quick-fixture { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 16px; margin-bottom:12px }
+.quick-fixture div { display:grid; gap:4px }
+.quick-fixture small { color:var(--muted) }
+.cr-report { overflow-x:auto }
+
+.cr-rounds { margin-block:10px; }
+.cr-rounds summary { cursor:pointer; font-weight:600 }
+.cr-rounds ol { padding-inline-start:2.3em }
+.cr-rounds li { padding:5px 0; font-variant-numeric:tabular-nums }
+.cr-rounds li small { display:block; color:var(--muted) }

@@ -109,6 +109,8 @@ def evidence(pool, teams, history, today):
         for t in teams
     }
     for event in history:
+        if not any(t in result for t in event["teams"]):
+            continue
         age = (date.fromisoformat(today) - date.fromisoformat(event["date"])).days
         if age < 0:
             continue

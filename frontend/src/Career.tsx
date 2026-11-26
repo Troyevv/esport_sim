@@ -16,7 +16,7 @@ import {
   type Scene,
   type Summary,
 } from "./careerData";
-import { Load, NewCareer, Saves } from "./CareerForms";
+import { Load, MatchReport, NewCareer, Saves } from "./CareerForms";
 import { StaffOffice } from "./StaffOffice";
 import { CareerMenu } from "./CareerMenu";
 import { CompetitionCenter } from "./CompetitionCenter";
@@ -170,6 +170,8 @@ function Manager({
       () => localStorage.getItem("esport-sim/motion") !== "false",
     );
   const [decisions, setDecisions] = useState(false);
+  const [quickResult, setQuickResult] = useState<string | null>(null);
+  const completedQuick = quickResult && c.history.find(e => e.id === quickResult);
   const [decisionError, setDecisionError] = useState("");
   const required = c.attention.filter(row=>row.level==="required");
   const directMatch = required.length===1 && ["play","match"].includes(required[0].action);
@@ -229,6 +231,13 @@ function Manager({
       }
     } else if (row.edition) to("Соревнования",undefined,row.edition,row.action);
     else showLetter(null);
+  };
+  const quick = async () => {
+    const fixture = c.queue[0];
+    if (fixture && await act("career-quick", {fixture:fixture.id}, msg=>{setDecisionError(msg);setDecisions(true)})) {
+      setDecisions(false);
+      setQuickResult(fixture.id);
+    }
   };
   const advance = async () => {
     if (!enabled || c.progress) return;
@@ -459,7 +468,12 @@ function Manager({
             <small>{required.length ? required[0].detail : "Обязательных решений нет"}</small></span>
             <b>{required.length ? "Требуют внимания · " + required.length : "Открыть"}</b>
           </button>}
-          <ManagerAttention items={c.attention} open={decisions} close={()=>setDecisions(false)}
+          {directMatch && required[0].action === "play" && !c.progress && <div className="quick-fixture surface">
+            <div><strong>{c.queue[0].teams.map(t=>c.teams[t]).join(" — ")}</strong><small>Расчёт по раундам с автоматическим выбором карт</small></div>
+            <button className="btn" disabled={!enabled} onClick={quick}>Быстро рассчитать матч</button>
+          </div>}
+          {completedQuick && <Dialog title="Матч завершён" close={()=>setQuickResult(null)}><MatchReport event={completedQuick} teams={c.teams} close={()=>setQuickResult(null)}/></Dialog>}
+          <ManagerAttention quick={quick} items={c.attention} open={decisions} close={()=>setDecisions(false)}
             enabled={enabled && !c.progress} resolve={resolve} repair={repair} error={decisionError}
             saves={()=>{setDecisions(false);to("Сохранения")}}/>
           <div key={active} className="screen-enter">

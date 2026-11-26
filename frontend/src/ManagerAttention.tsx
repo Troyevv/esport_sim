@@ -17,6 +17,7 @@ export function ManagerAttention({
   close,
   resolve,
   repair,
+  quick,
   enabled,
   error,
   saves,
@@ -27,6 +28,7 @@ export function ManagerAttention({
   enabled: boolean;
   resolve: (item: Decision) => void;
   repair: () => void;
+  quick: () => void;
   error: string;
   saves: () => void;
 }) {
@@ -63,6 +65,7 @@ export function ManagerAttention({
                   >
                     {actionLabel[row.action]}
                   </button>
+                  {row.action === "play" && <button className="btn" disabled={!enabled} onClick={quick}>Быстро рассчитать матч</button>}
                   {row.action === "retry" && (
                     <button
                       className="btn"

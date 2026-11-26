@@ -54,6 +54,7 @@ export function Calendar({ c, initial,tournament }: { c: Career; initial: string
             onClick={() => setReport(e)}
           >
             {fixtureScore(e)} <Glyph name="report-analytics" />
+            <small>{e.simulation?.mode === "round" ? "По раундам" : "Подробный"}</small>
           </button>
         )}
       </div>

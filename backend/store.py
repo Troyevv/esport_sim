@@ -188,7 +188,7 @@ class Store:
                 changed = resolve_slots(c) or changed
             if changed:
                 self.db.execute(
-                    f"UPDATE {table} SET body=? WHERE id=1", (json.dumps(state),)
+                    f"UPDATE {table} SET body=? WHERE id=1", (json.dumps(state, ensure_ascii=False, separators=(",", ":")),)
                 )
             return state
         except (ValueError, TypeError, AttributeError, KeyError, IndexError) as exc:
@@ -220,7 +220,7 @@ class Store:
                 )
             world["archive"] = []
         self.db.execute(
-            "INSERT OR REPLACE INTO active VALUES(1,?)", (json.dumps(state),)
+            "INSERT OR REPLACE INTO active VALUES(1,?)", (json.dumps(state, ensure_ascii=False, separators=(",", ":")),)
         )
 
     def tick(self):

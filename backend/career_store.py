@@ -5,6 +5,7 @@ import json
 import os
 import sqlite3
 from pathlib import Path
+from time import monotonic
 from uuid import uuid4
 
 from . import attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
@@ -215,6 +216,9 @@ class CareerStore:
                     "Лишняя карта серии",
                 )
                 map_id = replay["order"][i]["map"]
+                require(item.get("simulation", series.DETAILED) == report.get("simulation", series.DETAILED), "Режим карты расходится с серией")
+                if item.get("simulation", {}).get("mode") == "round":
+                    require(item["firstAttackTeamId"] == replay["order"][i]["attack"], "Неверная стартовая сторона")
                 series.verify_map(
                     item, teams, expected, series.map_seed(event["seed"], i), map_id
                 )
@@ -235,6 +239,7 @@ class CareerStore:
             points = series.verify_map(
                 report, teams, expected, event["seed"], event.get("mapId")
             )
+        facts = dict(facts or {}, simulation=report.get("simulation", series.DETAILED))
         body = database.encode(report)
         digest = checksum(body)
         self.db.execute(
@@ -382,6 +387,15 @@ class CareerStore:
                         "Матч уже сыгран или отсутствует в календаре")
                 c["watchFixture"]=fixture
                 self.save(state,"auto")
+            elif kind == "career-quick":
+                require(not c["progress"] and state["world"]["version"] == 1 and c["queue"], "Матч пока недоступен")
+                e = c["queue"][0]
+                pack = self.pack(c["source"])
+                pending = attention.blockers(c, pack, state["world"])
+                require(isinstance(value, dict) and e["id"] == value.get("fixture") and len(pending) == 1 and pending[0]["action"] == "play", "Обновите календарь и разрешите обязательные решения")
+                game = career.initial(pack, c, e, detailed=False)
+                self.record(c, career.simulate(game))
+                self.save(state, "auto")
             elif kind == "career-play":
                 e = c["queue"][0]
                 require(
@@ -491,11 +505,22 @@ class CareerStore:
         if attention.blockers(c,self.pack(c["source"]),state["world"]):
             return token, None
         game = (
-            None if career.stops(c, e) or ("edition" in e and (competitions.fixture_conflicts(c,e) or competitions.missing_players(c,e,self.pack(c["source"])))) else career.initial(self.pack(c["source"]), c, e)
+            None if career.stops(c, e) or ("edition" in e and (competitions.fixture_conflicts(c,e) or competitions.missing_players(c,e,self.pack(c["source"])))) else career.initial(self.pack(c["source"]), c, e, detailed=False)
         )
         return token, game
 
-    def commit_work(self, token, report, error=None):
+    def commit_batch(self, token, report, error=None):
+        """Coalesce same-day background results in one durable checkpoint."""
+        if not report:
+            return self.commit_work(token, report, error)
+        try:
+            return self.commit_work(token, report, error, batch=True)
+        except (ValueError, ArithmeticError, KeyError, IndexError, OSError):
+            # The transaction rolled back. Commit just the head, so a bad later
+            # fixture is retried/reported under its own identity by the worker.
+            return self.commit_work(token, report, error)
+
+    def commit_work(self, token, report, error=None, *, batch=False):
         with self.store.transaction():
             state = self.store.read()
             c = state.get("career")
@@ -530,6 +555,13 @@ class CareerStore:
                         c["progress"] = None
             else:
                 self.record(c, report)
+                if batch:
+                    deadline = monotonic() + .025
+                    while c["queue"] and c["queue"][0]["date"] == c["date"] and monotonic() < deadline:
+                        _, next_game = self.work(state)
+                        if next_game is None:
+                            break
+                        self.record(c, career.simulate(next_game))
             state["sequence"] += 1
             state["revision"] += 1
             state["careerRevision"] += 1

@@ -58,6 +58,7 @@ class Command(BaseModel):
         "career-save",
         "career-load",
         "career-play",
+        "career-quick",
         "career-watch",
         "career-finish",
         "career-advance",
@@ -152,11 +153,13 @@ def create_app(
                         error = f"Не удалось рассчитать встречу: {exc}"
                     async with condition:
                         try:
-                            changed = store.careers.commit_work(token, report, error)
+                            changed = store.careers.commit_batch(token, report, error)
                         except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                             changed = store.careers.commit_work(token, None, str(exc))
                         if changed:
                             condition.notify_all()
+                    # A run of calendar-only reviews must also yield to pause and save.
+                    await asyncio.sleep(0)
 
             if manages_home:
 
