@@ -148,17 +148,43 @@ def play(pack, name, pair, seed, mirror, profile, trace):
     team = {a["id"] for a in game["agents"] if a["club"] == int(mirror)}
     totals, statuses = Counter(), Counter()
     while game["phase"] != "finished":
+        due = game["tick"] + 1
+        for message in game["messages"]:
+            if (
+                message["due"] == due
+                and message["sender"] in team
+                and "sight" in message
+            ):
+                sight = message["sight"]
+                if sight["source"] == "Зрение":
+                    totals["sightCalls"] += 1
+                    totals["sightCallTicks"] += due - sight["tick"]
         match.advance(game)
         if game["phase"] in ("live", "planted") and game["tick"] % 10 == 0:
             statuses.update(
                 a["status"] for a in game["agents"] if a["hp"] and a["id"] in team
             )
     for batch in [*game["archive"], game["events"]]:
+        rotated = False
         for e in batch:
+            if e["kind"] == "round_end" and rotated:
+                totals["wonAfterTurn"] += int(e["winner"] == int(mirror))
             if e.get("player") not in team:
                 continue
             totals[e["kind"]] += 1
-            if e["kind"] == "damage" and e["weapon"] in WEAPONS:
+            if e["kind"] == "rotate":
+                rotated = True
+            if (
+                e["kind"] == "damage"
+                and e["weapon"] in ("Огонь", "HE")
+                and e["target"] not in team
+            ):
+                totals["grenadeDamage"] += e["amount"]
+            if (
+                e["kind"] == "damage"
+                and e["weapon"] in WEAPONS
+                and e["target"] not in team
+            ):
                 totals["gunHits"] += 1
             if e["kind"] == "kill" and e["enemy"] and e["trade"]:
                 totals["trades"] += 1

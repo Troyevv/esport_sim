@@ -374,7 +374,7 @@ def rendezvous(space, actor, mate, now):
 def seek_cover(space, actor, contact, allies, skills, now, fire, travel):
     """Break sight or finish reloading using only this player's last contact."""
     exposed = False
-    if contact and actor["team"] == "CT" and len(actor["visible"]) > 1:
+    if contact and len(actor["visible"]) > 1 and actor.get("team") == "CT":
         engaged = sum(p is not actor and p["target"] in actor["visible"] and
                       dist(xyz(p),xyz(actor)) < 45 for p in allies)
         # A lone defender who cannot trade the opening can break contact and
