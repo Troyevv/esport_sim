@@ -12,7 +12,7 @@ import {
   type Fixture,
 } from "./careerData";
 import { Dialog, Glyph, Heading, Tabs } from "./GameUI";
-export function Calendar({ c, initial }: { c: Career; initial: string }) {
+export function Calendar({ c, initial,tournament }: { c: Career; initial: string; tournament:(edition:string)=>void }) {
   const [selected, select] = useState(initial),
     [mode, setMode] = useState("Месяц"),
     [filter, setFilter] = useState("club"),
@@ -45,6 +45,8 @@ export function Calendar({ c, initial }: { c: Career; initial: string }) {
           {date(e.date)} · {e.kind === "match" ? "BO"+(e.bestOf ?? 1) : "Клуб"}
         </small>
         <h3>{fixtureName(c, e)}</h3>
+        {e.edition && <button className="link-button" onClick={()=>tournament(e.edition!)}>{e.title}</button>}
+        {e.agenda?.map(a=><p key={a.edition+a.title}><button className="link-button" onClick={()=>tournament(a.edition)}>{a.tournament}</button> · {a.title}</p>)}
         {e.score && (
           <button
             className="btn sm"
@@ -144,7 +146,7 @@ export function Calendar({ c, initial }: { c: Career; initial: string }) {
           </div>
           {buttons(today)}
           {notes.map((m) => (
-            <div className="day-agenda-item" key={m.title}>
+            <div className="day-agenda-item" key={m.id||m.title}>
               {m.title}
             </div>
           ))}

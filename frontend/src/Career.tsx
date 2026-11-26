@@ -17,6 +17,7 @@ import {
 } from "./careerData";
 import { Load, NewCareer, Saves } from "./CareerForms";
 import { CareerMenu } from "./CareerMenu";
+import { CompetitionCenter } from "./CompetitionCenter";
 import { Calendar } from "./CareerCalendar";
 import { Dashboard, Inbox, letters } from "./CareerHome";
 import {
@@ -34,6 +35,8 @@ const sections = [
       ["Кабинет", "home"],
       ["Входящие", "inbox"],
       ["Календарь", "calendar"],
+      ["Соревнования","trophy"],
+      ["Рейтинг VRS","users"],
     ],
   ],
   [
@@ -123,7 +126,7 @@ export default function CareerScreen(props: Props) {
     );
   return <Manager key={c.id} {...props} c={c} enabled={enabled} />;
 }
-type Route = { page: string; profile?: Profile };
+type Route = { page: string; profile?: Profile; edition?:string };
 function Manager({
   c,
   frame,
@@ -167,19 +170,20 @@ function Manager({
   const scene = directory.data,
     box = letters(c),
     unread = box.filter((m) => !read.includes(m.id)).length;
-  const next = c.queue.find((e) => e.teams.includes(c.team)),
+  const next = c.queue.find((e) => e.teams.includes(c.team) || e.id===c.watchFixture),
     ready = !!next && next.date === c.date && c.queue[0]?.id === next.id;
   const closeOverlays = () => {
     setDrawer(false);
     setSearch(false);
   };
-  const to = (page: string, profile?: Profile) => {
+  const to = (page: string, profile?: Profile, edition?:string) => {
     closeOverlays();
     if (tool) leaveTool();
     historyStack.current.push(route);
-    setRoute({ page, profile });
+    setRoute({ page, profile, edition });
     window.scrollTo(0, 0);
   };
+  const tournament = (id:string) => to("Соревнования",undefined,id);
   const open = (p: Profile) => to("Профиль", p);
   const back = () => {
     setRoute(historyStack.current.pop() || { page: "Кабинет" });
@@ -336,7 +340,7 @@ function Manager({
             <div key={caption}>
               <div className="nav-caption">{caption}</div>
               <nav className="nav-list">
-                {items.map(([label, icon]) => navButton(label, icon))}
+                {items.filter(([label])=>c.competitions || !["Соревнования","Рейтинг VRS"].includes(label)).map(([label, icon]) => navButton(label, icon))}
               </nav>
             </div>
           ))}
@@ -429,14 +433,14 @@ function Manager({
           <div key={active} className="screen-enter">
             {tool ||
               (active === "Календарь" ? (
-                <Calendar key={day} c={c} initial={day} />
+                <Calendar key={day} c={c} initial={day} tournament={tournament}/>
               ) : active === "Входящие" ? (
                 <Inbox
                   box={box}
                   read={read}
                   selected={box.find((m) => m.id === inboxId) || null}
                   select={showLetter}
-                  calendar={calendar}
+                  calendar={calendar} tournament={tournament}
                 />
               ) : active === "Сохранения" ? (
                 <>
@@ -512,6 +516,8 @@ function Manager({
                     setSort,
                   }}
                 />
+              ) : active === "Соревнования" || active === "Рейтинг VRS" ? (
+                <CompetitionCenter key={route.edition||"directory"} initialEdition={route.edition} {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
               ) : active === "База сцены" ? (
                 <Directory {...{ scene, open }} view={directoryView} />
               ) : active === "Матч-центр" ? (
@@ -521,7 +527,7 @@ function Manager({
                     {next && (
                       <>
                         <h2>{next.teams.map((t) => c.teams[t]).join(" — ")}</h2>
-                        <p>{date(next.date)} · Выставочный BO{next.bestOf ?? 1} · {fixtureMap(next)}</p>
+                        <p>{date(next.date)} · {next.title || "Выставочный"} BO{next.bestOf ?? 1} · {fixtureMap(next)}</p>
                         <button
                           className="btn"
                           onClick={() => calendar(next.date)}

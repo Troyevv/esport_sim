@@ -64,8 +64,8 @@ export function NewCareer({
         team: club.id,
         name,
         mode,
-        scope,
-        regions: scope === "fast" ? areas : [],
+        scope: options.data?.circuit?"full":scope,
+        regions: !options.data?.circuit && scope === "fast" ? areas : [],
       }))
     )
       opened();
@@ -125,6 +125,7 @@ export function NewCareer({
               пятёркой
             </p>
           )}
+          {options.data?.circuit ? <p>Полная турнирная сцена · соревнования и VRS всех регионов</p> : <>
           <label>
             Охват симуляции
             <select value={scope} onChange={(e) => setScope(e.target.value)}>
@@ -161,7 +162,7 @@ export function NewCareer({
                 ? "Все доступные составы, включая тир-3."
                 : "Основная сцена (тир-1 и тир-2) и ваша команда. В базах без тиров участвуют все доступные составы."}
             </p>
-          )}
+          )}</>}
         </div>
         <div className="cr-card cr-form">
           <h2>Игровой персонаж</h2>
@@ -199,7 +200,7 @@ export function NewCareer({
               !name.trim() ||
               !club ||
               !!options.error ||
-              (scope === "fast" && !areas.length)
+              (!options.data?.circuit && scope === "fast" && !areas.length)
             }
           >
             Создать карьеру

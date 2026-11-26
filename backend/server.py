@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
-from . import cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
+from . import competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
@@ -49,12 +49,14 @@ class Command(BaseModel):
         "tactic-assign",
         "database-match",
         "career-create",
+        "career-entry",
         "career-open",
         "career-exhibition",
         "career-lab",
         "career-save",
         "career-load",
         "career-play",
+        "career-watch",
         "career-finish",
         "career-advance",
     ]
@@ -124,7 +126,15 @@ def create_app(
                 while True:
                     await wake_calendar.wait()
                     async with condition:
-                        work = store.careers.work(store.read())
+                        state = store.read()
+                        try:
+                            work = store.careers.work(state)
+                        except ValueError as exc:
+                            c = state["career"]
+                            token = (state["context"], c["id"], c["queue"][0]["id"])
+                            store.careers.commit_work(token,None,str(exc))
+                            condition.notify_all()
+                            continue
                         if not work:
                             wake_calendar.clear()
                             continue
@@ -287,6 +297,19 @@ def create_app(
         store = app.state.store
         return store.careers.detail(store.read())
 
+    @app.get("/api/career/{career_id}/competitions")
+    async def tournament_directory(career_id: str):
+        store=app.state.store
+        c=store.read().get("career")
+        if not c or c["id"]!=career_id or "circuit" not in c:
+            raise HTTPException(404,"В этой карьере нет турнирного календаря")
+        pack=store.careers.pack(c["source"])
+        return dict(archive=competitions.vrs.archive(),editions=[dict(e, ownEligible=registrations.in_region(c, e, c["team"], pack),
+                draws=[[dict(d,standings=competitions.stages.table(d)) for d in stage] for stage in e["draws"]])
+                for e in c["circuit"]["editions"].values()],
+                    available=registrations.available(c,c["team"],pack),live=c["circuit"].get("live"),
+                    snapshots={**competitions.seed_data()["snapshots"], **c["circuit"]["snapshots"]})
+
     @app.get("/api/career/{career_id}/scene")
     async def scene_directory(career_id: str):
         store = app.state.store
@@ -299,7 +322,7 @@ def create_app(
     @app.get("/api/career/options/{key}/{revision}")
     async def career_options(key: str, revision: int):
         try:
-            return career.choices(app.state.store.careers.pack([key, revision]))
+            return career.choices(app.state.store.careers.pack(competition_scene.source(key, revision)))
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
 

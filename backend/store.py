@@ -317,6 +317,8 @@ class Store:
                 )
             kind, value = command["kind"], command.get("value")
             c = state.get("career")
+            if state["world"].get("series",{}).get("spectator") and kind in ("timeout","call","resume","tactic-assign","series-veto"):
+                raise ValueError("В режиме наблюдения решения принимают команды")
             if kind == "career-exhibition":
                 # Switching away and validating the editor selection are one command.
                 self.careers.change(state, "career-lab", None)
