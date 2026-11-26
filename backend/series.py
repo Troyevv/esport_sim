@@ -239,6 +239,7 @@ def project(w, view="full"):
         )
     }
     public.update(
+        tournament=s.get("tournament"),spectator=s.get("spectator",False),
         pool=s["profile"]["pool"],
         names=cs2_maps.NAMES,
         coach=w["coachTeamId"],

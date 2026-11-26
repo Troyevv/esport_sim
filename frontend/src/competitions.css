@@ -1,17 +1,231 @@
-.tc-list,.tc-games{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px;margin-block:16px}
-.tc-card{text-align:left;color:inherit;font:inherit;padding:20px;display:grid;align-content:start;gap:9px;cursor:pointer}
-.tc-card strong{font-size:1.25rem;line-height:1.25}.tc-card footer,.tc-sub,.tc-facts small,.tc-result small,.tc-games small{display:block;color:var(--muted,#a4adbd)}
-.tc-card footer{margin-top:8px}.tc-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:14px}
-.tc-facts>div{padding:15px}.tc-facts b{display:flex;align-items:center;gap:6px}
-.tc-games article{padding:12px;border:1px solid var(--border,#384353);border-radius:5px}
-.tc-games article>div,.tc-entry-players>div,.tc-result{display:flex;align-items:center;gap:8px;justify-content:space-between;padding-block:6px}
-.tc-entry-players{max-width:620px}.tc-entry-players strong{margin-right:auto}.tc-entry-players [aria-pressed=true]{outline:2px solid var(--accent,#69beef)}
-.tc-entry>label{display:block;margin-block:12px}.tc-team{padding:7px;border-bottom:1px solid var(--border,#384353)}.tc-team summary,.tc-games summary{cursor:pointer}.tc-team summary .avatar{vertical-align:middle;margin-right:8px}
-.tc-result{flex-wrap:wrap;border-bottom:1px solid var(--border,#384353)}.tc-sub{font-size:.76rem;white-space:normal}.tc-facts~.view-tabs{display:flex;flex-wrap:wrap;margin-bottom:12px}
-@media(max-width:700px){.tc-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.tc-card,.tc-facts>div{padding:12px}.tc-result{align-items:flex-start;flex-direction:column}}
+.tc-list,
+.tc-games {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+  gap: 12px;
+  margin-block: 16px;
+}
+.tc-card {
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  padding: 20px;
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  cursor: pointer;
+}
+.tc-card strong {
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+.tc-card footer,
+.tc-sub,
+.tc-facts small,
+.tc-result small,
+.tc-games small {
+  display: block;
+  color: var(--muted, #a4adbd);
+}
+.tc-card footer {
+  margin-top: 8px;
+}
+.tc-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+.tc-facts > div {
+  padding: 15px;
+}
+.tc-facts b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tc-games article {
+  padding: 12px;
+  border: 1px solid var(--border, #384353);
+  border-radius: 5px;
+}
+.tc-games article > div,
+.tc-entry-players > div,
+.tc-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  padding-block: 6px;
+}
+.tc-entry-players {
+  max-width: 620px;
+}
+.tc-entry-players strong {
+  margin-right: auto;
+}
+.tc-entry-players [aria-pressed="true"] {
+  outline: 2px solid var(--accent, #69beef);
+}
+.tc-entry > label {
+  display: block;
+  margin-block: 12px;
+}
+.tc-team {
+  padding: 7px;
+  border-bottom: 1px solid var(--border, #384353);
+}
+.tc-team summary,
+.tc-games summary {
+  cursor: pointer;
+}
+.tc-team summary .avatar {
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.tc-result {
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border, #384353);
+}
+.tc-sub {
+  font-size: 0.76rem;
+  white-space: normal;
+}
+.tc-facts ~ .view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+@media (max-width: 700px) {
+  .tc-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .tc-card,
+  .tc-facts > div {
+    padding: 12px;
+  }
+  .tc-result {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
 
-.competition-mark{width:var(--mark-size);height:var(--mark-size);flex:0 0 var(--mark-size);display:inline-block;vertical-align:middle}
-.tc-card-line,.tc-title,.tc-fixture-day{display:flex;align-items:center;gap:12px}
-.tc-card-line{margin-bottom:4px}.tc-card-line small{text-align:left}.tc-title{padding:12px 0}.tc-title h1{margin:0}.tc-state{display:block;font-weight:650;color:var(--text);margin-top:4px}
-.tc-card:focus-visible,.tc-card:hover{border-color:var(--accent,#69beef)}.tc-card-line .competition-mark,.tc-title>.competition-mark{background:#202832;border-radius:8px;padding:3px;box-sizing:border-box}.tc-facts small{margin-bottom:4px}
-@media(max-width:650px){.tc-title{gap:10px}.tc-title>.competition-mark{width:54px;height:54px;flex-basis:54px}}
+.competition-mark {
+  width: var(--mark-size);
+  height: var(--mark-size);
+  flex: 0 0 var(--mark-size);
+  display: inline-block;
+  vertical-align: middle;
+}
+.tc-card-line,
+.tc-title,
+.tc-fixture-day {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tc-card-line {
+  margin-bottom: 4px;
+}
+.tc-card-line small {
+  text-align: left;
+}
+.tc-title {
+  padding: 12px 0;
+}
+.tc-title h1 {
+  margin: 0;
+}
+.tc-state {
+  display: block;
+  font-weight: 650;
+  color: var(--text);
+  margin-top: 4px;
+}
+.tc-card:focus-visible,
+.tc-card:hover {
+  border-color: var(--accent, #69beef);
+}
+.tc-card-line .competition-mark,
+.tc-title > .competition-mark {
+  background: #202832;
+  border-radius: 8px;
+  padding: 3px;
+  box-sizing: border-box;
+}
+.tc-facts small {
+  margin-bottom: 4px;
+}
+@media (max-width: 650px) {
+  .tc-title {
+    gap: 10px;
+  }
+  .tc-title > .competition-mark {
+    width: 54px;
+    height: 54px;
+    flex-basis: 54px;
+  }
+}
+.tc-bracket {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  padding: 0 2px 15px;
+  scroll-snap-type: x proximity;
+}
+.tc-round {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 195px;
+  max-width: 250px;
+  flex: 1 0 195px;
+  scroll-snap-align: start;
+}
+.tc-round h3 {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--accent, #69beef);
+  padding-bottom: 7px;
+}
+.tc-pair {
+  position: relative;
+  background: var(--panel, #212b36);
+  border: 1px solid var(--border, #374351);
+  border-radius: 5px;
+  padding: 8px 9px;
+}
+.tc-pair > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  gap: 8px;
+}
+.tc-pair > div + div {
+  border-top: 1px solid var(--border, #374351);
+}
+.tc-pair small {
+  font-size: 0.68rem;
+  color: var(--muted, #abb9c5);
+  display: block;
+}
+.tc-winner span,
+.tc-winner b {
+  color: #a3dfc2;
+}
+.tc-pair span {
+  font-variant-numeric: tabular-nums;
+}
+.tc-pair b {
+  font-size: 0.84rem;
+}
+.tc-round:not(:last-child) .tc-pair::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 1px;
+  background: var(--border, #374351);
+  right: -13px;
+  top: 50%;
+}

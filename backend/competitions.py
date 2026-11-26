@@ -1,19 +1,29 @@
 """Competition calendar, registration and stage advancement inside the career transaction."""
 
 import hashlib
+from calendar import monthrange
 from copy import deepcopy
 from collections import Counter, defaultdict
 
 from . import competition_stages as stages, registrations, vrs
-from .competition_catalog import iem_usa, offset, pro_league, rivals, season, seed_data
+from .competition_catalog import offset, season, seed_data
+from .competition_catalog import cct_europe
+from . import competition_scene
 from .database import day, require
 
 
-def clock(c, date, title):
-    if not any(e["date"] == date and e["kind"] == "review" for e in c["queue"]):
-        c["queue"].append(
-            dict(kind="review", id="day-" + date, date=date, teams=[], title=title)
-        )
+def clock(c, date, title, event=None):
+    review = next(
+        (e for e in c["queue"] if e["date"] == date and e["kind"] == "review"), None
+    )
+    if review is None:
+        review = dict(kind="review", id="day-" + date, date=date, teams=[], title=title)
+        c["queue"].append(review)
+    if event:
+        item = dict(edition=event["id"], tournament=event["title"], title=title)
+        agenda = review.setdefault("agenda", [])
+        if item not in agenda:
+            agenda.append(item)
 
 
 def order(c):
@@ -28,9 +38,21 @@ def order(c):
 
 
 def notice(c, event, title, body):
+    identity = hashlib.sha256(
+        "\0".join((event["id"], c["date"], title, body)).encode()
+    ).hexdigest()[:24]
+    if any(
+        m.get("id") == identity
+        for m in reversed(c["milestones"])
+        if m["date"] == c["date"]
+    ):
+        return
     c["milestones"].append(
         dict(
             date=c["date"],
+            id=identity,
+            edition=event["id"],
+            sender=event["organizer"],
             title=event["title"] + " · " + title,
             body=body,
             matches=None,
@@ -68,7 +90,15 @@ def rank(c, date, pack):
 
 def init(c, pack):
     c["clubNames"] = {t: pack["teams"][t]["name"] for t in c["teams"]}
-    c["circuit"] = dict(version=1, editions={}, bench={}, snapshots={}, awards={})
+    c["circuit"] = dict(
+        version=1,
+        model=vrs.MODEL,
+        historyEdition="liquipedia-20261125-v1",
+        editions={},
+        bench={},
+        snapshots={},
+        awards={},
+    )
     for row in seed_data()["major"]:
         tid = row["team"]
         if tid in c["teams"]:
@@ -83,31 +113,35 @@ def init(c, pack):
 def add_season(c, pack, year):
     events = c["circuit"]["editions"]
     calendar = season(year)
+    if "tournamentSupplement" in pack:
+        calendar += cct_europe(year)
     if year == 2026:
-        calendar += pro_league(2027) + iem_usa(2027) + [rivals(2027)]
+        calendar += [e for e in season(2027) if not e["simulated"]]
     for event in calendar:
         if event["id"] in events:
             continue
         events[event["id"]] = event
-        if event["admission"] == "invitation" and not event["simulated"]:
+        if event["id"] == "pgl-major-2026":
             import_major(c, event, pack)
+        elif year == 2026 and event["series"] in ("cct-europe", "cct-europe-playin"):
+            import_cct(c, event, pack)
         for key, title in (
             ("opens", "Открытие регистрации"),
             ("lock", "Фиксация составов"),
             ("start", "Старт турнира"),
         ):
             if event[key] > c["date"]:
-                clock(c, event[key], title)
+                clock(c, event[key], title, event)
         if "applyBy" in event:
             for n in (0, 1, 2):
                 date = offset(event["applyBy"], n)
                 if date > c["date"]:
-                    clock(c, date, "Подтверждение заявки")
-        if event["series"] == "pgl-major" and event["simulated"]:
+                    clock(c, date, "Подтверждение заявки", event)
+        if event["admission"] == "invitation" and event["lock"] > c["date"]:
             clock(c, offset(event["lock"], -3), "Оставшиеся региональные места Major")
         reminder = offset(event["lock"], -1)
         if reminder > c["date"]:
-            clock(c, reminder, "Завтра завершается регистрация")
+            clock(c, reminder, "Завтра завершается регистрация", event)
     process_day(c, pack)
     clock(c, f"{year + 1}-01-01", "Новый сезон")
     for month in range(1, 13):
@@ -116,6 +150,40 @@ def add_season(c, pack, year):
         if publication > c["date"]:
             clock(c, publication, "Публикация VRS")
     order(c)
+
+
+def import_cct(c, event, pack):
+    qualifier = event["series"] == "cct-europe-playin"
+    rows = competition_scene.lineups()
+    rows = rows[:16] if qualifier else rows[16:]
+    event.update(snapshot="2026-10-05", invites={}, inviteRegions={}, announced=True)
+    field = []
+    for row in rows:
+        team = row["id"]
+        players = [p["id"] for p in row["players"]]
+        coach = next((k for k, r in pack["staff"].items() if r["team"] == team), None)
+        event["entries"][team] = "locked" if qualifier else "accepted"
+        event["registrations"][team] = [
+            dict(
+                version=1,
+                date=c["date"],
+                reason=None,
+                players=players,
+                reserves=[],
+                coach=coach,
+            )
+        ]
+        event["invites"][team] = players.copy()
+        event["inviteRegions"][team] = "Europe"
+        field.append(team)
+    if qualifier:
+        event["status"] = "playing"
+        event["stages"][0]["groupSeeds"] = [
+            list(range(i, i + 4)) for i in range(0, 16, 4)
+        ]
+        begin(c, event, field)
+    else:
+        event["direct"] = {"0": field[:12], "1": field[12:]}
 
 
 def import_major(c, event, pack):
@@ -203,11 +271,47 @@ def selected(c, event, pack):
     return [t for t in c["teams"] if registrations.in_region(c, event, t, pack)]
 
 
+def wildcard_pool(c, event, stamp, ranked, ranks, pack):
+    date = day(stamp)
+    month = (date.month + 5) % 12 + 1
+    year = date.year - int(date.month <= 6)
+    since = date.replace(
+        year=year, month=month, day=min(date.day, monthrange(year, month)[1])
+    ).isoformat()
+    former = set()
+    for date, rows in {**seed_data()["snapshots"], **c["circuit"]["snapshots"]}.items():
+        if since <= date <= stamp:
+            for r in rows:
+                if r["rank"] <= 12:
+                    former.update(r["core"])
+    finalists = []
+    for e in c["circuit"]["editions"].values():
+        if (
+            e["status"] == "finished"
+            and since <= e["end"] <= stamp
+            and e["prestige"] >= event["prestige"]
+            and not e.get("feeds")
+        ):
+            for t in e["placements"][:2]:
+                finalists.append(set(e["registrations"][t][-1]["players"]))
+    candidates = []
+    for t in ranked:
+        members = set(pack["rosters"][c["teams"][t]]["players"])
+        if ranks[t]["rank"] > 12 and (
+            len(members & former) >= 3
+            or any(len(members & five) >= 3 for five in finalists)
+        ):
+            candidates.append(t)
+    return candidates
+
+
 def issue_invites(c, event, pack):
     stamp, ranks = rank(c, min(event["opens"], c["date"]), pack)
     event["snapshot"] = stamp
     eligible = selected(c, event, pack)
     ranked = sorted((t for t in eligible if t in ranks), key=lambda t: ranks[t]["rank"])
+    if "minRegional" in event:
+        ranked = [t for t in ranked if ranks[t]["regional"] >= event["minRegional"]]
     admission = event["admission"]
     previous = list(c["circuit"]["editions"].values())
     preferred = []
@@ -218,7 +322,7 @@ def issue_invites(c, event, pack):
             (
                 e
                 for e in previous
-                if e["series"] == "pgl-major" and e["status"] == "finished"
+                if e["admission"] == "invitation" and e["status"] == "finished"
             ),
             key=lambda e: e["end"],
             default=None,
@@ -319,7 +423,7 @@ def issue_invites(c, event, pack):
         preferred = [
             (
                 0,
-                event["capacity"],
+                event.get("inviteCount", event["capacity"]),
                 [t for t in ranked if t not in main.get("invites", {})],
             )
         ]
@@ -334,9 +438,27 @@ def issue_invites(c, event, pack):
             and not e["id"].endswith("-summer")
         ]
         seeds = [e["placements"][0] for e in feeders]
-        preferred = [(0, event["capacity"], seeds + ranked)]
+        direct = event["capacity"] - 4 - event.get("wildcardCount", 0)
+        preferred = [(0, 4, seeds), (0, direct, ranked)]
+        if event.get("wildcardCount"):
+            preferred.append(
+                (0, 1, wildcard_pool(c, event, stamp, ranked, ranks, pack) + ranked)
+            )
+        # An unfilled league spot passes to an eligible roster on the invitation list.
+        preferred[0] = (0, 4, seeds + ranked)
+    elif event.get("wildcardCount"):
+        n = event["wildcardCount"]
+        preferred = [
+            (0, event["capacity"] - n, ranked),
+            (0, n, wildcard_pool(c, event, stamp, ranked, ranks, pack) + ranked),
+        ]
     else:
-        preferred = [(0, event["capacity"], ranked)]
+        preferred = [
+            (stage, n, ranked)
+            for stage, n in event.get(
+                "stageSlots", [(0, event.get("inviteCount", event["capacity"]))]
+            )
+        ]
     event["invitePools"] = [
         dict(stage=i, count=n, teams=list(dict.fromkeys(pool)))
         for i, n, pool in preferred
@@ -378,6 +500,10 @@ def region_stable(c, row, stamp):
 def refill_invites(c, event):
     assigned = set()
     event["direct"] = {}
+    for team, slot in event.get("qualifiedStages", {}).items():
+        if event["entries"].get(team) not in ("missed", "declined"):
+            event["direct"].setdefault(slot, []).append(team)
+            assigned.add(team)
     for group in event["invitePools"]:
         chosen = []
         for team in group["teams"]:
@@ -405,12 +531,14 @@ def refill_invites(c, event):
 def process_day(c, pack):
     events = c["circuit"]["editions"]
     # Higher prestige and then larger purses get the first decision on conflicting dates.
-    for event in sorted(
-        events.values(), key=lambda e: (e["prestige"], -sum(e["prizes"]), e["id"])
-    ):
+    for event in sorted(events.values(), key=tournament_priority):
         if event["status"] != "registration" or c["date"] < event["opens"]:
             continue
         if event["admission"] == "qualified":
+            if c["date"] == offset(event["lock"], -1) and event["entries"].get(
+                c["team"]
+            ) in ("qualified", "invited"):
+                notice(c, event, "Дедлайн завтра", "Проверьте заявку основного этапа.")
             continue
         if c["date"] < event["lock"]:
             if (
@@ -434,10 +562,9 @@ def process_day(c, pack):
                         + event["lock"]
                         + ".",
                     )
-            if (
-                offset(c["date"], 1) == event["lock"]
-                and event["entries"].get(c["team"]) == "accepted"
-            ):
+            if offset(c["date"], 1) == event["lock"] and event["entries"].get(
+                c["team"]
+            ) in ("accepted", "qualified", "invited", "confirmed", "offered"):
                 notice(
                     c, event, "Дедлайн завтра", "Проверьте пятёрку, запасных и тренера."
                 )
@@ -454,7 +581,7 @@ def process_day(c, pack):
                         ):
                             break
                         auto_register(c, event, pack)
-            if event["series"] == "pgl-major" and c["date"] == offset(
+            if event["admission"] == "invitation" and c["date"] == offset(
                 event["lock"], -3
             ):
                 last_chance(c, event, pack)
@@ -467,7 +594,56 @@ def auto_register(c, event, pack):
     regional_ranks = (
         rank(c, c["date"], pack)[1] if event["admission"] == "rankedOpen" else {}
     )
-    for team in selected(c, event, pack):
+    candidates = selected(c, event, pack)
+    if event["admission"] == "firstCome":
+        # Preserve published sign-up order at the career boundary. Later arrivals
+        # choose a date within the remaining registration window.
+        announced = [
+            "PURE",
+            "Monte",
+            "HEROIC",
+            "9INE",
+            "Hype Tech",
+            "B8",
+            "ENVY",
+            "GamerLegion",
+            "WBT",
+            "AIMCLUB Academy",
+            "Balkan Outlaws",
+            "HOTU",
+            "Illyrians",
+            "STATE",
+            "INFINITE",
+        ]
+        positions = (
+            {name.casefold(): i for i, name in enumerate(announced)}
+            if not event["simulated"]
+            else {}
+        )
+
+        def arrival(t):
+            name = pack["teams"][t]["name"].casefold()
+            position = next(
+                (
+                    i
+                    for registered, i in positions.items()
+                    if name in (registered, registered + " esports")
+                ),
+                None,
+            )
+            if position is not None:
+                return event["opens"], position
+            first = max(c["start"], event["opens"])
+            window = max(1, (day(event["lock"]) - day(first)).days - 1)
+            seed = int.from_bytes(
+                hashlib.sha256((event["id"] + t).encode()).digest()[:4], "big"
+            )
+            return offset(first, 1 + seed % window), seed
+
+        candidates = sorted(
+            (t for t in candidates if arrival(t)[0] <= c["date"]), key=arrival
+        )
+    for team in candidates:
         if team == c["team"] or event["entries"].get(team) not in (None, "invited"):
             continue
         if (
@@ -499,7 +675,7 @@ def auto_register(c, event, pack):
             continue
         players = pack["rosters"][c["teams"][team]]["players"]
         reserve = c["circuit"]["bench"].get(team, [])[: event["rules"]["reserves"]]
-        if event["series"] == "pgl-major":
+        if event["admission"] == "invitation":
             reference = vrs.plurality(
                 [vrs.country_regions().get(vrs.nationality(pack, p)) for p in players]
             )
@@ -589,9 +765,9 @@ def lock(c, event, pack):
             continue
         versions = event["registrations"].get(team)
         if (
-            state == "offered"
+            state in ("offered", "invited")
             or not versions
-            or not set(versions[-1]["players"])
+            or not set(versions[-1]["players"] + versions[-1]["reserves"])
             <= set(registrations.available(c, team, pack))
         ):
             event["entries"][team] = "missed"
@@ -611,13 +787,22 @@ def lock(c, event, pack):
     if event["admission"] == "rankedOpen":
         eligible = [t for t in eligible if t in ranks]
     eligible = eligible[: event["capacity"]]
+    if "poolBySize" in event:
+        total = max(
+            (amount for size, amount in event["poolBySize"] if size <= len(eligible)),
+            default=0,
+        )
+        event["prizes"] = [total * share // 100 for share in event["shares"]]
     field = set(eligible)
     for team, status in event["entries"].items():
         if status in ("accepted", "qualified", "confirmed"):
             event["entries"][team] = "locked" if team in field else "notSelected"
-    if event["admission"] == "invitation":
+    if event["admission"] == "invitation" or event.get("stageSlots"):
         for key, teams in event["direct"].items():
-            event["direct"][key] = [t for t in teams if t in field]
+            event["direct"][key] = sorted(
+                (t for t in teams if t in field),
+                key=lambda t: ranks[t]["rank"] if t in ranks else 10**6,
+            )
         eligible = event["direct"]["0"]
     if event["admission"] == "invitation" and any(
         len(event["direct"].get(str(i), [])) != n for i, n in enumerate([16, 8, 8])
@@ -626,11 +811,13 @@ def lock(c, event, pack):
             status="cancelled", reason="Не заполнены места по региональным квотам Major"
         )
         return
-    if "groupSeeds" in event["stages"][0] and len(eligible) != 8:
-        event.update(status="cancelled", reason="Не заполнены восемь приглашений")
+    if "groupSeeds" in event["stages"][0] and len(eligible) != sum(
+        map(len, event["stages"][0]["groupSeeds"])
+    ):
+        event.update(status="cancelled", reason="Не заполнены приглашения для групп")
         return
     if (
-        len(eligible) < 2
+        len(eligible) < event.get("minTeams", 2)
         or event["stages"][0]["format"] == "swiss"
         and len(eligible) != 16
     ):
@@ -649,7 +836,24 @@ def lock(c, event, pack):
 
 def begin(c, event, field):
     spec = event["stages"][len(event["draws"])]
-    if spec["format"] == "doubleGroups":
+    if (
+        not field
+        or spec["format"] == "swiss"
+        and len(field) != 16
+        or "fromGroups" in spec
+        and len(field) < len(spec["fromGroups"])
+    ):
+        event.update(
+            status="cancelled",
+            reason="После снятия участников не хватает допущенных составов для следующего этапа",
+        )
+        return
+    if spec["format"] == "roundRobin" and "groupSize" in spec:
+        groups = (len(field) + spec["groupSize"] - 1) // spec["groupSize"]
+        draws = [stages.draw("roundRobin", field[i::groups], 2) for i in range(groups)]
+        for draw in draws:
+            draw["secondPlaceBO"] = spec["secondPlaceBO"]
+    elif spec["format"] == "doubleGroups":
         draws = [stages.draw("double", field[i::2], advance=4) for i in range(2)]
     elif spec["format"] == "gsl":
         count = spec.get("groups", 4)
@@ -695,8 +899,10 @@ def schedule_draw(c, event):
                 if "roundDays" in spec
                 else round(duration * row["round"] / max(1, max_round))
             )
+            if "groupDays" in spec:
+                delta = spec["groupDays"][group][row["round"]]
             when = max(c["date"], offset(spec["start"], delta))
-            best = 3 if row.get("deciding") else spec["bestOf"]
+            best = row.get("bestOf", 3 if row.get("deciding") else spec["bestOf"])
             if draw.get("outputs") == [("winner", n)] or draw.get("outputs") == [
                 ["winner", n]
             ]:
@@ -734,23 +940,76 @@ def schedule_draw(c, event):
     if index + 1 < len(event["stages"]):
         next_spec = event["stages"][index + 1]
         if "fromGroups" in next_spec:
-            promoted = [promoted[i] for i in next_spec["fromGroups"]]
+            promoted = [
+                promoted[i] for i in next_spec["fromGroups"] if i < len(promoted)
+            ]
         begin(c, event, event["direct"].get(str(index + 1), []) + promoted)
     else:
         finish(c, event, promoted)
 
 
+def tournament_priority(event):
+    return (event["prestige"], -sum(event["prizes"]), event["start"], event["id"])
+
+
+def qualification_conflict(c, target, team):
+    commitments = [
+        e
+        for e in c["circuit"]["editions"].values()
+        if e is not target
+        and e["entries"].get(team) in registrations.COMMITTED
+        and registrations.conflicts(target, e)
+    ]
+    if not commitments:
+        return None
+    for other in commitments:
+        if (
+            team == c["team"]
+            or other["lock"] <= c["date"]
+            or tournament_priority(other) <= tournament_priority(target)
+        ):
+            return other
+    for other in commitments:
+        other["entries"][team] = "declined"
+        other.setdefault("reasons", {})[team] = "Пройден отбор: " + target["title"]
+    return None
+
+
 def finish(c, event, promoted):
+    if event["status"] == "finished":
+        return
     event.update(status="finished", advanced=promoted)
+    archive_result(c, event, promoted)
     if "feeds" in event:
         target = c["circuit"]["editions"][event["feeds"]]
         for slot, team in enumerate(promoted):
             if "targetStages" in event:
                 stage = str(event["targetStages"][slot])
                 target["direct"].setdefault(stage, []).append(team)
-                target["inviteRegions"][team] = event["region"]
-            target["entries"][team] = "qualified"
-            target["registrations"][team] = deepcopy(event["registrations"][team])
+                target.setdefault("qualifiedStages", {})[team] = stage
+                target.setdefault("inviteRegions", {})[team] = event["region"]
+            previous = event["registrations"][team][-1]
+            target.setdefault("qualification", {})[team] = dict(
+                edition=event["id"], version=previous["version"]
+            )
+            clash = registrations.player_conflict(
+                c, target, team, previous["players"], previous["reserves"]
+            ) or qualification_conflict(c, target, team)
+            if clash:
+                target["entries"][team] = "invited" if team == c["team"] else "declined"
+                target.setdefault("reasons", {})[team] = (
+                    "Пересечение дат: " + clash["title"]
+                )
+            else:
+                target["entries"][team] = "qualified"
+                target["registrations"].setdefault(team, []).append(
+                    dict(
+                        deepcopy(previous),
+                        version=len(target["registrations"].get(team, [])) + 1,
+                        date=c["date"],
+                        reason=None,
+                    )
+                )
             for sibling in c["circuit"]["editions"].values():
                 if (
                     sibling is not event
@@ -764,15 +1023,21 @@ def finish(c, event, promoted):
                     c,
                     target,
                     "Квалификация пройдена",
-                    "Заявка перенесена из открытого отбора.",
+                    (
+                        "Выберите турнир из-за пересечения дат с " + clash["title"]
+                        if clash
+                        else "Создана заявка основного этапа. Её можно изменить до фиксации."
+                    ),
                 )
         if target["lock"] > c["date"] and all(
             e["status"] in ("finished", "cancelled")
             for e in c["circuit"]["editions"].values()
             if e.get("feeds") == target["id"]
         ):
-            clock(c, target["lock"], "Фиксация состава основного этапа")
-        return
+            clock(c, target["lock"], "Фиксация состава основного этапа", target)
+
+
+def archive_result(c, event, promoted):
     placements = list(promoted)
     for draws in reversed(event["draws"]):
         for draw in draws:
@@ -800,7 +1065,8 @@ def finish(c, event, promoted):
             event.get("clubRewards", [0] * len(event["prizes"])),
         )
     }
-    c["circuit"]["awards"][event["id"]] = event["payouts"].copy()
+    if event["payouts"]:
+        c["circuit"]["awards"][event["id"]] = event["payouts"].copy()
     if event["stats"]:
         event["mvp"] = max(
             event["stats"],
@@ -810,7 +1076,7 @@ def finish(c, event, promoted):
                 p,
             ),
         )
-    if c["team"] in placements:
+    if c["team"] in placements and "feeds" not in event:
         notice(
             c, event, "Турнир завершён", f"Место: {placements.index(c['team']) + 1}."
         )
@@ -821,7 +1087,11 @@ def completed(c, e, report):
     draw = event["draws"][e["stage"]][e["group"]]
     winner = report["winnerTeamId"]
     stages.record(draw, e["game"], winner, next(t for t in e["teams"] if t != winner))
-    draw["games"][e["game"]]["score"] = report["score"]
+    row = draw["games"][e["game"]]
+    row["score"] = report["score"]
+    if draw["format"] == "roundRobin":
+        counts = Counter(r["winnerTeamId"] for r in report["rounds"])
+        row["roundScore"] = [counts[t] for t in e["teams"]]
     for row in report["stats"]:
         target = event["stats"].setdefault(
             row["player"],
@@ -1066,13 +1336,8 @@ def resolve_availability(c, fixture, pack, *, withdraw=False):
     draw = edition["draws"][fixture["stage"]][fixture["group"]]
     row = draw["games"][fixture["game"]]
     if len(absent) == 2:
-        # Neither roster can advance. A Swiss round depends on its full field.
         if draw["format"] == "swiss":
-            edition.update(
-                status="cancelled", reason="Обе команды матча сняты в швейцарском этапе"
-            )
-            c["queue"] = [q for q in c["queue"] if q.get("edition") != edition["id"]]
-            return True
+            draw.setdefault("withdrawn", []).extend(absent)
         row.update(winner=None, loser=None)
     else:
         loser = next(iter(absent))

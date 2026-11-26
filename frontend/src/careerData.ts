@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { serverURL } from "./session";
 import type { Visual } from "./SceneIdentity";
-export type Act = (kind: string, value?: object) => Promise<boolean>;
+export type Act = (kind: string, value?: object, rejected?:(detail:string)=>void) => Promise<boolean>;
 export type Summary = {
   id: string;
   character: string;
@@ -14,6 +14,7 @@ export const fixtureMap = (e: Fixture) => e.bestOf ? "Map Veto" : ({de_dust2: "D
 export type Fixture = {
   mapId?: string;
   title?:string;
+  agenda?: {edition:string;tournament:string;title:string}[];
   edition?:string;
   bestOf?: number;
   kind: "match" | "review";
@@ -55,7 +56,7 @@ export type Career = Summary & {
   queue: Fixture[];
   history: Fixture[];
   regions: string[];
-  milestones: { date: string; title: string; body?:string; matches: number | null }[];
+  milestones: { id?:string; edition?:string; sender?:string; date: string; title: string; body?:string; matches: number | null }[];
   progress: { done: number; total: number } | null;
   error: string | null;
   roster: Player[];
@@ -70,7 +71,7 @@ type Team = {
   region: string | null;
   tier: number | null;
 };
-export type Options = { date: string; teams: Team[] };
+export type Options = { circuit?:boolean; date: string; teams: Team[] };
 export type Catalog = { id: string; title: string; revision: number }[];
 export type Report = {
   maps?: { mapId: string; scoreByTeam: Record<string, number> }[];

@@ -26,3 +26,4 @@ jobs:
           path: runtime-data/maps/26879581
       - run: python -m pip install -r requirements-test.txt
       - run: python -m tools.check_competition_lifecycle
+      - run: python -m tools.check_competition_seasons

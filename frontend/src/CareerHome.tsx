@@ -24,13 +24,15 @@ export type Letter = {
   from: string;
   body: string;
   event?: Fixture;
+  edition?:string;
 };
 export function letters(c: Career): Letter[] {
   const box: Letter[] = c.milestones.map((m) => ({
-    id: "club/" + m.date + "/" + m.title,
+    edition:m.edition,
+    id: m.id || "club/" + m.date + "/" + m.title,
     date: m.date,
     title: m.title,
-    from: c.organization || c.club,
+    from: m.sender || c.organization || c.club,
     body:m.body || (
       m.matches === null
         ? c.character + " · " + position(c.mode) + " · " + c.club
@@ -64,12 +66,14 @@ export function Inbox({
   selected,
   select,
   calendar,
+  tournament,
 }: {
   box: Letter[];
   read: string[];
   selected: Letter | null;
   select: (id: string | null) => void;
   calendar: (d: string) => void;
+  tournament:(id:string)=>void;
 }) {
   const [filter, setFilter] = useState(false);
   const filtered = box.filter(
@@ -130,6 +134,7 @@ export function Inbox({
               </div>
               <p className="message-body">{selected.body}</p>
               <div className="message-actions">
+                {(selected.edition || selected.event?.edition) && <button className="btn primary" onClick={()=>tournament((selected.edition || selected.event?.edition)!)}>Открыть турнир</button>}
                 <button
                   className="btn"
                   onClick={() =>

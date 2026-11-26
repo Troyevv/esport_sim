@@ -204,7 +204,9 @@ def test_new_season_distinguishes_announced_and_generated_editions(pack, scene):
     competitions.tick(c, pack)
     events = c["circuit"]["editions"]
     assert events["pgl-major-2026"] == old
-    assert events["pgl-major-2027"]["simulated"]
+    assert not events["pw-major-2027"]["simulated"]
+    assert events["fire-major-2027"]["start"] == "2027-05-31"
+    assert not events["fire-major-2027"]["draws"]
     assert not events["iem-usa-2027"]["simulated"]
     assert (
         events["cct-contenders-2027-spring"]["start"]
@@ -235,11 +237,22 @@ def test_qualifier_carries_versions_and_excludes_other_branch(scene):
     events = c["circuit"]["editions"]
     q = events["cct-contenders-2026-oq1"]
     target = events[q["feeds"]]
-    team = next(iter(q["registrations"]))
+    team = next(
+        t for t in q["registrations"] if not registrations.conflict_for(c, target, t)
+    )
     c["date"] = q["end"]
     competitions.finish(c, q, [team])
     assert target["entries"][team] == "qualified"
-    assert target["registrations"][team] == q["registrations"][team]
+    assert target["registrations"][team][0]["version"] == 1
+    assert (
+        target["registrations"][team][0]["players"]
+        == q["registrations"][team][-1]["players"]
+    )
+    assert target["qualification"][team] == dict(
+        edition=q["id"], version=q["registrations"][team][-1]["version"]
+    )
+    competitions.finish(c, q, [team])
+    assert len(target["registrations"][team]) == 1
     assert target["registrations"][team] is not q["registrations"][team]
     assert events["cct-contenders-2026-oq2"]["entries"].get(team) in (
         None,
@@ -274,3 +287,60 @@ def test_transfer_removes_access_without_rewriting_frozen_roster(pack, scene):
     assert competitions.resolve_availability(c, e, pack)
     row = edition["draws"][e["stage"]][e["group"]]["games"][e["game"]]
     assert row["administrative"] and "score" not in row and not c["history"]
+
+
+def test_double_swiss_withdrawal_keeps_other_groups_playing():
+    stage = stages.draw("swiss", [f"club{i}" for i in range(16)], 8)
+    first, *games = stages.ready(stage)
+    index, withdrawn = first
+    stage["withdrawn"] = withdrawn
+    stage["games"][index].update(winner=None, loser=None, administrative=True)
+    promoted = None
+    while promoted is None:
+        for n, pair in stages.ready(stage):
+            assert set(pair).isdisjoint(withdrawn)
+            stages.record(stage, n, *pair)
+        promoted = stages.finish_round(stage)
+    assert len(set(promoted)) == 8 and set(promoted).isdisjoint(withdrawn)
+    assert "score" not in stage["games"][index]
+
+
+def test_cct_europe_opening_day_and_pinned_guest_rosters(pack):
+    from backend import competition_scene
+
+    extra = competition_scene.extend(pack)
+    team = competition_scene.lineups()[0]["id"]
+    c = career.create(extra, dict(team=team, name="Тренер", scope="full", mode="owner"))
+    assert c["source"][-1] == competition_scene.EDITION
+    qualifier = c["circuit"]["editions"]["cct-europe-2026-playin"]
+    main = c["circuit"]["editions"]["cct-europe-2026"]
+    assert len(qualifier["registrations"]) == 16 and len(main["entries"]) == 20
+    games = [g for g in c["queue"] if g.get("edition") == qualifier["id"]]
+    assert len(games) == 8 and {g["date"] for g in games} == {
+        "2026-11-25",
+        "2026-11-27",
+    }
+    for fixture in games:
+        domain, _ = career.match_domain(extra, c, fixture)
+        assert len(domain["players"]) == 10
+    assert sum(main["prizes"]) == 25000 and list(map(len, main["direct"].values())) == [
+        12,
+        8,
+    ]
+
+
+def test_academy_starter_can_be_an_unused_major_reserve():
+    academy = dict(start="2026-12-01", end="2026-12-13", entries={}, registrations={})
+    major = dict(
+        start="2026-11-24",
+        end="2026-12-13",
+        entries={"senior": "locked"},
+        registrations={"senior": [dict(players=list("abcde"), reserves=["f"])]},
+    )
+    c = {"circuit": {"editions": {"academy": academy, "major": major}}}
+    assert registrations.player_conflict(c, academy, "youth", list("fghij")) is None
+    assert registrations.player_conflict(c, academy, "youth", list("aghij")) is major
+    assert registrations.player_conflict(c, major, "rival", list("fghij")) is major
+    academy["entries"]["youth"] = "locked"
+    academy["registrations"]["youth"] = [dict(players=list("fghij"), reserves=[])]
+    assert registrations.player_conflict(c, major, "senior", list("abcdf")) is academy

@@ -7,7 +7,7 @@ import sqlite3
 from pathlib import Path
 from uuid import uuid4
 
-from . import career, competitions, registrations, checkpoints, database, engine, match, series, veto, world
+from . import career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -56,7 +56,11 @@ class CareerStore:
 
     def pack(self, source):
         if not self.cached or self.cached[0] != source:
-            self.cached = (source.copy(), database.get(self.db, *source))
+            pack = database.get(self.db, *source[:2])
+            if len(source) > 2:
+                require(source == competition_scene.source(*source[:2]), "Неизвестная редакция составов турнира")
+                pack = competition_scene.extend(pack)
+            self.cached = (source.copy(), pack)
         return self.cached[1]
 
     def slots(self, cid=None):
@@ -253,7 +257,7 @@ class CareerStore:
         if kind == "career-create":
             database.valid_id(value.get("id"))
             require(type(value.get("revision")) is int, "Укажите редакцию базы")
-            pack = self.pack([value["id"], value["revision"]])
+            pack = self.pack(competition_scene.source(value["id"], value["revision"]))
             new = career.create(pack, value)
             self.save(state, "auto")
             state.pop("exhibitions", None)
@@ -306,7 +310,7 @@ class CareerStore:
                             "Срок подтверждения истёк")
                     event["entries"][team]="confirmed"
                 elif action=="decline":
-                    require(c["date"]<event["lock"] and event["entries"].get(team) in ("invited","accepted","offered","confirmed"),
+                    require(c["date"]<event["lock"] and event["entries"].get(team) in ("invited","accepted","offered","confirmed","qualified"),
                             "Отказ недоступен")
                     event["entries"][team]="declined"
                     if event.get("invitePools") and not event.get("inviteClosed"):

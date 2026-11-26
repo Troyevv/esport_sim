@@ -132,9 +132,20 @@ def ready(stage):
 
 
 def table(stage):
-    records = {t: dict(team=t, wins=0, losses=0, opponents=[]) for t in stage["teams"]}
+    records = {
+        t: dict(team=t, wins=0, losses=0, roundDiff=0, opponents=[])
+        for t in stage["teams"]
+    }
     for g in stage["games"]:
+        if g.get("groupDecider"):
+            continue
+        if "roundScore" in g:
+            diff = g["roundScore"][0] - g["roundScore"][1]
+            records[g["slots"][0]]["roundDiff"] += diff
+            records[g["slots"][1]]["roundDiff"] -= diff
         a, b = g.get("winner"), g.get("loser")
+        if a and not b and g.get("bye") and stage["format"] == "swiss":
+            records[a]["wins"] += 1
         if a and b:
             records[a]["wins"] += 1
             records[b]["losses"] += 1
@@ -144,15 +155,72 @@ def table(stage):
         row["buchholz"] = sum(
             records[o]["wins"] - records[o]["losses"] for o in row["opponents"]
         )
+    if stage["format"] == "roundRobin":
+        return sorted(
+            records.values(), key=lambda r: (-r["wins"], -r["roundDiff"], r["losses"])
+        )
     return sorted(
         records.values(),
         key=lambda row: (-row["wins"], row["losses"], -row["buchholz"]),
     )
 
 
+def swiss_after_withdrawal(stage, standings):
+    # Pair the surviving field by record. Float across score groups when withdrawals
+    # make them odd. A bye is administrative and produces no series or player stats.
+    active = [
+        r
+        for r in standings
+        if r["team"] not in stage["withdrawn"] and max(r["wins"], r["losses"]) < 3
+    ]
+    if len(active) % 2:
+        prior = {g.get("winner") for g in stage["games"] if g.get("bye")}
+        recipient = next(
+            (r for r in reversed(active) if r["team"] not in prior), active[-1]
+        )
+        active.remove(recipient)
+        n = game(
+            stage, [recipient["team"], None], stage["round"] - 1, "Проход без соперника"
+        )
+        stage["games"][n].update(winner=recipient["team"], loser=None, bye=True)
+
+    def pair(rows):
+        if not rows:
+            return []
+        first, *others = rows
+        for candidate in sorted(
+            others,
+            key=lambda r: (
+                abs(r["wins"] - first["wins"]),
+                abs(r["losses"] - first["losses"]),
+            ),
+        ):
+            if candidate["team"] in first["opponents"]:
+                continue
+            tail = pair([r for r in others if r is not candidate])
+            if tail is not None:
+                return [(first, candidate), *tail]
+        return None
+
+    pairs = pair(active)
+    if pairs is None:
+        # A depleted field can exhaust every previously unplayed pairing.
+        pairs = zip(active[::2], active[1::2], strict=True)
+    for a, b in pairs:
+        n = game(
+            stage, [a["team"], b["team"]], stage["round"] - 1, f"Раунд {stage['round']}"
+        )
+        stage["games"][n]["deciding"] = (
+            max(a["wins"], b["wins"], a["losses"], b["losses"]) == 2
+        )
+
+
 def swiss_round(stage):
     standings = table(stage)
     stage["round"] += 1
+    if stage.get("withdrawn"):
+        swiss_after_withdrawal(stage, standings)
+        return
     pools = {}
     for row in standings:
         if max(row["wins"], row["losses"]) < 3:
@@ -221,12 +289,29 @@ def swiss_round(stage):
 def finish_round(stage):
     if any("winner" not in g for g in stage["games"]):
         return None
-    if stage["format"] == "swiss" and stage["round"] < 5:
+    while stage["format"] == "swiss" and stage["round"] < 5:
         swiss_round(stage)
-        return None
+        if any("winner" not in row for row in stage["games"]):
+            return None
+    if stage.get("secondPlaceBO") and "outputs" not in stage:
+        rows = table(stage)
+        if len(rows) == 3:
+            index = game(
+                stage,
+                [rows[1]["team"], rows[2]["team"]],
+                max(g["round"] for g in stage["games"]) + 1,
+                "За второе место в группе",
+            )
+            stage["games"][index].update(
+                bestOf=stage["secondPlaceBO"], groupDecider=True
+            )
+            stage["outputs"] = [rows[0]["team"], ("winner", index)]
+            return None
     if "outputs" in stage:
         return [team for slot in stage["outputs"] if (team := resolve(stage, slot)[1])]
-    return [r["team"] for r in table(stage)[: stage["advance"]]]
+    return [
+        r["team"] for r in table(stage) if r["team"] not in stage.get("withdrawn", [])
+    ][: stage["advance"]]
 
 
 def record(stage, index, winner, loser):

@@ -126,7 +126,7 @@ export default function CareerScreen(props: Props) {
     );
   return <Manager key={c.id} {...props} c={c} enabled={enabled} />;
 }
-type Route = { page: string; profile?: Profile };
+type Route = { page: string; profile?: Profile; edition?:string };
 function Manager({
   c,
   frame,
@@ -176,13 +176,14 @@ function Manager({
     setDrawer(false);
     setSearch(false);
   };
-  const to = (page: string, profile?: Profile) => {
+  const to = (page: string, profile?: Profile, edition?:string) => {
     closeOverlays();
     if (tool) leaveTool();
     historyStack.current.push(route);
-    setRoute({ page, profile });
+    setRoute({ page, profile, edition });
     window.scrollTo(0, 0);
   };
+  const tournament = (id:string) => to("Соревнования",undefined,id);
   const open = (p: Profile) => to("Профиль", p);
   const back = () => {
     setRoute(historyStack.current.pop() || { page: "Кабинет" });
@@ -432,14 +433,14 @@ function Manager({
           <div key={active} className="screen-enter">
             {tool ||
               (active === "Календарь" ? (
-                <Calendar key={day} c={c} initial={day} />
+                <Calendar key={day} c={c} initial={day} tournament={tournament}/>
               ) : active === "Входящие" ? (
                 <Inbox
                   box={box}
                   read={read}
                   selected={box.find((m) => m.id === inboxId) || null}
                   select={showLetter}
-                  calendar={calendar}
+                  calendar={calendar} tournament={tournament}
                 />
               ) : active === "Сохранения" ? (
                 <>
@@ -516,7 +517,7 @@ function Manager({
                   }}
                 />
               ) : active === "Соревнования" || active === "Рейтинг VRS" ? (
-                <CompetitionCenter {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
+                <CompetitionCenter key={route.edition||"directory"} initialEdition={route.edition} {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
               ) : active === "База сцены" ? (
                 <Directory {...{ scene, open }} view={directoryView} />
               ) : active === "Матч-центр" ? (

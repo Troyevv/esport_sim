@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
-from . import competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
+from . import competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
@@ -304,7 +304,9 @@ def create_app(
         if not c or c["id"]!=career_id or "circuit" not in c:
             raise HTTPException(404,"В этой карьере нет турнирного календаря")
         pack=store.careers.pack(c["source"])
-        return dict(archive=competitions.vrs.archive(),editions=list(c["circuit"]["editions"].values()),
+        return dict(archive=competitions.vrs.archive(),editions=[dict(e, ownEligible=registrations.in_region(c, e, c["team"], pack),
+                draws=[[dict(d,standings=competitions.stages.table(d)) for d in stage] for stage in e["draws"]])
+                for e in c["circuit"]["editions"].values()],
                     available=registrations.available(c,c["team"],pack),live=c["circuit"].get("live"),
                     snapshots={**competitions.seed_data()["snapshots"], **c["circuit"]["snapshots"]})
 
@@ -320,7 +322,7 @@ def create_app(
     @app.get("/api/career/options/{key}/{revision}")
     async def career_options(key: str, revision: int):
         try:
-            return career.choices(app.state.store.careers.pack([key, revision]))
+            return career.choices(app.state.store.careers.pack(competition_scene.source(key, revision)))
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
 

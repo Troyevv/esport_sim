@@ -29,6 +29,7 @@ def roster_index(pack):
 def choices(pack):
     return dict(
         date=pack["asOf"],
+        circuit=pack["id"] == database.RELEASE_ID and pack["asOf"] == "2026-11-25",
         teams=[
             dict(id=tid, name=t["name"], region=t["region"], tier=t["tier"])
             for tid in roster_index(pack)
@@ -87,13 +88,13 @@ def create(pack, options):
     c = dict(
         version=VERSION,
         id=str(uuid4()),
-        source=[pack["id"], pack["revision"]],
+        source=[pack["id"], pack["revision"]] + ([pack["tournamentSupplement"]] if "tournamentSupplement" in pack else []),
         character=name.strip(),
         mode=mode,
         team=team,
         club=pack["teams"][team]["name"],
-        scope=scope,
-        regions=sorted(set(regions)),
+        scope="full" if circuit else scope,
+        regions=[] if circuit else sorted(set(regions)),
         start=pack["asOf"],
         date=pack["asOf"],
         teams=participants,
@@ -206,9 +207,12 @@ def match_domain(pack, c, event, badges=None, portraits=None):
 def initial(pack, c, event, badges=None, portraits=None):
     domain, rosters = match_domain(pack, c, event, badges, portraits)
     if "bestOf" in event:
-        return series.initial(event["seed"], event["bestOf"], domain, rosters,
+        game = series.initial(event["seed"], event["bestOf"], domain, rosters,
                               c["team"] if c["team"] in event["teams"] else None,
                               profile=(c["circuit"]["editions"][event["edition"]]["rules"] if event.get("edition") else c["seriesProfile"]), history=c["history"], today=event["date"])
+        if event.get("edition"):
+            game["series"]["tournament"]=c["circuit"]["editions"][event["edition"]]["title"]
+        return game
     return match.initial(
         event["seed"],
         domain,

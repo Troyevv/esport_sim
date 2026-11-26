@@ -7,13 +7,47 @@ def conflicts(a, b):
     return a["start"] <= b["end"] and b["start"] <= a["end"]
 
 
+COMMITTED = {"accepted", "locked", "qualified", "confirmed", "offered"}
+
+
+def conflict_for(c, event, team):
+    for other in c["circuit"]["editions"].values():
+        if (
+            other is not event
+            and other["entries"].get(team) in COMMITTED
+            and conflicts(event, other)
+        ):
+            return other
+    return None
+
+
+def player_conflict(c, event, team, players, reserves=()):
+    starters = set(players)
+    full_roster = starters.union(reserves)
+    for other in c["circuit"]["editions"].values():
+        if not conflicts(event, other):
+            continue
+        for tid, rows in other["registrations"].items():
+            if tid != team and rows and other["entries"].get(tid) in COMMITTED:
+                last = rows[-1]
+                if other is event:
+                    clash = full_roster.intersection(last["players"] + last["reserves"])
+                else:
+                    # An academy starter can also be the senior team’s unfielded reserve.
+                    # Activating that reserve runs this check again for the new five.
+                    clash = starters.intersection(last["players"])
+                if clash:
+                    return other
+    return None
+
+
 def signup(c, event, team, pack):
     require(
         event["opens"] <= c["date"] < event.get("applyBy", event["lock"]),
         "Регистрация закрыта",
     )
     require(
-        event["admission"] in ("open", "rankedOpen")
+        event["admission"] in ("open", "rankedOpen", "firstCome")
         or event["entries"].get(team) == "invited",
         "Нет приглашения или места из квалификации",
     )
@@ -22,19 +56,29 @@ def signup(c, event, team, pack):
         event["entries"].get(team) in (None, "invited", "declined"),
         "Вы уже подтвердили участие",
     )
-    for other in c["circuit"]["editions"].values():
-        if other is event or other["entries"].get(team) not in (
-            "accepted",
-            "locked",
-            "qualified",
-            "confirmed",
-            "offered",
-        ):
-            continue
-        require(not conflicts(event, other), "Пересечение дат: " + other["title"])
+    if event.get("singleOrganization"):
+        organization = pack["teams"][team]["organization"]
         require(
-            not (event.get("feeds") == other["id"]), "Команда уже прошла этот отбор"
+            not organization
+            or all(
+                t == team
+                or pack["teams"][t]["organization"] != organization
+                or st not in COMMITTED
+                for t, st in event["entries"].items()
+            ),
+            "В турнире уже участвует состав этой организации",
         )
+    parent = event
+    while parent.get("feeds"):
+        parent = c["circuit"]["editions"][parent["feeds"]]
+        require(
+            parent["entries"].get(team)
+            not in ("invited", "accepted", "locked", "qualified"),
+            "Команда уже получила место в следующем этапе",
+        )
+    clash = conflict_for(c, event, team)
+    if clash:
+        raise ValueError("Пересечение дат: " + clash["title"])
     require(
         sum(s == "accepted" for s in event["entries"].values()) < event["capacity"]
         or event["admission"] == "rankedOpen",
@@ -109,7 +153,7 @@ def submit(c, event, team, pack, players, reserves, coach, *, reason=None):
         require(
             len(set(players) & set(core)) >= minimum, "Не сохранено приглашённое ядро"
         )
-    if event["series"] == "pgl-major" and reserves:
+    if event["admission"] == "invitation" and reserves:
         from . import vrs
 
         countries = vrs.country_regions()
@@ -129,21 +173,10 @@ def submit(c, event, team, pack, players, reserves, coach, *, reason=None):
             ),
             "Замена меняет регион состава",
         )
-    for other in c["circuit"]["editions"].values():
-        if conflicts(event, other):
-            for tid, rows in other["registrations"].items():
-                if tid != team and other["entries"].get(tid) in (
-                    "accepted",
-                    "qualified",
-                    "locked",
-                    "confirmed",
-                    "offered",
-                ):
-                    latest = rows[-1]
-                    require(
-                        set(all_ids).isdisjoint(latest["players"] + latest["reserves"]),
-                        "Игрок заявлен за другую команду",
-                    )
+    require(
+        not player_conflict(c, event, team, players, reserves),
+        "Игрок заявлен за другую команду",
+    )
     row = dict(
         version=len(versions) + 1,
         date=c["date"],

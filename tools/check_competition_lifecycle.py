@@ -42,6 +42,7 @@ def check(directory):
     )
     state = store.read()
     c = state["career"]
+    pack = store.careers.pack(c["source"])
     eid = "ecl-oceania-2026-4"
     event = next(e for e in competitions.season(2026) if e["id"] == eid)
     c["circuit"]["editions"][eid] = event

@@ -13,6 +13,8 @@ type Evidence = {
 };
 export interface SeriesView {
   bestOf: number;
+  tournament?:string;
+  spectator?:boolean;
   stage: "veto" | "ready" | "playing" | "interval" | "finished";
   teams: string[];
   coach: string;
@@ -226,7 +228,7 @@ export function VetoCenter({ frame, enabled, act }: Props) {
     <article className="veto-center">
       <header className="veto-heading">
         <div>
-          <span className="eyebrow">ВЫСТАВОЧНЫЙ МАТЧ · BO{s.bestOf}</span>
+          <span className="eyebrow">{s.tournament||"ВЫСТАВОЧНЫЙ МАТЧ"} · BO{s.bestOf}</span>
           <h1>Map Veto</h1>
         </div>
         <div className="veto-tools">
@@ -251,7 +253,7 @@ export function VetoCenter({ frame, enabled, act }: Props) {
           <div key={t} className="veto-club">
             <Avatar name={s.clubs[t].name} club {...s.clubs[t].visual} />
             <div>
-              <small>{t === s.coach ? "Ваша команда" : "Соперник"}</small>
+              <small>{s.spectator?"Участник":t === s.coach ? "Ваша команда" : "Соперник"}</small>
               <strong>{s.clubs[t].name}</strong>
             </div>
           </div>

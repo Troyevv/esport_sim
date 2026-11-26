@@ -61,7 +61,7 @@ export function useSession(view: View) {
   const locked = useRef(false);
   const resync = () => setGeneration((v) => v + 1);
 
-  async function settle(intent: Intent, recovering: boolean) {
+  async function settle(intent: Intent, recovering: boolean, rejected?:(detail:string)=>void) {
     let result = recovering ? await request("/api/command/" + intent.id) : null;
     if (!result || result.status === 404)
       result = await request("/api/command", intent);
@@ -71,7 +71,7 @@ export function useSession(view: View) {
     if (result.ok || result.status === 409 || result.status === 422) {
       sessionStorage.removeItem(storageKey);
       if (!result.ok)
-        setNotice(
+        (rejected || setNotice)(
           typeof answer.detail === "string"
             ? answer.detail
             : "Команда отклонена сервером",
@@ -171,7 +171,7 @@ export function useSession(view: View) {
     };
   }, [view, generation]);
 
-  async function act(kind: string, value?: number|string|object) {
+  async function act(kind: string, value?: number|string|object, rejected?:(detail:string)=>void) {
     const seen = current.current;
     if (!seen || locked.current) return false;
     locked.current = true;
@@ -186,7 +186,7 @@ export function useSession(view: View) {
         value,
       };
       sessionStorage.setItem(storageKey, JSON.stringify(intent));
-      const accepted = await settle(intent, false);
+      const accepted = await settle(intent, false, rejected);
       // Read immediately as well as subscribing, so the next action uses the committed revision.
       const response = await request("/api/state?view=" + view);
       if (!response.ok) throw new Error();
