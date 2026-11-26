@@ -225,10 +225,11 @@ def next_round(w):
                      useTarget=None,useFloor=None,checkContact=None,checkPosition=None,
                      shelter=None,coverUntil=0,coverReview=0,bombSearch=None,coveredDefuser=None,coverPoint=None,revisedApproach=None,
                      rendezvous=None,plantCover=None,plantCheck=None,watchDevice=None,heardUse=-1000,
-                     seenDevice=None,beepBearing=None,plantCue=None,crossingReview=0,friendlyUtility=[])
+                     seenDevice=None,beepBearing=None,plantCue=None,crossingReview=0,screenedOpening=False,friendlyUtility=[])
         else:
             x, y = engine._center(engine._SPAWN_CELLS[side][slot])
             heading=0 if side=="T" else atan2(0,-1)
+        a.pop("postWatch", None)
         if reset or not a["hp"]:
             a.update(
                 weapon="Glock" if side == "T" else "USP",
@@ -444,7 +445,7 @@ def begin_live(w):
             plan = w["plans"][side]
             plan["lane"] = lane
             if side == "T" and not board and style in ("Сбор", "Контроль карты"):
-                plan["probe"] = ai.cs2_play.default_probe(space, squad, w["bomb"]["carrier"], plan, now)
+                plan["probe"] = ai.cs2_play.default_probe(space, squad, w["bomb"]["carrier"], plan, now, w["domain"])
         emit(
             w,
             "plan",
@@ -925,9 +926,13 @@ def advance(w):
                     # Sound identifies a sector, never a tracked live enemy position.
                     p = ai.sound_position(space,a)
                     key = "Шум"
-                    listener["knowledge"][key] = dict(
-                        id=key, **p, tick=now, source="Слух"
-                    )
+                    cue = dict(id=key, **p, tick=now, source="Слух")
+                    listener["knowledge"][key] = cue
+                    if space and now >= listener.get("nextSoundCall", 0):
+                        delay = ai.radio_delay(profile(w, listener)["skills"])
+                        listener["nextSoundCall"] = now + 10 + delay
+                        w["messages"].append(dict(team=listener["team"], sender=listener["id"],
+                                                  sight=cue, due=now+delay))
     action = w["action"]
     if action and not any(
         a["hp"] and a["id"] == action["player"] and kind == "objective"

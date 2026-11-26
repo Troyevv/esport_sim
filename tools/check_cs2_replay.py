@@ -15,10 +15,10 @@ def main():
     pair = random.Random(seed).sample(sorted(career.roster_index(pack).values()), 2)
     # Each tick is the first different recorded position in independent CI replays.
     samples = (
-        ("de_vertigo", 100, 4, (135.81, 185.47, 957.67), 100),
-        ("de_cache", 250, 0, (164.84, 244.99, 134.33), 100),
-        ("de_nuke", 190, 1, (320.58, 315.48, -32.33), 100),
-        ("de_dust2", 1450, 0, (121.75, 337.25, 10.00), 100),
+        ("de_vertigo", 100, 4, (78.84, 203.85, 957.67), 100),
+        ("de_cache", 250, 0, (235.07, 212.22, 139.75), 100),
+        ("de_nuke", 190, 1, (232.04, 333.46, -34.33), 100),
+        ("de_dust2", 1450, 0, (314.87, 74.67, 2.00), 25),
     )
     failures = []
     for name, tick, slot, point, hp in samples:
@@ -54,7 +54,7 @@ def main():
     # Record the approach as well as the finish so a divergence can be localized.
     seed = 41002
     pair = random.Random(seed).sample(sorted(career.roster_index(pack).values()), 2)
-    for teams, expected in ((pair, 341), (pair[::-1], 285)):
+    for teams, expected in ((pair, 577), (pair[::-1], 557)):
         state = match.initial(seed, database.match_input(pack, teams), teams, map_id="de_anubis")
         approach = []
         live = None

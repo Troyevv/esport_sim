@@ -111,7 +111,7 @@ def observe(w, players, space=None):
                     continue
                 sight = message["sight"]
                 if sight["tick"] > a["knowledge"].get(sight["id"], {}).get("tick", -1):
-                    a["knowledge"][sight["id"]] = dict(sight, source="Граната" if sight["source"]=="Граната" else "Радио")
+                    a["knowledge"][sight["id"]] = dict(sight, source=sight["source"] if sight["source"] in ("Граната","Слух") else "Радио")
     smoke = [
         f for f in w["effects"] if f["kind"] == "Дым" and f["land"] <= now < f["end"]
     ]
@@ -138,9 +138,12 @@ def observe(w, players, space=None):
             if space:
                 nearby = [p for p in observed if distance(p, b) <= 28 and abs(p["z"] - b["z"]) < 8]
                 cs2_intel.observe_contact(sight, b, prior, nearby, "speed" in sight)
+                if b["team"] == "T" and w.get("bomb", {}).get("carrier") == b["id"]:
+                    sight["carryingC4"] = True
             a["visible"].append(b["id"])
             a["knowledge"][b["id"]] = sight
             changed = space and prior and (prior.get("weapon") != sight["weapon"]
+                                              or prior.get("carryingC4") != sight.get("carryingC4")
                                               or prior.get("groupSize") != sight["groupSize"]
                                               or ("direction" in sight and "direction" not in prior))
             if b["id"] not in previous or now % 10 == 0 or changed:
@@ -226,7 +229,8 @@ def captain(w, squad, space=None):
         plan.update(site="B" if site == "A" else "A", rotated=True)
         if space:
             members = [a for a in w["agents"] if a["team"]=="T"]
-            plan["orders"] = space.orders("T",plan["site"],members,1-plan["lane"],plan["style"])
+            plan["lane"] = 1 - plan["lane"]
+            plan["orders"] = space.orders("T",plan["site"],members,plan["lane"],plan["style"])
             for a in squad:
                 a["waypoint"]=0
         else:

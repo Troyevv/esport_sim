@@ -7,6 +7,7 @@ on:
       - tests/test_installed_maps.py
       - frontend/e2e/real-maps.spec.ts
       - tools/cs2_tactical_audit.py
+      - tools/cs2_skill_audit.py
       - tools/check_cs2_matches.py
       - tools/check_cs2_replay.py
       - tools/check_cs2_motion.py
@@ -85,6 +86,31 @@ jobs:
         with:
           name: tactical-${{ matrix.map }}
           path: build/tactical/
+
+  skills:
+    needs: inspect
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        map: [de_ancient, de_anubis, de_cache, de_dust2, de_inferno, de_mirage, de_nuke, de_train, de_vertigo]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: cs2-runtime-26879581
+          path: runtime-data/maps/26879581
+      - run: python -m pip install -r requirements.txt
+      - name: Play controlled profiles with both starting sides and held-out rosters
+        run: python -m tools.cs2_skill_audit --map "${{ matrix.map }}" --seeds 41000 41001 59000 59001 --out build/skills/results.jsonl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: skills-${{ matrix.map }}
+          path: build/skills/results.jsonl
 
   integration:
     needs: inspect

@@ -65,3 +65,12 @@ def test_direction_and_equipment_affect_calls_without_tracking_target():
     assert not cs2_intel.sniper_lane(space, [pos], order, 50)
     space.hit = lambda *args: object()
     assert not cs2_intel.sniper_lane(space, [pos], order, 15)
+
+
+def test_bomb_report_is_dated_and_sound_is_not_a_second_player():
+    space = SightLines(None)
+    sight = dict(id="T1", x=10, y=0, z=0, tick=100, source="Радио", carryingC4=True)
+    sound = dict(id="Шум", x=22, y=0, z=0, tick=148, source="Слух")
+    assert cs2_intel.pressure(space, [sight, sound], 102)["A"] > 1.65
+    assert cs2_intel.pressure(space, [sight, sound], 150)["A"] < 1
+    assert cs2_intel.pressure(space, [sight, sound], 176)["A"] == 0

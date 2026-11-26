@@ -15,9 +15,9 @@ from .cs2_sites import BombSites
 from .match_rules import BLAST_RADIUS, ROLES
 
 BUILD = 26879581
-RULES = "cs2-bo1.8"
-PREVIOUS_RULES = "cs2-bo1.7"
-SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
+RULES = "cs2-bo1.9"
+PREVIOUS_RULES = "cs2-bo1.8"
+SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.7", "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )
@@ -482,13 +482,22 @@ class Map:
             seen = {q for q in targets if sights.get((eyes[pos], eyes[q]))}
             plant_views = [q for q in objectives if q in seen]
             entries = [q for q in ingress if q in seen]
-            if plant_views:
-                # Hold towards the objective with a known entry in the same field of view.
-                watch = min(plant_views, key=lambda q: min((dist(q, e) for e in entries), default=dist(q, plant)))
+            if entries and plant_views:
+                # Count points inside the same forward cone as the entry.
+                # A clear ray behind the defender does not cover the planter.
+                def covered(q):
+                    dx, dy = q[0]-pos[0], q[1]-pos[1]
+                    length = hypot(dx, dy)
+                    return sum(dx*(p[0]-pos[0])+dy*(p[1]-pos[1]) >=
+                               0.64*length*hypot(p[0]-pos[0], p[1]-pos[1]) for p in plant_views)
+
+                watch = max(entries, key=covered)
+                joint = covered(watch)
             else:
-                watch = entries[0] if entries else self._watch(site, pos, variant)
+                watch = next(iter(entries or plant_views), None) or self._watch(site,pos,variant)
+                joint = 0
             ranked.append((not bool(plant_views) if objectives else False,
-                           not bool(entries), -len(plant_views), -min(6, len(entries)),
+                           not bool(entries), -joint, -len(plant_views), -min(6, len(entries)),
                            pos not in covers, dist(pos, anchor), pos, watch))
         return [(pos, watch) for *_, pos, watch in sorted(ranked)]
 

@@ -81,3 +81,14 @@ def test_old_generic_rifle_board_follows_specific_plan():
     )
     assert match.board_categories({}, eco.FORCE) == ("Оружейная",)
     assert tactics.LEGACY_BUYS == ("Пистолетная", "Эко", "Оружейная")
+
+
+def test_full_buy_upgrades_retained_light_gun_after_equipping_squad():
+    w, squad = setup([16000] * 5)
+    for a in squad:
+        match_inventory.equip(a, match_inventory.stocked("MP9"))
+    plan = eco.decision(w, squad)
+    eco.buy(w, squad, plan, match.purchase, None)
+    assert all(match_inventory.slots(a)[0] == "AK-47" for a in squad)
+    assert all(len(a["utility"]) == 4 for a in squad)
+    assert all(a["cash"] >= plan["nextTarget"] - plan["lossIncome"] for a in squad)

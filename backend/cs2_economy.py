@@ -37,6 +37,9 @@ def items_for(actor, site, profile, board):
         extras += ["Свет", "HE"]
     elif slot in (0, 1):
         extras += ["HE"]
+    # A group with rifles can carry utility for both entry and postplant.
+    # Required board throws retain priority when the four inventory slots fill.
+    extras += ["Дым", "Свет", "Огонь" if side == "CT" else "HE"]
     options = list(required)
     for g in extras:
         if options.count(g) < (2 if g == "Свет" else 1):
@@ -119,6 +122,7 @@ def decision(
         and light >= 2
         and len(estimate) == 5
         and likely_guns >= 3
+        and sum(max(0, wallets[a["id"]] - reserves[a["id"]]) // rifle for a in squad) < light
         and not must_buy
     ):
         context = BONUS
@@ -238,6 +242,16 @@ def buy(w, squad, strategy, purchase, board):
         if side == "CT" and not a["kit"] and sum(p["kit"] for p in squad) < 2:
             pay(a, "Набор")
         grenades(a, strategy["needs"][a["id"]])
+    if budget == FULL and not context and all(match_inventory.slots(a)[0] for a in squad):
+        # Upgrade a retained close-range weapon after buying the team's kit.
+        # Preserve enough cash to replace the owner's gun after a lost round.
+        for a in squad:
+            primary = match_inventory.slots(a)[0]
+            if primary in ("MP9", "MAC-10", "Nova", "Negev"):
+                reserve = max(0, strategy["nextTarget"] - strategy["lossIncome"])
+                if funds[a["id"]] >= WEAPONS[rifle].price + reserve:
+                    pay(a, rifle)
+
 
 
 def update_opponents(w, winner, reason):

@@ -33,6 +33,8 @@ def pressure(space, contacts, now):
         if not site:
             continue
         weight = (1 - age / 75) * (0.45 if report["source"] == "Граната" else 1)
+        if report.get("carryingC4"):
+            weight *= 2
         direction = report.get("direction")
         if direction and age <= 20:
             target = space.site_points[site]

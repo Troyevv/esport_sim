@@ -2,8 +2,8 @@
 
 from math import atan2, cos, dist, hypot, sin, tau
 from .cs2_maps import UNIT, xyz
-from . import match_performance as perf
-from .match_rules import BLAST_RADIUS, RULES, equipment_value
+from . import match_performance as perf, world
+from .match_rules import BLAST_RADIUS, RULES, UTILITY, equipment_value
 
 
 def opening(space, w, squad, captain, player, buy, site, style, call):
@@ -33,15 +33,17 @@ def opening(space, w, squad, captain, player, buy, site, style, call):
             label = space.profile["probe"][site]
             lane = min(range(2), key=lambda j: label in space.profile[site][j])
             style = "Контроль карты"
-        elif buy in ("Эко", "Частичная", "Форс", "Бонусная"):
-            # A shorter approach keeps teammates with pistols close enough to trade.
-            area = captain["navArea"]
-            options = [
-                space.approach(site, j).costs.get(area, float("inf")) for j in range(2)
-            ]
-            lane = min(range(2), key=options.__getitem__)
-            style = "Групповой выход"
-        elif buy == "Полная" and style == "Быстро" and not call:
+        elif style == "Быстро" and not call:
+            # Light equipment favours a close trade only when at least two
+            # friendly spawns can reach the crossing before a defender.
+            if buy in ("Эко", "Частичная", "Форс", "Бонусная"):
+                def contest_margin(j):
+                    costs, defender = space.contest(site, j)
+                    arrivals = sorted(costs.get(p["navArea"], float("inf")) for p in squad)
+                    return arrivals[1] - defender
+
+                lane = min(range(2), key=contest_margin)
+                style = "Групповой выход"
             costs, defender = space.contest(site,lane)
             approach = sorted(costs.get(p["navArea"],float("inf")) for p in squad)
             # A fast split requires two players able to contest together. A lone
@@ -53,12 +55,19 @@ def opening(space, w, squad, captain, player, buy, site, style, call):
     return site, style, lane
 
 
-def default_probe(space, squad, carrier, plan, now):
+def default_probe(space, squad, carrier, plan, now, domain=None):
     """Split an information default between the primary approach, mid and the flank."""
     site = plan["site"]
     other = "B" if site == "A" else "A"
     available = [a for a in squad if a["id"] != carrier]
-    scout = min(available, key=lambda a: (a["playingRole"] != "lurker", a["slot"]))
+    def scout_fit(a):
+        if domain is None:
+            return 0
+        player = domain["players"][a["playerId"]]
+        return (player["skills"]["lurking"] + player["roleMastery"].get("lurker", 0)
+                + player["mapKnowledge"].get(space.name.removeprefix("de_"), 0))
+
+    scout = min(available, key=lambda a: (a["playingRole"] != "lurker", -scout_fit(a), a["slot"]))
     available.remove(scout)
     mid = min(available, key=lambda a: (a["playingRole"] != "awper", a["slot"]))
     available.remove(mid)
@@ -82,7 +91,7 @@ def default_probe(space, squad, carrier, plan, now):
         angles = [space.site_points[sector], *space.ingress(sector,plan["lane"])]
         angles = [q for q in angles if dist(point,q)>6 and space.hit(point,q,1,64) is None]
         watch = min(angles,key=lambda q: dist(point,q), default=space.site_points[sector])
-        stations[a["id"]] = dict(label=label, point=list(point), watch=list(watch))
+        stations[a["id"]] = dict(label=label, sector=sector, point=list(point), watch=list(watch))
     return dict(scout=scout["id"], stations=stations, reports={}, until=now+RULES["live"]-RULES["plant"])
 
 
@@ -101,13 +110,29 @@ def hold_sector(space, w, a, allies, fire, travel):
         if a.get("blockedTicks",0) >= 20:
             # This member cannot establish their assigned sector. This is
             # a report about our path, not an enemy sighting.
-            probe["reports"].setdefault(a["id"], now+1+(100-w["player"]["skills"]["communication"])//12)
+            probe.setdefault("unreachable", {}).setdefault(a["id"], now+1+(100-w["player"]["skills"]["communication"])//12)
         return "hold", None
     watch = station["watch"]
     a["heading"] = atan2(watch[1]-pos[1], watch[0]-pos[0])
     a["status"] = "Наблюдает · " + station["label"]
-    probe["reports"].setdefault(a["id"],now+1+(100-w["player"]["skills"]["communication"])//12)
-    utility = crossing_utility(space,w,a,allies,plan["orders"]["slots"][a["slot"]],plan["site"])
+    if a["id"] not in probe["reports"]:
+        player = w["player"]
+        # The scout checks visible approaches from the reached NAV surface.
+        # Report immediately when a teammate already sees the other crossing.
+        if "check" not in station:
+            angles = [q for q in space.ingress(station.get("sector",plan["site"]),plan["lane"])
+                      if 6 < dist(pos,q) < 75 and space.hit(pos,q,1,64) is None]
+            flank = max(angles,key=lambda q:dist(q,watch), default=watch)
+            covered = any(m is not a and dist(xyz(m),pos) < 28 and
+                          space.hit(xyz(m),flank,1,64) is None and
+                          cos(m["heading"]-atan2(flank[1]-m["y"],flank[0]-m["x"])) >= 0.5
+                          for m in allies)
+            station["check"] = list(watch if covered else flank)
+        q = station["check"]
+        a["heading"] = atan2(q[1]-pos[1],q[0]-pos[0])
+        latency = 1 + (100-player["skills"]["execution"])//25
+        probe["reports"][a["id"]] = now+latency+(100-player["skills"]["communication"])//12
+    utility = crossing_utility(space,w,a,allies,plan["orders"]["slots"][a["slot"]],station.get("sector", plan["site"]))
     return utility or ("hold", None)
 
 
@@ -147,7 +172,8 @@ def release_probe(space, plan, squad, contacts, now):
         travel = max(space.site_costs[plan["site"]].get(a["navArea"], 0) / (UNIT*1.65) for a in squad)
         due = probe["reports"]
         ready = all(due.get(a["id"],float("inf")) <= now for a in squad)
-        if ready or len(squad) <= 3 or now+travel+RULES["plant"] >= probe["until"]:
+        failed = any(t <= now for t in probe.get("unreachable", {}).values())
+        if ready or failed or len(squad) <= 3 or now+travel+RULES["plant"] >= probe["until"]:
             probe["released"] = now
         return
     other = "B" if plan["site"] == "A" else "A"
@@ -327,9 +353,15 @@ def rendezvous(space, actor, mate, now):
 
 def seek_cover(space, actor, contact, allies, skills, now, fire, travel):
     """Break sight or finish reloading using only this player's last contact."""
-    if contact and (
-        actor["reloadAt"] or actor["hp"] < 35 and len(actor["visible"]) > 1
-    ):
+    exposed = False
+    if contact and actor["team"] == "CT" and len(actor["visible"]) > 1:
+        engaged = sum(p is not actor and p["target"] in actor["visible"] and
+                      dist(xyz(p),xyz(actor)) < 45 for p in allies)
+        # A lone defender who cannot trade the opening can break contact and
+        # re-engage with a partner. A confident entry can still take the duel.
+        exposed = (len(actor["visible"]) > 1 + engaged and
+                   skills["positioning"] + skills["discipline"] > skills["aggression"] + skills["risk"])
+    if contact and (actor["reloadAt"] or exposed or actor["hp"] < 35 and len(actor["visible"]) > 1):
         if now >= actor.get("coverReview", 0):
             threat = xyz(contact)
             pos = xyz(actor)
@@ -342,7 +374,8 @@ def seek_cover(space, actor, contact, allies, skills, now, fire, travel):
                     for q in spots
                     if 1 < dist(q, pos) and space.hit(q, threat, 1, 64) is not None
                 ),
-                key=lambda q: (any(dist(q, a) < 3 for a in occupied), dist(q, pos), q),
+                key=lambda q: (any(dist(q, a) < 3 for a in occupied),
+                                   exposed and not any(dist(q,p) < 35 for p in occupied), dist(q, pos), q),
             )
             actor["coverReview"] = now + 5 + (100 - skills["positioning"]) // 12
             for q in choices:
@@ -445,6 +478,7 @@ def exit_goal(space, w, a, allies, bomb):
             > max(0, length - 6) / speed
             + use_ticks
             + max(0, threats - len(allies) + 1) * 8
+            + (perf.retake_margin(w["player"]["skills"], length, equipment_value(a)) if threats else 0)
         ):
             return
     _, goals = routes.route(area)
@@ -673,39 +707,45 @@ def crossing_utility(space, w, a, allies, order, site):
         return None
     a["crossingReview"] = now + 14
     pos = xyz(a)
-    key = a["team"] + site
-    calls = plan.setdefault("utilityCalls", {})
-    if now < calls.get(key,0):
-        return None
     reserve = plan.get("probe") or {}
-    feint = a["team"]=="T" and a["id"]==reserve.get("scout") and not reserve.get("released") and not plan["rotated"]
-    if a["team"]=="T" and not feint and a["playingRole"] not in ("support","captain","igl"):
-        return None
-    if a["team"]=="CT" and (a["slot"] not in (2,3) or now-plan["start"]>200):
-        return None
-    sector = ("B" if site=="A" else "A") if feint else site
-    if a["team"]=="CT":
-        targets = space.ingress(sector,plan["lane"])
+    scouting = a["team"] == "T" and not reserve.get("released") and not plan["rotated"]
+    feint = scouting and a["id"] == reserve.get("scout")
+    if feint and "stations" not in reserve:
+        site = "B" if site == "A" else "A"
+    calls = plan.setdefault("crossingCalls", [])
+    calls[:] = [c for c in calls if now < c["end"]]
+    defending = a["team"] == "CT" and w["phase"] == "live"
+    if defending:
+        targets = space.ingress(site,plan["lane"])
+        # Deny an opening race or respond to a report of pressure. Do not
+        # continually refresh an empty lane throughout a quiet round.
+        pressure = any(now-r["tick"] < 35 and space.reported_site(xyz(r)) == site
+                       for r in a["knowledge"].values())
+        if not pressure and (now-plan["start"] > 200 or a.get("screenedOpening")):
+            return None
         gadgets = ("Огонь","Дым")
     else:
-        # Known map angles on the attacker's own map. The opposing plan is private.
-        labels = space.profile["guards"][sector]
+        labels = space.profile["guards"][site]
         targets = [space.centers[i] for label in labels for i in sorted(space.places[label])]
         gadgets = ("Ложная","Дым","Свет") if feint else ("Дым","Свет")
-    item = next((g for g in gadgets if g in a["utility"]),None)
-    if not item:
-        return None
+        # The potential beneficiary must be near enough to take the crossing.
+        if not feint and not any(m is not a and dist(xyz(m),pos) < 35 for m in allies):
+            return None
     candidates = sorted((p for p in targets if 24 < dist(pos,p)<68),key=lambda p:dist(pos,p))
-    for p in candidates[:6]:
-        if space.hit(pos,p,1,64) is not None or any(dist(xyz(m),p)<(36 if item=="Свет" else 18) for m in allies):
+    for p in candidates[:8]:
+        item = next((g for g in gadgets if g in a["utility"]
+                     and not any(c["item"] == g and dist(c["point"],p) < UTILITY[g][0] for c in calls)
+                     and not any(dist(xyz(m),p) < (UTILITY[g][0] if g == "Свет" else 18)
+                                 for m in allies)), None)
+        if not item:
             continue
         flight = max(3,round(dist(pos,p)/7))
         x,y,z,_ = space.grenade(pos,p,flight)
         if dist((x,y,z),p)>8:
             continue
-        # A short radio call coordinates the next throw. Do not stack the same
-        # screen while the first player's grenade is still covering the crossing.
-        calls[key]=now + flight + (100 if item=="Дым" else 42)
+        calls.append(dict(item=item, point=list(p), end=now+flight+UTILITY[item][1]))
+        if defending:
+            a["screenedOpening"] = True
         a["status"]="Имитирует выход" if feint else "Готовит гранату на подход"
         return "throw", dict(zip(("x","y","z"),p),utility=item)
     return None
@@ -810,6 +850,16 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
             )
             if a["watchDevice"]:
                 watch = xyz(bomb)
+            elif a.get("plantCover") and dist(pos,goal) < 5:
+                # Orient towards the way a retaker can enter this position.
+                # A less experienced guard tends to watch the familiar plant.
+                if "postWatch" not in a:
+                    routes = space.ingress(site, plan["lane"])
+                    visible = [q for q in routes if 8 < dist(pos,q) < 90
+                               and space.hit(pos,q,1,64) is None]
+                    a["postWatch"] = list(min(visible,key=lambda q:dist(pos,q))) if visible else list(watch)
+                attention = skill["postplant"] / 100
+                watch = [p*attention + b*(1-attention) for p,b in zip(a["postWatch"],xyz(bomb))]
             a["status"] = "Проверяет C4 после звука" if check else "Прикрывает C4"
     elif side == "T":
         if bomb and bomb["carrier"] and not w["action"]:
@@ -850,10 +900,18 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                     for p in allies
                     if p is not a and plan["orders"]["slots"][p["slot"]]["via"] == route
                 ]
+                # Read the progress of the pair on the same entry. Familiar
+                # partners and experienced executors can stage a tighter trade.
+                cohesion = max((w["chemistry"].get(world.pair_key(a["playerId"],p["playerId"]),0)
+                                for p in partners), default=0)
+                mastery = w["player"]["roleMastery"].get(a["playingRole"],0)
+                spacing = 52 - (skill["synchronization"] + skill["timing"] + mastery + cohesion) / 16
                 if (
                     partners
-                    and now - plan["start"] < 230
-                    and min(dist(pos, xyz(p)) for p in partners) > 35
+                    and now + space.site_costs[site].get(a["navArea"], 0) / (UNIT * 1.65) + RULES["plant"] + 45 < w["deadline"]
+                    and min(dist(pos, xyz(p)) for p in partners) > spacing
+                    and any(p["waypoint"] < index for p in partners)
+                    and not any(p.get("blockedTicks",0) >= 5 for p in partners)
                 ):
                     goal = pos
                     a["status"] = "Ждёт партнёра для выхода"
@@ -863,7 +921,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         if backup and backup["id"] == a["id"]:
             site, goal, watch = backup["site"], backup["hold"], backup["watch"]
         a["status"] = f"Занимает {site}"
-    if w["phase"]=="live" and not w["action"] and not latest:
+    if not w["action"] and (w["phase"] == "live" or (side == "CT" and a["heardSite"] and len(allies) >= 2 and w["deadline"]-now > RULES["defuse"] + 40)):
         intent = crossing_utility(space,w,a,allies,order,site)
         if intent:
             return intent
@@ -919,6 +977,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         and w["phase"] == "live"
         and (side == "CT" or not bomb or bomb["carrier"] != a["id"])
         and not w["action"]
+        and now-latest["tick"] <= perf.pursuit_window(skill, latest["source"] == "Слух")
     ):
         anchor = side == "CT" and order in orders[:2]
         if anchor and latest["source"] != "Слух" and a["utility"] and now >= a["throwAt"]:
@@ -933,7 +992,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                     if grenade:
                         a["status"] = "Сдерживает выход на плент"
                         return "throw", dict(zip(("x","y","z"),crossing), utility=grenade)
-        if not anchor and dist(goal, xyz(latest)) < 40 and dist(pos, xyz(latest)) > 6:
+        if not anchor and dist(goal, xyz(latest)) < (55 - skill["discipline"] / 4) and dist(pos, xyz(latest)) > 6:
             contact = xyz(latest)
             if space.hit(pos, contact, 1, 64) is None:
                 goal = pos
@@ -1009,13 +1068,16 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         allow_detour=True,
     )
     if moved:
+        if side == "CT" and not latest and dist(xyz(a), goal) < 22 + familiarity / 6:
+            # Strafe into the last stretch of the hold facing the known crossing.
+            a["heading"] = atan2(watch[1]-a["y"], watch[0]-a["x"])
         if latest and now - latest["tick"] < 12 + skill["positioning"] // 5:
             a["heading"] = atan2(latest["y"] - a["y"], latest["x"] - a["x"])
         return "move", None
     # Watch an approach known to this team or turn toward the last reported contact.
-    if latest and latest["tick"] >= a.get("heardUse", -1000):
+    if latest and now - latest["tick"] <= perf.pursuit_window(skill, latest["source"] == "Слух") and latest["tick"] >= a.get("heardUse", -1000):
         watch = xyz(latest)
-    a["heading"] = atan2(watch[1] - a["y"], watch[0] - a["x"]) + 0.65 * sin(
+    a["heading"] = atan2(watch[1] - a["y"], watch[0] - a["x"]) + (0.6 - skill["discipline"] / 260) * sin(
         (now + 13 * slot) / 26
     )
     return "hold", None
