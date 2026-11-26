@@ -1,25 +1,148 @@
-.staff-office { display:grid; gap:16px; min-width:0 }
-.staff-office h2,.staff-office h3,.staff-office p { margin:0 }
-.staff-office h2 { font-size:1.12rem }
-.staff-office h3 { font-size:1rem; margin:12px 0 6px }
-.staff-tabs { display:flex; gap:5px; flex-wrap:wrap; border-bottom:1px solid var(--border,#394453); padding-bottom:8px }
-.staff-tabs button,.staff-link { background:transparent; color:inherit; border:0; font:inherit; padding:10px 12px; cursor:pointer }
-.staff-tabs button[aria-current],.staff-link { color:var(--accent,#99dbbb); font-weight:700 }
-.staff-tabs button[aria-current] {background:var(--surface-2,#242e36);border-radius:5px}
-.staff-cards,.staff-columns { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr)); gap:14px;align-items:start }
-.staff-role,.staff-profile { padding:18px }
-.staff-role h2 { margin-bottom:12px }
-.staff-member,.staff-profile,.staff-assignment,.staff-line { display:flex; align-items:center; gap:12px }
-.staff-member { width:100%; padding:6px 0; color:inherit; background:transparent;border:0;text-align:left;cursor:pointer }
-.staff-member .scene-avatar { width:54px; height:64px }
-.staff-member span:not(.staff-rating),.staff-job,.staff-assignment>div {display:grid;gap:4px}
-.staff-office small {display:block;color:var(--muted,#aab3bc)}
-.staff-rating {font-variant-numeric:tabular-nums;border-radius:6px;background:#223b34;color:#aff1ca;font-weight:700;padding:5px 8px;margin-left:auto}
-.staff-line,.staff-assignment { padding:10px 0;border-bottom:1px solid var(--border,#394453);justify-content:space-between }
-.staff-line strong {text-align:right}.staff-line meter {width:64px;margin-left:auto;accent-color:#83c9a6}
-.staff-office select {max-width:100%; min-height:40px}
-.staff-profile .scene-avatar {width:90px;height:105px}
-.staff-office progress {width:100%;accent-color:#83c9a6}
-.staff-job {border-top:1px solid var(--border,#394453);padding:8px 0}
-@media(max-width:620px){.staff-assignment{align-items:stretch;flex-direction:column}.staff-tabs button{padding:8px}.staff-office .panel-body{padding:14px}.staff-role{padding:14px}}
-.staff-archive-photo{display:block;max-width:100%;max-height:320px;object-fit:contain;margin:12px 0}
+.staff-office {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.staff-office h2,
+.staff-office h3,
+.staff-office p {
+  margin: 0;
+}
+.staff-office h2 {
+  font-size: 1.12rem;
+}
+.staff-office h3 {
+  font-size: 1rem;
+  margin: 12px 0 6px;
+}
+.staff-tabs {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border, #394453);
+  padding-bottom: 8px;
+}
+.staff-tabs button,
+.staff-link {
+  background: transparent;
+  color: inherit;
+  border: 0;
+  font: inherit;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.staff-tabs button[aria-current],
+.staff-link {
+  color: var(--accent, #99dbbb);
+  font-weight: 700;
+}
+.staff-tabs button[aria-current] {
+  background: var(--surface-2, #242e36);
+  border-radius: 5px;
+}
+.staff-cards,
+.staff-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.staff-role,
+.staff-profile {
+  padding: 18px;
+}
+.staff-role h2 {
+  margin-bottom: 12px;
+}
+.staff-member,
+.staff-profile,
+.staff-assignment,
+.staff-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.staff-member {
+  width: 100%;
+  padding: 6px 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.staff-member .scene-avatar {
+  width: 54px;
+  height: 64px;
+}
+.staff-member span:not(.staff-rating),
+.staff-job,
+.staff-assignment > div {
+  display: grid;
+  gap: 4px;
+}
+.staff-office small {
+  display: block;
+  color: var(--muted, #aab3bc);
+}
+.staff-rating {
+  font-variant-numeric: tabular-nums;
+  border-radius: 6px;
+  background: #223b34;
+  color: #aff1ca;
+  font-weight: 700;
+  padding: 5px 8px;
+  margin-left: auto;
+}
+.staff-line,
+.staff-assignment {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border, #394453);
+  justify-content: space-between;
+}
+.staff-line strong {
+  text-align: right;
+}
+.staff-line meter {
+  width: 64px;
+  margin-left: auto;
+  accent-color: #83c9a6;
+}
+.staff-office select {
+  max-width: 100%;
+  min-height: 40px;
+}
+.staff-profile .scene-avatar {
+  width: 90px;
+  height: 105px;
+}
+.staff-office progress {
+  width: 100%;
+  accent-color: #83c9a6;
+}
+.staff-job {
+  border-top: 1px solid var(--border, #394453);
+  padding: 8px 0;
+}
+@media (max-width: 620px) {
+  .staff-assignment {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .staff-tabs button {
+    padding: 8px;
+  }
+  .staff-office .panel-body {
+    padding: 14px;
+  }
+  .staff-role {
+    padding: 14px;
+  }
+}
+.staff-archive-photo {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  margin: 12px 0;
+}

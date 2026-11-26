@@ -57,9 +57,25 @@ def obligation_days(c, event, team):
     return dates
 
 
+def free_opening_day(event, occupied):
+    if event.get("draws"):
+        return None
+    stage = event["stages"][0]
+    if not flexible_round(event, stage) or stage["format"] != "single":
+        return None
+    rounds = max(1, (event["capacity"] - 1).bit_length() - (stage.get("advance", 1) - 1).bit_length())
+    last = date.fromisoformat(round_deadline(stage, 0, rounds - 1))
+    candidate = date.fromisoformat(stage["start"]) + timedelta(days=1)
+    while candidate <= last:
+        if candidate.isoformat() not in occupied:
+            return candidate.isoformat()
+        candidate += timedelta(days=1)
+    return None
+
+
 def clashes(c, event, team):
     target = None
-    result = []
+    bookings = {}
     for other in c["circuit"]["editions"].values():
         if other["id"] == event["id"] or other["entries"].get(team) not in COMMITTED:
             continue
@@ -68,23 +84,26 @@ def clashes(c, event, team):
         if target is None:
             target = obligation_days(c, event, team)
             if not target:
-                break
-        dates = sorted(target & obligation_days(c, other, team))
-        if dates:
-            result.append(dict(id=other["id"], title=other["title"], state=other["entries"][team], dates=dates))
-    if result and not event.get("draws"):
-        stage = event["stages"][0]
-        if flexible_round(event, stage) and stage["format"] == "single":
-            rounds = max(1, (event["capacity"]-1).bit_length() - (stage.get("advance",1)-1).bit_length())
-            last = round_deadline(stage, 0, rounds-1)
-            occupied = set().union(*(obligation_days(c, e, team) for e in c["circuit"]["editions"].values()
-                                     if e["id"] != event["id"] and e["entries"].get(team) in COMMITTED
-                                     and conflicts(e,event)))
-            candidate = date.fromisoformat(stage["start"]) + timedelta(days=1)
-            while candidate.isoformat() <= last:
-                if candidate.isoformat() not in occupied:
-                    return []
-                candidate += timedelta(days=1)
+                return []
+        bookings[other["id"]] = obligation_days(c, other, team)
+    collisions = [key for key, dates in bookings.items() if target & dates]
+    if not collisions:
+        return []
+    occupied = set.union(*bookings.values())
+    if free_opening_day(event, occupied):
+        return []
+    # A flexible entry can also have been accepted first. Reserve distinct
+    # options when several as-yet undrawn events share the opening day.
+    occupied.update(target)
+    result = []
+    for key in collisions:
+        other = c["circuit"]["editions"][key]
+        alternative = free_opening_day(other, occupied)
+        if alternative:
+            occupied.add(alternative)
+        else:
+            result.append(dict(id=key, title=other["title"], state=other["entries"][team],
+                               dates=sorted(target & bookings[key])))
     return result
 
 
