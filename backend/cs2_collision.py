@@ -3,6 +3,7 @@
 import json
 from collections import OrderedDict
 from functools import lru_cache, partial
+from itertools import product
 from weakref import proxy
 from math import sqrt
 
@@ -140,6 +141,12 @@ def inverse_direction(a, b):
     return tuple(1.0 / (y - x) if x != y else None for x, y in zip(a, b))
 
 
+# Half-width in Hammer units, below the precision of the imported gameplay
+# coordinates. These short parallel rays resolve an exact corner at a step end.
+_ENDPOINT_PAD = 0.002
+_ENDPOINT_OFFSETS = np.array(list(product((-_ENDPOINT_PAD, 0.0, _ENDPOINT_PAD), repeat=3)))
+
+
 class Collision:
     def __init__(self, folder):
         data = json.loads((folder / "collision.json").read_bytes())
@@ -230,7 +237,30 @@ class Collision:
             self.sight_cache.popitem(last=False)
         return result
 
-    def _trace(self, source, target, channel):
+    def _throw_endpoint(self, target, delta):
+        length = float(np.linalg.norm(delta))
+        if not length:
+            return None
+        direction = delta / length
+        half_step = direction * _ENDPOINT_PAD
+        starts = np.asarray(target) - half_step + _ENDPOINT_OFFSETS
+        faces, _, normals = self.scene.first_many(starts, 2 * half_step, 1.0, THROW)
+        hits = []
+        for face, normal in zip(faces, normals):
+            if face >= 0:
+                size = float(np.linalg.norm(normal))
+                if size:
+                    # At a seam an exiting back face can meet an entering face.
+                    # Prefer the face towards the thrower. Thin two-sided
+                    # triangles still work when there is only a back face.
+                    incidence = -float(np.dot(normal, direction)) / size
+                    hits.append((incidence >= 0, abs(incidence), int(face), normal))
+        if not hits:
+            return None
+        _, _, face, normal = max(hits, key=lambda hit: (hit[0], hit[1], -hit[2]))
+        return 1.0, self.materials[self.material[face]], normal
+
+    def _trace(self, source, target, channel, terminal=False):
         if source == target:
             return None
         start = np.array([source], dtype=np.float32)
@@ -238,6 +268,10 @@ class Collision:
         faces, distances, normals = self.scene.first_many(start, delta, 1.0, channel)
         face = int(faces[0])
         best = (float(distances[0]), self.materials[self.material[face]], normals[0]) if face >= 0 else None
+        if terminal and channel == THROW and (best is None or best[0] >= 1 - 1e-6):
+            # A triangle corner can disappear from the finite center ray on
+            # one CPU. Resolve the same terminal contact on both machines.
+            best = self._throw_endpoint(target, delta[0]) or best
         if self.bounds:
             inverse = inverse_direction(source, target)
             for p in self.bounds.candidates(

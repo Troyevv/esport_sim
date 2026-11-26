@@ -15,9 +15,9 @@ from .cs2_sites import BombSites
 from .match_rules import BLAST_RADIUS, ROLES
 
 BUILD = 26879581
-RULES = "cs2-bo1.7"
-PREVIOUS_RULES = "cs2-bo1.6"
-SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
+RULES = "cs2-bo1.8"
+PREVIOUS_RULES = "cs2-bo1.7"
+SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )
@@ -531,12 +531,12 @@ class Map:
         options = [self.centers[i] for i in self.places[label]]
         return min(options, key=lambda p: dist(p, pos))
 
-    def hit(self, p, q, channel, up=0, target_up=None):
+    def hit(self, p, q, channel, up=0, target_up=None, *, terminal=False):
         a, b = self.world(p), self.world(q)
         return self.collision.trace(
             (*a[:2], a[2] + up),
             (*b[:2], b[2] + (up if target_up is None else target_up)),
-            channel,
+            channel, terminal,
         )
 
     def shot_transmission(self, start, end, power):
@@ -585,11 +585,11 @@ class Map:
         velocity = [(target[i] - pos[i]) / flight for i in range(3)]
         velocity[2] += gravity * (flight - 1) / 2
         track = [pos]
-        for _ in range(flight):
+        for step in range(flight):
             remaining = 1.0
             for _ in range(4):
                 end = tuple(p + v * remaining for p, v in zip(pos, velocity))
-                hit = self.hit(pos, end, 8)
+                hit = self.hit(pos, end, 8, terminal=step == flight - 1)
                 if hit is None:
                     pos = end
                     break

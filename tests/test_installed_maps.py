@@ -216,3 +216,17 @@ def test_nuke_postplant_escape_time_uses_the_route_that_is_walked():
         if goal is not None:
             space.walk(actor, goal, speed, [])
     assert dist(cs2_maps.xyz(actor), planted) >= BLAST_RADIUS
+
+
+def test_anubis_grenade_contact_includes_float32_endpoint():
+    from backend.cs2_collision import THROW
+
+    space = cs2_maps.get("de_anubis")
+    start = (217.59938814256856, 275.5744102415004, 4.333335441666666)
+    # Actual last step of CT5's flash. Test the boundary from both sides at
+    # float32 precision, and a real gap that must remain traversable.
+    for error in (-0.000001, 0, 0.000001):
+        end = (216 + error, 282.0, 0.333335441666666)
+        t, material, normal = space.hit(start, end, THROW, terminal=True)
+        assert 0.99999 < t <= 1 and material == "concrete" and normal[0] > 0.99
+    assert space.hit(start, (216.001, 282.0, 0.333335441666666), THROW, terminal=True) is None
