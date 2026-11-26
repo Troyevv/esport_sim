@@ -77,7 +77,7 @@ def extract(directory):
                     data["economy"][sid]["equipValue"],
                 ]
                 for sid, p in f["players"].items()
-                if p["alive"]
+                if p["alive"] and p["team"] in ("T", "CT")
             ]
         grenades = Counter(UTILITY[g["type"]] for g in data["grenadeSpans"])
         rounds.append(
@@ -101,10 +101,19 @@ def extract(directory):
                         loadout=p["inventory"],
                     )
                     for sid, p in first["players"].items()
+                    if p["team"] in ("T", "CT")
                 },
                 grenades=dict(grenades),
             )
         )
+    accounts = [account for r in rounds for account in r["wallets"].values()]
+    if any(Counter(v["side"] for v in r["wallets"].values()) != {"T": 5, "CT": 5} for r in rounds):
+        raise ValueError("Incomplete playing roster in freeze-time economy")
+    # This radar encodes missing balances as zero for all ten players even
+    # after repeated wins. A constant series supplies no cash information.
+    if accounts and all(account["remaining"] == 0 for account in accounts):
+        for account in accounts:
+            account["remaining"] = None
     # A completed defuse is a positive control for this viewer field. If
     # absent, don't represent missing use-button telemetry as zero attempts.
     if any(r["reason"] == "bomb_defused" and not r["touched"] for r in rounds):
