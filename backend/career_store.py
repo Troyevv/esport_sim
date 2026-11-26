@@ -7,7 +7,7 @@ import sqlite3
 from pathlib import Path
 from uuid import uuid4
 
-from . import career, checkpoints, cs2_maps, database, engine, match, world
+from . import career, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -79,6 +79,8 @@ class CareerStore:
             k: state[k] for k in ("world", "running", "speed", "version", "hasSave")
         }
         data["career"] = c
+        if not c:
+            data["exhibitions"] = state.get("exhibitions", [])
         body = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
         # Retain the preceding known-good checkpoint when replacing a slot.
         old = self.db.execute(
@@ -135,11 +137,8 @@ class CareerStore:
         if game["version"] == 2:
             checkpoints.validate_current(game)
             match.validate_bindings(game)
-            for key in game.get("logs", []):
-                log = self.db.execute(
-                    "SELECT body FROM round_log WHERE digest=?", (key,)
-                ).fetchone()
-                require(log and checksum(log[0]) == key, "Повреждён журнал матча")
+            checkpoints.validate_round_logs(self.db, game)
+        state.pop("exhibitions", None)
         state.update(saved, context=str(uuid4()))
         state["hasSave"] = (
             bool(
@@ -166,32 +165,72 @@ class CareerStore:
             for tid in event["teams"]
             for pid in pack["rosters"][c["teams"][tid]]["players"]
         }
-        points = {
-            tid: sum(r["winnerTeamId"] == tid for r in report["rounds"])
-            for tid in event["teams"]
-        }
+        teams = event["teams"]
         require(
-            event["kind"] == "match"
-            and report["seed"] == event["seed"]
-            and report.get("mapId") == event.get("mapId")
-            and report["rules"] in (cs2_maps.SUPPORTED_RULES if event.get("mapId") else (match.VERSION,))
-            and report["map"] == (cs2_maps.BUILD if event.get("mapId") else match.MAP["version"])
-            and len(report["stats"]) == len(expected)
-            and {row["player"]: row["teamId"] for row in report["stats"]} == expected
-            and set(report["teams"]) == set(points)
-            and report["score"] == [points[t] for t in report["teams"]]
-            and points == report["scoreByTeam"]
-            and len(set(points.values())) == 2
-            and report["winnerTeamId"] == max(points, key=points.get)
-            and sum(points.values()) == len(report["rounds"]),
-            "Результат не соответствует встрече календаря",
+            event["kind"] == "match" and set(report["teams"]) == set(teams),
+            "Результат не соответствует встрече",
         )
+        facts = None
+        if "bestOf" in event:
+            best = event["bestOf"]
+            profile = c["seriesProfile"]
+            require(
+                report.get("seriesVersion") == series.VERSION
+                and report["bestOf"] == best
+                and report["profile"] == profile
+                and report["seed"] == event["seed"],
+                "Регламент не соответствует встрече",
+            )
+            replay = dict(
+                profile=profile,
+                teams=teams,
+                steps=veto.sequence(profile, best, teams, event["seed"]),
+                actions=[],
+                order=[],
+                stage="veto",
+            )
+            for action in report["veto"]:
+                require(replay["stage"] == "veto", "Лишний ход вето")
+                veto.apply(replay, action.get("side", action["map"]), action["by"])
+            require(
+                replay["stage"] == "ready"
+                and replay["actions"] == report["veto"]
+                and replay["order"] == report["order"],
+                "Нарушен порядок вето",
+            )
+            points = dict.fromkeys(teams, 0)
+            for i, item in enumerate(report["maps"]):
+                require(
+                    i < best and max(points.values()) < best // 2 + 1,
+                    "Лишняя карта серии",
+                )
+                map_id = replay["order"][i]["map"]
+                series.verify_map(
+                    item, teams, expected, series.map_seed(event["seed"], i), map_id
+                )
+                points[item["winnerTeamId"]] += 1
+            require(
+                max(points.values()) == best // 2 + 1
+                and points == report["scoreByTeam"]
+                and report["score"] == [points[t] for t in teams]
+                and report["winnerTeamId"] == max(points, key=points.get)
+                and report["stats"]
+                == series.total_stats(r["stats"] for r in report["maps"])
+                and report["rounds"]
+                == [row for r in report["maps"] for row in r["rounds"]],
+                "Результат серии не соответствует картам",
+            )
+            facts = series.scouting_record(report)
+        else:
+            points = series.verify_map(
+                report, teams, expected, event["seed"], event.get("mapId")
+            )
         body = database.encode(report)
         digest = checksum(body)
         self.db.execute(
             "INSERT OR IGNORE INTO career_report VALUES(?,?)", (digest, body)
         )
-        career.complete(c, digest, points, report["winnerTeamId"])
+        career.complete(c, digest, points, report["winnerTeamId"], facts)
 
     def change(self, state, kind, value):
         c = state.get("career")
@@ -209,6 +248,7 @@ class CareerStore:
             pack = self.pack([value["id"], value["revision"]])
             new = career.create(pack, value)
             self.save(state, "auto")
+            state.pop("exhibitions", None)
             state.update(
                 career=new,
                 world=engine.initial(0),
@@ -260,7 +300,8 @@ class CareerStore:
                     speed=1,
                 )
             elif kind == "career-finish":
-                require(state["world"].get("phase") == "finished", "Матч ещё идёт")
+                require(state["world"].get("phase") == "finished" and
+                        state["world"].get("series", {}).get("stage", "finished") == "finished", "Матч ещё идёт")
                 state.update(
                     world=engine.initial(0),
                     running=False,

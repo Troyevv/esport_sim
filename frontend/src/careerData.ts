@@ -10,9 +10,10 @@ export type Summary = {
   scope: string;
   date: string;
 };
-export const fixtureMap = (e: Fixture) => ({de_dust2: "Dust II", depo: "Депо"}[e.mapId || "depo"] || e.mapId!.slice(3,4).toUpperCase() + e.mapId!.slice(4));
+export const fixtureMap = (e: Fixture) => e.bestOf ? "Map Veto" : ({de_dust2: "Dust II", depo: "Депо"}[e.mapId || "depo"] || e.mapId!.slice(3,4).toUpperCase() + e.mapId!.slice(4));
 export type Fixture = {
   mapId?: string;
+  bestOf?: number;
   kind: "match" | "review";
   id: string;
   date: string;
@@ -68,6 +69,7 @@ type Team = {
 export type Options = { date: string; teams: Team[] };
 export type Catalog = { id: string; title: string; revision: number }[];
 export type Report = {
+  maps?: { mapId: string; scoreByTeam: Record<string, number> }[];
   stats: {
     player: string;
     name: string;

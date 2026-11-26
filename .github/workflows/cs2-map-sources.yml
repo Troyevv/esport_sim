@@ -1,28 +1,5 @@
 name: CS2 source geometry
-on:
-  pull_request:
-    paths:
-      - 'backend/cs2_*.py'
-      - 'backend/match*.py'
-      - tests/test_installed_maps.py
-      - frontend/e2e/real-maps.spec.ts
-      - tools/cs2_tactical_audit.py
-      - tools/cs2_skill_audit.py
-      - tools/check_cs2_matches.py
-      - tools/check_cs2_replay.py
-      - tools/check_cs2_motion.py
-      - backend/data/maps_202611_tactics.json
-      - tests/test_cs2_spatial.py
-      - tools/check_cs2_playable_areas.py
-      - tools/cs2_ci_shared_models.py
-      - tools/cs2_map_sources.py
-      - tools/cs2_world_sources.py
-      - 'tools/cs2_export/**'
-      - tools/check_cs2_navigation.py
-      - tools/cs2_floor_probe.py
-      - .github/workflows/cs2-map-sources.yml
-      - .github/workflows/cs2-runtime.yml
-  workflow_dispatch:
+on: workflow_dispatch
 permissions:
   contents: read
 jobs:

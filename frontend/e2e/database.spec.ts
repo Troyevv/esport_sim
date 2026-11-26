@@ -82,7 +82,7 @@ test("Пакет, поиск, правка, перенос и BO1", async ({ pag
   const file = await download;
   await page.getByLabel("Файл пакета").setInputFiles((await file.path())!);
   await expect(page.getByText("Пакет проверен и открыт")).toBeVisible();
-  await page.getByRole("button", { name: "Подбор BO1" }).click();
+  await page.getByRole("button", { name: "Подбор матча" }).click();
   await page.getByLabel("Ваша пятёрка").selectOption({ label: "Vitality" });
   await page
     .getByRole("combobox", { name: /Соперник/ })

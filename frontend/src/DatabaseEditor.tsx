@@ -1,3 +1,4 @@
+import { FormatSelect } from "./SeriesCenter";
 import MapSelect from "./MapSelect";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { serverURL } from "./session";
@@ -141,6 +142,7 @@ function Select({
 }
 
 export default function DatabaseEditor({ onClose, start, enabled }: Props) {
+  const [format, setFormat] = useState(0);
   const [mapId, setMapId] = useState("depo");
   const [catalog, setCatalog] = useState<(Ref & { title: string })[]>([]);
   const [pack, setPack] = useState<Pack | null>(null);
@@ -508,7 +510,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
             aria-expanded={matchSetup}
             onClick={() => setMatchSetup((v) => !v)}
           >
-            Подбор BO1
+            Подбор матча
           </button>
         </div>
         <input
@@ -544,7 +546,8 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
             использует игровые назначения.
           </p>
           <div className="db-match-fields">
-            <MapSelect value={mapId} change={setMapId} />
+            <FormatSelect format={format} change={setFormat}/>
+            {!format && <MapSelect value={mapId} change={setMapId} />}
             <Select
               label="Ваша пятёрка"
               value={home}
@@ -585,14 +588,14 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
                         revision: pack.revision,
                         rosters: [home, away],
                         seed: Number(seed),
-                        map: mapId,
+                        ...(format ? {bestOf:format} : {map:mapId}),
                       })
                     )
                       onClose();
                   });
               }}
             >
-              Начать BO1
+              {format ? "Начать вето BO"+format : "Начать BO1"}
             </button>
           </div>
         </section>

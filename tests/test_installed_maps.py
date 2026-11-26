@@ -85,6 +85,7 @@ def test_background_and_observed_share_report_across_the_map_pool(tmp_path):
     event = next(e for e in state["queue"] if e["kind"] == "match")
     for name in cs2_maps.NAMES:
         fixture = dict(event, mapId=name)
+        fixture.pop("bestOf", None)  # Explicit single-map exhibition across all installed maps.
         frozen = dict(state, queue=[fixture], history=[])
         started = perf_counter()
         game = career.initial(pack, frozen, fixture)

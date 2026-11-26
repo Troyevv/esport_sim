@@ -200,7 +200,7 @@ function Manager({
   };
   const advance = async () => {
     if (!enabled || c.progress) return;
-    if (frame.world.match) {
+    if (frame.world.match || frame.world.series) {
       leaveTool();
       go("match");
     } else if (ready) {
@@ -220,7 +220,7 @@ function Manager({
       board();
       return;
     }
-    if (page === "Матч-центр" && (frame.world.match || ready)) {
+    if (page === "Матч-центр" && (frame.world.match || frame.world.series || ready)) {
       void advance();
       return;
     }
@@ -413,7 +413,7 @@ function Manager({
               disabled={!enabled || !!c.progress}
               onClick={advance}
             >
-              {frame.world.match || ready ? "В матч-центр" : "Продолжить"}
+              {frame.world.match || frame.world.series || ready ? "В матч-центр" : "Продолжить"}
               <Glyph name="player-play" />
             </button>
           </div>
@@ -521,7 +521,7 @@ function Manager({
                     {next && (
                       <>
                         <h2>{next.teams.map((t) => c.teams[t]).join(" — ")}</h2>
-                        <p>{date(next.date)} · Выставочный BO1 · {fixtureMap(next)}</p>
+                        <p>{date(next.date)} · Выставочный BO{next.bestOf ?? 1} · {fixtureMap(next)}</p>
                         <button
                           className="btn"
                           onClick={() => calendar(next.date)}

@@ -14,6 +14,43 @@ jobs:
   maps:
     uses: ./.github/workflows/cs2-runtime.yml
 
+  series:
+    name: Series on installed maps
+    needs: maps
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-test.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: cs2-runtime-26879581
+          path: runtime-data/maps/26879581
+      - run: python -m pip install -r requirements-test.txt
+      - name: Verify series with the packaged geometry
+        run: |
+          python -c "from backend import veto, cs2_maps; assert set(veto.ACTIVE) <= set(cs2_maps.installed())"
+          python -m pytest -q tests/test_series.py -k 'real_career or complete_installed'
+          python -m pytest -q tests/test_installed_maps.py::test_recent_checkpoints_resume_from_the_recorded_tick
+      - working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          npx playwright install --with-deps chromium
+          ESPORT_CS2_QA=1 npx playwright test series.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: series-browser
+          path: frontend/test-results/
   build:
     needs: maps
     name: Build Windows x64 archive
@@ -114,4 +151,4 @@ jobs:
           path: bundle
       - name: Verify browser URL dispatch and loaded frontend in Edge or Chrome
         shell: powershell
-        run: ./tools/windows-smoke/archive.ps1 -DesktopBrowser -Archive bundle/EsportSim-windows-x64.zip
+        run: ./tools/windows-smoke/archive.ps1 -DesktopBrowser -BrowserOnly -Archive bundle/EsportSim-windows-x64.zip

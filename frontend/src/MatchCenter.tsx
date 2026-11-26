@@ -1,3 +1,4 @@
+import { SeriesScore } from "./SeriesCenter";
 import { useState } from "react";
 import type { PlanRef } from "./tactics";
 import Radar from "./Radar";
@@ -121,7 +122,7 @@ type Props = {
   playback: RadarPlayback;
   connected: boolean;
   enabled: boolean;
-  act: (name: string, value?: number | string) => Promise<boolean>;
+  act: (name: string, value?: number | string | object) => Promise<boolean>;
   openBoard: () => void;
   setView: (v: View) => void;
 };
@@ -292,9 +293,10 @@ export default function MatchCenter({
             : "Тестовые составы"}
         </span>
       </header>
+      {world.series && <SeriesScore frame={frame} enabled={enabled} act={act}/>}
       <div className="match-meta-strip">
-        <span>{world.map.name} · BO1</span>
-        <span>{phases[m.phase]}</span>
+        <span>{world.map.name} · BO{world.series?.bestOf ?? 1}</span>
+        <span>{world.series && finished ? "Карта завершена" : phases[m.phase]}</span>
       </div>
       <section className="scoreboard" aria-label="Счёт матча">
         {m.clubs.map((club, i) => (
@@ -325,12 +327,12 @@ export default function MatchCenter({
                   ? "ИТОГ"
                   : clock(m.clock)}
           </b>
-          <span>{phases[m.phase]}</span>
+          <span>{world.series && finished ? "Карта завершена" : phases[m.phase]}</span>
         </div>
       </section>
       {finished && (
         <p className="match-result">
-          Победитель матча — <strong>{clubName(m.winnerTeamId!)}</strong>
+          Победитель {world.series ? "карты" : "матча"} — <strong>{clubName(m.winnerTeamId!)}</strong>
         </p>
       )}
       {rounds > 0 && (

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { RadarPlayback } from "./playback";
+import type { SeriesView } from "./SeriesCenter";
 import type { MatchView } from "./MatchCenter";
 import type { Agent, RadarMap } from "./Radar";
 
@@ -16,6 +17,7 @@ export interface Frame {
   hasSave: boolean;
   world: {
     match?: MatchView;
+    series?: SeriesView;
     map: RadarMap;
     agents: Agent[];
     motion?: { startTick: number; tracks: Record<string, [number, number, number, number?][]> };

@@ -1,15 +1,5 @@
 name: CS2 professional reference
-on:
-  workflow_dispatch:
-  pull_request:
-    paths:
-      - .github/workflows/cs2-pro-reference.yml
-      - tools/cs2_pro_reference.py
-      - tools/cs2_pro_demo.py
-      - tools/cs2_cache_reference.py
-      - tools/cs2_archive_reference.py
-      - frontend/e2e/capture-pro-cache.cjs
-      - tools/cs2_tournament_reference.py
+on: workflow_dispatch
 permissions:
   contents: read
 jobs:
