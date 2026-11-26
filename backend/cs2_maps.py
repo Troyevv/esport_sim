@@ -22,7 +22,12 @@ RULES, PREVIOUS_RULES = SUPPORTED_RULES[:2]
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )
-CT_OPENINGS = json.loads(Path(__file__).with_name("data").joinpath("ct_openings.json").read_bytes())
+CT_OPENINGS = json.loads(
+    Path(__file__).with_name("data").joinpath("ct_openings.json").read_bytes()
+)
+RUNTIME_FILES = json.loads(
+    Path(__file__).with_name("data").joinpath(f"maps-runtime-{BUILD}.json").read_bytes()
+)
 NAMES = dict(
     zip(
         PROFILES,
@@ -55,12 +60,23 @@ def _root(override, local_data):
     return Path(__file__).resolve().parents[1] / "runtime-data" / "maps" / str(BUILD)
 
 
+_active_root = None
+
+
+def use_runtime(folder):
+    global _active_root
+    _active_root = folder
+    _load.cache_clear()
+    _description.cache_clear()
+
+
 def root():
-    return _root(os.environ.get("ESPORT_SIM_MAPS"), os.environ.get("LOCALAPPDATA"))
+    return _active_root or _root(os.environ.get("ESPORT_SIM_MAPS"), os.environ.get("LOCALAPPDATA"))
 
 
 def installed():
-    return [m for m in PROFILES if (root() / m / "provenance.json").is_file()]
+    directory = root()
+    return [m for m in PROFILES if all((directory / m / file).is_file() for file in RUNTIME_FILES[m])]
 
 
 @lru_cache(maxsize=2)

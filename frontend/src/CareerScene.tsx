@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { StaffSkills } from "./StaffOffice";
 import { Avatar, Flag } from "./SceneIdentity";
 import {
   roles,
@@ -487,6 +488,7 @@ export function EntityProfile({
           </span>
           <h2>{item.name}</h2>
           <div className="fullname">{player?.realName || staff?.realName}</div>
+          {item.visual.head?.includes("/generated/") && <small>Синтетический игровой портрет</small>}
           <div className="profile-meta">
             <Flag value={item.visual.flag} />
             {player?.born && (
@@ -675,6 +677,12 @@ export function EntityProfile({
                 <p className="panel-body">Нет сведений.</p>
               ),
             )}
+        </div>
+      )}
+      {staff && (
+        <div className="staff-office">
+          {staff.visual.head?.includes("/generated/") && <small>Синтетический портрет · OpenAI ImageGen</small>}
+          <StaffSkills p={staff.professional} roles={c.office.roles} groups={c.office.groups}/>
         </div>
       )}
     </>

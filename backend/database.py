@@ -8,7 +8,7 @@ from copy import deepcopy
 from datetime import date
 from pathlib import Path
 
-from . import club_art, match, skills, world
+from . import scene_portraits, club_art, match, skills, world
 from .match_rules import SCOREBOT_VERSION
 
 GROUPS = ("players", "teams", "organizations", "staff", "rosters")
@@ -22,6 +22,8 @@ VERSIONS = dict(
 )
 STARTER = Path(__file__).with_name("data") / "austin.json"
 RELEASE_ID = "scene-20261125-clubs"
+STAFF_RELEASE = "scene-20261125-staff"
+NOVEMBER_EDITIONS = (RELEASE_ID, STAFF_RELEASE)
 TEAM_TYPES = {"main", "academy", "reserve", "other", "unknown"}
 RELEASE = STARTER.with_name("scene-202611.json.gz")
 MAPS = (
@@ -39,7 +41,7 @@ MAPS = (
 )
 OPTIONAL = {
     "players": {"ageEstimate", "sample", "performance", "appearance"},
-    "staff": {"nationality", "photo"},
+    "staff": {"nationality", "photo", "publishedRole", "born"},
     "teams": {
         "nationality",
         "logo",
@@ -272,6 +274,10 @@ def _validate(p):
                     label(r["nationality"])
                 if group == "staff":
                     validate_photo(r.get("photo"))
+                    if r.get("born") is not None:
+                        require(day(r["born"]) <= cutoff, "Дата рождения позже среза")
+                    if r.get("publishedRole") is not None:
+                        label(r["publishedRole"])
                 if group in ("teams", "organizations"):
                     validate_photo(r.get("logo"))
                 if group == "teams" and r.get("kit") is not None:
@@ -619,10 +625,38 @@ def shares_organization(pack, first_team, second_team):
     return bool(owner and owner == pack["teams"][second_team]["organization"])
 
 
+def install_staff_edition(db):
+    """Install a new immutable edition. Existing careers keep the revision they selected."""
+    from . import staff
+    if db.execute("SELECT 1 FROM data_pack WHERE id=? AND revision=1", (STAFF_RELEASE,)).fetchone():
+        return
+    pack = get(db, RELEASE_ID, 1)
+    pack.update(id=STAFF_RELEASE, title="Профессиональная сцена · ноябрь 2026 · штаб R5.1")
+    clubs = {row["name"]: key for key, row in pack["teams"].items()}
+    for name, full, role, club, date, url in json.loads(STARTER.with_name("staff-20261125.json").read_bytes()):
+        sid = "staff-" + name.lower().replace(" ", "-").rstrip("-")
+        pack["origins"][sid] = dict(status="confirmed", date=date, reference=url)
+        pack["staff"][sid] = dict(name=name, realName=full, role=staff.ROLES[role], team=clubs[club],
+                                  preparation=66, origin=sid, fields={"preparation": "scenario"})
+    for sid,bio in json.loads(STARTER.with_name("staff-biographies.json").read_bytes()).items():
+        row = pack["staff"][sid]
+        ref = sid+"-bio"
+        pack["origins"][ref] = dict(status="confirmed",date=pack["asOf"],reference=bio["source"])
+        for field in ("born","nationality"):
+            if field in bio:
+                row[field] = bio[field]
+                row["fields"][field] = ref
+    lead = pack["staff"]["staff-tobiz"]
+    lead["publishedRole"] = "Head of Talent Development"
+    lead["fields"]["role"] = "scenario"
+    pack["staff"]["staff-oskarish"]["publishedRole"] = "Assistant Coach / Analyst"
+    put(db, pack)
+
+
 def installed(db):
     rows = db.execute(
         "SELECT id,title,revision FROM data_pack ORDER BY (id=?) DESC,title,id,revision DESC",
-        (RELEASE_ID,),
+        (STAFF_RELEASE,),
     )
     return [dict(id=k, title=t, revision=r) for k, t, r in rows]
 
@@ -768,7 +802,7 @@ def match_input(p, roster_ids, personal_badges=None):
                     head=(
                         media_root + "appearance/" + pid
                         if player.get("appearance")
-                        else None
+                        else (scene_portraits.synthetic(pid) or {}).get("image")
                     ),
                     kit=dict(
                         id=tid,

@@ -4,6 +4,7 @@ import base64
 import re
 from uuid import uuid4
 
+from . import scene_portraits
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
 from starlette.concurrency import run_in_threadpool
@@ -88,7 +89,7 @@ def editor_router(app):
             p = data.get(app.state.store.db, key, revision)
             return dict(
                 data.envelope(p),
-                portraits=app.state.store.portraits.index(p["players"]),
+                portraits=scene_portraits.index(p, app.state.store.portraits),
                 clubArt={
                     **club_art.archive_index(p),
                     **app.state.store.badges.index(p),

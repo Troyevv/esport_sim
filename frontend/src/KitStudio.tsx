@@ -82,7 +82,7 @@ export function KitPreview({
             <h3>{player.name}</h3>
             <p>
               {player.realName || player.name} ·{" "}
-              {head ? "Студийный портрет" : "Нейтральная внешность"}
+              {head?.includes("/generated/") ? "Синтетический портрет" : head ? "Студийный портрет" : "Нейтральная внешность"}
             </p>
           </header>
           <div className="kit-cards">

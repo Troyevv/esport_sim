@@ -88,7 +88,7 @@ def check(directory):
     c = state["career"]
     while c["circuit"]["editions"][eid]["status"] == "playing":
         fixture = c["queue"][0]
-        game = career.initial(pack, c, fixture)
+        game = career.initial(pack, c, fixture, detailed=False)
         report = career.simulate(game)
         with store.transaction():
             store.careers.record(c, report)

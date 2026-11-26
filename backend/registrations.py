@@ -1,5 +1,7 @@
 """Roster versions and current employment have independent lifetimes."""
 
+from datetime import date, timedelta
+
 from .database import require
 
 
@@ -7,18 +9,113 @@ def conflicts(a, b):
     return a["start"] <= b["end"] and b["start"] <= a["end"]
 
 
-COMMITTED = {"accepted", "locked", "qualified", "confirmed", "offered"}
+COMMITTED = {"accepted", "locked", "qualified", "confirmed"}
+
+
+def flexible_round(event, stage):
+    # Old saves predate the explicit schedule policy on these two modeled
+    # online qualifying profiles. An official day table always takes precedence.
+    policy = event.get("reschedule")
+    if policy is None and event.get("modelDates") and event.get("series") in ("iem-closed", "blast-open-qualifier"):
+        policy = "withinRound"
+    return policy == "withinRound" and event.get("lan") is False and not (
+        "roundDays" in stage or "groupDays" in stage)
+
+
+def round_deadline(stage, round_index, last_round):
+    start, end = map(date.fromisoformat, (stage["start"], stage["end"]))
+    if round_index == last_round:
+        return end.isoformat()
+    next_day = round((end - start).days * (round_index + 1) / last_round)
+    return (start + timedelta(days=next_day-1)).isoformat()
+
+
+def obligation_days(c, event, team):
+    """Known fixtures, or admission to a particular stage before its draw exists."""
+    if event.get("status") in ("cancelled", "finished"):
+        return set()
+    dates = {f["date"] for f in c.get("queue", []) if f.get("edition") == event["id"] and team in f["teams"]}
+    # Results from this day still consume a competition day.
+    for played in reversed(c.get("history", [])):
+        if played["date"] < c["date"]:
+            break
+        if played.get("edition") == event["id"] and team in played["teams"]:
+            dates.add(played["date"])
+    stages = event.get("stages", [])
+    index = next((int(i) for i, teams in event.get("direct", {}).items() if team in teams), 0)
+    if stages and index >= len(event.get("draws", [])):
+        spec = stages[index]
+        # A sixteen-team Swiss stage guarantees three rounds before elimination
+        # or advancement. Later knockout rounds remain conditional.
+        offsets = spec.get("roundDays", [0])[:3 if spec["format"] == "swiss" else 1]
+        if spec.get("groupDays"):
+            offsets = set.intersection(*(set(group[:1]) for group in spec["groupDays"]))
+        for delta in offsets:
+            stamp = (date.fromisoformat(spec["start"]) + timedelta(days=delta)).isoformat()
+            if stamp >= c["date"]:
+                dates.add(stamp)
+    return dates
+
+
+def free_opening_day(event, occupied):
+    if event.get("draws"):
+        return None
+    stage = event["stages"][0]
+    if not flexible_round(event, stage) or stage["format"] != "single":
+        return None
+    rounds = max(1, (event["capacity"] - 1).bit_length() - (stage.get("advance", 1) - 1).bit_length())
+    last = date.fromisoformat(round_deadline(stage, 0, rounds - 1))
+    candidate = date.fromisoformat(stage["start"]) + timedelta(days=1)
+    while candidate <= last:
+        if candidate.isoformat() not in occupied:
+            return candidate.isoformat()
+        candidate += timedelta(days=1)
+    return None
+
+
+def clashes(c, event, team):
+    target = None
+    bookings = {}
+    fixtures = None
+    for other in c["circuit"]["editions"].values():
+        if other["id"] == event["id"] or other["entries"].get(team) not in COMMITTED:
+            continue
+        if not conflicts(event, other):
+            # A later draw may spill outside the advertised tournament dates.
+            # A dated fixture remains binding in both the UI and the worker.
+            if fixtures is None:
+                fixtures = {f.get("edition") for f in c.get("queue",[]) if team in f["teams"]}
+            if other["id"] not in fixtures and event["id"] not in fixtures:
+                continue
+        if target is None:
+            target = obligation_days(c, event, team)
+            if not target:
+                return []
+        bookings[other["id"]] = obligation_days(c, other, team)
+    collisions = [key for key, dates in bookings.items() if target & dates]
+    if not collisions:
+        return []
+    occupied = set.union(*bookings.values())
+    if free_opening_day(event, occupied):
+        return []
+    # A flexible entry can also have been accepted first. Reserve distinct
+    # options when several as-yet undrawn events share the opening day.
+    occupied.update(target)
+    result = []
+    for key in collisions:
+        other = c["circuit"]["editions"][key]
+        alternative = free_opening_day(other, occupied)
+        if alternative:
+            occupied.add(alternative)
+        else:
+            result.append(dict(id=key, title=other["title"], state=other["entries"][team],
+                               dates=sorted(target & bookings[key])))
+    return result
 
 
 def conflict_for(c, event, team):
-    for other in c["circuit"]["editions"].values():
-        if (
-            other is not event
-            and other["entries"].get(team) in COMMITTED
-            and conflicts(event, other)
-        ):
-            return other
-    return None
+    rows = clashes(c, event, team)
+    return c["circuit"]["editions"][rows[0]["id"]] if rows else None
 
 
 def player_conflict(c, event, team, players, reserves=()):
@@ -41,7 +138,7 @@ def player_conflict(c, event, team, players, reserves=()):
     return None
 
 
-def signup(c, event, team, pack):
+def signup(c, event, team, pack, *, prioritise=frozenset()):
     require(
         event["opens"] <= c["date"] < event.get("applyBy", event["lock"]),
         "Регистрация закрыта",
@@ -73,12 +170,12 @@ def signup(c, event, team, pack):
         parent = c["circuit"]["editions"][parent["feeds"]]
         require(
             parent["entries"].get(team)
-            not in ("invited", "accepted", "locked", "qualified"),
+            not in COMMITTED,
             "Команда уже получила место в следующем этапе",
         )
-    clash = conflict_for(c, event, team)
-    if clash:
-        raise ValueError("Пересечение дат: " + clash["title"])
+    for clash in clashes(c, event, team):
+        if clash["id"] not in prioritise:
+            raise ValueError("Пересечение дат: " + clash["title"] + " · " + ", ".join(clash["dates"]))
     require(
         sum(s == "accepted" for s in event["entries"].values()) < event["capacity"]
         or event["admission"] == "rankedOpen",

@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import competitions, registrations, cs2_maps, database, match, series, veto, world
+from . import round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
 from .database import require
 
 VERSION = 1
@@ -29,7 +29,7 @@ def roster_index(pack):
 def choices(pack):
     return dict(
         date=pack["asOf"],
-        circuit=pack["id"] == database.RELEASE_ID and pack["asOf"] == "2026-11-25",
+        circuit=pack["id"] in database.NOVEMBER_EDITIONS and pack["asOf"] == "2026-11-25",
         teams=[
             dict(id=tid, name=t["name"], region=t["region"], tier=t["tier"])
             for tid in roster_index(pack)
@@ -60,7 +60,7 @@ def create(pack, options):
         isinstance(team, str) and team in available,
         "У клуба нет полной пятёрки на дату базы",
     )
-    circuit = pack["id"] == database.RELEASE_ID and pack["asOf"] == "2026-11-25"
+    circuit = pack["id"] in database.NOVEMBER_EDITIONS and pack["asOf"] == "2026-11-25"
     ranked = any(t["tier"] for t in pack["teams"].values())
     participants = {}
     registered = set()
@@ -87,6 +87,7 @@ def create(pack, options):
     )
     c = dict(
         version=VERSION,
+        office=staff.office(),
         id=str(uuid4()),
         source=[pack["id"], pack["revision"]] + ([pack["tournamentSupplement"]] if "tournamentSupplement" in pack else []),
         character=name.strip(),
@@ -162,15 +163,25 @@ def schedule(c):
     c["week"] += 1
 
 
+def ensure_schedule(c, pack):
+    """Repopulate the calendar boundary of a parked career before advancing it."""
+    if c["queue"]:
+        return
+    if "circuit" in c:
+        competitions.add_season(c, pack, int(c["date"][:4]))
+    else:
+        schedule(c)
+
+
 def stops(c, event):
     return event["kind"] == "review" or c["team"] in event["teams"] or event["id"]==c.get("watchFixture")
 
 
-def start_advance(c):
+def start_advance(c, *, administrative=False):
     require(not c["progress"], "Календарь уже рассчитывается")
-    until = next(i for i, e in enumerate(c["queue"]) if stops(c, e))
-    require(until or c["queue"][0]["kind"] == "review" or c["date"] != c["queue"][0]["date"], "Вас ждут в матч-центре")
-    c.update(progress=dict(done=0, total=until), error=None)
+    until = next((i for i, e in enumerate(c["queue"]) if e["kind"] == "match" and stops(c, e)), len(c["queue"]))
+    require(administrative or until or c["queue"][0]["kind"] == "review" or c["date"] != c["queue"][0]["date"], "Вас ждут в матч-центре")
+    c.update(progress=dict(done=0, total=until, runId=str(uuid4())), error=None)
 
 
 def match_domain(pack, c, event, badges=None, portraits=None):
@@ -199,20 +210,25 @@ def match_domain(pack, c, event, badges=None, portraits=None):
             {pid: pack["players"][pid] for pid in domain["players"]}
         ).items():
             visual = domain["players"][pid]["visual"]
-            if not visual["head"]:
+            if not pack["players"][pid].get("appearance"):
                 visual["head"] = portrait["image"]
     return domain, rosters
 
 
-def initial(pack, c, event, badges=None, portraits=None):
+def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
     domain, rosters = match_domain(pack, c, event, badges, portraits)
     if "bestOf" in event:
+        jobs = staff.booked(c, pack, event)
         game = series.initial(event["seed"], event["bestOf"], domain, rosters,
                               c["team"] if c["team"] in event["teams"] else None,
-                              profile=(c["circuit"]["editions"][event["edition"]]["rules"] if event.get("edition") else c["seriesProfile"]), history=c["history"], today=event["date"])
+                              profile=(c["circuit"]["editions"][event["edition"]]["rules"] if event.get("edition") else c["seriesProfile"]), history=c["history"], today=event["date"], jobs=jobs, detailed=detailed)
         if event.get("edition"):
             game["series"]["tournament"]=c["circuit"]["editions"][event["edition"]]["title"]
+        if not detailed:
+            game["simulation"] = round_sim.MODE
         return game
+    if not detailed:
+        return dict(simulation=round_sim.MODE, seed=event["seed"], domain=domain, rosterIds=rosters, mapId=event.get("mapId"))
     return match.initial(
         event["seed"],
         domain,
@@ -223,6 +239,22 @@ def initial(pack, c, event, badges=None, portraits=None):
 
 
 def simulate(game):
+    if game.get("simulation") == round_sim.MODE:
+        if "series" not in game:
+            first = game["domain"]["rosters"][game["rosterIds"][0]]["team"]
+            return round_sim.play_map(game, game["mapId"], first, game["seed"])
+        s = game["series"]
+        veto.advance(game, "captain")
+        strain = {}
+        for i, entry in enumerate(s["order"]):
+            report = round_sim.play_map(game, entry["map"], entry["attack"], series.map_seed(s["seed"], i), strain)
+            s["results"].append(report)
+            winner = report["winnerTeamId"]
+            s["score"][winner] += 1
+            if s["score"][winner] == s["bestOf"] // 2 + 1:
+                s.update(winner=winner, stage="finished")
+                break
+        return series.result(game)
     if "series" in game:
         veto.advance(game, "captain")
         while game["series"]["stage"] != "finished":
@@ -231,14 +263,16 @@ def simulate(game):
             while game["phase"] != "finished":
                 match.advance(game)
             series.finish_map(game)
-        return series.result(game)
+        return result(game)
     while game["phase"] != "finished":
         match.advance(game)
     return result(game)
 
 
 def result(game):
-    return series.result(game) if "series" in game else series.map_result(game)
+    if "series" in game:
+        return series.result(game)
+    return dict(series.map_result(game), simulation=series.DETAILED)
 
 
 def complete(c, digest, points, winner, facts=None):
