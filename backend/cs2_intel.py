@@ -106,23 +106,30 @@ def sector_pressure(space, reports, calls, now, counts):
     """Unidentified audio corroborates a lane, never identifies additional enemies."""
     audio = {"A": {}, "B": {}}
     for r in reports:
-        if not r.get("sound") or not 0 <= now-r["tick"] < 32:
+        if not r.get("sound") or not 0 <= now - r["tick"] < 32:
             continue
         pos = xyz(r)
         site = space.reported_site(pos) or space.entry_sites.get(space.locate(pos))
         if site:
-            strength = r["confidence"] * (1-(now-r["tick"])/32)
-            weight = (0.84 if r.get("repeated") and r["sound"] == "Шаги" else 0.54) * strength
-            audio[site][r["sound"]] = max(audio[site].get(r["sound"],0), weight)
+            strength = r["confidence"] * (1 - (now - r["tick"]) / 32)
+            weight = (
+                0.84 if r.get("repeated") and r["sound"] == "Шаги" else 0.54
+            ) * strength
+            audio[site][r["sound"]] = max(audio[site].get(r["sound"], 0), weight)
     for site in counts:
         # Even repeated noises in one lane can release at most one reserve.
-        counts[site] += min(0.94,sum(audio[site].values()))
-        recent = [c for c in calls if c["site"] == site and 0 <= now-c["tick"] < 35]
+        counts[site] += min(0.94, sum(audio[site].values()))
+        recent = [c for c in calls if c["site"] == site and 0 <= now - c["tick"] < 35]
         # A blocked path or a missing partner calls for new coverage. It is
         # not evidence that an opponent is there. Require independent contact.
-        if any(c["state"] in ("unsupported","engaged") for c in recent) and any(
-            r["source"] in ("Радио","Зрение") and now-r["tick"] < 25 and
-            (space.reported_site(xyz(r)) or space.entry_sites.get(space.locate(xyz(r)))) == site
+        if any(c["state"] in ("unsupported", "engaged") for c in recent) and any(
+            r["source"] in ("Радио", "Зрение")
+            and now - r["tick"] < 25
+            and (
+                space.reported_site(xyz(r))
+                or space.entry_sites.get(space.locate(xyz(r)))
+            )
+            == site
             for r in reports
         ):
             counts[site] += 0.68
@@ -130,11 +137,18 @@ def sector_pressure(space, reports, calls, now, counts):
         for call in recent:
             if call["state"] != "watching":
                 continue
-            if any(r["source"] in ("Зрение","Радио") and r["tick"] >= call["tick"]
-                   and dist(xyz(r),tuple(call["point"])) < 30 for r in reports):
+            if any(
+                r["source"] in ("Зрение", "Радио")
+                and r["tick"] >= call["tick"]
+                and dist(xyz(r), tuple(call["point"])) < 30
+                for r in reports
+            ):
                 continue
-            if any(r["tick"] < call["tick"] and dist(xyz(r),tuple(call["point"])) < 25 for r in reports):
-                counts[site] = max(0,counts[site]-0.45)
+            if any(
+                r["tick"] < call["tick"] and dist(xyz(r), tuple(call["point"])) < 25
+                for r in reports
+            ):
+                counts[site] = max(0, counts[site] - 0.45)
                 break
 
 

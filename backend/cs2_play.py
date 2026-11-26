@@ -295,13 +295,20 @@ def direct_defense(space, w, plan, squad, leader):
     calls = list(leader.get("sectorCalls", {}).values())
     cs2_intel.sector_pressure(space, reports, calls, now, counts)
     plan["unavailable"] = {
-        pid.split("/")[0]: call["site"] for pid, call in leader.get("sectorCalls", {}).items()
-        if call.get("duty") and call["state"] == "blocked" and 0 <= now - call["tick"] < 30
+        pid.split("/")[0]: call["site"]
+        for pid, call in leader.get("sectorCalls", {}).items()
+        if call.get("duty")
+        and call["state"] == "blocked"
+        and 0 <= now - call["tick"] < 30
     }
     for pid, call in leader.get("sectorCalls", {}).items():
-        if call.get("duty") and call["state"] in ("moving","arrived") and now - call["tick"] < 25:
+        if (
+            call.get("duty")
+            and call["state"] in ("moving", "arrived")
+            and now - call["tick"] < 25
+        ):
             actor = next((p for p in squad if p["id"] == pid.split("/")[0]), None)
-            duty = cs2_defense.relief(plan,actor) if actor else None
+            duty = cs2_defense.relief(plan, actor) if actor else None
             if duty and duty["site"] == call["site"]:
                 duty["acknowledged"] = call["state"]
                 if call["state"] == "moving":
@@ -379,17 +386,27 @@ def direct_defense(space, w, plan, squad, leader):
     if reserve:
         old_site = reserve["site"]
         opposite = "B" if old_site == "A" else "A"
-        contradiction = any(r["source"] in ("Радио","Зрение") and now-r["tick"] < 30
-                            and space.reported_site(xyz(r)) == opposite for r in reports)
-        cleared = any(c["state"] == "watching" and c["site"] == old_site
-                      and reserve.get("lastEvidence",now) < c["tick"] <= now
-                      and any(dist(xyz(r),tuple(c["point"])) < 22 and r["tick"] < c["tick"]
-                              for r in reports) for c in calls)
+        contradiction = any(
+            r["source"] in ("Радио", "Зрение")
+            and now - r["tick"] < 30
+            and space.reported_site(xyz(r)) == opposite
+            for r in reports
+        )
+        cleared = any(
+            c["state"] == "watching"
+            and c["site"] == old_site
+            and reserve.get("lastEvidence", now) < c["tick"] <= now
+            and any(
+                dist(xyz(r), tuple(c["point"])) < 22 and r["tick"] < c["tick"]
+                for r in reports
+            )
+            for c in calls
+        )
         if destination == old_site:
             reserve["lastEvidence"] = now
         elif on_site or contradiction or cleared:
-            reserve["arriveBy"] = now-1
-        elif now-reserve.get("lastEvidence",reserve.get("issued",now)) < 28:
+            reserve["arriveBy"] = now - 1
+        elif now - reserve.get("lastEvidence", reserve.get("issued", now)) < 28:
             destination = old_site
     coordinate_reserves(space, plan, squad, destination, counts, now, bomb_site)
     if plan.get("backup"):

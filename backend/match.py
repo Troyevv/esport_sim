@@ -933,11 +933,17 @@ def advance(w):
                 w["messages"].append(dict(team=side,sender=a["id"],blockedSite=site,
                                           due=now+ai.radio_delay(profile(w,a)["skills"])))
             if space and side == "CT" and w["phase"] == "live" and now % 5 == a["slot"]:
-                call = ai.cs2_play.cs2_defense.duty_feedback(w["plans"]["CT"], a, squad, now)
+                call = ai.cs2_play.cs2_defense.duty_feedback(
+                    w["plans"]["CT"], a, squad, now
+                )
                 if call:
                     ai.send_sector(w, a, call)
             if intents[-1][1] == "move":
-                if prior_position and now % 5 == a["slot"] and ai.dist(prior_position,cs2_maps.xyz(a)) > 0.9:
+                if (
+                    prior_position
+                    and now % 5 == a["slot"]
+                    and ai.dist(prior_position, cs2_maps.xyz(a)) > 0.9
+                ):
                     ai.heard_action(w, space, a, players, "Шаги", 88)
                 a["lastMove"] = now
                 a["movingTicks"] += 1
@@ -986,7 +992,7 @@ def advance(w):
                 victim = min(crossed,key=lambda p: ai.distance(a,p),default=None)
             ai.shoot(w, a, target, victim, space)
             if space and a["team"] == "T" and w["phase"] == "live":
-                radius = 75 if a["weapon"] in ("USP","M4A1-S") else 128
+                radius = 75 if a["weapon"] in ("USP", "M4A1-S") else 128
                 ai.heard_action(w,space,a,players,"Выстрел",radius)
             for listener in players:
                 # A passing shot is perceptible at the listener, even when the
