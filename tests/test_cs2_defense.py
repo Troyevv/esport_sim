@@ -31,16 +31,30 @@ def test_trade_crossing_must_be_inside_the_anchors_current_field():
 
 def test_predictions_use_only_report_time_and_reported_motion():
     space = SimpleNamespace(
-        sector=lambda *args: ((12, 0, 0), (17, 0, 0), (60, 0, 0)),
+        sector=lambda *args: ((4, 0, 0), (7, 0, 0), (17, 0, 0), (60, 0, 0)),
         hit=lambda *args: None,
     )
     duty = order("A", (0, -10, 0), (60, 0, 0))
     sight = dict(
-        x=0, y=0, z=0, id="T1", source="Радио", tick=100, speed=1, direction=[1, 0, 0]
+        x=0,
+        y=0,
+        z=0,
+        id="T1",
+        source="Радио",
+        tick=100,
+        speed=1,
+        direction=[1, 0, 0],
+        motionRun=1,
     )
-    assert defense.interpret(space, duty, [sight], 117, 65, 70) == (12, 0, 0)
-    assert defense.interpret(space, duty, [sight], 117, 85, 70) == (17, 0, 0)
+    assert defense.interpret(space, duty, [sight], 117, 65, 70) == (7, 0, 0)
+    assert defense.interpret(space, duty, [sight], 117, 85, 70) == (4, 0, 0)
+    assert defense.interpret(space, duty, [dict(sight, motionRun=17)], 117, 85, 70) == (
+        17,
+        0,
+        0,
+    )
     assert defense.interpret(space, duty, [sight], 180, 85, 70) == (60, 0, 0)
+    assert defense.anticipated(space, sight, 100, 85) == (0, 0, 0)
 
 
 def test_only_one_available_defender_checks_a_report_behind_the_assigned_angles():

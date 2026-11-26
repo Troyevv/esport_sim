@@ -16,6 +16,31 @@ def observe_contact(sight, opponent, prior, nearby, continuous):
         speed = hypot(*delta)
         if speed > 0.05:
             sight["direction"] = [round(v / speed, 3) for v in delta]
+            direction = prior.get("direction", ())
+            aligned = sum(a * b for a, b in zip(direction, sight["direction"])) >= cos(
+                pi / 8
+            )
+            sight["motionRun"] = 1 + (prior.get("motionRun", 1) if aligned else 0)
+
+
+def learn_motion(observer, sight, prior):
+    """Learn how far a lost contact travelled only when it is seen again."""
+    memory = observer.setdefault("motionHistory", {})
+    if prior and prior["source"] in ("Зрение", "Радио") and prior.get("direction"):
+        elapsed = sight["tick"] - prior["tick"]
+        if 1 < elapsed <= 24 and prior.get("speed", 0) > 0:
+            length = sum(
+                (b - a) * v
+                for a, b, v in zip(xyz(prior), xyz(sight), prior["direction"])
+            )
+            bucket = str(elapsed.bit_length() - 1)
+            total, count = memory.get(bucket, (0, 0))
+            fraction = max(0, min(1, length / (elapsed * prior["speed"])))
+            memory[bucket] = (total + fraction, count + 1)
+    if "motionRun" in sight and memory:
+        # This snapshot accompanies the dated report. Subsequent observations
+        # can change personal experience without rewriting the squad's memory.
+        sight["motionHistory"] = memory.copy()
 
 
 def duel_priority(observer, sight, focus, skills):

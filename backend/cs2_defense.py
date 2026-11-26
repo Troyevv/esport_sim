@@ -97,8 +97,7 @@ def interpret(space, order, reports, now, reading, familiarity):
             continue
         pos = xyz(report)
         direction = report.get("direction")
-        speed = min(2, report.get("speed", 0))
-        projected = min(age + 3, 25) * speed * reading / 100
+        projected = expected_travel(report,age,reading)
         confidence = (1 - age / 75) * (
             0.5 if report["source"] in ("Слух", "Граната") else 1
         )
@@ -281,19 +280,31 @@ def check_incoming(actor, intent, now, skills):
     actor["heading"] = angle
 
 
+def expected_travel(report, age, reading):
+    """Estimate progress along the measured heading from available evidence."""
+    if age <= 0 or not report.get("direction"):
+        return 0
+    age = min(age, 24)
+    speed = min(2, report.get("speed", 0))
+    sample = report.get("motionRun", 1)
+    supported = min(age, sample) / age
+    total, count = report.get("motionHistory", {}).get(
+        str(age.bit_length() - 1), (0, 0)
+    )
+    fraction = (supported + total) / (1 + count)
+    return speed * age * (1 + (fraction - 1) * reading / 100)
+
+
 def anticipated(space, report, now, reading):
-    """Advance a visual report along its measured motion up to the first obstacle."""
+    """Project the report along observed movement within the visible corridor."""
     position = xyz(report)
     direction = report.get("direction")
     if not direction or report["source"] not in ("Радио", "Зрение"):
         return position
-    distance = (
-        min(now - report["tick"] + 2, 14)
-        * min(2, report.get("speed", 0))
-        * reading
-        / 100
-    )
-    predicted = tuple(v + d * distance for v, d in zip(position, direction))
+    travel = expected_travel(report, now - report["tick"], reading)
+    if not travel:
+        return position
+    predicted = tuple(v + d * travel for v, d in zip(position, direction))
     return predicted if space.hit(position, predicted, 1, 48) is None else position
 
 

@@ -104,6 +104,17 @@ def test_background_and_observed_share_report_across_the_map_pool(tmp_path):
         assert store.careers.report(frozen["history"][-1]["result"]) == expected
     store.db.close()
 
+@pytest.mark.parametrize("previous", ["cs2-bo1.14", "cs2-bo1.15", "cs2-bo1.16"])
+def test_recent_checkpoints_resume_from_the_recorded_tick(previous):
+    state = match.initial(41000,map_id="de_nuke")
+    match.advance(state)
+    state["rules"] = previous
+    tick, serial = state["tick"], state["serial"]
+    match.advance(state)
+    assert state["rules"] == cs2_maps.RULES
+    assert state["rulesTransition"] == dict(previous=previous,tick=tick,lastEvent=serial)
+
+
 def test_nuke_anchors_and_floor_reports_before_contact():
     game = match.initial(41000, map_id="de_nuke")
     # A checkpoint from the earlier PR keeps its ledger and marks the first new tick.

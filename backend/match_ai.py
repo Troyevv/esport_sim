@@ -171,6 +171,7 @@ def observe(w, players, space=None):
             if space:
                 nearby = [p for p in observed if distance(p, b) <= 28 and abs(p["z"] - b["z"]) < 8]
                 cs2_intel.observe_contact(sight, b, prior, nearby, "speed" in sight)
+                cs2_intel.learn_motion(a,sight,prior)
                 action = w.get("action")
                 if action and action["player"] == b["id"]:
                     sight["interaction"] = action["kind"]

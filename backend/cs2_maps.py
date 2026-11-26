@@ -15,9 +15,10 @@ from .cs2_sites import BombSites
 from .match_rules import BLAST_RADIUS, ROLES, UTILITY
 
 BUILD = 26879581
-RULES = "cs2-bo1.16"
-PREVIOUS_RULES = "cs2-bo1.14"
-SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.13", "cs2-bo1.12", "cs2-bo1.11", "cs2-bo1.10", "cs2-bo1.9", "cs2-bo1.8", "cs2-bo1.7", "cs2-bo1.6", "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
+# These rule revisions share map schema 2 and the same checkpoint migration.
+# The build ID and checkpoint version are validated independently on load.
+SUPPORTED_RULES = tuple(f"cs2-bo1.{version}" for version in range(17, 0, -1))
+RULES, PREVIOUS_RULES = SUPPORTED_RULES[:2]
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )
