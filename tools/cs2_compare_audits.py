@@ -217,7 +217,13 @@ def raw_professional(files):
                         duration=r["duration"],
                     )
                 )
+        plants = [r for r in rows if r["plant"]]
+        plant_times = [r["plantSeconds"] for r in plants if r.get("plantSeconds") is not None]
+        touches_known = bool(plants) and all(r.get("touched") is not None for r in plants)
         data[games[0]["map"]] = dict(
+            plantSeconds=round(st.median(plant_times), 1) if plant_times else None,
+            touched=sum(r["touched"] for r in plants) if touches_known else None,
+            plantedRounds=len(plants),
             eco=rates(equip_rows).get("eco", []),
             games=len(games),
             n=len(rows),

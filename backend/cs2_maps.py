@@ -161,6 +161,7 @@ class Map:
         self.passage = lru_cache(maxsize=32768)(partial(Map._passage, proxy(self)))
         self.gate = lru_cache(maxsize=32768)(partial(Map._gate, proxy(self)))
         self.inside = lru_cache(maxsize=32768)(partial(Map._inside, proxy(self)))
+        self.exits = lru_cache(maxsize=8192)(partial(Map._exits, proxy(self)))
         self.path = lru_cache(maxsize=4096)(partial(Map._path, proxy(self)))
         self.route = lru_cache(maxsize=8192)(self.nav.route)
         self.approach = lru_cache(maxsize=32)(partial(Map._approach, proxy(self)))
@@ -649,6 +650,23 @@ class Map:
                     return [*inside, (corner, area), (enter, cross.area)]
         return None
 
+    def _exits(self, area, pos):
+        # The portal geometry is static. Hazard exclusions and the cost accumulated
+        # from the actor's actual position remain specific to each path query.
+        exits = []
+        for crossing in self.nav.links[area]:
+            leg = self.gate(area, pos, crossing)
+            if leg is None:
+                continue
+            previous = pos
+            distances = []
+            for point, _ in leg:
+                distances.append(dist(previous, point))
+                previous = point
+            tip, other = leg[-1]
+            exits.append(((other, tip), leg, tuple(distances)))
+        return tuple(exits)
+
     def _path(self, area, start, zone, goal, avoided):
         route = (
             self.nav.route(area, zone, avoided=avoided)
@@ -689,19 +707,13 @@ class Map:
                         key, leg = parents[key]
                         legs.append(leg)
                     return tuple((*q, i) for chain in reversed(legs) for q, i in chain)
-            for cross in self.nav.links[here]:
-                if cross.area in avoided:
+            for target, leg, distances in self.exits(here, pos):
+                other, tip = target
+                if other in avoided:
                     continue
-                leg = self.gate(here, pos, cross)
-                if leg is None:
-                    continue
-                tip, other = leg[-1]
-                target = (other, tip)
                 traveled = length
-                prev = pos
-                for q, _ in leg:
-                    traveled += dist(prev, q)
-                    prev = q
+                for distance in distances:
+                    traveled += distance
                 if traveled >= costs.get(target, float("inf")):
                     continue
                 parents[target] = (key, leg)
