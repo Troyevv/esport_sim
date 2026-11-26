@@ -187,3 +187,32 @@ def test_dust_reserve_can_cover_a_legal_plant_after_anchor_loss():
             space.hit(hold, space.centers[area], 1, 64) is None
             for area in space.plants[site]
         )
+
+
+def test_nuke_postplant_escape_time_uses_the_route_that_is_walked():
+    from math import dist
+    from backend import cs2_play, match_performance
+    from backend.match_rules import BLAST_RADIUS
+
+    # Seed 41001, second-half pistol. The default NAV exit is across a blocked
+    # portal. Walking to it on the correct floor takes almost the entire fuse.
+    origin = (316.000005, 346.66668333333337, -63.666666666666664)
+    planted = (328.4050742801617, 299.96775201988845, -63.78752247263657)
+    space = cs2_maps.get("de_nuke")
+    game = match.initial(41001, map_id="de_nuke")
+    actor = game["agents"][0]
+    actor.update(zip("xyz", origin))
+    actor.update(navArea=1507, path=[], dest=None, status="Прикрывает C4")
+    player = match.profile(game, actor)
+    bomb = dict(zip("xyz", planted), site="B")
+    state = dict(deadline=100, tick=0, plan={}, player=player)
+    speed = 2 * match_performance.move_speed(player)
+    assert space.nominal_exit(1507, origin, planted) / speed > 100
+    goal = None
+    for tick in range(100):
+        state["tick"] = tick
+        if goal is None:
+            goal = cs2_play.exit_goal(space, state, actor, [actor], bomb)
+        if goal is not None:
+            space.walk(actor, goal, speed, [])
+    assert dist(cs2_maps.xyz(actor), planted) >= BLAST_RADIUS

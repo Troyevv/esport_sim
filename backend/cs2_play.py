@@ -3,7 +3,7 @@
 from math import atan2, cos, dist, hypot, sin, tau
 from .cs2_maps import UNIT, xyz
 from . import match_performance as perf
-from .match_rules import RULES, equipment_value
+from .match_rules import BLAST_RADIUS, RULES, equipment_value
 
 
 def opening(space, w, squad, captain, player, buy, site, style, call):
@@ -387,13 +387,27 @@ def exit_goal(space, w, a, allies, bomb):
         for p in a["knowledge"].values()
     )
     if a["team"] == "T":
-        if (
-            remaining
-            > routes.costs[area] / UNIT / speed
-            + 12
-            + equipment_value(a) / 450
-            - threats * 3
-        ):
+        reserve = 12 + equipment_value(a) / 450 - threats * 3
+        departure = routes.costs[area] / UNIT / speed + reserve
+        origin = xyz(a)
+        stationary = a["status"] == "Прикрывает C4" and not a["path"]
+        if dist(origin, pos) < BLAST_RADIUS and (stationary or remaining <= departure):
+            # A short abstract route may lead through a portal blocked on this floor.
+            # Compare actual walking time with the time the captain intended to leave.
+            if space.nominal_exit(area, origin, pos) / speed > departure:
+                alternative = space.physical_exit(area, origin, pos)
+                if alternative is not None:
+                    length, path = alternative
+                    if remaining > max(departure, length / speed + reserve):
+                        return
+                    if path:
+                        safe = path[-1][:3]
+                        # Execute the measured path. Replanning solely to this
+                        # point can again choose the original, much longer detour.
+                        a["path"] = [list(node) for node in path]
+                        a["dest"] = [space.locate(safe), *safe, []]
+                        return safe
+        if remaining > departure:
             return
     else:
         if w["action"]:
@@ -440,8 +454,6 @@ def exit_goal(space, w, a, allies, bomb):
         return chosen
     # The closest safe NAV centre can lie beyond a closed prop. Check
     # other safe surfaces before committing the player's remaining time.
-    from .match_rules import BLAST_RADIUS
-
     safe = (
         space.centers[i]
         for i in space.nearby_areas(pos, BLAST_RADIUS * 1.8)

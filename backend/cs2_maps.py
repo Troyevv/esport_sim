@@ -15,9 +15,9 @@ from .cs2_sites import BombSites
 from .match_rules import BLAST_RADIUS, ROLES
 
 BUILD = 26879581
-RULES = "cs2-bo1.6"
-PREVIOUS_RULES = "cs2-bo1.5"
-SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
+RULES = "cs2-bo1.7"
+PREVIOUS_RULES = "cs2-bo1.6"
+SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.5", "cs2-bo1.4", "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )
@@ -170,6 +170,8 @@ class Map:
         self.crossfire = lru_cache(maxsize=64)(partial(Map._crossfire, proxy(self)))
         self.angles = lru_cache(maxsize=128)(partial(Map._angles, proxy(self)))
         self.escape = lru_cache(maxsize=16)(partial(Map._escape, proxy(self)))
+        self.nominal_exit = lru_cache(maxsize=1024)(partial(Map._nominal_exit, proxy(self)))
+        self.physical_exit = lru_cache(maxsize=1024)(partial(Map._physical_exit, proxy(self)))
         self.locate = lru_cache(maxsize=8192)(partial(Map._locate, proxy(self)))
         self.use_floors = lru_cache(maxsize=256)(partial(Map._use_floors, proxy(self)))
 
@@ -227,6 +229,56 @@ class Map:
             i for i, p in self.centers.items() if dist(p, bomb) >= BLAST_RADIUS + 4
         ]
         return self.nav.routes_through([goals])
+
+    def _nominal_exit(self, area, origin, bomb):
+        _, destination = self.escape(bomb).route(area)
+        goal = self.centers[destination[-1]]
+        path = self.path(area, origin, self.locate(goal), goal, frozenset())
+        if path is None:
+            return float("inf")
+        length = 0.0
+        previous = origin
+        for node in path:
+            point = node[:3]
+            length += dist(previous, point)
+            previous = point
+        return length
+
+    def _physical_exit(self, area, origin, bomb):
+        """Find a traversable escape, including one-way portals and stacked floors."""
+        radius = BLAST_RADIUS + 4
+        start = (area, origin)
+        parents, costs = {}, {start: 0.0}
+        queue = [(max(0, radius - dist(origin, bomb)), 0.0, start)]
+        while queue:
+            _, length, state = heappop(queue)
+            if length != costs[state]:
+                continue
+            here, pos = state
+            if dist(pos, bomb) >= radius and self.locate(pos) is not None:
+                legs = []
+                while state != start:
+                    state, leg = parents[state]
+                    legs.append(leg)
+                return length, tuple((*q, i) for leg in reversed(legs) for q, i in leg)
+            exits = self.exits(here, pos)
+            center = self.centers[here]
+            if pos != center and dist(center, bomb) >= radius:
+                leg = self.inside(here, pos, center)
+                if leg is not None:
+                    points = [pos, *(q for q, _ in leg)]
+                    segments = tuple(dist(a, b) for a, b in zip(points, points[1:]))
+                    exits = (*exits, ((here, center), leg, segments))
+            for target, leg, segments in exits:
+                traveled = length
+                for segment in segments:
+                    traveled += segment
+                if traveled < costs.get(target, float("inf")):
+                    costs[target], parents[target] = traveled, (state, leg)
+                    # Straight-line distance to the safe sphere is a lower bound.
+                    estimate = max(0, radius - dist(target[1], bomb))
+                    heappush(queue, (traveled + estimate, traveled, target))
+        return None
 
     def orders(self, side, site, squad, lane, style=None):
         slots = []
