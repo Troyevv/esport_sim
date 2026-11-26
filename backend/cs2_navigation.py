@@ -111,9 +111,14 @@ class Navigation:
                             self.links[ident].append(Crossing(target, tuple(leave), tuple(enter), ladder_id))
 
         self._incoming = defaultdict(list)
+        self._outgoing = {}
         for here, crossings in self.links.items():
-            for crossing in crossings:
-                self._incoming[crossing.area].append((here, crossing, self._cost(here, crossing)))
+            # The portal cost belongs to frozen map geometry. Both searches
+            # use the same float and preserve the original order of parallel edges.
+            weighted = [(crossing, self._cost(here, crossing)) for crossing in crossings]
+            self._outgoing[here] = weighted
+            for crossing, cost in weighted:
+                self._incoming[crossing.area].append((here, crossing, cost))
 
     def _cost(self, here, crossing):
         return (dist(self.centers[here], crossing.leave) + dist(crossing.leave, crossing.enter)
@@ -173,11 +178,11 @@ class Navigation:
                     here, crossing = parents[here]
                     path.append(crossing)
                 return path[::-1]
-            for crossing in self.links[here]:
+            for crossing, edge_cost in self._outgoing.get(here, ()):
                 target = crossing.area
                 if target in avoided or (here, target) in excluded:
                     continue
-                next_cost = cost + self._cost(here, crossing)
+                next_cost = cost + edge_cost
                 if next_cost >= costs.get(target, float("inf")):
                     continue
                 costs[target] = next_cost

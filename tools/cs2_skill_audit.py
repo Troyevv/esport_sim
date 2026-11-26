@@ -34,7 +34,10 @@ PROFILES = (
 )
 
 
-CONTEXT_PROFILES = ("high_form", "low_morale", "fatigued")
+CONTEXT_PROFILES = (
+    "high_form", "low_morale", "fatigued",
+    "mechanics_only", "tactics_only", "weak_mechanics",
+)
 
 
 class SkillReads(dict):
@@ -66,6 +69,10 @@ def lineups(pack, pair, order, name, profile):
                     s.update(
                         dict.fromkeys(TACTICS, 45 if profile == "mechanical" else 85)
                     )
+                if profile in ("mechanics_only", "weak_mechanics"):
+                    s.update(dict.fromkeys(MECHANICS, 85 if profile == "mechanics_only" else 45))
+                if profile == "tactics_only":
+                    s.update(dict.fromkeys(TACTICS, 85))
                 if profile in ("captain", "executors"):
                     if m["captain"]:
                         s.update(
