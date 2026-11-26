@@ -15,9 +15,9 @@ from .cs2_sites import BombSites
 from .match_rules import BLAST_RADIUS, ROLES
 
 BUILD = 26879581
-RULES = "cs2-bo1.4"
-PREVIOUS_RULES = "cs2-bo1.3"
-SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.2", "cs2-bo1.1")
+RULES = "cs2-bo1.5"
+PREVIOUS_RULES = "cs2-bo1.4"
+SUPPORTED_RULES = (RULES, PREVIOUS_RULES, "cs2-bo1.3", "cs2-bo1.2", "cs2-bo1.1")
 PROFILES = json.loads(
     Path(__file__).with_name("data").joinpath("maps_202611_tactics.json").read_bytes()
 )

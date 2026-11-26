@@ -145,3 +145,23 @@ def test_existing_double_smoke_plan_remains_playable():
     assert game["agents"][0]["utility"].count("Дым")==2
     with pytest.raises(ValueError):
         tactics.validate(dict(plan,format=2))
+
+
+def test_map_default_assigns_three_sectors_and_uses_delivered_readiness():
+    from collections import Counter
+    from backend import cs2_play
+    state = match.initial(41000, map_id="de_dust2")
+    space = cs2_maps.get("de_dust2")
+    squad = [p for p in state["agents"] if p["team"] == "T"]
+    plan = dict(site="A", lane=0, style="Контроль карты")
+    probe = cs2_play.default_probe(space,squad,state["bomb"]["carrier"],plan,100)
+    plan["probe"] = probe
+    assert sorted(Counter(v["label"] for v in probe["stations"].values()).values()) == [1,2,2]
+    for actor in squad:
+        goal=probe["stations"][actor["id"]]["point"]
+        assert space._reachable(cs2_maps.xyz(actor),[goal],actor["navArea"]) is not None
+    probe["reports"] = {actor["id"]:160 for actor in squad}
+    cs2_play.release_probe(space,plan,squad,[],155)
+    assert not probe.get("released")
+    cs2_play.release_probe(space,plan,squad,[],160)
+    assert probe["released"] == 160

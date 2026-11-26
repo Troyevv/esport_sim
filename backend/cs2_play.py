@@ -54,17 +54,61 @@ def opening(space, w, squad, captain, player, buy, site, style, call):
 
 
 def default_probe(space, squad, carrier, plan, now):
-    """One player takes information on the other approach while the core stages."""
-    other = "B" if plan["site"] == "A" else "A"
-    label = space.profile["probe"][other]
-    choices = [a for a in squad if a["id"] != carrier and a["playingRole"] not in ("entry", "support")]
-    for scout in sorted(choices, key=lambda a: (a["playingRole"] != "lurker", a["slot"])):
-        pos = xyz(scout)
-        candidates = sorted((space.centers[i] for i in space.places[label]), key=lambda p: dist(pos, p))
-        goal = space._reachable(pos, candidates, scout["navArea"])
-        if goal is not None:
-            return dict(scout=scout["id"], goal=list(goal), label=label, until=now+340)
-    return None
+    """Split an information default between the primary approach, mid and the flank."""
+    site = plan["site"]
+    other = "B" if site == "A" else "A"
+    available = [a for a in squad if a["id"] != carrier]
+    scout = min(available, key=lambda a: (a["playingRole"] != "lurker", a["slot"]))
+    available.remove(scout)
+    mid = min(available, key=lambda a: (a["playingRole"] != "awper", a["slot"]))
+    available.remove(mid)
+    partner = min(available, key=lambda a: (a["playingRole"] == "entry", a["slot"]))
+    stations = {}
+    for a in squad:
+        flank = a in (scout, partner)
+        sector = other if flank else site
+        label = space.profile["middle"] if a is mid else space.profile["probe"][sector]
+        pos = xyz(a)
+        occupied = [v["point"] for v in stations.values() if v["label"] == label]
+        surfaces = [space.centers[i] for i in sorted(space.places[label])]
+        # Two players can work one lane while maintaining trading distance and
+        # different sight lines. Only choose points reachable from this spawn.
+        candidates = sorted(surfaces, key=lambda q: (
+            bool(occupied) and min(dist(q,p) for p in occupied) < 8,
+            dist(pos,q) + (abs(dist(q,occupied[0])-16) if occupied else 0)))
+        point = space._reachable(pos, candidates, a["navArea"])
+        if point is None:
+            return None
+        angles = [space.site_points[sector], *space.ingress(sector,plan["lane"])]
+        angles = [q for q in angles if dist(point,q)>6 and space.hit(point,q,1,64) is None]
+        watch = min(angles,key=lambda q: dist(point,q), default=space.site_points[sector])
+        stations[a["id"]] = dict(label=label, point=list(point), watch=list(watch))
+    return dict(scout=scout["id"], stations=stations, reports={}, until=now+RULES["live"]-RULES["plant"])
+
+
+def hold_sector(space, w, a, allies, fire, travel):
+    """Take a sector, observe its crossing, then radio readiness to the captain."""
+    plan, now = w["plan"], w["tick"]
+    probe = plan.get("probe")
+    if not probe or "stations" not in probe or probe.get("released") or plan["rotated"]:
+        return None
+    station = probe["stations"][a["id"]]
+    pos, goal = xyz(a), station["point"]
+    a["status"] = "Берёт контроль · " + station["label"]
+    if dist(pos, goal) > 4:
+        if travel(a,goal,1.65,fire,allow_detour=True):
+            return "move", None
+        if a.get("blockedTicks",0) >= 20:
+            # This member cannot establish their assigned sector. This is
+            # a report about our path, not an enemy sighting.
+            probe["reports"].setdefault(a["id"], now+1+(100-w["player"]["skills"]["communication"])//12)
+        return "hold", None
+    watch = station["watch"]
+    a["heading"] = atan2(watch[1]-pos[1], watch[0]-pos[0])
+    a["status"] = "Наблюдает · " + station["label"]
+    probe["reports"].setdefault(a["id"],now+1+(100-w["player"]["skills"]["communication"])//12)
+    utility = crossing_utility(space,w,a,allies,plan["orders"]["slots"][a["slot"]],plan["site"])
+    return utility or ("hold", None)
 
 
 def probe_intent(space, w, a, allies, goal, watch):
@@ -96,6 +140,15 @@ def probe_intent(space, w, a, allies, goal, watch):
 def release_probe(space, plan, squad, contacts, now):
     probe = plan.get("probe")
     if not probe or probe.get("released"):
+        return
+    if "stations" in probe:
+        # The slowest live member must still be able to reach a legal plant. NAV
+        # costs are Hammer units; the approach uses simulation units per tick.
+        travel = max(space.site_costs[plan["site"]].get(a["navArea"], 0) / (UNIT*1.65) for a in squad)
+        due = probe["reports"]
+        ready = all(due.get(a["id"],float("inf")) <= now for a in squad)
+        if ready or len(squad) <= 3 or now+travel+RULES["plant"] >= probe["until"]:
+            probe["released"] = now
         return
     other = "B" if plan["site"] == "A" else "A"
     scout = next((a for a in squad if a["id"] == probe["scout"]), None)
@@ -751,6 +804,10 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
                 watch = xyz(bomb)
             a["status"] = "Проверяет C4 после звука" if check else "Прикрывает C4"
     elif side == "T":
+        if bomb and bomb["carrier"] and not w["action"]:
+            occupation = hold_sector(space,w,a,allies,fire,travel)
+            if occupation:
+                return occupation
         if (
             bomb
             and not bomb["carrier"]
@@ -819,7 +876,7 @@ def spatial_intent(space, w, a, allies, bomb, fire, travel):
         if cue["peek"] is not None:
             goal, watch = cue["peek"], cue["watch"]
             a["status"] = "Проверяет звук установки"
-    if side == "T" and w["phase"] == "live" and plan.get("probe") and not latest and not w["action"] and bomb and bomb["carrier"]:
+    if side == "T" and w["phase"] == "live" and plan.get("probe") and "stations" not in plan["probe"] and not latest and not w["action"] and bomb and bomb["carrier"]:
         goal, watch = probe_intent(space, w, a, allies, goal, watch)
         if a["status"] == "Наблюдает второй подход" and "Ложная" in a["utility"] and now >= a["throwAt"]:
             other = "B" if site == "A" else "A"
