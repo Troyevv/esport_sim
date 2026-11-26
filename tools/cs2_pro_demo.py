@@ -37,6 +37,23 @@ def parse(path, rounds):
 
     taps = ticks("bomb_begindefuse")
     plants = ticks("bomb_planted")
+    # Some GOTV servers omit the begin-use game event. Sample the recorded
+    # pawn flag at quarter-second intervals after the plant as a second witness.
+    checks = set()
+    for row in rounds:
+        plant = next(
+            (t for t in plants if row["freeze_end_tick"] <= t <= row["end_tick"]), None
+        )
+        if plant is not None:
+            checks.update(range(plant, row["end_tick"], 16))
+    if checks:
+        flags = parser.parse_ticks(["is_defusing", "team_num"], ticks=sorted(checks))
+        taps.extend(
+            int(t)
+            for t in flags.loc[
+                (flags.team_num == 3) & (flags.is_defusing == True), "tick"
+            ].unique()
+        )
     ends = [r["end_tick"] for r in rounds]
     players = parser.parse_ticks(["health", "team_num"], ticks=ends)
     # A round has one snapshot per phase, taken from the recorded server tick.
@@ -92,6 +109,9 @@ def parse(path, rounds):
                 survivingCT=len(alive),
             )
         )
+    if any(r["reason"] == "bomb_defused" and not r["touched"] for r in result):
+        for r in result:
+            r["touched"] = None
     return result
 
 

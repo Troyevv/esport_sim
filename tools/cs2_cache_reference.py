@@ -96,6 +96,11 @@ def extract(directory):
                 grenades=dict(grenades),
             )
         )
+    # A completed defuse is a positive control for this viewer field. If
+    # absent, don't represent missing use-button telemetry as zero attempts.
+    if any(r["reason"] == "bomb_defused" and not r["touched"] for r in rounds):
+        for r in rounds:
+            r["touched"] = None
     half_scores = [
         Counter(halves[i:j])["magic"] for i, j in ((0, 12), (12, 24), (24, 35))
     ]
