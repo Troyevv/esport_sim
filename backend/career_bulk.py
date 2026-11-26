@@ -47,6 +47,7 @@ class ActiveBulk:
         if not any(sections):
             return state
         scouting["clubs"] = {k: v for k, v in scouting["clubs"].items() if k not in ai}
+        blob = None
         if sections == self.sections:
             digest = self.digest
         else:
@@ -55,7 +56,7 @@ class ActiveBulk:
         # A rollback may have restored the preceding DB generation while the cache was warm.
         row = self.db.execute("SELECT digest FROM active_bulk WHERE id=1").fetchone()
         if not row or row[0] != digest:
-            blob = to_json(sections)
+            blob = blob or to_json(sections)
             self.db.execute(
                 "INSERT OR REPLACE INTO active_bulk VALUES(1,?,?)", (digest, blob)
             )

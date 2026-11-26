@@ -394,7 +394,10 @@ def create_app(
     async def career_report(event_id: str):
         store = app.state.store
         c = store.read().get("career")
-        for event in reversed([*c["history"], *[e for e in c["training"]["practice"] if e.get("result")]] if c else []):
+        if not c:
+            raise HTTPException(404, "Отчёт не найден")
+        practices = (e for e in c["training"]["practice"] if e.get("result") and c["team"] in e["teams"])
+        for event in reversed([*c["history"], *practices]):
             if event["id"] == event_id:
                 return store.careers.report(event["result"])
         raise HTTPException(404, "Отчёт не найден")

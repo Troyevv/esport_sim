@@ -61,9 +61,9 @@ def current(c, pack, day):
 def check_load(c, pack, day, rows, extra=0):
     require(len(rows) <= 3, "В расписании три окна на день")
     official, _ = tr.schedule_book(c, day)
-    pcw = sum(e.get("pcw", False) and e["date"] == day for e in c["queue"])
+    pcw = sum(e.get("pcw", False) and e["date"] == day and c["team"] in e["teams"] for e in c["queue"])
     pcw += sum(
-        e["date"] == day and not e.get("cancelled") for e in c["training"]["practice"]
+        e["date"] == day and not e.get("cancelled") and c["team"] in e["teams"] for e in c["training"]["practice"]
     )
     require(len(rows) + pcw + extra <= 3, "Заняты все три окна дня")
     require(
@@ -362,7 +362,7 @@ def week(c, pack, db, start):
     ids = tr.members(c, pack, team)
     people = {}
     today = current(c, pack, c["date"])
-    pcw = sum(e.get("pcw", False) and e["date"] == c["date"] for e in c["queue"])
+    pcw = sum(e.get("pcw", False) and e["date"] == c["date"] and team in e["teams"] for e in c["queue"])
     for pid in ids:
         row = tr.lookup(t, "players", pid)
         base = pack["players"][pid]
@@ -444,6 +444,6 @@ def calendar(c, pack, since, count):
             "Пракк · "
             + pack["teams"][next(t for t in e["teams"] if t != c["team"])]["name"]
             for e in state["practice"]
-            if e["date"] == day and not e.get("cancelled")
+            if e["date"] == day and not e.get("cancelled") and c["team"] in e["teams"]
         )
     return rows

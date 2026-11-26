@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 
 test("Скаутский отдел ведёт досье и сохраняет результаты просмотра", async ({
   page,
@@ -30,8 +30,9 @@ test("Скаутский отдел ведёт досье и сохраняет 
         .getByRole("button", { name, exact: true })
         .click();
   }
-  async function shot(key: string) {
-    if (!(await page.getByRole("dialog").count()))
+  async function shot(key: string, target?: Locator) {
+    if (target) await target.scrollIntoViewIfNeeded();
+    else if (!(await page.getByRole("dialog").count()))
       await page.locator(".scout-center h2").first().scrollIntoViewIfNeeded();
     expect(
       await page.evaluate(
@@ -59,6 +60,10 @@ test("Скаутский отдел ведёт досье и сохраняет 
   await page.getByLabel("Имя игрока").fill("kyxsan");
   await expect(page.locator(".scout-row")).toHaveCount(1);
   await shot("search");
+  const criteria = page.getByText("Критерии поиска", { exact: true });
+  await criteria.click();
+  await shot("criteria");
+  await criteria.click();
   await press("Сравнить");
   await press("Изучить");
   await press("Назначить задание");
@@ -75,11 +80,13 @@ test("Скаутский отдел ведёт досье и сохраняет 
     .getByLabel("Игрок", { exact: true })
     .selectOption({ label: "ropz" });
   await press("Добавить к сравнению");
+  await expect(page.getByRole("table").getByText("Текущий OVR")).toBeVisible();
   await shot("compare");
   await tab("Просмотры");
   await page
     .getByLabel("Игрок", { exact: true })
-    .selectOption({ label: "kyxsan" });
+    .selectOption({ label: "Vexite" });
+  await page.getByRole("combobox", { name: "Длительность" }).selectOption("3");
   await press("Пригласить игрока");
   await expect(page.getByText(/Согласие игрока/)).toBeVisible();
   await shot("trials");
@@ -93,6 +100,18 @@ test("Скаутский отдел ведёт досье и сохраняет 
   await shot("staff");
   await press("Продолжить");
   await expect(button("В матч-центр").first()).toBeVisible();
+  await tab("Просмотры");
+  await expect(button("Итоговый отчёт").first()).toBeVisible();
+  await press("Итоговый отчёт");
+  const trialReport = page.getByRole("dialog");
+  await expect(
+    trialReport.getByRole("heading", { name: /Vexite/ }),
+  ).toBeVisible();
+  await expect(
+    trialReport.getByRole("heading", { name: "Основания оценки" }),
+  ).toBeVisible();
+  await shot("trial-finished");
+  await trialReport.getByRole("button", { name: "Закрыть" }).click();
   await tab("Региональное покрытие");
   await shot("regions");
   await tab("Отчёты");
@@ -117,7 +136,10 @@ test("Скаутский отдел ведёт досье и сохраняет 
     page.getByRole("heading", { name: "Знания организации" }),
   ).toBeVisible();
   await expect(page.getByText(/последнее наблюдение/)).toBeVisible();
-  await page.screenshot({ path: info.outputPath("profile.png") });
+  await shot(
+    "profile",
+    page.getByRole("heading", { name: "Знания организации" }),
+  );
   await press("← Главное меню");
   await press("Стенд симуляции");
 });

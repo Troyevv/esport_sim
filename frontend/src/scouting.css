@@ -159,3 +159,56 @@
   padding: 0 6px;
   font-size: 1.4rem;
 }
+
+.scout-table-scroll {
+  overflow: auto;
+  max-width: 100%;
+  max-height: 65vh;
+  min-width: 0;
+}
+.scout-matrix {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+.scout-matrix th,
+.scout-matrix td {
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  text-align: left;
+  padding: 8px 10px;
+  min-width: 100px;
+  white-space: normal;
+}
+.scout-matrix th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+}
+.scout-matrix thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 2;
+}
+.scout-matrix thead th:first-child {
+  z-index: 3;
+}
+.scout-matrix th .btn {
+  display: block;
+  margin-top: 4px;
+}
+@media (max-width: 520px) {
+  .scout-matrix td,
+  .scout-matrix th {
+    min-width: 90px;
+    padding: 6px 4px;
+  }
+  .scout-matrix th:first-child {
+    max-width: 115px;
+  }
+  .scout-table-scroll {
+    max-height: 60vh;
+  }
+}

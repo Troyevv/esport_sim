@@ -13,13 +13,22 @@ from time import perf_counter
 
 import psutil
 
-from backend import career, scouting, scout_reports as reports, skills, training
+from backend import (
+    scout_sources,
+    career,
+    scouting,
+    scout_reports as reports,
+    skills,
+    training,
+)
 from backend.store import Store
 
 
 def metrics(c, pack):
     levels, errors, forecast_errors, widths, covered = Counter(), [], [], [], []
     costs, peaks, authors, observations, orgs = 0, [], set(), 0, set()
+    counts, attempts, working_days, staffed = Counter(), Counter(), 0, 0
+    by_count = {"1": [], "2–4": [], "5+": []}
     for team in [c["team"], *pack["teams"]]:
         office = scouting.org(pack, team)
         if office in orgs:
@@ -27,14 +36,18 @@ def metrics(c, pack):
         orgs.add(office)
         club = scouting.read_club(c, pack, team)
         costs += club["cost"]
+        staffed += bool(club["dossiers"])
+        attempts.update(t["status"] for t in club["trials"])
         for sid, job in club["workload"].items():
             authors.add(sid)
             peaks.append(job["peak"])
+            working_days += job["days"]
         levels[reports.LEVELS[0]] += len(pack["players"]) - len(club["dossiers"])
         for pid, d in club["dossiers"].items():
             view = scouting.knowledge(club, pack, c["date"], pid)
             levels[view["level"]] += 1
             observations += len(d["observations"])
+            counts.update(o["source"] for o in d["observations"])
             base = pack["players"][pid]
             actual = base["skills"] | training.lookup(
                 c["training"], "players", pid
@@ -42,6 +55,9 @@ def metrics(c, pack):
             ovr = skills.role_rating(actual, base["role"] or "rifler")
             lo, hi = view["current"]
             errors.append(abs((lo + hi) / 2 - ovr))
+            by_count[
+                "1" if view["count"] == 1 else "2–4" if view["count"] < 5 else "5+"
+            ].append((errors[-1], hi - lo))
             widths.append(hi - lo)
             covered.append(lo <= ovr <= hi)
             if base["potential"] is not None:
@@ -50,6 +66,19 @@ def metrics(c, pack):
                 )
     return dict(
         organizations=len(orgs),
+        departmentsWithReports=staffed,
+        sources=counts,
+        trials=attempts,
+        unitsPerWorkingDay=round(costs / max(1, working_days), 2),
+        accuracyByObservations={
+            k: dict(
+                count=len(v),
+                error=round(mean(x for x, _ in v), 2),
+                width=round(mean(y for _, y in v), 2),
+            )
+            for k, v in by_count.items()
+            if v
+        },
         knowledgeLevels=levels,
         observations=observations,
         staff=len(authors),
@@ -114,7 +143,7 @@ def measure(years):
                 c["date"] = c["training"]["nextDay"]
                 if day.endswith("-01"):
                     training.freeze_day(c["training"])
-                    scouting.freeze(c["scouting"])
+                    scout_sources.freeze(c["scouting"])
             with store.transaction():
                 store.write(state)
                 store.careers.save(state, "1")

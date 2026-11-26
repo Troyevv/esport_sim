@@ -4,8 +4,8 @@ import base64
 import json
 import zlib
 from collections import defaultdict
-from functools import lru_cache
 
+from . import scout_sources as sources
 from . import database, scout_reports as reports, skills, staff, training
 from .database import require
 
@@ -77,11 +77,6 @@ def visible(c, pack, team, club, pid, day):
     return view
 
 
-def encode(value):
-    raw = json.dumps(value, separators=(",", ":"), ensure_ascii=False).encode()
-    return base64.b64encode(zlib.compress(raw, 1)).decode("ascii")
-
-
 def read_club(c, pack, team):
     saved = c["scouting"]["clubs"].get(org(pack, team))
     if isinstance(saved, str):
@@ -91,7 +86,9 @@ def read_club(c, pack, team):
 
 def write_club(c, pack, team, club):
     key = org(pack, team)
-    c["scouting"]["clubs"][key] = club if key == org(pack, c["team"]) else encode(club)
+    c["scouting"]["clubs"][key] = (
+        club if key == org(pack, c["team"]) else sources.encode(club)
+    )
 
 
 def serial(c):
@@ -189,146 +186,10 @@ def candidates(club, pack, day, pid, criteria, *, career=None, team=None):
 def knowledge(club, pack, day, pid):
     dossier = club["dossiers"].get(pid, {})
     return reports.assessment(
-        dossier.get("observations", []), day, pack["players"][pid]["born"]
-    )
-
-
-@lru_cache(maxsize=3)
-def public_base(encoded):
-    return json.loads(zlib.decompress(base64.b64decode(encoded))) if encoded else {}
-
-
-def public_rows(state, pid):
-    return state["public"].get(pid, public_base(state.get("baseline", "")).get(pid, []))
-
-
-def freeze(state):
-    if state["public"]:
-        state["baseline"] = encode(
-            public_base(state.get("baseline", "")) | state["public"]
-        )
-        state["public"] = {}
-
-
-def save_fact(index, pid, fact):
-    rows = index.setdefault(pid, [])
-    if not any(r["id"] == fact["id"] for r in rows):
-        rows.append(fact)
-        del rows[:-4]
-
-
-def played(c, pack, event, report):
-    state = c["scouting"]
-    guests = {
-        r["player"]: r["host"] for r in state["trials"] if r["status"] == "active"
-    }
-    for s in report["stats"]:
-        pid = s["player"]
-        if event.get("pcw") and guests.get(pid) != s["teamId"]:
-            continue
-        idx = state["private"] if event.get("pcw") else state["public"]
-        rounds = len(report["rounds"])
-        fact = dict(
-            id=event["id"],
-            date=event["date"],
-            source="practice" if event.get("pcw") else "match",
-            basis=f'{pack["teams"][event["teams"][0]]["name"]} — {pack["teams"][event["teams"][1]]["name"]} · {rounds} р.',
-            edition=event.get("edition"),
-            sample=rounds,
-            signals=reports.match_signals(s, rounds),
-        )
-        if event.get("pcw"):
-            fact["host"] = s["teamId"]
-        if not event.get("pcw") and pid not in idx:
-            idx[pid] = list(public_rows(state, pid))
-        save_fact(idx, pid, fact)
-
-
-def session(c, pack, team, pid, day, index, drill, grade):
-    keys = [k for k in training.DRILLS[drill][4].split() if k not in skills.HIDDEN]
-    if not keys:
-        return
-    row = training.lookup(c["training"], "players", pid)
-    # A scored drill measures only the actions practiced in this session, under today's fatigue.
-    signals = {
-        k: reports.points(
-            row.get("skills", {}).get(k, pack["players"][pid]["skills"][k])
-            - row.get("fatigue", 0) / 7
-            + reports.noise(pid, day, index, k) * 13
-        )
-        for k in keys
-    }
-    save_fact(
-        c["scouting"]["private"],
-        pid,
-        dict(
-            id=f"training/{team}/{day}/{index}",
-            date=day,
-            source="training",
-            host=team,
-            sample=14 + grade // 7,
-            basis=training.DRILLS[drill][0],
-            signals=signals,
-        ),
-    )
-
-
-def available_facts(c, pack, team, pid, day):
-    s = pack["players"][pid]["statistics"]
-    facts = list(public_rows(c["scouting"], pid))
-    facts.extend(f for f in c["scouting"]["private"].get(pid, []) if f["host"] == team)
-    if s and s["maps"] and s["adr"] is not None:
-        facts.append(
-            dict(
-                id="archive/" + s["event"] + "/" + s["date"],
-                source="archive",
-                date=s["date"],
-                basis=s["event"],
-                sample=min(32, s["maps"] * 12),
-                signals=dict(
-                    aim=reports.points(22 + 0.5 * s["adr"]),
-                    positioning=reports.points(
-                        47 + 18 * (s["kills"] / max(1, s["deaths"]) - 0.7)
-                    ),
-                ),
-            )
-        )
-    player = pack["players"][pid]
-    sample = player.get("sample")
-    if sample and sample["rounds"]:
-        fraction = sample["awpRounds"] / sample["rounds"]
-        usage = sample["utilityRounds"] / sample["rounds"]
-        facts.append(
-            dict(
-                id="sample/" + sample["until"],
-                source="archive",
-                date=sample["until"],
-                basis=f'Публичная выборка: {sample["maps"]} карт, {sample["rounds"]} раундов',
-                sample=min(40, sample["rounds"]),
-                signals=dict(
-                    sniper_rifles=reports.points(40 + 48 * fraction),
-                    support=reports.points(36 + 43 * usage),
-                ),
-            )
-        )
-    performance = player.get("performance")
-    if performance:
-        facts.append(
-            dict(
-                id="rating/" + pack["asOf"],
-                source="archive",
-                date=pack["asOf"],
-                basis=f'{performance["version"]} · {performance["maps"]} карт',
-                sample=min(35, performance["maps"] * 4),
-                signals=dict(
-                    positioning=reports.points(20 + 40 * performance["rating"])
-                ),
-            )
-        )
-    return sorted(
-        (f for f in facts if f["date"] <= day),
-        key=lambda f: (f["date"], f["id"]),
-        reverse=True,
+        dossier.get("observations", []),
+        day,
+        pack["players"][pid]["born"],
+        pack["players"][pid]["role"],
     )
 
 
@@ -418,7 +279,7 @@ def validate_criteria(raw):
     return dict(raw)
 
 
-def change(c, pack, value):
+def change(c, pack, value, read_report=None):
     state, team, day = c["scouting"], c["team"], c["date"]
     club = read_club(c, pack, team)
     action, pid = value.get("action"), value.get("player")
@@ -473,6 +334,20 @@ def change(c, pack, value):
                 days,
             )
         )
+        if read_report and kind != "search":
+            teams = (
+                {target}
+                if kind == "team"
+                else (
+                    {membership(pack).get(p) for p in target}
+                    if isinstance(target, list)
+                    else set()
+                )
+            )
+            task = club["tasks"][-1]
+            task["archive"] = sources.assignment_archive(
+                c, pack, task, teams, read_report
+            )
     elif action == "cancel":
         task = next(
             (
@@ -484,6 +359,7 @@ def change(c, pack, value):
         )
         require(task, "Задание уже закрыто")
         task["status"] = "cancelled"
+        task.pop("archive", None)
     elif action in ("category", "list", "remove"):
         name = value.get("category")
         require(
@@ -521,6 +397,33 @@ def change(c, pack, value):
                 "Укажите свободное название до 48 знаков",
             )
             club["lists"][new_name.strip()] = club["lists"].pop(name)
+    elif action in ("permit", "deny"):
+        request = next(
+            (
+                t
+                for t in state["trials"]
+                if t["id"] == value.get("id")
+                and t["status"] == "requested"
+                and org(pack, t["origin"]) == org(pack, team)
+            ),
+            None,
+        )
+        require(request, "Запрос уже закрыт")
+        request["permission"] = action == "permit"
+        if request["permission"]:
+            duration = reports.ordinal(request["end"]) - reports.ordinal(
+                request["start"]
+            )
+            request["start"] = max(day, request["start"])
+            request.update(
+                status="active", end=training.offset(request["start"], duration)
+            )
+        else:
+            request["status"] = "blocked"
+            host = read_club(c, pack, request["host"])
+            host["trials"].append(request)
+            state["trials"].remove(request)
+            write_club(c, pack, request["host"], host)
     elif action == "trial":
         require(isinstance(pid, str) and pid in pack["players"], "Выберите игрока")
         invite(c, pack, team, pid, day, value.get("days"), club)
@@ -534,7 +437,7 @@ def invite(c, pack, team, pid, day, duration, club):
         type(duration) is int and duration in (3, 7, 14),
         "Просмотр длится 3, 7 или 14 дней",
     )
-    require(pid not in training.members(c, pack, team), "Игрок уже в составе")
+    require(not employed(c, pack, team, pid), "Игрок уже в составе")
     trials = c["scouting"]["trials"]
     require(
         not any(t["player"] == pid for t in trials)
@@ -542,7 +445,7 @@ def invite(c, pack, team, pid, day, duration, club):
         "Игрок уже получил приглашение",
     )
     require(
-        sum(t["host"] == team and t["status"] == "active" for t in trials) < 3,
+        sum(t["host"] == team for t in trials) < 3,
         "Все места на просмотре заняты",
     )
     origin = membership(pack).get(pid)
@@ -553,6 +456,20 @@ def invite(c, pack, team, pid, day, duration, club):
     status = (
         "declined" if not consent else "blocked" if permission is False else "active"
     )
+    if (
+        consent
+        and origin
+        and org(pack, origin) == org(pack, c["team"])
+        and team != c["team"]
+    ):
+        status, permission = "requested", None
+        notice(
+            c,
+            c["date"],
+            "Запрос на просмотр · " + pack["players"][pid]["name"],
+            pack["teams"][team]["name"]
+            + " запрашивает разрешение. Ответьте в разделе просмотров.",
+        )
     trial = dict(
         id=serial(c),
         host=team,
@@ -565,19 +482,34 @@ def invite(c, pack, team, pid, day, duration, club):
         status=status,
     )
     c["scouting"]["invitations"][pid] = day
-    (trials if status == "active" else club["trials"]).append(trial)
+    (trials if status in ("active", "requested") else club["trials"]).append(trial)
     return trial
 
 
-def guests(c, team, day, blocked):
-    return [
-        t["player"]
+def attendance(c, pack, day, blocked):
+    """A player can visit only one club and remains available to their official registration."""
+    active = [
+        t
         for t in c.get("scouting", {}).get("trials", [])
         if t["status"] == "active"
-        and t["host"] == team
         and t["start"] <= day <= t["end"]
         and t["origin"] not in blocked
     ]
+    if not active:
+        return {}
+    busy = {
+        pid
+        for team in blocked
+        if team in c["teams"]
+        for pid in training.members(c, pack, team)
+    }
+    for e in c.get("circuit", {}).get("editions", {}).values():
+        if e["start"] <= day <= e["end"]:
+            for team in blocked.intersection(e["registrations"]):
+                versions = e["registrations"][team]
+                if versions:
+                    busy.update(versions[-1]["players"])
+    return {t["player"]: t["host"] for t in active if t["player"] not in busy}
 
 
 def practice_rosters(c, pack, event):
@@ -585,18 +517,12 @@ def practice_rosters(c, pack, event):
     if not c.get("scouting", {}).get("trials"):
         return rosters
     official, reserved = training.schedule_book(c, event["date"])
-    busy_players = {
-        pid
-        for t in official | reserved | set(event["teams"])
-        if t in c["teams"]
-        for pid in training.members(c, pack, t)
-    }
+    visiting = attendance(
+        c, pack, event["date"], official | reserved | set(event["teams"])
+    )
     for team in event["teams"]:
-        visitors = guests(
-            c, team, event["date"], official | reserved | set(event["teams"])
-        )
-        for pid in visitors:
-            if pid in busy_players:
+        for pid, host in visiting.items():
+            if host != team:
                 continue
             ids = rosters[team]
             own = training.members(c, pack, team)
@@ -623,8 +549,21 @@ def dossier_report(club, pack, pid, day, version=None):
     if not entry:
         return None
     evidence = dossier["observations"][: entry["count"]]
-    evidence = [o for o in evidence if o["author"] == evidence[-1]["author"]]
-    view = reports.assessment(evidence, entry["day"], pack["players"][pid]["born"])
+    if "trialStart" in entry:
+        evidence = [
+            o
+            for o in evidence
+            if o["source"] in ("practice", "training")
+            and entry["trialStart"] <= o["date"] <= entry["day"]
+        ]
+    else:
+        evidence = [o for o in evidence if o["author"] == evidence[-1]["author"]]
+    view = reports.assessment(
+        evidence,
+        entry["day"],
+        pack["players"][pid]["born"],
+        pack["players"][pid]["role"],
+    )
     return dict(
         **view,
         **entry["summary"],
@@ -638,6 +577,35 @@ def dossier_report(club, pack, pid, day, version=None):
     )
 
 
+def publish(dossier, player, evidence, day, lineup, trial_start=None):
+    opinion = reports.assessment(evidence, day, player["born"], player["role"])
+    summary = reports.describe(
+        opinion,
+        player,
+        evidence,
+        [p["role"] for p in lineup],
+        [reports.LANGUAGES.get(p["nationality"]) for p in lineup],
+    )
+    version = dict(
+        number=len(dossier["versions"]) + 1,
+        count=len(dossier["observations"]),
+        basisCount=len(evidence),
+        author=evidence[-1]["name"],
+        day=day,
+        summary=summary,
+    )
+    if trial_start:
+        version["trialStart"] = trial_start
+        summary["trialObservations"] = len(evidence)
+        summary["recommendation"] = (
+            "Сохранить в списке кандидатов"
+            if opinion["score"] >= 38
+            else "Продолжить наблюдение после просмотра"
+        )
+    dossier["versions"].append(version)
+    return summary
+
+
 def record_observation(c, pack, team, club, pid, person, fact, day):
     d = club["dossiers"].setdefault(pid, dict(observations=[], versions=[]))
     region = identity(pack, pid, day)["region"] or "unknown"
@@ -645,7 +613,6 @@ def record_observation(c, pack, team, club, pid, person, fact, day):
     local = region == scout_region(pack, team, person["id"])
     familiar = min(100, (55 if local else 10) + coverage.get(region, 0))
     lineup = [pack["players"][p] for p in squad(c, pack, team)]
-    languages = [reports.LANGUAGES.get(p["nationality"]) for p in lineup]
     lang = reports.LANGUAGES.get(pack["players"][pid]["nationality"])
     obs = reports.observation(
         fact,
@@ -658,15 +625,7 @@ def record_observation(c, pack, team, club, pid, person, fact, day):
     coverage[region] = coverage.get(region, 0) + 1
     view = knowledge(club, pack, day, pid)
     authored = [o for o in d["observations"] if o["author"] == person["id"]]
-    opinion = reports.assessment(authored, day, pack["players"][pid]["born"])
-    summary = reports.describe(
-        opinion, pack["players"][pid], authored, [p["role"] for p in lineup], languages
-    )
-    d["versions"].append(
-        dict(
-            number=len(d["versions"]) + 1, count=view["count"], day=day, summary=summary
-        )
-    )
+    summary = publish(d, pack["players"][pid], authored, day, lineup)
     if team == c["team"]:
         notice(
             c,
@@ -679,7 +638,7 @@ def record_observation(c, pack, team, club, pid, person, fact, day):
             + summary["recommendation"]
             + ".",
         )
-    elif view["score"] >= 25:
+    elif view["score"] >= 25 and summary["recommendation"] != "Продолжить наблюдение":
         ids = club["lists"].setdefault("Кандидаты", [])
         if pid not in ids:
             ids.append(pid)
@@ -694,6 +653,8 @@ def target_pool(task, pool, pack):
 
 
 def find_observation(c, pack, team, club, task, person, day, pool):
+    if task.get("archive"):
+        pool = list(dict.fromkeys([*task["archive"], *pool]))
     targets = target_pool(task, pool, pack)
     seen = club["dossiers"]
     own = set(squad(c, pack, team))
@@ -715,7 +676,8 @@ def find_observation(c, pack, team, club, task, person, day, pool):
         observed = {
             (o["author"], o["event"]) for o in seen.get(pid, {}).get("observations", [])
         }
-        facts = available_facts(c, pack, team, pid, day)
+        facts = sources.available_facts(c, pack, team, pid, day)
+        facts += task.get("archive", {}).get(pid, [])
         if str(task["id"]).startswith("trial"):
             # Review both the drill and the scrim even when a new drill arrives every day.
             facts.sort(
@@ -773,7 +735,7 @@ def duty(c, pack, team, day, club, pool, ledger, trials, *, automatic):
     if automatic and chief is None:
         chief = next((p for p in people.values() if p["role"] == "chief_scout"), None)
     if (
-        (automatic or chief)
+        (automatic or chief or duties.get("search"))
         and pool
         and not any(t["status"] == "active" for t in club["tasks"])
     ):
@@ -844,6 +806,7 @@ def duty(c, pack, team, day, club, pool, ledger, trials, *, automatic):
     for task in club["tasks"]:
         if task["status"] == "active" and task["due"] <= day:
             task["status"] = "complete"
+            task.pop("archive", None)
     for trial in trials:
         if trial["end"] <= day:
             trial["status"] = "finished"
@@ -855,14 +818,13 @@ def duty(c, pack, team, day, club, pool, ledger, trials, *, automatic):
                 and trial["start"] <= o["date"] <= day
             ]
             if observed:
-                final = d["versions"][-1]
-                d["versions"].append(
-                    dict(
-                        final,
-                        number=final["number"] + 1,
-                        day=day,
-                        summary=dict(final["summary"], trialObservations=len(observed)),
-                    )
+                publish(
+                    d,
+                    pack["players"][trial["player"]],
+                    observed,
+                    day,
+                    [pack["players"][p] for p in squad(c, pack, team)],
+                    trial["start"],
                 )
             trial["report"] = d["versions"][-1]["number"] if observed else None
             c["scouting"]["trials"].remove(trial)
@@ -898,7 +860,7 @@ def duty(c, pack, team, day, club, pool, ledger, trials, *, automatic):
                 if knowledge(club, pack, day, candidate)["score"] < 50:
                     continue
                 if (
-                    candidate in squad(c, pack, team)
+                    employed(c, pack, team, candidate)
                     or c["scouting"]["invitations"].get(candidate)
                     == training.offset(day, 1)
                     or any(t["player"] == candidate for t in c["scouting"]["trials"])
@@ -921,7 +883,13 @@ def duty(c, pack, team, day, club, pool, ledger, trials, *, automatic):
 def daily(c, pack, day):
     state = c["scouting"]
     by_team = defaultdict(list)
-    for trial in state["trials"]:
+    for trial in state["trials"][:]:
+        if trial["status"] == "requested" and day > training.offset(trial["start"], 2):
+            trial["status"] = "expired"
+            host = read_club(c, pack, trial["host"])
+            host["trials"].append(trial)
+            state["trials"].remove(trial)
+            write_club(c, pack, trial["host"], host)
         if trial["status"] == "active":
             by_team[trial["host"]].append(trial)
     ledger = defaultdict(list)
@@ -932,8 +900,8 @@ def daily(c, pack, day):
         dict.fromkeys(
             [
                 *state["public"],
-                *public_base(state.get("baseline", "")),
-                *archive_players(pack),
+                *sources.public_base(state.get("baseline", "")),
+                *sources.archive_players(pack),
             ]
         )
     )
@@ -969,21 +937,6 @@ def daily(c, pack, day):
     staff.record(c, jobs, day)
 
 
-def archive_players(pack):
-    global _archive_pack, _archive
-    if _archive_pack is not pack:
-        _archive = [
-            pid
-            for pid, p in pack["players"].items()
-            if p["statistics"] or p.get("sample") or p.get("performance")
-        ]
-        _archive_pack = pack
-    return _archive
-
-
-_archive_pack, _archive = None, []
-
-
 def center(c, pack):
     team, day = c["team"], c["date"]
     club = read_club(c, pack, team)
@@ -995,10 +948,19 @@ def center(c, pack):
     return dict(
         players=index,
         publicSkills=list(training.PUBLIC),
-        tasks=club["tasks"],
+        tasks=[
+            {k: v for k, v in task.items() if k != "archive"} for task in club["tasks"]
+        ],
         lists=club["lists"],
         cost=club["cost"],
         regionNames=database.REGIONS,
+        incoming=[
+            t
+            for t in c["scouting"]["trials"]
+            if t["origin"]
+            and org(pack, t["origin"]) == org(pack, team)
+            and t["host"] != team
+        ],
         trials=sorted(
             [
                 *club["trials"],
@@ -1011,8 +973,8 @@ def center(c, pack):
                 player=p,
                 version=v["number"],
                 date=v["day"],
-                count=v["count"],
-                author=d["observations"][v["count"] - 1]["name"],
+                count=v["basisCount"],
+                author=v["author"],
             )
             for p, d in club["dossiers"].items()
             for v in d["versions"]

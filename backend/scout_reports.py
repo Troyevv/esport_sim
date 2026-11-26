@@ -3,6 +3,8 @@
 from datetime import date
 from functools import lru_cache
 from math import sqrt
+
+from .skills import ROLE_WEIGHTS
 from zlib import crc32
 
 LEVELS = (
@@ -108,10 +110,16 @@ def observation(fact, person, familiarity, language):
     )
 
 
-def assessment(observations, today, born=None):
+def assessment(observations, today, born=None, role=None):
     if not observations:
         return dict(
-            score=0, level=LEVELS[0], count=0, skills={}, current=None, potential=None
+            score=0,
+            confidence=0,
+            level=LEVELS[0],
+            count=0,
+            skills={},
+            current=None,
+            potential=None,
         )
     sums, weights = {}, {}
     total = 0
@@ -141,13 +149,33 @@ def assessment(observations, today, born=None):
     ]
     bands = {k: bands[k] for k in keys}
     center = sum(sums.values()) / sum(weights.values())
+    relevant = {k: w for k, w in ROLE_WEIGHTS.get(role, {}).items() if k in weights}
+    if relevant:
+        role_level = sum(w * sums[k] / weights[k] for k, w in relevant.items()) / sum(
+            relevant.values()
+        )
+        center = (center + 2 * role_level) / 3
     width = min(44, 4 + 22 / sqrt(total + 0.2) + stale / 25)
     scout = observations[-1]
     years = (ordinal(today) - ordinal(born)) / 365.25 if born else 25
     future = center + max(4, 25 - max(0, years - 16) * 1.2)
+    # A development trend needs comparable measurements on different dates.
+    recent, previous = {}, {}
+    for obs in sorted(observations, key=lambda o: o["date"]):
+        for key, value in obs["values"].items():
+            previous.setdefault(key, (obs["date"], value))
+            recent[key] = (obs["date"], value)
+    trends = [
+        recent[k][1] - v
+        for k, (d, v) in previous.items()
+        if ordinal(recent[k][0]) - ordinal(d) >= 28
+    ]
+    if trends:
+        future += max(-6, min(6, sum(trends) / len(trends) * 0.3))
     future += noise(scout["author"], "potential") * (100 - scout["projection"]) / 5
     return dict(
         score=score,
+        confidence=points(100 * total / (total + 2) / (1 + stale / 240)),
         level=LEVELS[level],
         count=len(observations),
         skills=bands,
@@ -197,7 +225,7 @@ def describe(view, person, observations, roles, languages):
         ),
         communication=(
             "Общий игровой язык"
-            if language in languages
+            if language and language in languages
             else "Связь предстоит проверить"
         ),
         recommendation=(

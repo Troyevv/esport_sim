@@ -9,7 +9,7 @@ from pathlib import Path
 from time import monotonic
 from uuid import uuid4
 
-from . import scouting, training, training_center, attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
+from . import scout_sources, scouting, training, training_center, attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -250,7 +250,7 @@ class CareerStore:
         self.db.execute(
             "INSERT OR IGNORE INTO career_report VALUES(?,?)", (digest, body)
         )
-        scouting.played(c, pack, event, report)
+        scout_sources.played(c, pack, event, report)
         training.match_practice(c, pack, event, report)
         if event.get("pcw"):
             c["training"]["practice"].append(dict(training.practice_summary(event, report), result=digest))
@@ -322,7 +322,7 @@ class CareerStore:
                 self.save(state,"auto")
             elif kind == "career-scouting":
                 require(not c["progress"] and state["world"]["version"] == 1, "Завершите встречу или расчёт календаря")
-                scouting.change(c, self.pack(c["source"]), value)
+                scouting.change(c, self.pack(c["source"]), value, self.report)
                 self.save(state, "auto")
             elif kind == "career-training":
                 require(not c["progress"] and state["world"]["version"] == 1, "Завершите встречу или расчёт календаря")
@@ -514,7 +514,7 @@ class CareerStore:
             teams={tid: pack["teams"][tid]["name"] for tid in c["teams"]},
             regions=c["regions"],
             milestones=c["milestones"],
-            queue=c["queue"],
+            queue=[e for e in c["queue"] if not e.get("pcw") or own in e["teams"]],
             history=c["history"],
             roster=members,
             teamRating=world.team_rating(domain,c["teams"][own],next(
@@ -545,7 +545,7 @@ class CareerStore:
             while c["training"]["nextDay"] < e["date"]:
                 training.run_day(c, pack, c["training"]["nextDay"])
             training.freeze_day(c["training"])
-            scouting.freeze(c["scouting"])
+            scout_sources.freeze(c["scouting"])
             token += (c["progress"].get("runId"), c["training"], c["office"], c["scouting"], c["milestones"])
         if e.get("pcw") and training.unavailable(c, e):
             return token, None

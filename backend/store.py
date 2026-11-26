@@ -151,7 +151,7 @@ class Store:
             c["training"] = training.new(c["date"])
         elif c:
             database.require(c["training"].get("version") == 1, "Неизвестная версия подготовки")
-        from . import scouting
+        from . import scouting, scout_sources
         migrate_scouting = c is not None and "scouting" not in c
         if migrate_scouting:
             c["scouting"] = scouting.new()
@@ -161,8 +161,8 @@ class Store:
                 pack = self.careers.pack(c["source"])
                 for event in c["history"]:
                     if event["date"] >= training.offset(c["date"], -90):
-                        scouting.played(c, pack, event, self.careers.report(event["result"]))
-                scouting.freeze(c["scouting"])
+                        scout_sources.played(c, pack, event, self.careers.report(event["result"]))
+                scout_sources.freeze(c["scouting"])
         elif c:
             database.require(c["scouting"].get("version") == 1, "Неизвестная версия скаутинга")
         upgraded_career = migrate_office or migrate_training or migrate_scouting

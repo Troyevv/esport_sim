@@ -519,14 +519,13 @@ def coach_job(c, team, day, event_id, duty, competency, person, used, jobs):
     return max(0, grade)
 
 
-def daily_team(c, pack, team, day, official, reserved, ledger, claimed):
+def daily_team(c, pack, team, day, official, reserved, ledger, claimed, visiting):
     state = c["training"]
     people, owners = roster_staff(c, pack, team)
-    from . import scouting
-    visitors = scouting.guests(c, team, day, official | reserved)
-    away = {t["player"] for t in c.get("scouting", {}).get("trials", []) if t["status"] == "active"
-            and t["origin"] == team and team not in official | reserved and t["start"] <= day <= t["end"]}
-    ids = [pid for pid in [*members(c, pack, team), *visitors] if pid not in claimed and pid not in away]
+    from . import scout_sources
+    visitors = [pid for pid, host in visiting.items() if host == team]
+    ids = [pid for pid in members(c, pack, team) if pid not in visiting and pid not in claimed]
+    ids.extend(visitors)
     claimed.update(ids)
     jobs, used = [], {}
     for j in ledger.get(team, []):
@@ -590,7 +589,7 @@ def daily_team(c, pack, team, day, official, reserved, ledger, claimed):
             before = row["skills"].copy() if metrics else {}
             develop(state, pack, pid, session, grade, day, load)
             if pid in visitors and load > 0:
-                scouting.session(c, pack, team, pid, day, i, kind, grade)
+                scout_sources.session(c, pack, team, pid, day, i, kind, grade)
             if metrics:
                 delta = row["fatigue"] - old
                 metrics[pid]["load" if delta >= 0 else "recovery"] += abs(delta)
@@ -747,18 +746,19 @@ def run_day(c, pack, day):
     teams = [c["team"], *sorted(c["teams"].keys() - {c["team"]})]
     for ev in practice_pairs(c, pack, day, official, reserved):
         report = career.simulate(career.initial(pack, c, ev, detailed=False))
-        from . import scouting
-        scouting.played(c, pack, ev, report)
+        from . import scout_sources
+        scout_sources.played(c, pack, ev, report)
         match_practice(c, pack, ev, report)
         reserved.update(ev["teams"])
     ledger = {}
     for j in c["office"]["ledger"].get("jobs", []):
         if j["date"] == day:
             ledger.setdefault(j["team"], []).append(j)
-    for team in teams:
-        jobs.extend(daily_team(c, pack, team, day, official, reserved, ledger, claimed))
-    staff.record(c, jobs, day)
     from . import scouting
+    visiting = scouting.attendance(c, pack, day, official | reserved)
+    for team in teams:
+        jobs.extend(daily_team(c, pack, team, day, official, reserved, ledger, claimed, visiting))
+    staff.record(c, jobs, day)
     scouting.daily(c, pack, day)
     state["plans"].pop(day, None)
     if day in state.get("skipped", []):

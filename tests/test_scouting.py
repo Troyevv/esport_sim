@@ -268,8 +268,8 @@ def test_permission_refusal_and_fixture_conflicts(game):
         )
         t = sc.invite(c, pack, host, p, day, 7, club)
         assert t["status"] == desired
-    assert p not in sc.guests(c, host, day, {t["origin"]})
-    assert p in sc.guests(c, host, day, set())
+    assert p not in sc.attendance(c, pack, day, {t["origin"]})
+    assert p in sc.attendance(c, pack, day, set())
     with pytest.raises(ValueError):
         sc.invite(c, pack, host, p, day, 14, club)
 
@@ -360,6 +360,15 @@ def test_career_api_disclosure_and_noninterference(tmp_path, monkeypatch):
         sc.daily(state["career"], pack, c["date"])
         with s.transaction():
             s.write(state)
+        # Private PCW schedules and box scores belong to participating clubs.
+        away = [t for t in pack["teams"] if t != team][:2]
+        fixture = dict(id="private-pcw", date=c["date"], teams=away, pcw=True, kind="match")
+        state["career"]["training"]["practice"].append(dict(fixture, result="private-digest"))
+        state["career"]["queue"].append(fixture)
+        with s.transaction():
+            s.write(state)
+        assert client.get("/api/career/report/private-pcw").status_code == 404
+        assert fixture not in client.get("/api/career").json()["active"]["queue"]
         root = "/api/career/" + c["id"]
         paths = [
             "/api/state",
@@ -413,3 +422,74 @@ def test_career_api_disclosure_and_noninterference(tmp_path, monkeypatch):
             p["potential"] = 99
         pack["players"][pid]["skills"] = dict.fromkeys(skills.KEYS, 1)
         assert read() == before and result_sets() == results
+
+
+def test_incoming_club_permission_and_archive_isolation(game):
+    store, pack, c = game
+    day, host = c["date"], c["team"]
+    other = next(t for t in c["teams"] if t != host)
+    own = training.members(c, pack, host)
+    player = next(p for p in own if r.noise(p, other, day, "player") > -0.65)
+    club = sc.read_club(c, pack, other)
+    invitation = sc.invite(c, pack, other, player, day, 7, club)
+    sc.write_club(c, pack, other, club)
+    assert invitation["status"] == "requested" and not sc.attendance(
+        c, pack, day, set()
+    )
+    assert sc.center(c, pack)["incoming"] == [invitation]
+    sc.change(c, pack, dict(action="permit", id=invitation["id"]))
+    assert sc.attendance(c, pack, day, set()) == {player: other}
+    assert not sc.attendance(c, pack, day, {host})
+    assert sc.center(c, pack)["reports"] == []
+    with pytest.raises(ValueError):
+        sc.change(c, pack, dict(action="deny", id=invitation["id"]))
+
+    ev = next(e for e in c["queue"] if host in e["teams"])
+    c["queue"].remove(ev)
+    c["queue"].insert(0, ev)
+    result = career.simulate(career.initial(pack, c, ev, detailed=False))
+    store.careers.record(c, result)
+    c["history"][-1]["edition"] = "completed-cup"
+    c["circuit"] = {"editions": {"completed-cup": {"title": "Архивный турнир"}}}
+    # Evict it from the rolling tape. A tournament assignment can still read its verified protocol.
+    c["scouting"]["public"] = {}
+    sc.change(
+        c,
+        pack,
+        dict(
+            action="task", kind="tournament", target="completed-cup", days=4, priority=2
+        ),
+        store.careers.report,
+    )
+    sc.daily(c, pack, c["date"])
+    view = sc.center(c, pack)
+    assert "archive" not in view["tasks"][-1] and len(view["tasks"][-1]["results"]) == 1
+    pid = view["tasks"][-1]["results"][0]
+    report = sc.dossier_report(sc.read_club(c, pack, host), pack, pid, c["date"])
+    assert report["evidence"][0]["event"] == ev["id"]
+    other_club = sc.read_club(c, pack, other)
+    assert all(t["id"] != view["tasks"][-1]["id"] for t in other_club["tasks"])
+    assert all(o["name"] != report["author"] for d in other_club["dossiers"].values() for o in d["observations"])
+
+
+
+def test_active_bulk_rolls_back_and_slots_restore_independent_archives(game):
+    s, pack, c = game
+    state = s.read()
+    for i in range(7):
+        sc.daily(state["career"], pack, training.offset(c["date"], i))
+    with s.transaction():
+        s.write(state)
+        s.careers.save(state, "2")
+    expected = s.read()["career"]["scouting"]
+    assert expected["clubs"]
+    with pytest.raises(RuntimeError):
+        with s.transaction():
+            altered = s.read()
+            altered["career"]["scouting"]["clubs"] = {}
+            altered["career"]["scouting"]["baseline"] = sc.sources.encode({})
+            s.write(altered)
+            raise RuntimeError("rollback")
+    assert s.read()["career"]["scouting"] == expected
+    command(s, "career-load", dict(slot="2"))
+    assert s.read()["career"]["scouting"] == expected

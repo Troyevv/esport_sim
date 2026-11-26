@@ -8,6 +8,7 @@ import "./scouting.css";
 
 type Band = [number, number];
 export type Knowledge = {
+  confidence: number;
   inSquad?: boolean;
   score: number;
   level: string;
@@ -44,6 +45,7 @@ type Task = {
   status: string;
 };
 type Trial = {
+  host: string;
   id: number;
   player: string;
   start: string;
@@ -70,6 +72,7 @@ type Center = {
   lists: Record<string, string[]>;
   cost: number;
   trials: Trial[];
+  incoming: Trial[];
   regionNames: string[];
   tournaments: Record<string, string>;
   coverage: Record<string, Record<string, number>>;
@@ -85,6 +88,7 @@ type Center = {
   }[];
 };
 type Report = Knowledge & {
+  trialObservations?: number;
   version: number;
   published: string;
   author: string;
@@ -130,6 +134,8 @@ const statuses: Record<string, string> = {
   finished: "Завершён",
   cancelled: "Отменено",
   declined: "Игрок отказался",
+  expired: "Срок ответа истёк",
+  requested: "Ожидает разрешения клуба",
   blocked: "Клуб отказал",
 };
 const sources: Record<string, string> = {
@@ -151,6 +157,72 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
     </section>
   );
 }
+function Comparison({
+  players,
+  remove,
+}: {
+  players: Candidate[];
+  remove: (pid: string) => void;
+}) {
+  const attributes = [
+    ...new Set(players.flatMap((p) => Object.keys(p.knowledge?.skills || {}))),
+  ];
+  const rows: [string, (p: Candidate) => string | number][] = [
+    ["Изученность", (p) => familiarity(p.knowledge)],
+    ["Роль", (p) => roles[p.role || ""] || "—"],
+    ["Возраст", (p) => p.age ?? "—"],
+    ["Игровой язык", (p) => p.language || "—"],
+    ["Текущий OVR", (p) => range(p.knowledge?.current)],
+    ["Потенциал", (p) => range(p.knowledge?.potential)],
+    ["Наблюдения", (p) => p.knowledge?.count || 0],
+    [
+      "Последнее наблюдение",
+      (p) => (p.knowledge?.last ? date(p.knowledge.last) : "—"),
+    ],
+    ...attributes.map((k): [string, (p: Candidate) => string] => [
+      skillLabels[k],
+      (p) => range(p.knowledge?.skills[k]),
+    ]),
+  ];
+  return (
+    <div
+      className="scout-table-scroll"
+      role="region"
+      aria-label="Сравнение по доступным сведениям"
+      tabIndex={0}
+    >
+      <table className="scout-matrix">
+        <thead>
+          <tr>
+            <th scope="col">Показатель</th>
+            {players.map((p) => (
+              <th scope="col" key={p.id}>
+                {p.name}
+                <button
+                  className="btn"
+                  aria-label={"Убрать " + p.name}
+                  onClick={() => remove(p.id)}
+                >
+                  Убрать
+                </button>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([label, value]) => (
+            <tr key={label}>
+              <th scope="row">{label}</th>
+              {players.map((p) => (
+                <td key={p.id}>{value(p)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 function ReportBody({ url }: { url: string }) {
   const result = useData<Report>(url);
   if (!result.data || result.error) return <Load {...result} />;
@@ -161,6 +233,10 @@ function ReportBody({ url }: { url: string }) {
         {date(r.published)} · {r.author} · Версия {r.version}
       </p>
       <h3>{r.recommendation}</h3>
+      {r.trialObservations && (
+        <p>Итоги просмотра · изучено занятий и пракков {r.trialObservations}</p>
+      )}
+      <p>Уверенность автора · {r.confidence}/100</p>
       <p>
         {r.level} · {r.score}/100 · наблюдений {r.count}
       </p>
@@ -860,48 +936,14 @@ function CenterView({
               compare.includes(selected) || compare.length >= 8,
             )}
           </div>
-          <div className="scout-columns">
-            {compare.map((id) => {
-              const a = d.players[id],
-                k = a.knowledge;
-              return (
-                <article className="scout-item" key={id}>
-                  <h3>{a.name}</h3>
-                  <p>
-                    {familiarity(k)} ·{" "}
-                    {roles[a.role || ""] || "Роль неизвестна"}
-                  </p>
-                  <dl className="scout-facts">
-                    {Object.entries({
-                      OVR: range(k?.current),
-                      Потенциал: range(k?.potential),
-                      Наблюдения: k?.count || 0,
-                      ...Object.fromEntries(
-                        [
-                          ...new Set(
-                            compare.flatMap((pid) =>
-                              Object.keys(
-                                d.players[pid].knowledge?.skills || {},
-                              ),
-                            ),
-                          ),
-                        ].map((key) => [
-                          skillLabels[key],
-                          range(k?.skills[key]),
-                        ]),
-                      ),
-                    }).map(([key, v]) => (
-                      <div key={key}>
-                        <dt>{key}</dt>
-                        <dd>{v}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                  {action("Убрать", () => toggle(id))}
-                </article>
-              );
-            })}
-          </div>
+          {compare.length ? (
+            <Comparison
+              players={compare.map((id) => d.players[id])}
+              remove={toggle}
+            />
+          ) : (
+            <p>Выберите игроков для сравнения.</p>
+          )}
           {action(
             "Поручить сравнение",
             () => {
@@ -941,9 +983,39 @@ function CenterView({
             {action(
               "Пригласить игрока",
               () => run({ action: "trial", player: selected, days: trialDays }),
-              locked || own.includes(selected),
+              locked || own.includes(selected) || !!p.knowledge?.inSquad,
             )}
           </Panel>
+          {d.incoming.length > 0 && (
+            <Panel title="Запросы других клубов">
+              {d.incoming.map((t) => (
+                <article className="scout-item" key={t.id}>
+                  <strong>
+                    {name(t.player)} · {scene.teams[t.host]?.name}
+                  </strong>
+                  <p>
+                    {date(t.start)} — {date(t.end)}
+                  </p>
+                  {t.status === "requested" ? (
+                    <div className="scout-actions">
+                      {action(
+                        "Разрешить просмотр",
+                        () => run({ action: "permit", id: t.id }),
+                        locked,
+                      )}
+                      {action(
+                        "Отказать клубу",
+                        () => run({ action: "deny", id: t.id }),
+                        locked,
+                      )}
+                    </div>
+                  ) : (
+                    <p>Просмотр разрешён</p>
+                  )}
+                </article>
+              ))}
+            </Panel>
+          )}
           <Panel title="Игроки на просмотре">
             {!d.trials.length && <p>Приглашений пока нет.</p>}
             {[...d.trials].reverse().map((t) => (
