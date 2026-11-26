@@ -17,7 +17,8 @@ def professional_rounds(directory):
             name
         )
     return db.execute("""select r.map_name,r.map_uid,r.round_num,r.winner_side,r.end_reason,r.bomb_planted,
- (r.end_tick-r.freeze_end_tick)/64.0,t.team_current_equip_value, CT.team_current_equip_value,m.hltv_stars
+ (r.end_tick-r.freeze_end_tick)/64.0,t.team_current_equip_value, CT.team_current_equip_value,m.hltv_stars, t.team_spend, ct.team_spend,
+ (r.bomb_plant_tick-r.freeze_end_tick)/64.0
  from rounds r join maps m using(map_uid)
  join team_round_economy t on r.map_uid=t.map_uid and r.round_num=t.round_num and t.side='t'
  join team_round_economy ct on r.map_uid=ct.map_uid and r.round_num=ct.round_num and ct.side='ct'
@@ -101,6 +102,9 @@ def sim(folder, n):
     re = sum(r["retake"] for r in rows)
     report.update(
         games=len(matches),
+        plantSeconds=round(st.median(r["plant"] / 10 for r in rows if "plant" in r), 1)
+        if plants
+        else None,
         medianSec=round(st.median(g["seconds"] for g in matches), 2),
         save=round(
             sum(r["side"] == "T" and r["survivingCT"] > 0 for r in rows)
@@ -148,6 +152,11 @@ def professional(pro, n):
     res = rates(rr)
     res.update(
         games=len({x[1] for x in g}),
+        purchases=st.median(spend for r in g for spend in r[10:12]),
+        zero=round(
+            100 * sum(not spend for r in g for spend in r[10:12]) / (2 * len(g)), 1
+        ),
+        plantSeconds=round(st.median(r[12] for r in g if r[5]), 1),
         stars=len({x[1] for x in g if x[9] > 0}),
         starT=rates([r for r, x in zip(rr, g) if x[9] > 0]).get("t"),
     )
@@ -194,7 +203,22 @@ def raw_professional(files):
         utilities = collections.Counter()
         for r in rows:
             utilities.update(r["grenades"])
+        equip_rows = []
+        for r in rows:
+            initial = r["radar"].get("0", [])
+            if len(initial) == 10:
+                equip_rows.append(
+                    dict(
+                        T=sum(p[5] for p in initial if p[0] == 2),
+                        CT=sum(p[5] for p in initial if p[0] == 3),
+                        side=r["winner"].upper(),
+                        reason=en[r["reason"]],
+                        plant=r["plant"],
+                        duration=r["duration"],
+                    )
+                )
         data[games[0]["map"]] = dict(
+            eco=rates(equip_rows).get("eco", []),
             games=len(games),
             n=len(rows),
             t=round(100 * sum(r["winner"] == "t" for r in rows) / len(rows), 1),

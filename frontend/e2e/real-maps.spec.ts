@@ -40,6 +40,7 @@ if (process.env.ESPORT_CS2_QA) {
       if (map.id === "de_nuke") {
         const buy = page.getByRole("combobox", {name:"Закупка"});
         await buy.selectOption("Бонусная");
+        page.once("dialog", dialog => dialog.accept());
         await button("Предложение штаба").click();
         await expect(page.getByText("План штаба готов к редактированию")).toBeVisible();
         await button("▷ Предпросмотр").click();

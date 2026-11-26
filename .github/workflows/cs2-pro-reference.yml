@@ -6,6 +6,7 @@ on:
       - .github/workflows/cs2-pro-reference.yml
       - tools/cs2_pro_reference.py
       - tools/cs2_pro_demo.py
+      - tools/cs2_cache_reference.py
       - tools/cs2_archive_reference.py
       - frontend/e2e/capture-pro-cache.cjs
       - tools/cs2_tournament_reference.py
@@ -89,6 +90,11 @@ jobs:
       - working-directory: frontend
         run: npx playwright install --with-deps chromium
       - run: node frontend/e2e/capture-pro-cache.cjs build/cache-replay
+      - run: python -m tools.cs2_cache_reference --dir build/cache-replay --out build/de_cache-utility.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pro-utility-de_cache
+          path: build/de_cache-utility.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
