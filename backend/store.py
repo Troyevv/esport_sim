@@ -257,7 +257,7 @@ class Store:
         else:
             state["world"] = model.project(game, view)
         if "series" in game:
-            state["world"]["series"] = series.project(game)
+            state["world"]["series"] = series.project(game, view)
         world = state["world"]
         if self.motion and state["running"]:
             context, start, end, samples = self.motion[-1]

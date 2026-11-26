@@ -220,7 +220,7 @@ def scouting_record(report):
     return {"maps": maps, "veto": report["veto"]}
 
 
-def project(w):
+def project(w, view="full"):
     s = w["series"]
     public = {
         k: s[k]
@@ -258,31 +258,32 @@ def project(w):
             for t, maps in s["evidence"].items()
         }
         if s["stage"] == "veto":
-            public["advice"] = veto.recommend(w, "staff")
+            choice = veto.recommend(w, "staff")
+            public["advice"] = choice
+            if choice in s["profile"]["pool"]:
+                knowledge, assessed, fit = veto.map_fit(
+                    veto.own_five(w, w["coachTeamId"]), choice
+                )
+                public["fit"] = {
+                    "knowledge": round(knowledge),
+                    "assessed": assessed,
+                    "roles": round(fit),
+                }
     else:
         groups = [r["stats"] for r in s["results"]]
         rounds = sum(len(r["rounds"]) for r in s["results"])
+        public["completedRounds"] = rounds
         if s["stage"] == "playing":
             groups.append(map_stats(w))
             rounds += w["round"]
+            public["completedRounds"] += len(w["history"])
         public["rounds"] = rounds
-        public["stats"] = [
-            {
-                k: r[k]
-                for k in (
-                    "player",
-                    "teamId",
-                    "name",
-                    "k",
-                    "d",
-                    "a",
-                    "damage",
-                    "opening",
-                    "clutches",
-                )
-            }
-            for r in total_stats(groups)
-        ]
+        public["stats"] = total_stats(groups)
+        if view != "full" and s["stage"] == "playing":
+            own = match_score.side_team(w, view)
+            for row in public["stats"]:
+                if row["teamId"] != own:
+                    row["spent"] = None
     return public
 
 

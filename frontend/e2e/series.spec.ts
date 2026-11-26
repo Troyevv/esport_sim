@@ -30,6 +30,7 @@ if (process.env.ESPORT_CS2_QA) {
       await page.getByText("Новый сценарий", { exact: true }).click();
       await press("Стенд R0");
     }
+    await page.getByLabel("Seed", { exact: true }).fill("42");
     await page.getByLabel("Формат матча").selectOption("5");
     await press("Начать вето BO5");
     await expect(page.locator(".veto-card")).toHaveCount(7);
@@ -46,10 +47,22 @@ if (process.env.ESPORT_CS2_QA) {
     const option = page.locator(".veto-select").first();
     if (hasTouch) await option.tap();
     else await option.click();
-    await press(await button("Забанить карту").isVisible() ? "Забанить карту" : "Подтвердить бан");
+    await press(
+      (await button("Забанить карту").isVisible())
+        ? "Забанить карту"
+        : "Подтвердить бан",
+    );
     await press("Сохранить");
     await page.reload();
     await expect(page.locator(".veto-card[data-state=ban]")).toHaveCount(2);
+    if (hasTouch) await option.tap();
+    else await option.click();
+    await press(
+      (await button("Пикнуть карту").isVisible())
+        ? "Пикнуть карту"
+        : "Подтвердить пик",
+    );
+    await press("Атака · T");
     await page.getByText("Делегировать оставшиеся ходы").click();
     await press("Капитану");
     await expect(page.locator(".series-order li")).toHaveCount(5);
@@ -69,5 +82,27 @@ if (process.env.ESPORT_CS2_QA) {
       .click();
     await expect(page.locator(".series-stat-grid tbody tr")).toHaveCount(10);
     await capture("match");
+    if (info.project.name === "phone-portrait") {
+      test.setTimeout(240000);
+      await press("Быстро");
+      await press("Запустить");
+      const next = page.getByRole("button", { name: /Подготовка к карте 2/ });
+      await expect(next).toBeVisible({ timeout: 160000 });
+      await press("Сохранить");
+      await page.reload();
+      await expect(next).toBeVisible();
+      await capture("interval");
+      await next.tap();
+      await expect(page.getByTestId("radar")).toHaveAttribute(
+        "data-ready",
+        "true",
+      );
+      await press("Выбрать тактику");
+      await expect(page.getByTestId("tactic-map")).toHaveAttribute(
+        "data-ready",
+        "true",
+      );
+      await capture("preparation");
+    }
   });
 }

@@ -43,7 +43,9 @@ def run_queue(store):
         assert not store.careers.commit_work(token, result)
 
 
-def test_calendar_slots_switch_restart_and_finish(tmp_path):
+def test_calendar_slots_switch_restart_and_finish(tmp_path, monkeypatch):
+    # This fixture covers a career started without the optional real map pack.
+    monkeypatch.setenv("ESPORT_SIM_MAPS", str(tmp_path / "without-maps"))
     path = tmp_path / "profile.sqlite"
     store = Store(path)
     act(store, "save")  # R0 slot and scenario survive entering and leaving a career.

@@ -178,7 +178,8 @@ def test_game_damage_groups_and_armor(weapon, group, helmet, armor, hp, left):
     assert sum(e["amount"] for e in w["events"] if e["kind"] == "damage") == 100
 
 
-def test_background_and_observer_career_reports_allow_either_fixture_order(tmp_path):
+def test_background_and_observer_career_reports_allow_either_fixture_order(tmp_path, monkeypatch):
+    monkeypatch.setenv("ESPORT_SIM_MAPS", str(tmp_path / "without-maps"))
     store = Store(tmp_path / "career.sqlite")
     pack = store.careers.pack(["austin-registration", 1])
     user = next(iter(career.roster_index(pack)))

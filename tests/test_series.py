@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 
-from backend import career, cs2_maps, match, series, veto
+from backend import career, cs2_maps, match, series, tactics, veto
 from backend.store import Store
 
 
@@ -122,7 +122,8 @@ def test_all_winning_paths_stop_on_clinch(monkeypatch, best):
     reason="Требуется игровой пул R4.1",
 )
 def test_real_career_series_store_matches_background(tmp_path):
-    store = Store(tmp_path / "career.sqlite")
+    path = tmp_path / "career.sqlite"
+    store = Store(path)
     pack = store.careers.pack(["austin-registration", 1])
     team = next(iter(career.roster_index(pack)))
     act(
@@ -152,6 +153,9 @@ def test_real_career_series_store_matches_background(tmp_path):
         assert store.tick()
         act(store, "save")
         saved = store.read()["world"]
+        store.db.close()
+        store = Store(path)
+        assert store.read()["world"] == saved
         act(store, "load")
         assert store.read()["world"] == saved
         while store.tick():
@@ -224,6 +228,12 @@ def test_complete_installed_series_with_timeouts_and_map_reset(best):
         assert all(a["cash"] == match.RULES["startMoney"] for a in w["agents"])
         assert all(not any(row.values()) for row in w["stats"].values())
         assert match.project(w)["match"]["pregame"]
+        side = next(a["team"] for a in w["agents"] if a["teamId"] == w["coachTeamId"])
+        plan = tactics.propose(side, "Пистолетная", 42, map_id=w["mapId"])
+        match.assign(w, dict(plan, id="series-pistol", revision=1))
+        assert w["playbook"][side + "/Пистолетная"]["map"] == w["mapId"]
+        for row in series.project(w, side)["stats"]:
+            assert (row["spent"] is None) == (row["teamId"] != w["coachTeamId"])
     report = series.result(w)
     assert len(report["maps"]) == sum(report["score"])
     assert max(report["score"]) == best // 2 + 1

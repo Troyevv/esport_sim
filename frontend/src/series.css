@@ -417,3 +417,37 @@
     white-space: normal;
   }
 }
+.series-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.series-table-scroll table {
+  min-width: 440px;
+  border-collapse: collapse;
+}
+.series-table-scroll th,
+.series-table-scroll td {
+  padding: 5px 4px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+.series-table-scroll tbody th {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+}
+
+.veto-fit {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 4px 6px;
+  font-size: 12px;
+}
+.veto-fit dt {
+  color: var(--muted);
+}
+.veto-fit dd {
+  margin: 0;
+  text-align: right;
+}

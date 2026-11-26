@@ -24,10 +24,12 @@ export interface SeriesView {
   order: { map: string; picker: string | null; attack: string | null }[];
   evidence?: Record<string, Record<string, Evidence>>;
   advice?: string;
+  fit?: { knowledge: number; assessed: number; roles: number };
   results: { map: string; score: Record<string, number> }[];
   score: Record<string, number>;
   winner?: string;
   rounds?: number;
+  completedRounds?: number;
   stats?: {
     player: string;
     name: string;
@@ -36,6 +38,9 @@ export interface SeriesView {
     d: number;
     a: number;
     damage: number;
+    hs: number;
+    kast: number;
+    spent: number | null;
     opening: number;
     clutches: number;
   }[];
@@ -133,32 +138,58 @@ export function SeriesScore({ frame, enabled, act }: Props) {
           {s.teams.map((t) => (
             <section key={t}>
               <h3>{s.clubs[t].name}</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Игрок</th>
-                    <th>K</th>
-                    <th>D</th>
-                    <th>A</th>
-                    <th>ADR</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {s.stats
-                    ?.filter((p) => p.teamId === t)
-                    .map((p) => (
-                      <tr key={p.player}>
-                        <th>{p.name}</th>
-                        <td>{p.k}</td>
-                        <td>{p.d}</td>
-                        <td>{p.a}</td>
-                        <td>
-                          {s.rounds ? (p.damage / s.rounds).toFixed(1) : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+              <div
+                className="series-table-scroll"
+                role="region"
+                aria-label={"Показатели · " + s.clubs[t].name}
+                tabIndex={0}
+              >
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Игрок</th>
+                      <th>K</th>
+                      <th>D</th>
+                      <th>A</th>
+                      <th>ADR</th>
+                      <th>KAST</th>
+                      <th>HS</th>
+                      <th>Первые</th>
+                      <th>Клатчи</th>
+                      <th>Закупки</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {s.stats
+                      ?.filter((p) => p.teamId === t)
+                      .map((p) => (
+                        <tr key={p.player}>
+                          <th>{p.name}</th>
+                          <td>{p.k}</td>
+                          <td>{p.d}</td>
+                          <td>{p.a}</td>
+                          <td>
+                            {s.rounds ? (p.damage / s.rounds).toFixed(1) : "—"}
+                          </td>
+                          <td>
+                            {s.completedRounds
+                              ? Math.round((100 * p.kast) / s.completedRounds) +
+                                "%"
+                              : "—"}
+                          </td>
+                          <td>{p.hs}</td>
+                          <td>{p.opening}</td>
+                          <td>{p.clutches}</td>
+                          <td>
+                            {p.spent === null
+                              ? "—"
+                              : "$" + p.spent.toLocaleString("ru-RU")}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           ))}
         </div>
@@ -428,6 +459,21 @@ export function VetoCenter({ frame, enabled, act }: Props) {
                       : "Нет сыгранных встреч на карте. Оценка по знанию карты и ролям своей пятёрки."
                     : "Оценка по игре сторон и стилю капитана."}
                 </p>
+                {s.fit && (
+                  <dl className="veto-fit">
+                    <dt>Знание карты</dt>
+                    <dd>
+                      {s.fit.assessed
+                        ? s.fit.knowledge +
+                          "/100 · оценки " +
+                          s.fit.assessed +
+                          "/5"
+                        : "Нет оценок"}
+                    </dd>
+                    <dt>Соответствие ролей</dt>
+                    <dd>{s.fit.roles}/100</dd>
+                  </dl>
+                )}
               </div>
               <details>
                 <summary>Делегировать оставшиеся ходы</summary>

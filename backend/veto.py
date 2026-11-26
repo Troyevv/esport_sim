@@ -143,14 +143,34 @@ def available(s):
     return [m for m in s["profile"]["pool"] if m not in used]
 
 
+def own_five(w, team):
+    rid = next(r for r in w["rosterIds"] if w["domain"]["rosters"][r]["team"] == team)
+    return [
+        (m, w["domain"]["players"][m["player"]]) for m in world.lineup(w["domain"], rid)
+    ]
+
+
+def map_fit(people, map_id):
+    known = [
+        p["mapKnowledge"][map_id[3:]]
+        for _, p in people
+        if map_id[3:] in p["mapKnowledge"]
+    ]
+    suited = [
+        skills.role_rating(p["skills"], m["role"])
+        for m, p in people
+        if m["role"] in ROLE_FIT.get(map_id, "").split()
+    ]
+    knowledge = (sum(known) + 50 * (len(people) - len(known))) / len(people)
+    return knowledge, len(known), mean(suited) if suited else 50
+
+
 def recommend(w, delegate):
     s = w["series"]
     index = len(s["actions"])
     step = s["steps"][index]
     team = step["team"]
-    rid = next(r for r in w["rosterIds"] if w["domain"]["rosters"][r]["team"] == team)
-    members = world.lineup(w["domain"], rid)
-    people = [(m, w["domain"]["players"][m["player"]]) for m in members]
+    people = own_five(w, team)
     captain = next(p["skills"] for m, p in people if m["captain"])
     opponent = next(t for t in s["teams"] if t != team)
     scouting = s["evidence"]
@@ -170,15 +190,8 @@ def recommend(w, delegate):
 
     def value(map_id):
         own, other = scouting[team][map_id], scouting[opponent][map_id]
-        knowledge = mean(p["mapKnowledge"].get(map_id[3:], 50) for _, p in people)
-        suited = [
-            skills.role_rating(p["skills"], m["role"])
-            for m, p in people
-            if m["role"] in ROLE_FIT.get(map_id, "").split()
-        ]
-        prior = (
-            0.5 + (knowledge - 50) / 160 + ((mean(suited) if suited else 50) - 50) / 350
-        )
+        knowledge, _, fit = map_fit(people, map_id)
+        prior = 0.5 + (knowledge - 50) / 160 + (fit - 50) / 350
 
         def estimate(row, prior):
             return (row["weightedWins"] + 5 * prior) / (row["weight"] + 5)
