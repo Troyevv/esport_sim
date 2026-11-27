@@ -12,6 +12,7 @@ concurrency:
 jobs:
   native:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-24.04, windows-2022]
     runs-on: ${{ matrix.os }}
@@ -20,16 +21,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install -r requirements-native.txt pytest==9.0.2
+      - run: python -m pip install -r requirements-native.txt -c requirements-test.txt pytest numpy embreex
       - run: python -m tools.build_native
       - run: python -c "from backend import _match_native"
-      - run: python -m pytest -q tests/test_native_navigation.py
+      - run: python -m pytest -q tests/test_native_navigation.py tests/test_native_rays.py
       - name: Check native ownership and arithmetic under sanitizers
         if: runner.os == 'Linux'
         run: |
-          cmake -S native -B build/sanitizers -Dpybind11_DIR="$(python -m pybind11 --cmakedir)" -DNAV_SANITIZERS=ON
-          cmake --build build/sanitizers --target check_navigation
-          ctest --test-dir build/sanitizers --output-on-failure
+          cmake -S native -B build/sanitizers -Dpybind11_DIR="$(python -m pybind11 --cmakedir)" -DNAV_SANITIZERS=ON -DEMBREE_TEST_LIBRARY="$(python -c 'from backend.cs2_rays import _library_path; print(_library_path())')"
+          cmake --build build/sanitizers --target check_navigation check_rays
+          ctest --test-dir build/sanitizers --output-on-failure --repeat until-fail:5
   backend:
     runs-on: ubuntu-24.04
     steps:
@@ -39,7 +40,8 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: requirements-test.txt
-      - run: python -m pip install -r requirements-test.txt
+      - run: python -m pip install -r requirements-test.txt -r requirements-native.txt
+      - run: python -m tools.build_native
       - run: python -m pytest -q
       - run: python -m backend.headless --seed 42 --ticks 1200
   browser:
@@ -67,6 +69,10 @@ jobs:
           npm run build
           npx playwright install --with-deps chromium
           npx playwright test r0.spec.ts r1.spec.ts r2.spec.ts career.spec.ts quick-match.spec.ts competitions.spec.ts staff.spec.ts training.spec.ts scouting.spec.ts --project "${{ matrix.project }}"
+      - if: matrix.project == 'phone-portrait'
+        run: |
+          python -m pip install -r requirements-native.txt
+          python -m tools.build_native
       - if: matrix.project == 'phone-portrait'
         run: node frontend/e2e/mobile-tls.mjs
       - uses: actions/upload-artifact@v4

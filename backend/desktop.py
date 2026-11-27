@@ -170,6 +170,21 @@ def launch(data, open_url, legacy_source=None):
 
 
 def main():
+    if sys.argv[1:2] == ["--verify-native"]:
+        if len(sys.argv) != 3:
+            return 2
+        report = Path(sys.argv[2])
+        try:
+            from backend._match_native import TriangleScene
+            scene = TriangleScene([[0, 0, 0], [2, 0, 0], [0, 2, 0]], [[0, 1, 2]], [1])
+            faces, distances, _ = scene.first_many([[0.5, 0.5, -2]], [0, 0, 1], 4.0, 1)
+            report.write_text(json.dumps({"face": int(faces[0]), "distance": float(distances[0])}),
+                              encoding="utf-8")
+        except Exception:
+            import traceback
+            report.write_text(traceback.format_exc(), encoding="utf-8")
+            return 1
+        return 0
     if sys.argv[1:2] == ["--prepare-head"]:
         if len(sys.argv) != 4:
             return 2

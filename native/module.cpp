@@ -5,7 +5,10 @@
 
 namespace py = pybind11;
 
+void bind_rays(py::module_& module);
+
 PYBIND11_MODULE(_match_native, module) {
+    bind_rays(module);
     module.doc() = "Detailed match engine components";
     module.attr("NAV_API_VERSION") = 1;
     module.attr("PORTAL_API_VERSION") = 1;

@@ -99,6 +99,7 @@ def main():
     if not list((output / "_internal/backend").glob("_match_native*.pyd")):
         raise RuntimeError("В сборке отсутствует нативный матчевый модуль")
     shutil.copyfile(ROOT / "LICENSE", output / "LICENSE")
+    shutil.copyfile(ROOT / "native/vendor/embree4/LICENSE.txt", output / "LICENSE-Embree.txt")
     shutil.copyfile(ROOT / "docs" / "TACTICS.md", output / "TACTICS.md")
     shutil.copyfile(ROOT / "docs" / "WORLD_R31.md", output / "WORLD_R31.md")
     shutil.copyfile(ROOT / "SOURCES.md", output / "SOURCES.md")
