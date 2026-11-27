@@ -10,6 +10,7 @@ from tools.compare_native_state import encode
 
 def compare(best, seed):
     game = series.initial(seed, best)
+    game.pop("agentPolicy")  # The Python reference uses the R5.4 policy across all maps.
     veto.advance(game, "staff")
     maps = []
     while game["series"]["stage"] != "finished":

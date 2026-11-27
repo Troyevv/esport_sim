@@ -118,7 +118,7 @@ Json AgentTurn::saved_exit() {
         }
         if (path && length / speed + 12 < remaining && std::ranges::any_of(squad, [&](const Json *p) {
                 return p != &a && p->at("kit") == true && p->value("saving", Json(nullptr)).empty() &&
-                       !p->value("seenDevice", Json(nullptr)).empty() &&
+                       (individual ? !device.empty() : !p->value("seenDevice", Json(nullptr)).empty()) &&
                        distance(actor_point(*p), pos) < 12 &&
                        remaining > cfg.at("rules").at("kitDefuse").get<int>() + 6;
             }))

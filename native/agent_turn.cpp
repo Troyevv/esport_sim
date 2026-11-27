@@ -1,4 +1,4 @@
-#include "agent_turn.hpp"
+#include "agent_helpers.hpp"
 #include "economy.hpp"
 #include <algorithm>
 #include <cmath>
@@ -57,7 +57,7 @@ Json rescue_c4(Json &w, const PhysicalNavigation &nav, const Squad &allies) {
 AgentTurn::AgentTurn(Json &world, Json &actor, const Squad &allies, const Json &config, const OpeningMap &map,
                      const Combat &arms, const Json &rescue)
     : side(actor.at("team")), now(world.at("tick")), slot(actor.at("slot")), w(world), a(actor),
-      squad(allies), cfg(config), arena(map), grid(map.objectives().grid()), combat(arms), recovery(rescue),
+      squad(allies), individual(world.contains("agentPolicy")), cfg(config), arena(map), grid(map.objectives().grid()), combat(arms), recovery(rescue),
       player(player_profile(w, a)), skills(player.at("skills")), plan(w.at("plans").at(side)),
       previous(actor.at("status")), step_index(actor.value("stepIndex", 0)),
       prior_position(actor_point(actor)) {}
@@ -125,13 +125,21 @@ void AgentTurn::prepare() {
             auto [dx, dy] = sound_direction(actor_point(a), actor_point(bomb));
             a["beepBearing"] = Json::array({a.at("x"), a.at("y"), dx, dy});
         }
-        if (grid && gap(bomb) < 30 && clear(a, bomb))
-            device = bomb;
-        if (!grid && device.is_null() && gap(bomb) < 30 && clear(a, bomb) && a.at("blind") <= now &&
-            std::ranges::none_of(w.at("effects"), [&](const Json &f) {
+        auto sees_device = [&] {
+            if (gap(bomb) >= 30 || !clear(a, bomb))
+                return false;
+            if (grid && !individual)
+                return true;
+            if (a.at("blind") > now || (individual && !in_range_fov(a, actor_point(bomb))))
+                return false;
+            return std::ranges::none_of(w.at("effects"), [&](const Json &f) {
                 return f.at("kind") == "Дым" && f.at("land") <= now && now < f.at("end") &&
                        near_segment(actor_point(a), actor_point(bomb), actor_point(f), f.at("radius"));
-            })) {
+            });
+        };
+        if (grid && sees_device())
+            device = bomb;
+        if (!grid && device.is_null() && sees_device()) {
             device = Json::object();
             for (auto k : {"x", "y", "z", "site", "carrier"})
                 device[k] = bomb.at(k);
@@ -264,7 +272,7 @@ void AgentTurn::finish(const Json &intent) {
             duty_feedback();
     }
     if (kind == "move") {
-        if (!grid && side == "T" && w.at("phase") == "live" && now % 5 == slot &&
+        if (!grid && (individual || (side == "T" && w.at("phase") == "live")) && now % 5 == slot &&
             distance(prior_position, actor_point(a)) > .9)
             combat.hear(w, a, "Шаги", 88);
         a["lastMove"] = now;
@@ -272,7 +280,8 @@ void AgentTurn::finish(const Json &intent) {
     }
     if (plan.contains("board") && !plan.at("board").empty()) {
         std::string status = a.at("status"), text = a.at("name").get<std::string>() + " · " + status;
-        if (a.at("stepIndex") != step_index)
+        if (a.at("stepIndex") != step_index &&
+            (!a.contains("lastRefusal") || a.at("lastRefusal").at("tick") != now))
             emit(w, "board_step", text, side).update(Json{{"player", a.at("id")}, {"step", step_index}});
         else if (previous != status &&
                  (status == "К капитану после потери союзника" || status == "Пережидает огонь за укрытием" ||

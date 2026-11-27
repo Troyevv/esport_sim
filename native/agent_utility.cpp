@@ -28,12 +28,10 @@ Json AgentTurn::assist_contact(const Squad &partners, const Json &r) {
             continue;
         if (g == "Дым") {
             if (std::ranges::any_of(squad, [&](auto m) {
-                    if (m == &a || std::find(partners.begin(), partners.end(), m) != partners.end() ||
-                        !active(*m, "target"))
+                    if (m == &a || std::find(partners.begin(), partners.end(), m) != partners.end())
                         return false;
-                    auto t = m->at("target").template get<std::string>();
-                    return m->at("knowledge").contains(t) &&
-                           near_segment(actor_point(*m), actor_point(m->at("knowledge").at(t)), land, radius);
+                    auto aim = observed_aim(*m);
+                    return aim && near_segment(actor_point(*m), actor_point(*aim), land, radius);
                 }))
                 continue;
             if (side == "CT" && w.at("phase") == "live" && !screen_safe(land))
@@ -164,7 +162,7 @@ Json AgentTurn::plant_intercept(Point &goal, Point &watch, Json &cue) {
     if (!cue.contains("peek")) {
         std::vector<Point> taken;
         for (auto m : squad)
-            if (m != &a && active(*m, "plantCue")) {
+            if (!individual && m != &a && active(*m, "plantCue")) {
                 const auto &c = m->at("plantCue");
                 if (active(c, "peek") && now - c.at("tick").template get<Tick>() < 30)
                     taken.push_back(c.at("watch"));

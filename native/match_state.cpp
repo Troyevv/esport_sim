@@ -135,6 +135,9 @@ class MatchState::Impl {
             objectives = std::make_shared<Objectives>(grid);
             opening = std::make_shared<OpeningMap>(objectives);
         }
+        if (state.contains("agentPolicy") &&
+            (!state.at("agentPolicy").is_number_integer() || (state.at("agentPolicy") != 1 && state.at("agentPolicy") != 2)))
+            throw std::invalid_argument("Неизвестная версия индивидуального ИИ");
         if (freeze <= 0 ||
             (!grid && (state.at("map_version") != build || state.at("checkpointVersion") != 7)) ||
             !(state.at("rules") == rules ||

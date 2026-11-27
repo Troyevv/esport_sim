@@ -52,6 +52,7 @@ def simulate(draft):
             if e["kind"]
             in (
                 "board_step",
+                "order_refused",
                 "adapt",
                 "throw",
                 "kill",

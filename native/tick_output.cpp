@@ -37,13 +37,45 @@ void TickSamples::before(const Json &world) {
         start = std::chrono::steady_clock::now();
     else if (mode == TickOutput::Motion)
         samples.push_back(motion_sample(world.at("agents")));
-    else
+    else if (mode == TickOutput::Preview)
         samples.push_back(preview_frame(world.at("agents")));
 }
 bool TickSamples::end_of_preview(const Json &world) const {
     return mode == TickOutput::Preview && world.at("phase") == "result";
 }
 void TickSamples::after(const Json &world) {
+    if (mode == TickOutput::Individual) {
+        Json actors = Json::array();
+        for (const auto &a : world.at("agents")) {
+            auto decision = a.find("decision");
+            if (decision == a.end() || (a.at("hp") == 0 && a.at("lastHurt") != world.at("tick")))
+                continue;
+            auto cover = a.find("shelter");
+            actors.push_back(Json::array({a.at("id"),
+                                          a.at("team"),
+                                          decision->at("intent"),
+                                          a.at("x"),
+                                          a.at("y"),
+                                          a.value("z", 0.),
+                                          a.at("hp"),
+                                          a.at("armor"),
+                                          a.at("ammo"),
+                                          a.at("reserve"),
+                                          a.at("reloadAt"),
+                                          a.at("weapon"),
+                                          a.at("visible").size(),
+                                          a.at("lastHurt"),
+                                          a.at("lastShot"),
+                                          cover == a.end() ? Json(nullptr) : *cover,
+                                          a.value("stepIndex", -1),
+                                          a.at("status"),
+                                          a.at("heading"),
+                                          a.value("blockedTicks", 0)}));
+        }
+        samples.push_back(
+            Json::array({world.at("tick"), world.at("round"), world.at("phase"), std::move(actors)}));
+        return;
+    }
     if (mode != TickOutput::Profile)
         return;
     timings.push_back(

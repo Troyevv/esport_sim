@@ -22,7 +22,7 @@ const Json *opening_watch(const AgentTurn &t) {
             return std::pair{distance(actor_point(a), actor_point(*r)), a.at("slot").get<int>()};
         };
         for (auto p : t.squad)
-            if (p->at("visible").empty() && p->at("blind") <= t.now &&
+            if ((t.individual && p != &t.a ? !t.observed_aim(*p) : p->at("visible").empty()) && p->at("blind") <= t.now &&
                 p->at("id") != r->value("witness", Json(nullptr)) &&
                 p->at("id") != r->value("reporter", Json(nullptr)) && (!best || key(*p) < key(*best)))
                 best = p;
@@ -151,8 +151,10 @@ Json AgentTurn::opening_decision() {
         job["lastCover"] = now;
     const Json *other = support ? &jobs.at(support->at("id").get<std::string>()) : nullptr;
     if (job.at("role") == "страховка" && other) {
-        if (support->at("target").is_string()) {
-            auto target = support->at("target").get<std::string>();
+        auto aim = individual ? observed_aim(*support) : nullptr;
+        auto target_id = individual ? (aim ? aim->at("id") : Json(nullptr)) : support->at("target");
+        if (target_id.is_string()) {
+            auto target = target_id.get<std::string>();
             if (a.at("knowledge").contains(target)) {
                 const auto &r = a.at("knowledge").at(target);
                 if (now - r.at("tick").get<Tick>() < 25) {

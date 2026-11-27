@@ -111,7 +111,7 @@ Json &AgentTurn::attention(Point &focus) {
         std::optional<std::tuple<bool, double, int>> best;
         for (auto m : squad) {
             if (m->at("reloadAt") != 0 || m->at("blind") > now ||
-                (!m->at("visible").empty() && !member_of(m->at("visible"), r->at("id"))))
+                ((!individual || m == &a) && !m->at("visible").empty() && !member_of(m->at("visible"), r->at("id"))))
                 continue;
             auto &job = assignment(plan, *m, squad);
             if (job.at("site") != site || nav.hit(actor_point(*m), point, 1, 64, 64))

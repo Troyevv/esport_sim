@@ -12,6 +12,47 @@ bool can_see(const Json &a, const Json &target) {
     return dot >= 0 && 4 * dot * dot >= dx * dx + dy * dy;
 }
 } // namespace
+// Estimate a visible ally's line of fire against *our own* reports. A teammate's
+// untransmitted sighting, target ID and crosshair are private.
+const Json *AgentTurn::observed_aim(const Json &mate) const {
+    if (!individual) {
+        const auto &id = mate.at("target");
+        if (!id.is_string() || !mate.at("knowledge").contains(id.get_ref<const std::string &>()))
+            return nullptr;
+        return &mate.at("knowledge").at(id.get_ref<const std::string &>());
+    }
+    if (a.at("knowledge").empty() || a.at("blind") > now || gap(mate) > 45 || !can_see(a, mate) ||
+        !clear(a, mate))
+        return nullptr;
+    const auto start = actor_point(a), end = actor_point(mate);
+    if (std::ranges::any_of(w.at("effects"), [&](const Json &f) {
+            return f.at("kind") == "Дым" && f.at("land") <= now && now < f.at("end") &&
+                   near_segment(start, end, actor_point(f), f.at("radius"));
+        }))
+        return nullptr;
+    const Json *best = nullptr;
+    double alignment = .94; // A narrow sector around the visible weapon direction.
+    const double heading = mate.at("heading");
+    for (const auto &r : a.at("knowledge")) {
+        if (!r.contains("id") || (r.at("source") != "Зрение" && r.at("source") != "Радио") ||
+            r.at("tick") > now || now - r.at("tick").get<Tick>() > 14)
+            continue;
+        auto point = actor_point(r);
+        double dx = point[0] - end[0], dy = point[1] - end[1];
+        double dot = (dx * std::cos(heading) + dy * std::sin(heading)) / std::max(1., std::hypot(dx, dy));
+        if (dot > alignment) {
+            alignment = dot;
+            best = &r;
+        }
+    }
+    return best;
+}
+bool AgentTurn::ally_covers(const Json &mate, const Json &report) const {
+    if (!individual)
+        return mate.at("target") == report.at("id");
+    auto aim = observed_aim(mate);
+    return aim && aim->at("id") == report.at("id");
+}
 Json AgentTurn::select_contact() const {
     const auto &visible = a.at("visible");
     if (visible.empty())
@@ -21,8 +62,13 @@ Json AgentTurn::select_contact() const {
         return intel.at(visible[0].get<std::string>());
     std::set<std::string> focus;
     for (auto m : squad)
-        if (m != &a && m->at("target").is_string() && gap(*m) < 25 && clear(a, *m))
-            focus.insert(m->at("target"));
+        if (m != &a && gap(*m) < 25 && clear(a, *m)) {
+            if (individual) {
+                if (auto aim = observed_aim(*m))
+                    focus.insert(aim->at("id"));
+            } else if (m->at("target").is_string())
+                focus.insert(m->at("target"));
+        }
     auto priority = [&](const Json &id) {
         const auto &sight = intel.at(id.get<std::string>());
         auto p = actor_point(a), q = actor_point(sight);
@@ -74,19 +120,16 @@ bool AgentTurn::screen_safe(const Point &point) const {
         if (distance(hold, point) < radius ||
             (near_segment(hold, watch, point, radius) && distance(point, watch) > radius))
             return false;
-        if (m != &a && !m->at("visible").empty() && m->at("target").is_string()) {
-            auto id = m->at("target").get<std::string>();
-            if (m->at("knowledge").contains(id) &&
-                near_segment(actor_point(*m), actor_point(m->at("knowledge").at(id)), point, radius))
+        if (m != &a && (individual || !m->at("visible").empty()))
+            if (auto aim = observed_aim(*m); aim && near_segment(actor_point(*m), actor_point(*aim), point, radius))
                 return false;
-        }
     }
     return true;
 }
-Json AgentTurn::seek_cover(const Json &contact) {
+Json AgentTurn::seek_cover(const Json &contact, bool requested) {
     const auto &nav = arena.objectives().map();
     bool exposed = false;
-    if (!contact.empty() && a.at("visible").size() > 1) {
+    if (!requested && !contact.empty() && a.at("visible").size() > 1) {
         int engaged = 0;
         bool backup = false;
         for (auto m : squad)
@@ -100,7 +143,7 @@ Json AgentTurn::seek_cover(const Json &contact) {
                       skills.at("aggression").get<int>() + skills.at("risk").get<int>();
     }
     if (!contact.empty() &&
-        (a.at("reloadAt") != 0 || exposed || (a.at("hp") < 35 && a.at("visible").size() > 1)) &&
+        (requested || a.at("reloadAt") != 0 || exposed || (a.at("hp") < 35 && a.at("visible").size() > 1)) &&
         now >= a.value("coverReview", Tick{0})) {
         auto threat = actor_point(contact), pos = actor_point(a);
         std::set<Point> spots;
@@ -142,7 +185,7 @@ Json AgentTurn::seek_cover(const Json &contact) {
             a["shelter"] = q;
             if (side == "CT" && has(a.at("utility"), "Дым") && now >= a.at("throwAt").get<Tick>() &&
                 distance(pos, threat) > 24 && std::ranges::none_of(squad, [&](auto m) {
-                    return m != &a && m->at("target") == contact.at("id");
+                    return m != &a && ally_covers(*m, contact);
                 })) {
                 Point screen;
                 for (int i = 0; i < 3; ++i)
@@ -222,7 +265,7 @@ Json AgentTurn::duel(const Json &contact) {
             const auto &nav = arena.objectives().map();
             int flight = std::max(3, int(std::nearbyint(gap / 7)));
             bool backup = std::ranges::any_of(
-                     squad, [&](auto m) { return m != &a && m->at("target") == contact.at("id"); }),
+                     squad, [&](auto m) { return m != &a && ally_covers(*m, contact); }),
                  vulnerable = a.at("reloadAt") != 0 || a.at("hp") < 45;
             auto ready =
                 std::max<Tick>(0, std::max(a.at("ready").get<Tick>(), a.at("reloadAt").get<Tick>()) - now);

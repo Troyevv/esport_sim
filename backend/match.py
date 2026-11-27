@@ -4,7 +4,7 @@ import json
 
 from . import cs2_maps, checkpoints, engine, match_inventory, match_score, tactics, world
 from . import match_view
-from .match_rules import CALLS, MAP, RULES, VERSION, PREVIOUS_VERSION, equipment_value
+from .match_rules import AGENT_POLICY, CALLS, MAP, RULES, VERSION, PREVIOUS_VERSION, equipment_value
 
 
 def team(w, club):
@@ -58,7 +58,7 @@ def init_performance(a, now):
         tradeUntil=0,
     )
 
-def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, *, map_id="depo", first_attack=None):
+def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, *, map_id="depo", first_attack=None, agent_policy=AGENT_POLICY):
     space = None if map_id=="depo" else cs2_maps.get(map_id)
     agents = [engine.spawn_slot(seed, side, slot, side_index*5+slot)
               for side_index,side in enumerate(("T","CT")) for slot in range(5)]
@@ -81,6 +81,8 @@ def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, 
         call=None,
         feedback=[],
     )
+    if agent_policy is not None:
+        w["agentPolicy"] = agent_policy
     if space:
         w.update(mapId=space.name,map_version=cs2_maps.BUILD,rules=cs2_maps.RULES,checkpointVersion=7)
     # Slot identity survives side switches and loading a saved round.

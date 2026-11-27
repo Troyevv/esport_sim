@@ -301,8 +301,17 @@ void start_round(Json &w, const Json &cfg, const Json &spawns) {
                           {"squadPressure", obj},
                           {"screenedOpening", false},
                           {"friendlyUtility", array}});
-        for (auto key : {"audioCalls", "lastDutyFeedback", "postWatch"})
+        for (auto key : {"audioCalls", "lastDutyFeedback", "postWatch", "decision", "lastReloadBreak"})
             a.erase(key);
+        if (w.contains("agentPolicy")) {
+            a.erase("lastRefusal");
+            if (!w.contains("mapId")) {
+                a.erase("shelter");
+                a.erase("coverReview");
+                a.erase("blockedStep");
+                a.erase("boardFailures");
+            }
+        }
         if (reset || a.at("hp") == 0) {
             a.update(Json{{"weapon", side == "T" ? "Glock" : "USP"},
                           {"holster", nullptr},
