@@ -46,7 +46,8 @@ Json AgentTurn::spatial_intent() {
             }
             const auto &route = order.at("via");
             auto index = a.at("waypoint").get<std::size_t>();
-            if (index < route.size() && distance(pos, route[index]) < 2.6)
+            const bool arrived = index < route.size() && distance(pos, route[index]) < 2.6;
+            if (arrived)
                 a["waypoint"] = ++index;
             if (index < route.size() && remaining > 145)
                 goal = route[index].get<Point>();
@@ -56,6 +57,11 @@ Json AgentTurn::spatial_intent() {
             if (index && index < route.size() &&
                 (plan.at("style") == "Сбор" || plan.at("style") == "Групповой выход" ||
                  plan.at("style") == "Контроль карты")) {
+                if (small_groups(w) && !carrying && remaining > 180 && !active(plan, "board")) {
+                    auto paired = stage_pair(goal, arrived);
+                    if (!paired.is_null())
+                        return paired;
+                }
                 const auto &lane = order.contains("lane") ? order.at("lane") : route;
                 int cohesion = 0;
                 double nearest = std::numeric_limits<double>::infinity();

@@ -1,4 +1,5 @@
 #include "agent_helpers.hpp"
+#include "radio.hpp"
 namespace esport {
 Json AgentTurn::priority_intent() {
 
@@ -23,8 +24,14 @@ Json AgentTurn::priority_intent() {
             auto readiness = (skills.at("support").get<int>() + skills.at("coordination").get<int>() +
                               chemistry(w, a, *mate)) /
                              300.;
-            int need = (mate->at("reloadAt") != 0 || mate->at("hp") < a.at("hp")) +
-                       (mate->at("playingRole") == "entry");
+            int need = mate->at("playingRole") == "entry";
+            if (small_groups(w)) {
+                auto report = recent_call(mate->at("id"), "contact", 25);
+                need += report && report->at("state") == "help" && report->contains("members") &&
+                        !report->at("members").empty() &&
+                        report->at("members").front() == a.at("id");
+            } else
+                need += mate->at("reloadAt") != 0 || mate->at("hp") < a.at("hp");
             return std::pair{need * readiness - gap(*mate) / 100, -mate->at("slot").get<int>()};
         };
         for (auto m : squad)

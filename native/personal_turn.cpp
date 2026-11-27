@@ -329,6 +329,14 @@ Json AgentTurn::personal_decision() {
             intent = Json::array({"hold", nullptr});
             break;
         case Choice::assist: {
+            if (small_groups(w)) {
+                intent = group_assist(request);
+                if (intent.is_null()) {
+                    candidate.reachable = false;
+                    continue;
+                }
+                break;
+            }
             const auto origin = request.at("origin").get<Point>();
             if (request.at("state") == "help" && distance(pos, origin) > 14) {
                 bool moved = grid ? grid->walk(a, Json::array({origin[0], origin[1]}), 2 * move_speed(player), grid_fire, true)

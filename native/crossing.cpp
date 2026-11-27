@@ -69,7 +69,7 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
         for (auto m : squad)
             if (m != &a) {
                 auto &home = plan.at("orders").at("slots").at(m->at("slot").get<int>());
-                if (active(home, "screen") && &assignment(plan, *m, squad) == &home.at("screen") &&
+                if (active(home, "screen") && (small_groups(w) ? !relief(plan, *m) : &assignment(plan, *m, squad) == &home.at("screen")) &&
                     distance(actor_point(*m), home.at("screen").at("hold").get<Point>()) < 28 && gap(*m) < 40)
                     pushing.push_back(m);
             }
@@ -203,7 +203,7 @@ Json AgentTurn::hold_sector() {
                 }
             }
             bool covered = std::ranges::any_of(squad, [&](const Json *m) {
-                return m != &a && gap(*m) < 28 && !nav.hit(actor_point(*m), flank, 1, 64, 64) &&
+                return m != &a && gap(*m) < 28 && (!small_groups(w) || sees_teammate(*m)) && !nav.hit(actor_point(*m), flank, 1, 64, 64) &&
                        std::cos(m->at("heading").get<double>() - heading_gap(actor_point(*m), flank)) >= .5;
             });
             st["check"] = covered ? watch : flank;
@@ -254,7 +254,8 @@ Json AgentTurn::prepare_plant(const std::string &site) {
         auto index = check.at("index").get<std::size_t>();
         auto q = check.at("angles").at(index).get<Point>();
         bool covered = std::ranges::any_of(squad, [&](const Json *m) {
-            if (m == &a || m->at("ammo") == 0 || m->at("blind") > now || m->at("reloadAt") != 0)
+            if (m == &a || (small_groups(w) ? !sees_teammate(*m) :
+                            m->at("ammo") == 0 || m->at("blind") > now || m->at("reloadAt") != 0))
                 return false;
             auto p = actor_point(*m);
             double dx = q[0] - p[0], dy = q[1] - p[1], h = m->at("heading");

@@ -12,8 +12,8 @@ from tests.test_individual_decision import decide
 from tests.test_server import envelope
 
 
-def scenario(side, communication=100, bond=100):
-    w = match.initial(17)
+def scenario(side, communication=100, bond=100, policy=3):
+    w = match.initial(17, agent_policy=policy)
     match.advance(w, 45)
     w["tick"] = 48
     own = [a for a in w["agents"] if a["team"] == side]
@@ -174,7 +174,7 @@ def test_refresh_is_bounded_and_local_memory_is_never_rebroadcast(side):
 def test_board_ack_ready_completion_and_refusal_reach_allies(index):
     from backend import tactics
 
-    w = match.initial(17)
+    w = match.initial(17, agent_policy=3)
     match.advance(w, 45)
     actor = w["agents"][index]
     side, slot, x, y = (actor[k] for k in ("team", "slot", "x", "y"))

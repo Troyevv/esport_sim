@@ -1,4 +1,5 @@
 #include "agent_helpers.hpp"
+#include "radio.hpp"
 namespace esport {
 namespace {
 const Json *opening_watch(const AgentTurn &t) {
@@ -22,7 +23,8 @@ const Json *opening_watch(const AgentTurn &t) {
             return std::pair{distance(actor_point(a), actor_point(*r)), a.at("slot").get<int>()};
         };
         for (auto p : t.squad)
-            if ((t.individual && p != &t.a ? !t.observed_aim(*p) : p->at("visible").empty()) && p->at("blind") <= t.now &&
+            if ((t.individual && p != &t.a ? !t.observed_aim(*p) : p->at("visible").empty()) &&
+                ((small_groups(t.w) && p != &t.a) || p->at("blind") <= t.now) &&
                 p->at("id") != r->value("witness", Json(nullptr)) &&
                 p->at("id") != r->value("reporter", Json(nullptr)) && (!best || key(*p) < key(*best)))
                 best = p;
@@ -71,8 +73,15 @@ Json AgentTurn::opening_decision() {
                 return nullptr;
             }
         }
-    if (support && active(jobs.at(support->at("id").get<std::string>()), "withdrawn"))
+    if (!small_groups(w) && support && active(jobs.at(support->at("id").get<std::string>()), "withdrawn"))
         support = nullptr;
+    auto gate_ready = [&]() {
+        if (!support)
+            return false;
+        auto message = recent_call(support->at("id"), "gate", 22);
+        return message && message->at("state") == "set" && message->at("order") == job.at("zone") &&
+               distance(actor_point(*support), message->at("origin").get<Point>()) < 5;
+    };
     auto towards = [&](const Point &goal, const std::string &status,
                        std::optional<Point> aim = std::nullopt) {
         a["status"] = status + " · " + job.at("zone").get<std::string>();
@@ -114,7 +123,7 @@ Json AgentTurn::opening_decision() {
                 return towards(launch, "Занимает позицию броска");
             else {
                 if (item == "Свет" && support &&
-                    now < jobs.at(support->at("id").get<std::string>()).value("atGate", now + 1)) {
+                    (small_groups(w) ? !gate_ready() : now < jobs.at(support->at("id").get<std::string>()).value("atGate", now + 1))) {
                     if (now - plan.at("start").get<Tick>() < 175)
                         return towards(pos, "Ждёт готовности выхода", gate);
                     cast["skip"] = "Напарник не вышел на рубеж";
@@ -164,7 +173,7 @@ Json AgentTurn::opening_decision() {
                 }
             }
         }
-        if (active(*other, "departed") && distance(actor_point(*support), peek) < 8)
+        if ((small_groups(w) || active(*other, "departed")) && distance(actor_point(*support), peek) < 8)
             return towards(gate, "Страхует занятую зону", watch);
         return towards(gate, "Прикрывает выход напарника", peek);
     }
@@ -180,13 +189,36 @@ Json AgentTurn::opening_decision() {
         job["reason"] = "Нет страховки";
         return towards(gate, "Держит до смены напарника");
     }
-    if (other) {
+    if (other && small_groups(w)) {
+        bool flash = false, in_flight = false;
+        if (a.contains("crossingCalls"))
+            for (const auto &cast : a.at("crossingCalls")) {
+                if (cast.value("forPlayer", std::string{}) != id || cast.at("item") != "Свет")
+                    continue;
+                const Tick land = cast.at("land");
+                flash |= land <= now && now <= land + 12;
+                in_flight |= now < land;
+            }
+        const bool armed = a.at("blind") <= now && a.at("ready") <= now && !active(a, "reloadAt") && a.at("ammo") > 0;
+        if (!armed || (!gate_ready() && !flash) || in_flight)
+            return towards(gate, "Ждёт страховку");
+    } else if (other) {
         auto pending = other->value("throw", Json::object());
         auto land = pending.value("land", Tick{-100});
         bool window = land <= now && now <= land + 12 && pending.value("item", std::string{}) == "Свет";
         if ((!window && now - other->value("lastCover", Tick{-100}) > 25) ||
             (pending.contains("item") && !pending.contains("skip") && now < pending.value("land", now + 1)))
             return towards(gate, "Ждёт страховку");
+    }
+    if (group_tasks(w) && other && (!job.contains("departed") ||
+        (active(a, "groupLead") && !a.at("groupLead").value("closed", false)))) {
+        auto paired = coordinated_peek(peek, Json::array({"opening", job.at("zone"), gate}),
+                                       !job.contains("departed"), support->at("id"));
+        if (!paired.is_null()) {
+            if (paired.at(0) == "move")
+                job["departed"] = now;
+            return paired;
+        }
     }
     if (!job.contains("departed"))
         job["departed"] = now;
@@ -195,12 +227,16 @@ Json AgentTurn::opening_decision() {
         in_range_fov(a, watch)) {
         if (!reports.contains(id) || now - reports.at(id).at("due").get<Tick>() > 65) {
             reports[id] = Json{{"zone", job.at("zone")}, {"observed", now}, {"due", now + delay}};
+            if (small_groups(w))
+                signal_group("survey", "checked", watch, job.at("zone"));
             job["rechecks"] = job.value("rechecks", 0) + 1;
         }
     }
     if (active(job, "holdsFor")) {
         auto &relieving = jobs.at(job.at("holdsFor").get<std::string>());
-        if (now - relieving.value("handoffAt", Tick{0}) < 65 && !active(relieving, "rechecks"))
+        const bool checked = small_groups(w) ? recent_call(job.at("holdsFor"), "survey", 30) != nullptr
+                                             : active(relieving, "rechecks");
+        if (now - relieving.value("handoffAt", Tick{0}) < 65 && !checked)
             return towards(peek, "Прикрывает смену позиции");
     }
     if (reports.contains(id)) {

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from . import engine
 
-AGENT_POLICY = 3
+AGENT_POLICY = 5
 LEGACY_VERSION = "depo-bo1.1"
 PREVIOUS_VERSION = "depo-bo1.2"
 SCOREBOT_VERSION = "depo-bo1.3"

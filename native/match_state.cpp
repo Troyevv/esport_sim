@@ -137,7 +137,7 @@ class MatchState::Impl {
             opening = std::make_shared<OpeningMap>(objectives);
         }
         if (state.contains("agentPolicy") &&
-            (!state.at("agentPolicy").is_number_integer() || (state.at("agentPolicy") < 1 || state.at("agentPolicy") > 3)))
+            (!state.at("agentPolicy").is_number_integer() || (state.at("agentPolicy") < 1 || state.at("agentPolicy") > 5)))
             throw std::invalid_argument("Неизвестная версия индивидуального ИИ");
         if (freeze <= 0 ||
             (!grid && (state.at("map_version") != build || state.at("checkpointVersion") != 7)) ||
@@ -221,8 +221,12 @@ class MatchState::Impl {
             const Tick observed = call.at("tick");
             if (observed > now || now - observed >= 30)
                 return;
+            if (group_tasks(w) && call.contains("members") && has_value(call.at("members")) &&
+                std::find(call.at("members").begin(), call.at("members").end(), a.at("id")) != call.at("members").end())
+                a["groupInboxTick"] = now;
             auto &previous = a["peerCalls"][sender + "/" + call.at("channel").get<std::string>()];
-            if (previous.is_null() || previous.at("tick") < observed) {
+            if (previous.is_null() || previous.at("tick") < observed ||
+                (previous.at("tick") == observed && call.value("sequence", 0) > previous.value("sequence", 0))) {
                 call["sender"] = sender;
                 call["quality"] = quality;
                 previous = std::move(call);

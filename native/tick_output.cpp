@@ -44,7 +44,7 @@ bool TickSamples::end_of_preview(const Json &world) const {
     return mode == TickOutput::Preview && world.at("phase") == "result";
 }
 void TickSamples::after(const Json &world) {
-    if (mode == TickOutput::Individual) {
+    if (mode == TickOutput::Individual || mode == TickOutput::Group) {
         Json actors = Json::array();
         for (const auto &a : world.at("agents")) {
             auto decision = a.find("decision");
@@ -71,6 +71,22 @@ void TickSamples::after(const Json &world) {
                                           a.at("status"),
                                           a.at("heading"),
                                           a.value("blockedTicks", 0)}));
+            if (mode == TickOutput::Group) {
+                Json lead = nullptr, duty = nullptr;
+                if (a.contains("groupLead")) {
+                    const auto &g = a.at("groupLead");
+                    if (g.at("worked") == world.at("tick"))
+                        lead = Json::array({g.at("ticket"), g.value("mate",Json(nullptr)), g.at("until")});
+                } else if (a.contains("sentFeedback") && a.at("sentFeedback").contains("stage")) {
+                    const auto &g = a.at("sentFeedback").at("stage");
+                    lead = Json::array({Json::array({a.at("id"), "stage", g.at("tick")}), nullptr, g.at("tick").get<Tick>()+18});
+                }
+                if (a.contains("groupDuty")) {
+                    const auto &g = a.at("groupDuty");
+                    duty = Json::array({g.at("ticket"),g.at("state"),g.at("wing")});
+                }
+                actors.back().push_back(Json::array({std::move(lead),std::move(duty)}));
+            }
         }
         samples.push_back(
             Json::array({world.at("tick"), world.at("round"), world.at("phase"), std::move(actors)}));
