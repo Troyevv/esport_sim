@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "economy.hpp"
 #include <algorithm>
 #include <map>
@@ -27,7 +28,7 @@ Items required(const Json &a, const Json &board) {
                 items.push_back(step.at("utility"));
     return items;
 }
-Items grenades_for(const Json &a, bool long_approach, const Json &board) {
+Items grenades_for(const Json &a, bool long_approach, const Json &board, bool revised) {
     Items options = required(a, board), extras;
     const int slot = a.at("slot");
     const auto role = a.at("playingRole");
@@ -41,6 +42,8 @@ Items grenades_for(const Json &a, bool long_approach, const Json &board) {
         extras = {"Дым", "Свет"};
     else
         extras = {"Свет", "Огонь"};
+    if (revised && role == "lurker")
+        extras.insert(extras.begin() + 1, "Ложная");
     if (role == "support")
         extras.insert(extras.end(), {"Свет", "HE"});
     else if (slot < 2)
@@ -86,7 +89,9 @@ void equip_weapon(Json &a, const Json &item, const Json &cfg) {
 }
 
 Json grenade_needs(const Json& w,const Json& cfg,const Json& actor,const std::string& site,const Json& board) {
-    return grenades_for(actor,cfg.at("longApproaches").at(w.at("mapId").get<std::string>()).value(site,false),board);
+    return grenades_for(actor,
+                        cfg.at("longApproaches").at(w.at("mapId").get<std::string>()).value(site, false),
+                        board, spatial_grenades(w));
 }
 Json buy_decision(const Json &w, const Json &cfg, const std::string &side, const Json &call, const Json &site,
                   const Json &board, const Json &requested) {
@@ -102,7 +107,7 @@ Json buy_decision(const Json &w, const Json &cfg, const std::string &side, const
     for (const auto &a : w.at("agents"))
         if (a.at("team") == side) {
             club = a.at("club");
-            auto items = grenades_for(a, long_approach, board);
+            auto items = grenades_for(a, long_approach, board, spatial_grenades(w));
             std::string id = a.at("id");
             needs[id] = items;
             int needed = (a.at("armor") < 45 ? 650 : 0) + (a.at("helmet") == false ? 350 : 0) +

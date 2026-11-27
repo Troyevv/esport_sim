@@ -10,6 +10,7 @@ from .competition_catalog import offset, season, seed_data
 from .competition_catalog import cct_europe
 from . import competition_scene, staff
 from .database import day, require
+from .match_rules import UTILITY_STATS
 
 
 def clock(c, date, title, event=None):
@@ -1218,6 +1219,9 @@ def completed(c, e, report):
         )
         for key in ("k", "d", "a", "damage"):
             target[key] += row[key]
+        for metric in UTILITY_STATS:
+            if metric in row:
+                target[metric] = target.get(metric, 0) + row[metric]
         target["rounds"] += len(report["rounds"])
     schedule_draw(c, event)
 

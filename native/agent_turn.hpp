@@ -37,6 +37,9 @@ class AgentTurn {
     std::optional<Point> flank(Json &order, const Json &home);
     Point search_site(const std::string &site);
     Json postplant(std::string &site, const Json &order, const Json *latest, Point &goal, Point &watch);
+    bool flash_risk(const Json &mate, const Point &burst, int flight) const;
+    Json prepare_flash(Json intent);
+    Json utility_response();
     Json assist_contact(const Squad &allies, const Json &report);
     Json retake_utility(const std::string &site);
     Json spatial_intent();
@@ -47,6 +50,7 @@ class AgentTurn {
     Json select_contact() const;
     void service_weapon();
     Json seek_cover(const Json &contact, bool requested = false);
+    Json grid_cover(const Json &contact);
     Json saved_exit();
     Json duel(const Json &contact);
     Json last_burst();

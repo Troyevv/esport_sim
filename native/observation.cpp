@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "radio.hpp"
 #include "observation.hpp"
 #include <algorithm>
@@ -111,11 +112,53 @@ void observe_contacts(Json &w, const MapSensors &sensors, const Objectives &site
         alive.push_back(i);
         inputs.push_back({xyz(a), a.at("heading"), a.at("team") == "T", a.at("blind") > now});
     }
+    const bool revised = spatial_grenades(w);
     std::vector<Hazard> smoke;
+    struct Screen {
+        Point center;
+        double radius;
+        size_t begin, end;
+        Json owner;
+        int blocked;
+    };
+    std::vector<Screen> screens;
     for (const auto &f : w.at("effects"))
-        if (f.at("kind") == "Дым" && f.at("land") <= now && f.at("end") > now)
-            smoke.emplace_back(xyz(f), f.at("radius"));
-    const auto seen = sensors.observe(inputs, smoke);
+        if (f.at("kind") == "Дым" && f.at("land") <= now && f.at("end") > now) {
+            const auto begin = smoke.size();
+            append_volume(f, smoke);
+            if (revised)
+                screens.push_back(
+                    {xyz(f), 1.3 * f.at("radius").get<double>(), begin, smoke.size(), f.at("player"), 0});
+        }
+    auto seen = sensors.observe(inputs, revised ? std::vector<Hazard>{} : smoke);
+    if (revised) {
+        for (size_t i = 0; i < alive.size(); ++i) {
+            auto &viewer = roster.at(alive[i]);
+            const bool impaired_vision = viewer.value("flashLevel", 0.) > .01;
+            if (!impaired_vision && screens.empty())
+                continue;
+            std::erase_if(seen[i], [&](size_t j) {
+                const Point p = inputs[j].position;
+                if (impaired_vision && !recognizes(viewer, p, now)) {
+                    impaired(viewer, now);
+                    return true;
+                }
+                for (auto &screen : screens) {
+                    if (!near_segment(inputs[i].position, p, screen.center, screen.radius))
+                        continue;
+                    for (size_t k = screen.begin; k < screen.end; ++k)
+                        if (near_segment(inputs[i].position, p, smoke[k].first, smoke[k].second)) {
+                            ++screen.blocked;
+                            return true;
+                        }
+                }
+                return false;
+            });
+        }
+    }
+    for (const auto &screen : screens)
+        if (screen.blocked)
+            count_utility(w, screen.owner, "smokeScreenTicks", screen.blocked);
     for (std::size_t i = 0; i < alive.size(); ++i) {
         auto &a = roster.at(alive[i]);
         Json previous = std::move(a.at("visible"));
@@ -140,9 +183,14 @@ void observe_contacts(Json &w, const MapSensors &sensors, const Objectives &site
                     ++nearby;
             }
             auto sight = sighting(a, b, prior, previous, nearby, now);
-            if (!w.at("action").is_null() && w.at("action").at("player") == id)
+            const bool detail = a.value("flashLevel", 0.) < .35;
+            if (!detail) {
+                for (auto key : {"weapon", "bodySector", "direction", "motionRun", "speed", "motionHistory"})
+                    sight.erase(key);
+            }
+            if (detail && !w.at("action").is_null() && w.at("action").at("player") == id)
                 sight["interaction"] = w.at("action").at("kind");
-            if (b.at("team") == "T" && w.at("bomb").at("carrier") == id)
+            if (detail && b.at("team") == "T" && w.at("bomb").at("carrier") == id)
                 sight["carryingC4"] = true;
             a.at("visible").push_back(id);
             a.at("knowledge")[id] = sight;

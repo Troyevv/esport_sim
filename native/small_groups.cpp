@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "agent_helpers.hpp"
 #include "radio.hpp"
 
@@ -79,10 +80,11 @@ bool AgentTurn::group_lane(const Point &point) const {
     const auto pos = actor_point(a);
     return a.at("blind") <= now && a.at("reloadAt") == 0 && a.at("ammo") > 0 && a.at("ready") <= now &&
            in_range_fov(a, point) &&
-           (grid ? grid->clear(xy(a), {point[0], point[1]}) : !arena.objectives().map().hit(pos, point, 1, 64, 64)) &&
+           (grid ? grid->clear(xy(a), {point[0], point[1]})
+                 : !arena.objectives().map().hit(pos, point, 1, 64, 64)) &&
            std::ranges::none_of(w.at("effects"), [&](const Json &f) {
                return f.at("kind") == "Дым" && f.at("land") <= now && now < f.at("end") &&
-                      near_segment(pos, point, actor_point(f), f.at("radius"));
+                      crosses_volume(f, pos, point);
            });
 }
 

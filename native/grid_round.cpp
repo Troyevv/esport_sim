@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "radio.hpp"
 #include "grid_round.hpp"
 #include "economy.hpp"
@@ -95,11 +96,12 @@ void grid_observe(Json &w, const GridMap &grid) {
         if (a.at("blind") > now)
             continue;
         for (auto &b : w.at("agents")) {
-            if (b.at("hp") == 0 || b.at("team") == a.at("team") || !grid.sees(a, b))
+            if (b.at("hp") == 0 || b.at("team") == a.at("team") || !grid.sees(a, b) ||
+                !recognizes(a, actor_point(b), now))
                 continue;
             if (std::ranges::any_of(w.at("effects"), [&](auto &f) {
                     return f.at("kind") == "Дым" && f.at("land") <= now && now < f.at("end") &&
-                           near_segment(actor_point(a), actor_point(b), actor_point(f), f.at("radius"));
+                           crosses_volume(f, actor_point(a), actor_point(b));
                 }))
                 continue;
             auto id = b.at("id").get<std::string>();

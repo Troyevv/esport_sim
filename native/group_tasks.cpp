@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "group_tasks.hpp"
 
 namespace esport {
@@ -36,10 +37,12 @@ Json support_flash(AgentTurn &t, const Json &offer, const Point &pos) {
     const double radius = t.cfg.at("utility").at("Свет")[0];
     Point target = aim;
     for (size_t i = 0; i < 3; ++i)
-        target[i] += (aim[i] - origin[i]) * radius / reach;
+        target[i] += (aim[i] - origin[i]) * radius * (spatial_grenades(t.w) ? .45 : 1.) / reach;
     const int flight = std::max(3, int(std::nearbyint(distance(pos, target) / 7)));
     const auto land = nav.grenade(pos, target, flight).back();
     if (distance(land, target) > 5 || std::ranges::any_of(t.squad, [&](auto m) {
+            if (spatial_grenades(t.w))
+                return t.flash_risk(*m, land, flight);
             return distance(actor_point(*m), land) < radius + 3 && !nav.hit(land, actor_point(*m), 1, 5, 64);
         }))
         return nullptr;

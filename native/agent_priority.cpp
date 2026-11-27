@@ -1,8 +1,14 @@
+#include "grenades.hpp"
 #include "agent_helpers.hpp"
 #include "radio.hpp"
 namespace esport {
 Json AgentTurn::priority_intent() {
 
+    if (spatial_grenades(w)) {
+        auto reaction = utility_response();
+        if (!reaction.is_null())
+            return reaction;
+    }
     auto intent = individual ? personal_decision() : contact_decision();
     if (!intent.is_null())
         return intent;

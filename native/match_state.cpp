@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "radio.hpp"
 #include "match_state.hpp"
 #include "agent_turn.hpp"
@@ -136,9 +137,13 @@ class MatchState::Impl {
             objectives = std::make_shared<Objectives>(grid);
             opening = std::make_shared<OpeningMap>(objectives);
         }
-        if (state.contains("agentPolicy") &&
-            (!state.at("agentPolicy").is_number_integer() || (state.at("agentPolicy") < 1 || state.at("agentPolicy") > 5)))
+        if (state.contains("agentPolicy") && (!state.at("agentPolicy").is_number_integer() ||
+                                              (state.at("agentPolicy") < 1 || state.at("agentPolicy") > 6)))
             throw std::invalid_argument("Неизвестная версия индивидуального ИИ");
+        if (spatial_grenades(state) && config.contains("utility")) {
+            config.at("utility").at("Дым")[1] = 200;
+            config.at("utility").at("Ложная")[1] = 150;
+        }
         if (freeze <= 0 ||
             (!grid && (state.at("map_version") != build || state.at("checkpointVersion") != 7)) ||
             !(state.at("rules") == rules ||
@@ -244,18 +249,27 @@ class MatchState::Impl {
                 (!a.contains("pressureCall") || !has_value(a.at("pressureCall")) ||
                  call.at("tick") > a.at("pressureCall").at("tick")))
                 a["pressureCall"] = call;
+        } else if (m.contains("flashWarning")) {
+            a["flashWarning"] = m.at("flashWarning");
         } else if (m.contains("friendlyUtility")) {
             const auto &cue = m.at("friendlyUtility");
             if (cue.contains("cast")) {
                 const auto &cast = cue.at("cast");
                 if (cue.contains("openingCall"))
                     a[cue.at("openingCall") == "flash" ? "pushFlash" : "openingThrows"][cue.at("site").get<std::string>()] = sender;
+                if (spatial_grenades(w) && cast.at("item") == "Свет" && !a.contains("flashWarning"))
+                    a["flashWarning"] = nullptr;
                 auto &calls = a["crossingCalls"];
                 if (calls.is_null())
                     calls = Json::array();
                 calls.erase(std::remove_if(calls.begin(), calls.end(), [&](const Json &c) {
                     return c.at("end") <= now;
                 }), calls.end());
+                if (spatial_grenades(w) && cast.at("item") == "Свет" && cast.contains("land") &&
+                    now < cast.at("land"))
+                    a["flashWarning"] = {{"point", cast.at("point")},
+                                         {"land", cast.at("land")},
+                                         {"ticket", cast.value("ticket", Json(nullptr))}};
                 if (cast.at("end") > now)
                     calls.push_back(cast);
                 if (cast.at("item") != "Дым" && cast.at("item") != "Огонь")
@@ -403,6 +417,7 @@ class MatchState::Impl {
                 auto intent = turn.priority_intent();
                 if (intent.is_null())
                     intent = turn.spatial_intent();
+                intent = turn.prepare_flash(std::move(intent));
                 turn.finish(intent);
                 intents.push_back(
                     Json{{"actor", actor->at("id")}, {"kind", intent[0]}, {"target", std::move(intent[1])}});
@@ -559,7 +574,7 @@ std::string MatchState::priority_intent(const std::string &id, const std::string
     auto result = turn.priority_intent();
     if (result.is_null())
         result = turn.spatial_intent();
-    auto encoded = result.dump();
+    auto encoded = turn.prepare_flash(std::move(result)).dump();
     impl_->state.swap(staged);
     return encoded;
 }

@@ -4,7 +4,11 @@ from dataclasses import dataclass
 
 from . import engine
 
-AGENT_POLICY = 5
+AGENT_POLICY = 6
+UTILITY_STATS = ("flashesThrown", "enemiesFlashed", "alliesFlashed", "selfFlashes",
+                 "enemyBlindTicks", "flashAssists", "heThrown", "heDamage", "smokesThrown",
+                 "smokeScreenTicks", "smokesOpened", "smokeShots", "firesQuenched",
+                 "fireThrown", "fireDamage", "decoysThrown", "decoyHearings")
 LEGACY_VERSION = "depo-bo1.1"
 PREVIOUS_VERSION = "depo-bo1.2"
 SCOREBOT_VERSION = "depo-bo1.3"

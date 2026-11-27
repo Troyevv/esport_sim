@@ -330,6 +330,8 @@ def project(w, view="full"):
         if view != "full" and s["stage"] == "playing":
             own = match_score.side_team(w, view)
             for row in public["stats"]:
+                for metric in match.UTILITY_STATS:
+                    row.pop(metric, None)
                 if row["teamId"] != own:
                     row["spent"] = None
     return public

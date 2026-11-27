@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "radio.hpp"
 #include "agent_helpers.hpp"
 #include <limits>
@@ -130,6 +131,8 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
                 }))
                 continue;
             if (std::ranges::any_of(squad, [&](auto m) {
+                    if (g == "Свет" && spatial_grenades(w))
+                        return flash_risk(*m, p, std::max(3, int(distance(pos, p) / 7)));
                     return distance(actor_point(*m), p) < (g == "Свет" ? radius : 18);
                 }))
                 continue;

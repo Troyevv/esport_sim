@@ -117,6 +117,6 @@ def next_buy(world, side):
         return "Эко"
     keys = ("team", "club", "id", "slot", "playingRole", "armor", "helmet", "kit",
             "weapon", "holster", "utility", "cash")
-    state = {k:world[k] for k in ("round", "score", "streak", "mapId", "opponentEconomy") if k in world}
+    state = {k:world[k] for k in ("round", "score", "streak", "mapId", "opponentEconomy", "agentPolicy") if k in world}
     state["agents"] = [{k:a[k] for k in keys} for a in world["agents"] if a["team"] == side]
     return _match_native.project_buy(json.dumps(state), side, "" if board else world.get("call") or "", _ECONOMY)

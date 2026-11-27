@@ -100,7 +100,7 @@ def upgrade_match(db, world):
 
 
 def validate_current(world):
-    if "agentPolicy" in world and (type(world["agentPolicy"]) is not int or world["agentPolicy"] not in (1, 2, 3, 4, 5)):
+    if "agentPolicy" in world and (type(world["agentPolicy"]) is not int or world["agentPolicy"] not in (1, 2, 3, 4, 5, 6)):
         raise CheckpointError("Неизвестная версия индивидуального ИИ")
     if world.get("mapId"):
         from math import isfinite
