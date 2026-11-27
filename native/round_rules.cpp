@@ -17,6 +17,7 @@ bool has(const Json &entries, const Json &value) {
     return std::find(entries.begin(), entries.end(), value) != entries.end();
 }
 
+} // namespace
 void pay(Json &w, Json &a, int delta, const std::string &reason, int cap) {
     const int before = number(a, "cash"), after = std::min(cap, before + delta);
     if (after < 0)
@@ -29,6 +30,7 @@ void pay(Json &w, Json &a, int delta, const std::string &reason, int cap) {
     event.update(Json{{"player", a.at("id")}, {"amount", amount}, {"balance", after}, {"reason", reason}});
     a.at("cash") = after;
 }
+namespace {
 int loss_income(const Json &rules, int level) {
     return std::min(number(rules, "lossMax"), number(rules, "lossBase") + number(rules, "lossStep") * level);
 }

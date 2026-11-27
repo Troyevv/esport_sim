@@ -6,9 +6,7 @@
 #include <stdexcept>
 
 namespace esport {
-namespace {
-bool in_smoke(const Point &a, const Point &b, const Hazard &fog) {
-    const auto &[p, radius] = fog;
+bool near_segment(const Point &a, const Point &b, const Point &p, double radius) {
     const Point delta{b[0] - a[0], b[1] - a[1], b[2] - a[2]};
     const auto [dx, dy, dz] = delta;
     const double length = dx * dx + dy * dy + dz * dz;
@@ -18,6 +16,7 @@ bool in_smoke(const Point &a, const Point &b, const Hazard &fog) {
     const Point nearest{a[0] + ratio * dx, a[1] + ratio * dy, a[2] + ratio * dz};
     return distance(nearest, p) <= radius;
 }
+namespace {
 double resistance(const std::string &name) {
     if (name == "glass")
         return .08;
@@ -32,6 +31,14 @@ double resistance(const std::string &name) {
     return -1.;
 }
 } // namespace
+
+std::array<int, 2> sound_direction(const Point &pos, const Point &source) {
+    const double theta = std::atan2(source[1] - pos[1], source[0] - pos[0]);
+    const int sector = int(std::nearbyint(theta * 8 / (2 * std::numbers::pi)));
+    constexpr std::array<std::array<int, 2>, 8> directions{
+        {{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}}};
+    return directions[(sector + 8) % 8];
+}
 
 MapSensors::MapSensors(std::shared_ptr<const PhysicalNavigation> map, std::vector<std::string> materials)
     : map_(std::move(map)), materials_(std::move(materials)) {
@@ -57,7 +64,8 @@ std::vector<std::vector<std::size_t>> MapSensors::observe(const std::vector<Obse
                 continue;
             if (map_->hit(a, b, 1, 64, 64, true))
                 continue;
-            if (!std::ranges::any_of(smoke, [&](const auto &fog) { return in_smoke(a, b, fog); }))
+            if (!std::ranges::any_of(
+                    smoke, [&](const auto &fog) { return near_segment(a, b, fog.first, fog.second); }))
                 seen[i].push_back(j);
         }
     }
@@ -89,11 +97,7 @@ std::vector<Heard> MapSensors::hear(const Point &source, double radius,
         const double reach = radius * transmission * (.78 + listener.reading / 460.);
         if (d + .8 * std::abs(source[2] - pos[2]) > reach)
             continue;
-        const double theta = std::atan2(source[1] - pos[1], source[0] - pos[0]);
-        const int sector = int(std::nearbyint(theta * 8 / (2 * std::numbers::pi)));
-        constexpr std::array<std::array<int, 2>, 8> directions{
-            {{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}}};
-        const auto [dx, dy] = directions[(sector + 8) % 8];
+        const auto [dx, dy] = sound_direction(pos, source);
         double band = d < 25 ? 14 : (d < 62 ? 43 : 83);
         const double step = band / std::hypot(dx, dy);
         cues.push_back({i, {pos[0] + dx * step, pos[1] + dy * step, pos[2]}, .35 + .45 * (1 - d / reach)});

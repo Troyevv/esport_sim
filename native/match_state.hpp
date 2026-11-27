@@ -6,6 +6,7 @@
 #include <vector>
 
 namespace esport {
+class PhysicalNavigation;
 // Owns a single detailed match. External snapshots are copied only at an explicit
 // boundary. No Python objects or callbacks are retained by the owner.
 class MatchState {
@@ -18,6 +19,10 @@ class MatchState {
     int advance_intermission(int ticks);
     void deliver_radio();
     void attach_spawns(const std::string &map, const std::string &spawns);
+    void attach_physics(const std::string &map, std::shared_ptr<const PhysicalNavigation> planner,
+                        std::vector<std::string> materials);
+    void apply_effects();
+    void resolve_actions(const std::string &intents);
     void finish_round(const std::string &side, const std::string &reason);
 
   private:

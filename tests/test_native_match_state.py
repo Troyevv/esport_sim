@@ -147,3 +147,64 @@ def test_result_deadline_resets_and_archives_native_round(nuke_spawns,monkeypatc
         match.advance(w)
     assert owner.advance_intermission(3) == 3
     assert_same(owner,w)
+
+
+@pytest.fixture(scope="module")
+def combat_arenas(nuke_spawns):
+    from zipfile import ZipFile
+    from backend.native_physics import NativePerceptionMap
+
+    folder = nuke_spawns.folder
+    with ZipFile(Path(__file__).parents[1] / "resources/cs2/26879581/de_nuke.zip") as pack:
+        for member in ("collision.json", "collision.bin"):
+            (folder / member).write_bytes(pack.read(member))
+    return nuke_spawns, NativePerceptionMap(folder)
+
+
+def test_combat_resolves_damage_assists_drops_rng_and_rollback(combat_arenas):
+    old, new = combat_arenas
+    w = read_checkpoint()
+    shooter, target = w["agents"][0], w["agents"][5]
+    ids = {a["id"]: a for a in w["agents"]}
+    for a in w["agents"]:
+        a.update(hp=0, visible=[])
+    shooter.update(hp=100, weapon="Nova", ammo=5,rng=52)
+    target.update(hp=1, armor=1, helmet=True,
+                  attackers={w["agents"][1]["id"]:42}, x=shooter["x"] + 1, y=shooter["y"], z=shooter["z"])
+    w["bomb"]["carrier"] = target["id"]
+    sight = {k:target[k] for k in ("id","x","y","z")}
+    owner = native_match_state.restore(encode_world(w),physics=new)
+    action = dict(actor=shooter["id"],kind="shoot",target=sight)
+    before = owner.snapshot()
+    with pytest.raises(ValueError):
+        owner.resolve_actions(encode_world([action, dict(actor="missing",kind="shoot",target=sight)]))
+    assert owner.snapshot() == before
+    match.resolve_attacks(w,[(shooter,"shoot",sight)], [shooter,target],ids,old)
+    owner.resolve_actions(encode_world([action]))
+    assert w["kills"] and not target["hp"]
+    assert w["kills"][-1]["assists"] == [w["agents"][1]["id"]]
+    assert_same(owner,w)
+
+
+def encode_world(v):
+    return json.dumps(v, ensure_ascii=False)
+
+
+@pytest.mark.parametrize("kind",["Дым","Свет","HE","Огонь","Ложная"])
+def test_throw_and_effects_on_landing(combat_arenas,kind):
+    old,new = combat_arenas
+    w = read_checkpoint()
+    actor = w["agents"][0]
+    actor["utility"] = [kind]
+    target = {k: actor[k] for k in ("x","y","z")} | {"utility":kind,"purpose":"Сценарий"}
+    ids = {a["id"]: a for a in w["agents"]}
+    w["effects"], w["recentEffects"] = [], []
+    owner = native_match_state.restore(encode_world(w),physics=new)
+    match_ai.throw(w,actor,target,old)
+    owner.resolve_actions(encode_world([dict(actor=actor["id"],kind="throw",target=target)]))
+    assert_same(owner,w)
+    w["tick"] = w["effects"][0]["land"]
+    owner = native_match_state.restore(encode_world(w),physics=new)
+    match_ai.apply_effects(w,ids,old)
+    owner.apply_effects()
+    assert_same(owner,w)

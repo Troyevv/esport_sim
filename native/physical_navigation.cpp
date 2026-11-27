@@ -427,3 +427,11 @@ std::optional<Impact> PhysicalNavigation::hit(const Point &start, const Point &e
     return collision_->trace(a, b, mask);
 }
 } // namespace esport
+
+namespace esport {
+std::optional<Point> PhysicalNavigation::nav_center(const Point &pos) const {
+    if (auto area = surfaces_->locate(world(pos), 96))
+        return centers_.at(*area);
+    return std::nullopt;
+}
+} // namespace esport

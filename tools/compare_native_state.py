@@ -14,9 +14,12 @@ def encode(world):
     return json.dumps(world, ensure_ascii=False, separators=(",", ":"))
 
 
-def compare(checkpoint):
+def compare(checkpoint, combat=False):
     world = json.loads(gzip.decompress(checkpoint.read_bytes()))
     space = cs2_maps.get(world["mapId"])
+    if combat:
+        from backend.native_physics import NativePerceptionMap
+        physics = NativePerceptionMap(space.folder)
     counts = Counter()
     radio_types = set()
     ref_finish, ref_deliver = match.finish_round, match_ai.deliver_radio
@@ -46,7 +49,36 @@ def compare(checkpoint):
             same(owner, "radio")
             radio_types.update(kinds)
 
+    seen_attacks, seen_effects = set(), set()
+    ref_attacks, ref_effects = match.resolve_attacks, match_ai.apply_effects
+
+    def attacks(w, order, players, ids, arena):
+        actions = [dict(actor=a["id"], kind=k, target=t)
+                   for a, k, t in order if a["hp"] and k in ("shoot", "throw")]
+        types = {(a["kind"], a["target"].get("utility") if a["kind"] == "throw"
+                  else ids[a["actor"]]["weapon"]) for a in actions}
+        owner = native_match_state.restore(encode(w), physics=physics) if types - seen_attacks else None
+        if owner is not None:
+            owner.resolve_actions(encode(actions))
+        ref_attacks(w, order, players, ids, arena)
+        if owner is not None:
+            same(owner, "attacks")
+            seen_attacks.update(types)
+
+    def effects(w, ids, arena):
+        types = {f["kind"] for f in w["effects"] if f["land"] == w["tick"]}
+        owner = native_match_state.restore(encode(w), physics=physics) if types - seen_effects else None
+        if owner is not None:
+            owner.apply_effects()
+        ref_effects(w, ids, arena)
+        if owner is not None:
+            same(owner, "effects")
+            seen_effects.update(types)
+
     with ExitStack() as patches:
+        if combat:
+            patches.enter_context(patch.object(match, "resolve_attacks", attacks))
+            patches.enter_context(patch.object(match_ai, "apply_effects", effects))
         patches.enter_context(patch.object(match, "finish_round", finish))
         patches.enter_context(patch.object(match_ai, "deliver_radio", deliver))
         while world["phase"] != "finished":
@@ -66,5 +98,6 @@ def compare(checkpoint):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("checkpoint", type=Path)
+    parser.add_argument("--combat", action="store_true", help="Also compare first observed attack/utility kinds")
     args = parser.parse_args()
-    print(json.dumps(compare(args.checkpoint), ensure_ascii=False))
+    print(json.dumps(compare(args.checkpoint, args.combat), ensure_ascii=False))

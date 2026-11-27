@@ -1,4 +1,5 @@
 #include "match_state.hpp"
+#include "combat.hpp"
 #include "navigation.hpp"
 #include "round_rules.hpp"
 
@@ -51,6 +52,7 @@ bool has_value(const Json &v) {
 class MatchState::Impl {
   public:
     Json state, config, spawns;
+    std::unique_ptr<Combat> combat;
     std::string rules;
     std::set<std::string> calls;
     int freeze;
@@ -308,5 +310,35 @@ void MatchState::attach_spawns(const std::string &map, const std::string &serial
     if (impl_->state.at("mapId") != map || !impl_->spawns.is_null())
         throw std::invalid_argument("Таблица старта уже задана или принадлежит другой карте");
     impl_->spawns.swap(parsed);
+}
+
+void MatchState::attach_physics(const std::string &map, std::shared_ptr<const PhysicalNavigation> planner,
+                                std::vector<std::string> materials) {
+    std::scoped_lock lock(impl_->mutex);
+    if (impl_->state.at("mapId") != map || impl_->combat)
+        throw std::invalid_argument("Неожиданная физическая карта");
+    impl_->combat = std::make_unique<Combat>(std::move(planner), std::move(materials));
+}
+void MatchState::resolve_actions(const std::string &input) {
+    auto intents = Json::parse(input);
+    std::scoped_lock lock(impl_->mutex);
+    if (!impl_->combat)
+        throw std::invalid_argument("Физика карты недоступна");
+    if (impl_->state.at("phase") != "live" && impl_->state.at("phase") != "planted")
+        throw std::invalid_argument("Действия требуют активной фазы раунда");
+    auto staged = impl_->state;
+    impl_->combat->execute(staged, impl_->config, intents);
+    impl_->state.swap(staged);
+}
+
+void MatchState::apply_effects() {
+    std::scoped_lock lock(impl_->mutex);
+    if (!impl_->combat)
+        throw std::invalid_argument("Физика карты недоступна");
+    if (impl_->state.at("phase") != "live" && impl_->state.at("phase") != "planted")
+        throw std::invalid_argument("Эффекты требуют активной фазы раунда");
+    auto staged = impl_->state;
+    impl_->combat->effects(staged, impl_->config);
+    impl_->state.swap(staged);
 }
 } // namespace esport
