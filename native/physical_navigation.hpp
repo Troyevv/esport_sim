@@ -43,6 +43,7 @@ class PhysicalNavigation {
 
     std::optional<Impact> hit(const Point &start, const Point &end, unsigned mask, double up,
                               double target_up, bool canonical = false) const;
+    std::optional<Point> nav_center(const Point &pos) const;
     MoveResult walk(MotionState &actor, const Point &goal, double pace,
                     const std::vector<Hazard> &fire) const;
     std::vector<Point> grenade(const Point &origin, const Point &target, int flight) const;

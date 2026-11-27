@@ -1,4 +1,5 @@
 #include "match_state.hpp"
+#include "physical_navigation.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -22,6 +23,9 @@ void bind_state(py::module_ &module) {
              })
         .def("command", &MatchState::command, py::arg("kind"), py::arg("value") = "", Release())
         .def("advance_intermission", &MatchState::advance_intermission, Release())
+        .def("attach_physics", &MatchState::attach_physics, Release())
+        .def("apply_effects", &MatchState::apply_effects, Release())
+        .def("resolve_actions", &MatchState::resolve_actions, Release())
         .def("attach_spawns", &MatchState::attach_spawns, Release())
         .def("finish_round", &MatchState::finish_round, Release())
         .def("deliver_radio", &MatchState::deliver_radio, Release());

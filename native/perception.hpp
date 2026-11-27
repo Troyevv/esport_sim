@@ -2,6 +2,8 @@
 #include "physical_navigation.hpp"
 
 namespace esport {
+std::array<int, 2> sound_direction(const Point &pos, const Point &source);
+bool near_segment(const Point &a, const Point &b, const Point &p, double radius);
 struct Observer {
     Point position;
     double heading;

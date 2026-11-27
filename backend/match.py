@@ -796,6 +796,59 @@ def objective(w, a, kind, site=None):
         finish_round(w, "CT", "Обезвреживание")
 
 
+def resolve_attacks(w, order, players, ids, space):
+    now = w["tick"]
+    for a, kind, target in order:
+        if not a["hp"] or kind not in ("shoot", "throw"):
+            continue
+        if kind == "throw":
+            ai.throw(w, a, target, space)
+        else:
+            victim = ids.get(target.get("id"))
+            if space and "id" not in target:
+                # Collision is resolved by the world after all players commit
+                # their intents. An empty aim point consumes the same shot.
+                crossed = (p for p in players if p is not a and p["hp"] and
+                           ai.near_line(a,target,p,3))
+                victim = min(crossed,key=lambda p: ai.distance(a,p),default=None)
+            ai.shoot(w, a, target, victim, space)
+            if space and a["team"] == "T" and w["phase"] == "live":
+                radius = 75 if a["weapon"] in ("USP", "M4A1-S") else 128
+                ai.heard_action(w,space,a,players,"Выстрел",radius)
+            for listener in players:
+                # A passing shot is perceptible at the listener, even when the
+                # shooter is outside their vision or normal local audio radius.
+                if (space and listener is not a and listener["hp"] and
+                        a["id"] not in listener["visible"] and
+                        ai.near_line(a,target,listener,6) and
+                        space.hit(ai.point(a),ai.point(listener),4,56) is None):
+                    listener["incoming"] = dict(tick=now,bearing=ai.cs2_play.sound_bearing(listener,a))
+                    if now >= listener.get("nextPressureCall",0):
+                        delay = ai.radio_delay(profile(w,listener)["skills"])
+                        listener.setdefault("squadPressure",{})[listener["id"]] = dict(listener["incoming"],origin=list(ai.point(listener)))
+                        listener["nextPressureCall"] = now + 10 + delay
+                        w["messages"].append(dict(team=listener["team"],sender=listener["id"],
+                            pressure=dict(listener["incoming"],origin=list(ai.point(listener))),
+                            due=now+delay))
+                if (
+                    listener["team"] != a["team"]
+                    and listener["hp"]
+                    and a["id"] not in listener["visible"]
+                    and not (space and listener["team"] == "CT" and w["phase"] == "live")
+                    and ai.distance(a, listener) < 55
+                ):
+                    # Sound identifies a sector, never a tracked live enemy position.
+                    p = ai.sound_position(space,a)
+                    key = "Шум"
+                    cue = dict(id=key, **p, tick=now, source="Слух")
+                    listener["knowledge"][key] = cue
+                    if space and now >= listener.get("nextSoundCall", 0):
+                        delay = ai.radio_delay(profile(w, listener)["skills"])
+                        listener["nextSoundCall"] = now + 10 + delay
+                        w["messages"].append(dict(team=listener["team"], sender=listener["id"],
+                                                  sight=cue, due=now+delay))
+
+
 def advance(w):
     if w["phase"] in ("finished", "timeout"):
         return
@@ -977,55 +1030,7 @@ def advance(w):
                 )
     # Alternate initiative on a tick. A dead or newly occluded target cannot be hit.
     order = intents if now % 2 else intents[::-1]
-    for a, kind, target in order:
-        if not a["hp"] or kind not in ("shoot", "throw"):
-            continue
-        if kind == "throw":
-            ai.throw(w, a, target, space)
-        else:
-            victim = ids.get(target.get("id"))
-            if space and "id" not in target:
-                # Collision is resolved by the world after all players commit
-                # their intents. An empty aim point consumes the same shot.
-                crossed = (p for p in players if p is not a and p["hp"] and
-                           ai.near_line(a,target,p,3))
-                victim = min(crossed,key=lambda p: ai.distance(a,p),default=None)
-            ai.shoot(w, a, target, victim, space)
-            if space and a["team"] == "T" and w["phase"] == "live":
-                radius = 75 if a["weapon"] in ("USP", "M4A1-S") else 128
-                ai.heard_action(w,space,a,players,"Выстрел",radius)
-            for listener in players:
-                # A passing shot is perceptible at the listener, even when the
-                # shooter is outside their vision or normal local audio radius.
-                if (space and listener is not a and listener["hp"] and
-                        a["id"] not in listener["visible"] and
-                        ai.near_line(a,target,listener,6) and
-                        space.hit(ai.point(a),ai.point(listener),4,56) is None):
-                    listener["incoming"] = dict(tick=now,bearing=ai.cs2_play.sound_bearing(listener,a))
-                    if now >= listener.get("nextPressureCall",0):
-                        delay = ai.radio_delay(profile(w,listener)["skills"])
-                        listener.setdefault("squadPressure",{})[listener["id"]] = dict(listener["incoming"],origin=list(ai.point(listener)))
-                        listener["nextPressureCall"] = now + 10 + delay
-                        w["messages"].append(dict(team=listener["team"],sender=listener["id"],
-                            pressure=dict(listener["incoming"],origin=list(ai.point(listener))),
-                            due=now+delay))
-                if (
-                    listener["team"] != a["team"]
-                    and listener["hp"]
-                    and a["id"] not in listener["visible"]
-                    and not (space and listener["team"] == "CT" and w["phase"] == "live")
-                    and ai.distance(a, listener) < 55
-                ):
-                    # Sound identifies a sector, never a tracked live enemy position.
-                    p = ai.sound_position(space,a)
-                    key = "Шум"
-                    cue = dict(id=key, **p, tick=now, source="Слух")
-                    listener["knowledge"][key] = cue
-                    if space and now >= listener.get("nextSoundCall", 0):
-                        delay = ai.radio_delay(profile(w, listener)["skills"])
-                        listener["nextSoundCall"] = now + 10 + delay
-                        w["messages"].append(dict(team=listener["team"], sender=listener["id"],
-                                                  sight=cue, due=now+delay))
+    resolve_attacks(w, order, players, ids, space)
     action = w["action"]
     if action and not any(
         a["hp"] and a["id"] == action["player"] and kind == "objective"
