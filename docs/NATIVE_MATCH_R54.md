@@ -295,3 +295,5 @@ python -m tools.compare_full_match tests/fixtures/r54/de_nuke.checkpoint.json.gz
 python -m tools.measure_detailed_match --native-core --map de_nuke --seed 41000 --checkpoint tests/fixtures/r54/de_nuke.checkpoint.json.gz --expect tests/fixtures/r54/reference.json --out build/r54-owner
 python -m tools.soak_native_match tests/fixtures/r54/de_ancient.checkpoint.json.gz
 ```
+
+Ручной повтор на Ancient 16 раз восстановил один и тот же активный матч и провёл суммарно 378 080 тиков. Все финальные снимки побайтно одинаковы. RSS после освобождения владельца вырос с 179,176 до 184,621 МиБ при прогреве общей карты и оставался 184,621 МиБ на последних десяти измерениях. На этом checkpoint размером 70 239 байт пустой вызов через pybind11 занял в среднем 0,160 мкс, сериализация снимка — 565 мкс, сериализация вместе с разбором Python — 2 524 мкс. Эти операции выполняются на границе публикации или сохранения. Решения отдельных игроков внутри тика не пересекают языковую границу.
