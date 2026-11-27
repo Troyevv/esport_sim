@@ -89,6 +89,19 @@ def prepare():
         run("Установка зависимостей Python", [py, "-m", "pip", "install", "-r", requirements])
         stamp(py_stamp, deps + installed_python(requirements))
 
+    native_lock = ROOT / "requirements-native.txt"
+    native_sources = [native_lock, ROOT / "tools/build_native.py", *(ROOT / "native").rglob("*")]
+    native_key = fingerprint(native_sources, ROOT, pyversion + str(VENV))
+    extension = ROOT / "backend" / ("_match_native" + subprocess.check_output(
+        [py, "-c", "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))"], text=True).strip())
+    native_stamp = CACHE / "native.sha256"
+    if not extension.is_file() or read_stamp(native_stamp) != native_key + fingerprint([extension], ROOT):
+        run("Установка зависимостей сборки C++", [py, "-m", "pip", "install", "-r", native_lock])
+        run("Сборка матчевого модуля (требуются Visual Studio Build Tools с C++ x64)",
+            [py, "-m", "tools.build_native"])
+        run("Проверка нативного модуля", [py, "-c", "from backend import _match_native"])
+        stamp(native_stamp, native_key + fingerprint([extension], ROOT))
+
     manifest = [FRONT / "package.json", FRONT / "package-lock.json"]
     js_deps = fingerprint(manifest, FRONT, version)
     modules = FRONT / "node_modules"

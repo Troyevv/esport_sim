@@ -40,3 +40,4 @@ Thumbs.db
 *.club-originals.sqlite*
 *.esportraits
 *.portraits.sqlite*
+/backend/_match_native*.so
