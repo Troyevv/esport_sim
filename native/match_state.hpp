@@ -1,5 +1,6 @@
 #pragma once
 
+#include "physical_navigation.hpp"
 #include <memory>
 #include <set>
 #include <string>
@@ -16,6 +17,10 @@ class MatchState {
                std::set<std::string> calls, int freeze_ticks, int map_build, const std::string &rulebook);
     ~MatchState();
     std::string snapshot() const;
+    std::string board_step(const std::string &id, const std::string &device, const std::vector<Hazard> &fire);
+    void assign_board(const std::string &board);
+    std::string buy_decision(const std::string &side, const std::string &options) const;
+    void buy_equipment(const std::string &side, const std::string &strategy, const std::string &board);
     void command(const std::string &kind, const std::string &value);
     int advance_intermission(int ticks);
     void deliver_radio();

@@ -1,7 +1,9 @@
 #include "match_state.hpp"
+#include "economy.hpp"
 #include "navigation.hpp"
 #include "observation.hpp"
 #include "round_rules.hpp"
+#include "tactic_execution.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -95,7 +97,7 @@ class MatchState::Impl {
         w["feedback"] = std::move(feedback);
         emit(w, "timeout", name + " берёт тактический тайм-аут");
     }
-    void apply_command(Json &w, const std::string &kind, const std::string &value) const {
+    void authorize(const Json &w) const {
         const auto coach = w.at("coachTeamId").get<std::string>();
         const auto &domain = w.at("domain");
         const auto &club = domain.at("teams").at(coach);
@@ -103,7 +105,12 @@ class MatchState::Impl {
         if (club.at("organization") != authority.at("organization") ||
             (authority.at("mode") != "manager" && authority.at("mode") != "owner"))
             throw std::invalid_argument("Недостаточно полномочий в организации");
-        const std::string phase = w.at("phase"), name = club.at("name");
+    }
+
+    void apply_command(Json &w, const std::string &kind, const std::string &value) const {
+        authorize(w);
+        const auto coach = w.at("coachTeamId").get<std::string>();
+        const std::string phase = w.at("phase"), name = w.at("domain").at("teams").at(coach).at("name");
         if (phase == "finished")
             throw std::invalid_argument("Матч завершён");
         if (kind == "timeout") {
@@ -378,6 +385,81 @@ void MatchState::resolve_intents(const std::string &input) {
             attacks.push_back(intent);
     impl_->combat->execute(staged, impl_->config, attacks);
     impl_->objectives->resolve(staged, impl_->config, intents);
+    impl_->state.swap(staged);
+}
+
+std::string MatchState::board_step(const std::string &id, const std::string &device,
+                                   const std::vector<Hazard> &fire) {
+    auto bomb = Json::parse(device);
+    std::scoped_lock lock(impl_->mutex);
+    if (!impl_->objectives)
+        throw std::invalid_argument("Физика карты недоступна");
+    auto staged = impl_->state;
+    for (auto &a : staged.at("agents"))
+        if (a.at("id") == id) {
+            auto result = esport::board_step(staged, a, impl_->config, *impl_->objectives, bomb, fire).dump();
+            impl_->state.swap(staged);
+            return result;
+        }
+    throw std::invalid_argument("Игрок отсутствует в матче");
+}
+
+void MatchState::assign_board(const std::string &input) {
+    const auto board = Json::parse(input);
+    std::scoped_lock lock(impl_->mutex);
+    impl_->authorize(impl_->state);
+    auto w = impl_->state;
+    if (board.at("map") != w.value("mapId", std::string("depo")) ||
+        board.at("geometry") != w.at("map_version"))
+        throw std::invalid_argument("Тактика создана для другой карты или версии геометрии");
+    const std::string side = board.at("side"), buy = board.at("buy");
+    const auto coach = team_side(w.at("agents"), w.at("coachTeamId"));
+    if (w.at("phase") == "timeout") {
+        Json scenario;
+        if (w.contains("nextBoard") && !w.at("nextBoard").empty() && w.at("nextBoard").at("buy") == "Эко")
+            scenario = "Эко";
+        else {
+            const auto call =
+                w.contains("nextBoard") && !w.at("nextBoard").empty() ? Json(nullptr) : w.at("call");
+            scenario =
+                esport::buy_decision(w, impl_->config, coach, call, nullptr, nullptr, nullptr).at("scenario");
+        }
+        if (coach != side ||
+            (scenario != buy && !(scenario != "Эко" && scenario != "Пистолетная" && buy == "Оружейная")))
+            throw std::invalid_argument("Тактика не соответствует стороне или закупке ближайшего раунда");
+        w["nextBoard"] = board;
+        w["call"] = board.at("name");
+    } else if (w.at("round") == 1 && w.at("tick") == 0 && w.at("phase") == "freeze" &&
+               !w.value("started", false) &&
+               w.at("remaining") == w.value("openingTimeouts", impl_->config.at("rules").at("timeouts"))) {
+        w["playbook"][side + "/" + buy] = board;
+    } else
+        throw std::invalid_argument("Назначение возможно до старта матча или в свой тактический тайм-аут");
+    Json ref = Json::object();
+    for (auto k : {"id", "revision", "name", "side", "buy"})
+        ref[k] = board.at(k);
+    emit(w, "board_call",
+         "Назначена тактика «" + board.at("name").get<std::string>() + "» · в" + board.at("revision").dump(),
+         coach)["tactic"] = std::move(ref);
+    impl_->state.swap(w);
+}
+
+std::string MatchState::buy_decision(const std::string &side, const std::string &options) const {
+    auto input = Json::parse(options);
+    std::scoped_lock lock(impl_->mutex);
+    return esport::buy_decision(impl_->state, impl_->config, side, input.value("call", Json(nullptr)),
+                                input.value("site", Json(nullptr)), input.value("board", Json(nullptr)),
+                                input.value("requested", Json(nullptr)))
+        .dump();
+}
+void MatchState::buy_equipment(const std::string &side, const std::string &strategy,
+                               const std::string &board) {
+    Json purchase = Json::parse(strategy), plan = Json::parse(board);
+    std::scoped_lock lock(impl_->mutex);
+    if (impl_->state.at("phase") != "freeze")
+        throw std::invalid_argument("Закупка доступна во время подготовки");
+    auto staged = impl_->state;
+    esport::buy_equipment(staged, impl_->config, side, purchase, plan);
     impl_->state.swap(staged);
 }
 } // namespace esport

@@ -29,6 +29,11 @@ void bind_state(py::module_ &module) {
              })
         .def("command", &MatchState::command, py::arg("kind"), py::arg("value") = "", Release())
         .def("advance_intermission", &MatchState::advance_intermission, Release())
+        .def("board_step", &MatchState::board_step, Release())
+        .def("assign_board", &MatchState::assign_board, Release())
+        .def("buy_decision", &MatchState::buy_decision, Release())
+        .def("buy_equipment", &MatchState::buy_equipment, py::arg("side"), py::arg("strategy"),
+             py::arg("board") = "null", Release())
         .def("attach_objectives", &MatchState::attach_objectives, Release())
         .def("resolve_intents", &MatchState::resolve_intents, Release())
         .def("attach_physics", &MatchState::attach_physics, Release())

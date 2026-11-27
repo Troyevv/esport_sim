@@ -276,3 +276,95 @@ def test_contact_memory_expiry_reacquisition_and_reports(combat_arenas):
         assert_same(owner,w)
     assert "Шум" not in observer["knowledge"]
     assert observer["knowledge"][opponent["id"]]["carryingC4"]
+
+
+@pytest.mark.parametrize("side",["T","CT"])
+@pytest.mark.parametrize("scenario",[None,"Пистолетная","Эко","Частичная","Форс","Полная","Антиэко","Бонусная"])
+def test_budget_equipment_donations_and_purchase_ledger(side,scenario):
+    from backend import cs2_economy
+    w=read_checkpoint()
+    w.update(phase="freeze",round=8)
+    squad=[p for p in w["agents"] if p["team"]==side]
+    for p,cash in zip(squad,[15900,300,3200,4700,1600],strict=True):
+        p.update(cash=cash,weapon="Glock",ammo=2,reserve=0,holster=None,armor=0,helmet=False,utility=[])
+    squad[-1]["holster"]=dict(weapon="Nova",ammo=1,reserve=4)
+    board={"format":1,"slots":[[dict(kind="throw",utility="Дым"),dict(kind="throw",utility="Дым")]
+                              if i==1 else [] for i in range(5)]}
+    owner=restore(w)
+    strategy=cs2_economy.decision(w,squad,site="B",profile=cs2_maps.PROFILES[w["mapId"]],board=board,requested=scenario)
+    actual=json.loads(owner.buy_decision(side,encode_world(dict(site="B",board=board,requested=scenario))))
+    assert encode_world(strategy)==encode_world(actual)
+    owner.buy_equipment(side,encode_world(actual),encode_world(board))
+    cs2_economy.buy(w,squad,strategy,match.purchase,board)
+    assert_same(owner,w)
+
+
+def test_board_assignment_before_start_and_during_timeout(combat_arenas, monkeypatch):
+    from backend import tactics
+
+    space, _ = combat_arenas
+    monkeypatch.setattr(cs2_maps, "get", lambda name: space)
+    w = read_checkpoint()
+    w.update(tick=0, round=1, phase="freeze", started=False, remaining=match.RULES["timeouts"])
+    side = next(a["team"] for a in w["agents"] if a["teamId"] == w["coachTeamId"])
+    pos = space.spawn(side, 0)[0]
+    board = dict(format=2, id="practice", revision=3, name="Начало раунда", side=side, buy="Пистолетная",
+                 map=space.name, geometry=cs2_maps.BUILD,
+                 slots=[[tactics.step("face", pos, seconds=1)], [], [], [], []])
+    owner = restore(w)
+    match.assign(w, board)
+    native_match_state.assign(owner, board)
+    assert_same(owner, w)
+    match.command(w, "timeout")
+    owner.command("timeout")
+    match.assign(w, board)
+    native_match_state.assign(owner, board)
+    assert_same(owner, w)
+    for edits in (dict(buy="Эко"), dict(side="T" if side == "CT" else "CT")):
+        with pytest.raises(ValueError):
+            native_match_state.assign(owner, board | edits)
+        assert_same(owner, w)
+
+
+@pytest.mark.parametrize("kind", ["move", "exit", "retreat", "wait", "hold", "face", "plant",
+                                  "throw", "throw-cooldown", "throw-missing", "wait-finished", "ready"])
+def test_native_editor_step_matches_agent_decision(combat_arenas, kind):
+    from backend import tactics
+
+    arena, physics = combat_arenas
+    w = read_checkpoint()
+    squad = [a for a in w["agents"] if a["team"] == "T"]
+    a = squad[0]
+    site = arena.site_points["A"]
+    spawn, _, area = arena.spawn("T", 0)
+    pos = site if kind == "plant" else spawn
+    a.update(x=pos[0], y=pos[1], z=pos[2], navArea=arena.locate(pos), path=[], dest=[], blockedTicks=0,
+             stepIndex=0, stepReady=0, stepUntil=None, target=None, visible=[], knowledge={}, throwAt=0,
+             utility=["Дым"], ammo=4, reserve=0, reloadAt=0)
+    w.update(phase="live", action=None, deadline=w["tick"]+10)
+    w["bomb"].update(carrier=a["id"], site=None)
+    name = kind.split("-")[0] if kind != "ready" else "move"
+    goal = arena.centers[area] if name in ("move", "exit", "retreat") else pos
+    step = tactics.step(name, goal)
+    if name in ("wait", "hold", "face"):
+        step["seconds"] = 2
+    if name == "throw":
+        step["utility"] = "Дым"
+    if kind == "throw-cooldown":
+        a["throwAt"] = w["tick"] + 1
+    if kind == "throw-missing":
+        a["utility"] = []
+    if kind == "wait-finished":
+        a["stepUntil"] = w["tick"]
+    if kind == "ready":
+        a["stepReady"] = w["tick"] + 2
+    plan = w["plans"]["T"]
+    plan.update(rotated=False, board=dict(id="round-opener", revision=2, map=arena.name,
+                                         slots=[[step] if i == a["slot"] else [] for i in range(5)]))
+    player = w["domain"]["players"][a["playerId"]]
+    owner = native_match_state.restore(encode_world(w), physics=physics)
+    observation = dict(space=arena, player=player, tick=w["tick"], plan=plan, phase="live",
+                       chemistry=w["domain"]["chemistry"], action=None, deadline=w["deadline"])
+    intent = match_ai.act(observation, a, squad, w["bomb"], [])
+    assert json.loads(owner.board_step(a["id"], encode_world(w["bomb"]), [])) == list(intent)
+    assert_same(owner, w)
