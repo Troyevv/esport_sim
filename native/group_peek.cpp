@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "group_tasks.hpp"
 
 namespace esport {
@@ -55,6 +56,8 @@ Json AgentTurn::coordinated_peek(const Point &goal, const Json &step, bool arriv
             return wait();
         if (now > lead.at("at").get<Tick>() + 3)
             return stop("complete");
+        if (waiting_for_ticket_flash(*this, ticket))
+            return wait();
         auto intent = movement(goal, 2);
         if (intent.at(0) != "move")
             return stop("cancel");
@@ -65,7 +68,7 @@ Json AgentTurn::coordinated_peek(const Point &goal, const Json &step, bool arriv
     if (distance(pos, request.at("origin").get<Point>()) > 5)
         return stop("cancel");
     const Json *chosen = nullptr;
-    bool pending = false;
+    bool pending = false, primary_casting = false;
     for (const auto &id : request.at("members")) {
         const auto mate = living_mate(*this, id);
         if (!mate)
@@ -74,6 +77,9 @@ Json AgentTurn::coordinated_peek(const Point &goal, const Json &step, bool arriv
         if (reply && reply->at("order") == ticket) {
             if (terminal_reply(reply->at("state")))
                 continue;
+            if (coordinated_utility(w) && id == request.at("members").front() &&
+                reply->at("state") == "casting")
+                primary_casting = true;
             if (reply->at("state") == "set" &&
                 distance(actor_point(*mate), reply->at("origin").get<Point>()) < 5 &&
                 (!chosen || (!chosen->value("wing", false) && reply->value("wing", false))))
@@ -83,8 +89,8 @@ Json AgentTurn::coordinated_peek(const Point &goal, const Json &step, bool arriv
     }
     if (!pending)
         return stop("cancel");
-    if (chosen) {
-        Tick launch = now + radio_delay(*this);
+    if (chosen && !primary_casting) {
+        Tick launch = std::max(now + radio_delay(*this), chosen->value("coverAt", now));
         if (a.contains("crossingCalls"))
             for (const auto &cast : a.at("crossingCalls"))
                 if (cast.at("item") == "Свет" && (cast.value("ticket", Json(nullptr)) == ticket ||

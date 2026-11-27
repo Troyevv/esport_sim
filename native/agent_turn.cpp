@@ -172,9 +172,28 @@ void AgentTurn::prepare() {
         device = bomb;
         emit(w, "pickup", a.at("name").get<std::string>() + " поднял C4", "T")["player"] = a.at("id");
     }
-    for (auto &f : w.at("effects"))
-        if (f.at("kind") == "Огонь" && f.at("land") <= now && gap(f) < 70 && clear(a, f) &&
-            (!spatial_grenades(w) || a.at("blind") <= now)) {
+    for (const auto &f : w.at("effects")) {
+        if (f.at("kind") != "Огонь" || f.at("land") > now || gap(f) >= 70)
+            continue;
+        if (coordinated_utility(w) && f.contains("lobes")) {
+            // A player can see fire entering a doorway while its origin stays
+            // behind a wall.
+            const auto pos = actor_point(a);
+            for (const auto &cell : f.at("lobes")) {
+                const double radius = cell.at("reach");
+                if (radius <= 0)
+                    continue;
+                const Point p = cell.at("p");
+                if (distance(pos, p) > radius &&
+                    (a.at("blind") > now || !in_range_fov(a, p) ||
+                     (grid ? !grid->clear(xy(a), {p[0], p[1]})
+                           : arena.objectives().map().hit(pos, p, 1, 64, 5).has_value())))
+                    continue;
+                fire.emplace_back(p, radius);
+                if (grid)
+                    grid_fire.push_back({{"x", p[0]}, {"y", p[1]}, {"radius", radius}});
+            }
+        } else if (clear(a, f) && (!spatial_grenades(w) || a.at("blind") <= now)) {
             append_volume(f, fire);
             if (grid) {
                 if (!f.contains("lobes"))
@@ -186,6 +205,7 @@ void AgentTurn::prepare() {
                                 {{"x", c.at("p")[0]}, {"y", c.at("p")[1]}, {"radius", c.at("reach")}});
             }
         }
+    }
     if (!w.at("action").empty())
         for (const auto &p : w.at("agents"))
             if (p.at("team") == side && p.at("id") == w.at("action").at("player"))

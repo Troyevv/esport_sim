@@ -302,11 +302,11 @@ void start_round(Json &w, const Json &cfg, const Json &spawns) {
                           {"screenedOpening", false},
                           {"friendlyUtility", array}});
         for (auto key :
-             {"confirmedHit",    "pendingFlash",    "flashPulses",     "flashLevel",   "flashAssistOwner",
-              "flashImpairedAt", "flashImpairedBy", "flashWarning",    "audioCalls",   "lastDutyFeedback",
-              "postWatch",       "decision",        "lastReloadBreak", "groupDuty",    "groupLead",
-              "groupInboxTick",  "declinedSupport", "sentContacts",    "sentFeedback", "peerCalls",
-              "crossingCalls",   "openingThrows",   "pushFlash"})
+             {"confirmedHit",    "pendingFlash",     "flashPulses",     "flashLevel",      "flashAssistOwner",
+              "resumeFlashLook", "flashWarnings",    "flashImpairedAt", "flashImpairedBy", "flashWarning",
+              "audioCalls",      "lastDutyFeedback", "postWatch",       "decision",        "lastReloadBreak",
+              "groupDuty",       "groupLead",        "groupInboxTick",  "declinedSupport", "sentContacts",
+              "sentFeedback",    "peerCalls",        "crossingCalls",   "openingThrows",   "pushFlash"})
             a.erase(key);
         if (w.contains("agentPolicy")) {
             a.erase("lastRefusal");

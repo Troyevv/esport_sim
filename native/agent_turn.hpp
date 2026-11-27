@@ -28,7 +28,7 @@ class AgentTurn {
     Json execute_group_task(const Json &offer);
     void finish_group_tasks();
     Json coordinated_peek(const Point &goal, const Json &step, bool arrived, const Json &partner = nullptr);
-    bool group_lane(const Point &point) const;
+    bool group_lane(const Point &point, Tick ready_at = -1) const;
     Json group_assist(const Json &request);
     Json stage_pair(const Point &goal, bool arrived);
     Point anticipated(const Json &report) const;
@@ -37,6 +37,7 @@ class AgentTurn {
     std::optional<Point> flank(Json &order, const Json &home);
     Point search_site(const std::string &site);
     Json postplant(std::string &site, const Json &order, const Json *latest, Point &goal, Point &watch);
+    bool flash_reserved(const Point &point) const;
     bool flash_risk(const Json &mate, const Point &burst, int flight) const;
     Json prepare_flash(Json intent);
     Json utility_response();

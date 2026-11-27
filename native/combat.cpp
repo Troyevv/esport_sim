@@ -333,9 +333,11 @@ void Combat::throw_grenade(Json &w, const Json &cfg, Json &agent, const Json &ta
                                                                  {"Ложная", "decoysThrown"}};
         count_utility(w, agent.at("id"), counters.at(type));
         if (type == "Свет")
-            agent["flashWarning"] = {{"point", goal},
-                                     {"land", effect.at("land")},
-                                     {"ticket", target.value("groupTicket", Json(nullptr))}};
+            receive_flash_warning(agent,
+                                  {{"point", goal},
+                                   {"land", effect.at("land")},
+                                   {"ticket", target.value("groupTicket", Json(nullptr))}},
+                                  agent.at("id"), coordinated_utility(w));
     }
     if ((planner_ || (spatial_grenades(w) && type == "Свет")) &&
         (peer_radio(w) || type == "Дым" || type == "Огонь")) {
@@ -345,8 +347,11 @@ void Combat::throw_grenade(Json &w, const Json &cfg, Json &agent, const Json &ta
                     {"end", plus_ticks(effect.at("land"), 10)}};
         if (peer_radio(w)) {
             cue["cast"] = {{"item", type}, {"point", goal}, {"end", effect.at("end")}};
-            if (spatial_grenades(w) && type == "Свет")
+            if (spatial_grenades(w) && type == "Свет") {
                 cue["cast"]["land"] = effect.at("land");
+                if (coordinated_utility(w))
+                    cue["cast"]["end"] = plus_ticks(effect.at("land"), cfg.at("throwRecovery"));
+            }
             if (group_tasks(w) && target.contains("groupTicket")) {
                 effect["groupTicket"] = target.at("groupTicket");
                 cue["cast"]["ticket"] = target.at("groupTicket");
@@ -378,6 +383,8 @@ void Combat::throw_grenade(Json &w, const Json &cfg, Json &agent, const Json &ta
         effect["openingZone"] = job.at("zone");
         effect["supported"] = job.at("throw").at("forPlayer");
     }
+    if (coordinated_utility(w) && target.contains("supported"))
+        effect["supported"] = target.at("supported");
     w.at("effects").push_back(effect);
     w.at("recentEffects").push_back(effect);
     auto &event = emit(w, "throw", agent.at("name").get<std::string>() + " · " + type, agent.at("team"));

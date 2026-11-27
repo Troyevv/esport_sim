@@ -266,13 +266,13 @@ def project(w, view="full"):
         return any(c["reach"] > 0 and match_view.near_line(a, p, match_view.at(c["p"]), c["reach"])
                    for c in f["lobes"])
 
-    def observable(p, *, cloud=False):
+    def observable(p, *, exclude=None):
         return view == "full" or any(
             a["hp"]
             and a["blind"] <= w["tick"]
             and match_view.sees(space,a,p)
             and not any(
-                blocks(a, p, f) for f in smoke if not cloud or f != p
+                blocks(a, p, f) for f in smoke if (f.get("player"), f.get("start")) != exclude
             )
             for a in own
         )
@@ -286,32 +286,32 @@ def project(w, view="full"):
         public_bomb = dict(
             **match_view.at(match_view.point(point)), carrier=bomb["carrier"], site=bomb["site"]
         )
-    effects = [
-        f
-        for f in w["recentEffects"]
-        if view in ("full", f["team"])
-        or (w["tick"] >= f["land"] and observable(f, cloud=f["kind"] == "Дым"))
-    ]
-    # Do not reveal an unseen thrower's origin via the trajectory of a landed grenade.
-    effects = [
-        f if view in ("full", f["team"]) else dict({k:v for k,v in f.items() if k not in ("trajectory","sz")}, sx=f["x"], sy=f["y"], player=None)
-        for f in effects
-    ]
-    if w.get("agentPolicy", 0) >= 6:
-        active_effects = {(f["player"], f["start"]): f for f in w["effects"]}
-        projected = []
-        for f in effects:
-            # Opposing throws can have a redacted player ID in a side view.
-            live = active_effects.get((f["player"], f["start"]))
-            if live is None and f["player"] is None:
-                live = next((e for e in w["effects"] if all(e[k] == f[k] for k in
-                             ("kind", "start", "x", "y", "team"))), None)
-            item = {k: v for k, v in f.items() if k != "weapon"}
+    effects = []
+    active_effects = {(f.get("player"), f.get("start")): f for f in w["effects"]}
+    for f in w["recentEffects"]:
+        key = f["player"], f["start"]
+        live = active_effects.get(key, {})
+        own_effect = view in ("full", f["team"])
+        exclude = key if f["kind"] == "Дым" else None
+        if not own_effect and w["tick"] < f["land"]:
+            continue
+        volume = None
+        if "lobes" in live:
+            volume = [[*c["p"], c["reach"]] for c in live["lobes"] if c["reach"] > 0 and
+                      (own_effect or observable(match_view.at(c["p"]), exclude=exclude))]
+        if not own_effect and not volume and not observable(f, exclude=exclude):
+            continue
+        item = dict(f)
+        if not own_effect:
+            item.pop("trajectory", None)
+            item.pop("sz", None)
+            item.update(sx=f["x"], sy=f["y"], player=None)
+        if w.get("agentPolicy", 0) >= 6:
+            item.pop("weapon", None)
             item["spatial"] = True
-            if live and "lobes" in live:
-                item["volume"] = [[*c["p"], c["reach"]] for c in live["lobes"] if c["reach"] > 0]
-            projected.append(item)
-        effects = projected
+            if volume is not None:
+                item["volume"] = volume
+        effects.append(item)
     stats = []
     for a in w["agents"]:
         row = dict(

@@ -276,6 +276,10 @@ Json AgentTurn::duel(const Json &contact) {
                  vulnerable = a.at("reloadAt") != 0 || a.at("hp") < 45;
             auto ready =
                 std::max<Tick>(0, std::max(a.at("ready").get<Tick>(), a.at("reloadAt").get<Tick>()) - now);
+            const bool coordination = coordinated_utility(w);
+            const Tick warn =
+                coordination ? std::max(0, 2 + (100 - skills.at("communication").get<int>()) / 12 - flight)
+                             : 0;
             int shots = std::min(
                 a.at("ammo").get<int>(),
                 int(std::max(0., 1 + std::floor(double(cfg.at("throwRecovery").get<int>() - 1 - ready) /
@@ -301,14 +305,28 @@ Json AgentTurn::duel(const Json &contact) {
                         continue;
                     benefit = damage;
                 } else {
-                    if (friends || (item == "Свет" && !backup && !vulnerable))
+                    if (friends || (item == "Свет" &&
+                                    ((!backup && !vulnerable) || (coordination && flash_reserved(target)))))
                         continue;
                     double sum = 0, error = 0;
                     for (auto &id : a.at("visible")) {
                         double d = distance(actor_point(a.at("knowledge").at(id.get<std::string>())), target);
                         if (d < radius) {
                             double x = item == "Свет" ? damage : (1 - d / radius) * (item == "HE" ? 82 : 30),
-                                   t = sum + x;
+                                   t;
+                            if (coordination && item == "Свет") {
+                                const Json &sight = a.at("knowledge").at(id.get<std::string>());
+                                const Point eye = actor_point(sight);
+                                const double heading =
+                                    sight.contains("bodySector")
+                                        ? sight.at("bodySector").get<int>() * std::numbers::pi / 4.
+                                        : std::atan2(pos[1] - eye[1], pos[0] - eye[0]);
+                                x *= nav.hit(target, eye, 1, 5, 64)
+                                         ? 0.
+                                         : flash_exposure(eye, heading, target, radius);
+                                x *= 1. / (1. + (flight + warn) * sight.value("speed", 0.) / radius);
+                            }
+                            t = sum + x;
                             error += std::abs(sum) >= std::abs(x) ? (sum - t) + x : (x - t) + sum;
                             sum = t;
                         }
@@ -331,6 +349,8 @@ Json AgentTurn::duel(const Json &contact) {
                     cfg.at("utility").at(best->second)[0].get<double>()) {
                 auto result = contact;
                 result["utility"] = best->second;
+                if (coordination)
+                    result["purpose"] = "Граната в дуэли";
                 return Json::array({"throw", result});
             }
         }

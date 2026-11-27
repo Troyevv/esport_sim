@@ -309,3 +309,114 @@ def test_nuke_smoke_spreads_on_connected_floor_below_another_level():
     lobes = step(w)["effects"][-1]["lobes"]
     assert any(math.dist(lower, c["p"]) <= c["reach"] for c in lobes)
     assert all(math.dist(upper, c["p"]) > c["reach"] for c in lobes)
+
+
+def test_staged_pair_reserves_a_threatened_angle_and_prepares_cover_in_flight():
+    from tests.test_group_tasks import at_waypoint, notice
+    from tests.test_peer_radio import delivered
+    from tests.test_small_groups import execute, member
+
+    w, lead, _ = at_waypoint()
+    w["agentPolicy"] = 7
+    packet = notice(w, "stage")
+    offer = packet["feedback"]
+    wing = offer["members"][0]
+    origin = offer["origin"]
+    offer["point"] = [origin[0] + 14, *origin[1:]]
+    w["agents"][member(w, lead)]["sentFeedback"]["stage"] = deepcopy(offer)
+    actor = w["agents"][member(w, wing)]
+    actor["utility"] = ["Свет"]
+    command, covered = execute(delivered(w, packet["due"]), wing)
+    assert command[0] == "hold" and notice(covered, "set")
+    assert not any("flashWarning" in m for m in covered["messages"])
+
+    actor["knowledge"]["Шум"] = dict(id="Шум", source="Слух", x=origin[0]+36, y=origin[1],
+                                     z=origin[2], tick=w["tick"], confidence=.8)
+    ready = delivered(w, packet["due"])
+    duplicate = deepcopy(ready)
+    duplicate["agents"][member(w, wing)]["crossingCalls"] = [
+        dict(item="Свет", land=w["tick"]+10, end=w["tick"]+15, point=[origin[0]+36,*origin[1:]])]
+    assert execute(duplicate, wing)[0][0] == "hold"
+
+    command, informed = execute(ready, wing)
+    assert command[0] == "throw"
+    warning = next(m for m in informed["messages"] if "flashWarning" in m)
+    cast = step(informed, "resolve_actions", json.dumps([dict(actor=wing,kind="throw",target=command[1])]))
+    land = cast["effects"][-1]["land"]
+    assert warning["due"] < land
+    _, scheduled = execute(delivered(cast, cast["tick"]+1), wing)
+    reply = notice(scheduled, "set")
+    assert scheduled["tick"] < land <= reply["feedback"]["coverAt"]
+    lead_state = delivered(scheduled, reply["due"])
+    _, launched = execute(lead_state, lead)
+    assert notice(launched,"go")["feedback"]["at"] >= reply["feedback"]["coverAt"]
+
+    displaced = deepcopy(lead_state)
+    displaced["agents"][member(w, wing)]["x"] += 20
+    _, stopped = execute(displaced, lead)
+    assert all(m.get("feedback",{}).get("state") != "go" for m in stopped["messages"])
+
+
+def test_concurrent_warnings_keep_near_flash_and_restore_look_after_burst():
+    from tests.test_small_groups import execute, member
+    from tests.test_peer_radio import delivered
+
+    w = arena()
+    a = w["agents"][0]
+    w["agents"][1]["hp"] = w["agents"][2]["hp"] = 100
+    for sender,point in [(1,[55,105,0]), (2,[180,150,0])]:
+        w["messages"].append(dict(team=a["team"], sender=w["agents"][sender]["id"], due=w["tick"],
+                                  flashWarning=dict(point=point,land=w["tick"]+1,ticket=None)))
+    state = delivered(w,w["tick"])
+    assert len(state["agents"][0]["flashWarnings"]) == 2
+    command,turned = execute(state,a["id"])
+    actor = turned["agents"][member(w,a["id"])]
+    assert command[0] == "hold" and math.cos(actor["heading"]) < 0
+    assert actor["resumeFlashLook"]["heading"] == a["heading"]
+    effect(turned,"Свет",x=55,owner=5)
+    turned["effects"][-1]["land"] += 1
+    turned["effects"][-1]["end"] += 1
+    owner = native_match_state.open_game(turned)
+    owner.advance(1)
+    after = json.loads(owner.snapshot())["agents"][0]
+    assert "resumeFlashLook" not in after and 0 < after["flashLevel"] < .78
+
+
+def test_side_radar_can_see_the_exposed_surface_of_an_opposing_cloud():
+    w = arena()
+    effect(w,"Дым",x=60,age=10,owner=5)
+    w = step(w)
+    view = match.project(w,"T")["match"]["effects"]
+    cloud = next(f for f in view if f["kind"] == "Дым")
+    assert cloud["volume"] and cloud["player"] is None and "trajectory" not in cloud
+
+
+def test_late_ticket_warning_after_go_defers_lead_and_wing_until_burst():
+    from tests.test_group_tasks import at_waypoint, notice
+    from tests.test_peer_radio import delivered
+    from tests.test_small_groups import execute, member
+
+    w, lead, _ = at_waypoint()
+    w["agentPolicy"] = 7
+    request = notice(w, "stage")
+    wing, backup = request["feedback"]["members"]
+    _, ready = execute(delivered(w,request["due"]), wing)
+    reply = notice(ready,"set",wing)
+    _, ordered = execute(delivered(ready,reply["due"]),lead)
+    launch = notice(ordered,"go")
+    start = launch["feedback"]["at"]
+    assert start == launch["due"]
+    # The third player's warning arrives after go, outside both players' personal flash radius.
+    ordered["messages"].append(dict(sender=backup,team="T",due=start,
+                                    flashWarning=dict(ticket=launch["feedback"]["order"],
+                                                      point=[1000,1000,0],land=start+1)))
+    at_launch = delivered(ordered,start)
+    for actor in (lead,wing):
+        before = [at_launch["agents"][member(w,actor)][axis] for axis in ("x","y")]
+        command, at_launch = execute(at_launch,actor)
+        assert command[0] == "hold"
+        assert before == [at_launch["agents"][member(w,actor)][axis] for axis in ("x","y")]
+    released = delivered(at_launch,start+1)
+    for actor in (lead,wing):
+        command,released = execute(released,actor)
+        assert command[0] == "move"

@@ -6,6 +6,10 @@ namespace esport {
 inline bool spatial_grenades(const Json &world) {
     return world.value("agentPolicy", 0) >= 6;
 }
+inline bool coordinated_utility(const Json &world) {
+    return world.value("agentPolicy", 0) >= 7;
+}
+void receive_flash_warning(Json &actor, const Json &warning, const Json &sender, bool coordinated);
 double flash_exposure(const Point &eye, double heading, const Point &burst, double radius);
 void expose_player(Json &world, Json &actor, const Json &effect, double peak);
 void recover_vision(Json &world);

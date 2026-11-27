@@ -3,6 +3,19 @@
 #include "agent_helpers.hpp"
 
 namespace esport {
+bool AgentTurn::flash_reserved(const Point &point) const {
+    // Only the player's own delivered messages enter this decision.
+    if (auto warnings = a.find("flashWarnings"); warnings != a.end())
+        for (const auto &warn : *warnings)
+            if (warn.at("land") >= now && distance(warn.at("point"), point) < 18)
+                return true;
+    if (auto calls = a.find("crossingCalls"); calls != a.end())
+        for (const auto &cast : *calls)
+            if (cast.at("item") == "Свет" && cast.contains("land") && now < cast.at("end") &&
+                distance(cast.at("point"), point) < 18)
+                return true;
+    return false;
+}
 // The thrower estimates exposure from teammate radar and a communicated lead time.
 bool AgentTurn::flash_risk(const Json &mate, const Point &burst, int flight) const {
     const Point eye = actor_point(mate);
@@ -31,25 +44,32 @@ Json AgentTurn::prepare_flash(Json intent) {
         return intent;
     const Point p = actor_point(target);
     const Tick delay = 1 + (100 - skills.at("communication").get<int>()) / 12;
-    const Tick release = now + delay;
+
     const int flight = std::max(3, int(std::nearbyint(distance(actor_point(a), p) / 7)));
+    // Communication and flight run concurrently. Leave the recipient one
+    // decision before the burst.
+    const Tick release = now + (coordinated_utility(w) ? std::max<Tick>(0, delay + 1 - flight) : delay);
     target["announced"] = true;
-    a["pendingFlash"] = {{"release", release}, {"target", target}};
     w.at("messages")
         .push_back({{"team", side},
                     {"sender", a.at("id")},
-                    {"due", release},
+                    {"due", now + delay},
                     {"flashWarning",
                      {{"point", p},
                       {"land", release + flight},
                       {"ticket", target.value("groupTicket", Json(nullptr))}}}});
+    if (release == now)
+        return intent;
+    a["pendingFlash"] = {{"release", release}, {"target", target}};
+    if (coordinated_utility(w))
+        a.at("pendingFlash")["phase"] = w.at("phase");
     a["status"] = "Предупреждает о флешке";
     return Json::array({"hold", nullptr});
 }
 
 Json AgentTurn::utility_response() {
-    if (!a.contains("pendingFlash") && !a.contains("flashWarning") && a.value("flashLevel", 0.) == 0. &&
-        (a.at("throwAt") > now || !member_of(a.at("utility"), "Дым")))
+    if (!a.contains("pendingFlash") && !a.contains("flashWarning") && !a.contains("flashWarnings") &&
+        a.value("flashLevel", 0.) == 0. && (a.at("throwAt") > now || !member_of(a.at("utility"), "Дым")))
         return nullptr;
     const Point pos = actor_point(a);
     const bool busy = !action.empty() && action.at("player") == a.at("id");
@@ -61,15 +81,59 @@ Json AgentTurn::utility_response() {
         if (now < cast->at("release"))
             return Json::array({"hold", nullptr});
         Json target = cast->at("target");
+        const bool applicable = !coordinated_utility(w) ||
+                                (cast->at("phase") == w.at("phase") &&
+                                 (!target.contains("id") || member_of(a.at("visible"), target.at("id"))) &&
+                                 (!target.contains("supported") || std::ranges::any_of(squad, [&](auto m) {
+                                     return m->at("id") == target.at("supported");
+                                 })));
         a.erase("pendingFlash");
         const bool committed =
             ticket.is_null() || (active(a, "groupDuty") && a.at("groupDuty").at("ticket") == ticket &&
                                  now < a.at("groupDuty").at("until"));
-        if (committed && !busy && blindness < .6 && member_of(a.at("utility"), "Свет"))
+        if (applicable && committed && !busy && blindness < .6 && member_of(a.at("utility"), "Свет"))
             return Json::array({"throw", target});
     }
     if (busy)
         return nullptr;
+    if (auto warnings = a.find("flashWarnings"); warnings != a.end()) {
+        // Several throwers can announce in one tick. Choose the most exposing
+        // imminent burst.
+        Json urgent = nullptr;
+        double exposure = 0;
+        for (auto it = warnings->begin(); it != warnings->end();) {
+            const Tick left = it->at("land").get<Tick>() - now;
+            if (left <= 0) {
+                it = warnings->erase(it);
+                continue;
+            }
+            if (left == 1 && a.at("visible").empty()) {
+                const Point burst = it->at("point");
+                const double risk =
+                    flash_exposure(pos, a.at("heading"), burst, cfg.at("utility").at("Свет")[0]);
+                if (risk > .25 && risk > exposure &&
+                    (grid ? grid->clear(xy(a), {burst[0], burst[1]})
+                          : !arena.objectives().map().hit(pos, burst, 1, 64, 5))) {
+                    exposure = risk;
+                    urgent = *it;
+                }
+            }
+            ++it;
+        }
+        if (!urgent.is_null()) {
+            const Point burst = urgent.at("point");
+            a["resumeFlashLook"] = {{"heading", a.at("heading")}, {"land", urgent.at("land")}};
+            const auto ticket = urgent.value("ticket", Json(nullptr));
+            for (const auto key : {"groupLead", "groupDuty"})
+                if (!ticket.is_null() && active(a, key) && a.at(key).at("ticket") == ticket)
+                    a.at(key)["worked"] = now;
+            a["heading"] = heading_gap(burst, pos);
+            a["status"] = "Отворачивается от флешки";
+            return Json::array({"hold", nullptr});
+        }
+        if (warnings->empty())
+            a.erase(warnings);
+    }
     if (auto warn = a.find("flashWarning"); warn != a.end() && !warn->is_null()) {
         const Tick until = warn->at("land").get<Tick>() - now;
         const Point burst = warn->at("point");
@@ -110,7 +174,9 @@ Json AgentTurn::utility_response() {
                     if (std::ranges::any_of(w.at("effects"), [&](const Json &f) {
                             return f.at("kind") == "Дым" &&
                                    (f.at("team") == side || (f.at("land") <= now && clear(a, f))) &&
-                                   near_segment(goal, threat, actor_point(f), f.at("radius"));
+                                   (coordinated_utility(w) && f.at("land") <= now
+                                        ? crosses_volume(f, goal, threat)
+                                        : near_segment(goal, threat, actor_point(f), f.at("radius")));
                         }))
                         continue;
                     Point screen = goal;
@@ -189,6 +255,8 @@ Json AgentTurn::assist_contact(const Squad &partners, const Json &r) {
                 return c.at("end") > now && c.at("item") == g && distance(c.at("point"), land) < radius;
             }))
             continue;
+        if (g == "Свет" && coordinated_utility(w) && flash_reserved(land))
+            continue;
         if (g == "Дым") {
             if (std::ranges::any_of(squad, [&](auto m) {
                     if (m == &a || std::find(partners.begin(), partners.end(), m) != partners.end())
@@ -210,7 +278,12 @@ Json AgentTurn::assist_contact(const Squad &partners, const Json &r) {
             continue;
         calls.push_back(Json{{"item", g}, {"point", land}, {"end", now + flight + params[1].get<int>()}});
         a["status"] = "Помогает гранатой в контакте партнёра";
-        return grenade_intent(target, g);
+        auto cast = grenade_intent(target, g);
+        if (coordinated_utility(w)) {
+            cast[1]["supported"] = partners.front()->at("id");
+            cast[1]["purpose"] = "Помощь по контакту";
+        }
+        return cast;
     }
     return nullptr;
 }
@@ -267,7 +340,7 @@ Json AgentTurn::retake_utility(const std::string &site) {
         double radius = cfg.at("utility").at(item)[0];
         for (auto &q : candidates) {
             double d = distance(q, origin);
-            if (d <= 12 || d >= 75 ||
+            if ((coordinated_utility(w) && item == "Свет" && flash_reserved(q)) || d <= 12 || d >= 75 ||
                 std::ranges::any_of(calls, [&](auto &c) { return distance(q, c.at("point")) < radius; }))
                 continue;
             bool screen = item == "Дым" || item == "Огонь";

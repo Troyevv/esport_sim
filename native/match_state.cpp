@@ -138,7 +138,7 @@ class MatchState::Impl {
             opening = std::make_shared<OpeningMap>(objectives);
         }
         if (state.contains("agentPolicy") && (!state.at("agentPolicy").is_number_integer() ||
-                                              (state.at("agentPolicy") < 1 || state.at("agentPolicy") > 6)))
+                                              (state.at("agentPolicy") < 1 || state.at("agentPolicy") > 7)))
             throw std::invalid_argument("Неизвестная версия индивидуального ИИ");
         if (spatial_grenades(state) && config.contains("utility")) {
             config.at("utility").at("Дым")[1] = 200;
@@ -250,14 +250,15 @@ class MatchState::Impl {
                  call.at("tick") > a.at("pressureCall").at("tick")))
                 a["pressureCall"] = call;
         } else if (m.contains("flashWarning")) {
-            a["flashWarning"] = m.at("flashWarning");
+            receive_flash_warning(a, m.at("flashWarning"), sender, coordinated_utility(w));
         } else if (m.contains("friendlyUtility")) {
             const auto &cue = m.at("friendlyUtility");
             if (cue.contains("cast")) {
                 const auto &cast = cue.at("cast");
                 if (cue.contains("openingCall"))
                     a[cue.at("openingCall") == "flash" ? "pushFlash" : "openingThrows"][cue.at("site").get<std::string>()] = sender;
-                if (spatial_grenades(w) && cast.at("item") == "Свет" && !a.contains("flashWarning"))
+                if (spatial_grenades(w) && cast.at("item") == "Свет" && !coordinated_utility(w) &&
+                    !a.contains("flashWarning"))
                     a["flashWarning"] = nullptr;
                 auto &calls = a["crossingCalls"];
                 if (calls.is_null())
@@ -267,9 +268,11 @@ class MatchState::Impl {
                 }), calls.end());
                 if (spatial_grenades(w) && cast.at("item") == "Свет" && cast.contains("land") &&
                     now < cast.at("land"))
-                    a["flashWarning"] = {{"point", cast.at("point")},
-                                         {"land", cast.at("land")},
-                                         {"ticket", cast.value("ticket", Json(nullptr))}};
+                    receive_flash_warning(a,
+                                          {{"point", cast.at("point")},
+                                           {"land", cast.at("land")},
+                                           {"ticket", cast.value("ticket", Json(nullptr))}},
+                                          sender, coordinated_utility(w));
                 if (cast.at("end") > now)
                     calls.push_back(cast);
                 if (cast.at("item") != "Дым" && cast.at("item") != "Огонь")
@@ -388,6 +391,16 @@ class MatchState::Impl {
             return;
         }
         combat->effects(world, config);
+        // The burst samples the turned head. Reacquire the previous angle
+        // before the next observation.
+        if (coordinated_utility(world))
+            for (auto &actor : roster) {
+                auto look = actor.find("resumeFlashLook");
+                if (look != actor.end() && now >= look->at("land")) {
+                    actor["heading"] = look->at("heading");
+                    actor.erase(look);
+                }
+            }
         deliver_radio(world);
         if (grid)
             grid_observe(world, *grid);

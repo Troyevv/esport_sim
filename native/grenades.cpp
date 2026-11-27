@@ -26,6 +26,13 @@ double flash_exposure(const Point &eye, double heading, const Point &burst, doub
     const double alignment = (.5 + .5 * std::clamp(facing, -1., 1.));
     return std::min(1., 1.35 * std::sqrt(1. - d / radius) * (.18 + .82 * alignment * alignment));
 }
+void receive_flash_warning(Json &actor, const Json &warning, const Json &sender, bool coordinated) {
+    if (coordinated) {
+        const auto id = sender.get<std::string>();
+        actor["flashWarnings"][id] = warning;
+    } else
+        actor["flashWarning"] = warning;
+}
 void expose_player(Json &w, Json &a, const Json &f, double peak) {
     if (peak < .05)
         return;

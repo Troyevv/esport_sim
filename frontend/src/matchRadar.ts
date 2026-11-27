@@ -91,7 +91,7 @@ export function drawEvents(
         .stroke({ color, width: 0.7, alpha: 0.7 });
       items.show(f.kind, x, y, 5, 6, color, f.team);
     } else {
-      if (!visible(f.z)) continue;
+      if (!visible(f.z) && !(f.spatial && f.volume)) continue;
       if (f.spatial) {
         if (f.burstTick === undefined || tick < f.burstTick) continue;
         if (f.kind === "Дым" || f.kind === "Огонь") {
