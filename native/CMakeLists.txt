@@ -3,8 +3,8 @@ project(esport_match LANGUAGES CXX)
 
 find_package(Python 3.12 REQUIRED COMPONENTS Interpreter Development.Module)
 find_package(pybind11 CONFIG REQUIRED)
-execute_process(COMMAND "${Python_EXECUTABLE}" -c "import nlohmann_json; print(nlohmann_json.get_include())"
-                OUTPUT_VARIABLE MATCH_JSON_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND "${Python_EXECUTABLE}" -X utf8 -c "import nlohmann_json; print(nlohmann_json.get_include())"
+                OUTPUT_VARIABLE MATCH_JSON_INCLUDE ENCODING UTF-8 OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
 pybind11_add_module(_match_native module.cpp match_state.cpp state_bindings.cpp round_rules.cpp combat.cpp objectives.cpp navigation.cpp routes.cpp ray_bindings.cpp rays.cpp collision.cpp perception.cpp physical_navigation.cpp)
 target_include_directories(_match_native PRIVATE vendor/embree4 "${MATCH_JSON_INCLUDE}")
 target_link_libraries(_match_native PRIVATE ${CMAKE_DL_LIBS})
