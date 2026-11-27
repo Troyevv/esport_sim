@@ -536,7 +536,7 @@ void compare_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &pl
             const auto previous = last.value("block", Json(nullptr));
             const bool different = !block.empty() && block.at("tick") > last.at("tick") &&
                                    (previous.empty() || previous.at("sender") != block.at("sender") ||
-                                    distance(previous.at("point"), block.at("point")) > 10);
+                                    distance(previous.at("point").get<Point>(), block.at("point").get<Point>()) > 10);
             newRally = localLoss || different ||
                        (displaced && plan.contains("lastFront") &&
                         plan.at("lastFront").at("tick") > last.at("tick"));
