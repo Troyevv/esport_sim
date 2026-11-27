@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-from backend import cs2_maps, match, match_ai, native_match_state
+from backend import cs2_economy, cs2_maps, match, match_ai, native_match_state
 
 
 def encode(world):
@@ -105,7 +105,27 @@ def compare(checkpoint, combat=False):
             same(owner, "objectives")
             seen_objectives.update(landmarks)
 
+    ref_decision, ref_buy = cs2_economy.decision, cs2_economy.buy
+
+    def decide(w, squad, call=None, **options):
+        expected = ref_decision(w, squad, call, **options)
+        owner = native_match_state.restore(encode(w))
+        inputs = {k: v for k, v in options.items() if k != "profile"}
+        actual = json.loads(owner.buy_decision(squad[0]["team"], encode(dict(call=call, **inputs))))
+        if encode(expected) != encode(actual):
+            raise ValueError(f"Buy decision differs at tick {w['tick']}")
+        counts["budget"] += 1
+        return expected
+
+    def buy(w, squad, strategy, purchase, board):
+        owner = native_match_state.restore(encode(w))
+        owner.buy_equipment(squad[0]["team"], encode(strategy), encode(board))
+        ref_buy(w, squad, strategy, purchase, board)
+        same(owner, "buy")
+
     with ExitStack() as patches:
+        patches.enter_context(patch.object(cs2_economy, "decision", decide))
+        patches.enter_context(patch.object(cs2_economy, "buy", buy))
         if combat:
             patches.enter_context(patch.object(match_ai, "observe", observation))
             patches.enter_context(patch.object(match, "resolve_intents", resolve))

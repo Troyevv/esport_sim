@@ -29,6 +29,7 @@ void pay(Json &w, Json &a, int delta, const std::string &reason, int cap) {
                        a.at("team"));
     event.update(Json{{"player", a.at("id")}, {"amount", amount}, {"balance", after}, {"reason", reason}});
     a.at("cash") = after;
+    if (delta<0 && reason.starts_with("Покупка")) add(w.at("stats").at(name(a,"id")).at("spent"),-amount);
 }
 namespace {
 int loss_income(const Json &rules, int level) {
