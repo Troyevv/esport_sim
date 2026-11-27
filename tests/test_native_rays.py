@@ -26,6 +26,9 @@ def test_masks_original_face_ids_limits_and_shared_scene():
     del vertices, faces, masks
     gc.collect()
     starts = np.array([[2, 2, -3], [0, 0, -1], [20, 20, -3]], dtype=np.float32)
+    unaligned = np.ndarray(starts.shape, dtype="f4", buffer=bytearray(starts.nbytes + 1), offset=1)
+    unaligned[:] = starts
+    starts = unaligned
     directions = np.array([0, 0, 1], dtype=np.float32)
     limits = np.array([20, 10, 20], dtype=np.float32)
 

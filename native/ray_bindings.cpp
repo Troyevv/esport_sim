@@ -35,6 +35,14 @@ std::unique_ptr<esport::TriangleScene> make_scene(
     return std::make_unique<esport::TriangleScene>(path, std::move(points), triangles, channels);
 }
 
+// NumPy slices can be contiguous but start at an unaligned buffer offset.
+template<class T>
+T load_row(const void* data, std::size_t index) {
+    T result;
+    std::memcpy(&result, static_cast<const std::byte*>(data) + index * sizeof(T), sizeof(T));
+    return result;
+}
+
 py::tuple first_many(const esport::TriangleScene& scene, const Array<float>& starts,
                      const Array<float>& directions, const Array<float>& limits, unsigned channel) {
     if (starts.ndim() != 2 || starts.shape(1) != 3) throw py::value_error("Expected N x 3 origins");
@@ -48,13 +56,13 @@ py::tuple first_many(const esport::TriangleScene& scene, const Array<float>& sta
 
     std::vector<RTCRayHit> rays(n);
     for (py::ssize_t i = 0; i < n; ++i) {
-        const float* p = starts.data() + i * 3;
-        const float* d = directions.data() + (uniform ? 0 : i * 3);
+        const auto p = load_row<esport::Vertex>(starts.data(), i);
+        const auto d = load_row<esport::Vertex>(directions.data(), uniform ? 0 : i);
         auto& ray = rays[i].ray;
-        ray.tfar = limits.data()[limits.size() == 1 ? 0 : i];
+        ray.tfar = load_row<float>(limits.data(), limits.size() == 1 ? 0 : i);
         if (!std::isfinite(ray.tfar) || ray.tfar < 0 ||
-            !std::all_of(p, p + 3, [](float x) { return std::isfinite(x); }) ||
-            !std::all_of(d, d + 3, [](float x) { return std::isfinite(x); }))
+            !std::all_of(p.begin(), p.end(), [](float x) { return std::isfinite(x); }) ||
+            !std::all_of(d.begin(), d.end(), [](float x) { return std::isfinite(x); }))
             throw py::value_error("Invalid ray segment");
         ray.org_x = p[0]; ray.org_y = p[1]; ray.org_z = p[2];
         ray.dir_x = d[0]; ray.dir_y = d[1]; ray.dir_z = d[2];
