@@ -22,6 +22,13 @@ def _frozen_rosters(career, pack, event, report):
     return registered
 
 
+def _score_pair(row):
+    scores = row.get("score")
+    if isinstance(scores, list) and len(scores) == 2 and all(type(n) is int and n >= 0 for n in scores):
+        return scores
+    return None
+
+
 def normalize(career, pack, event, report):
     """Keep every recorded metric. A null identity denotes missing or conflicting evidence."""
     teams = event["teams"]
@@ -61,8 +68,23 @@ def normalize(career, pack, event, report):
             tid = next(iter(candidates)) if len(candidates) == 1 else None
         stats.append(dict(row, teamId=tid))
     result["stats"] = stats
-    result["rounds"] = [
-        dict(row, winnerTeamId=identity(row, "winnerTeamId", "winner"))
-        for row in report["rounds"]
-    ]
+    result["rounds"] = []
+    previous = [0, 0]
+    for row in report["rounds"]:
+        winner = identity(row, "winnerTeamId", "winner")
+        score = _score_pair(row)
+        if (order and "maps" not in report and "winnerTeamId" not in row and winner is None
+                and previous is not None and score is not None):
+            delta = [n - old for n, old in zip(score, previous)]
+            if delta in ([1, 0], [0, 1]):
+                winner = order[delta.index(1)]
+        result["rounds"].append(dict(row, winnerTeamId=winner))
+        previous = score
+
+    if "teams" not in report and order and report.get("rules") in (LEGACY_VERSION, PREVIOUS_VERSION):
+        result["teams"] = list(order)
+        scores = _score_pair(report)
+        if scores is not None:
+            result["scoreByTeam"] = dict(zip(order, scores))
+            result["winnerTeamId"] = order[scores.index(max(scores))] if scores[0] != scores[1] else None
     return result

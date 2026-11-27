@@ -41,6 +41,8 @@ def test_old_application_profile_restores_history_and_all_slots(tmp_path):
                 raw = json.loads(originals[event["result"]])
                 assert checksum(originals[event["result"]]) == event["result"]
                 report = client.get("/api/career/report/" + event["id"]).json()
+                assert report["scoreByTeam"] == dict(zip(event["teams"], raw["score"]))
+                assert report["winnerTeamId"] == event["teams"][raw["score"].index(max(raw["score"]))]
                 for row, old in zip(report["stats"], raw["stats"], strict=True):
                     assert row == dict(old, teamId=event["teams"][old["club"]])
                 for row, old in zip(report["rounds"], raw["rounds"], strict=True):
@@ -105,6 +107,8 @@ def test_recovery_requires_evidence_for_this_match():
     assert [s["teamId"] for s in old["stats"]] == ["home", None]
     assert [r["winnerTeamId"] for r in old["rounds"]] == ["away", None]
     assert project(event, old) == old and raw == before
+    scoreboard = dict(raw, rounds=[{"score": [0, 1]}, {"score": [1, 1]}, {"score": [3, 2]}])
+    assert [r["winnerTeamId"] for r in project(event, scoreboard)["rounds"]] == ["away", "home", None]
     assert project(dict(event, pcw=True), raw)["stats"][0]["teamId"] is None
     cup = dict(event, edition="cup", rosterVersions={"away": 1})
     assert [s["teamId"] for s in project(cup, raw)["stats"]] == ["away", None]
