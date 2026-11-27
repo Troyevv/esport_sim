@@ -43,5 +43,12 @@ int main(int argc, char **argv) {
         world.reset();
         if (!planner.path(1, {1, 1, 0}, 1, {2, 2, 0}, {}))
             throw std::runtime_error("Missing walkable path");
+        MotionState actor{{1, 1, 0}, 1, 0, 0, {}, std::nullopt};
+        for (int step = 0; step < 10; ++step)
+            planner.walk(actor, {2, 2, 0}, .2, {});
+        if (actor.position != Point{2, 2, 0} || !actor.path.empty())
+            throw std::runtime_error("Incomplete walking step");
+        if (planner.grenade({1, 1, 0}, {2, 2, 0}, 5).size() != 6)
+            throw std::runtime_error("Incomplete flight");
     }
 }

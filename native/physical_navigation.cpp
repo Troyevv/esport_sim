@@ -282,3 +282,148 @@ std::optional<EscapePath> PhysicalNavigation::search(const State &start, std::op
     return std::nullopt;
 }
 } // namespace esport
+
+namespace esport {
+namespace {
+// CPython 3.12 sum() uses Neumaier summation of the rounded products.
+double sum3(double a, double b, double c) {
+    double total = 0, correction = 0;
+    for (double x : {a, b, c}) {
+        const double next = total + x;
+        correction += std::abs(total) >= std::abs(x) ? (total - next) + x : (x - next) + total;
+        total = next;
+    }
+    return total + correction;
+}
+bool enters_fire(const Point &start, const Point &next, const Hazard &hazard) {
+    const auto &[center, radius] = hazard;
+    if (distance(start, center) < radius)
+        return false;
+    const double dx = next[0] - start[0], dy = next[1] - start[1], dz = next[2] - start[2];
+    const double span = sum3(dx * dx, dy * dy, dz * dz);
+    const double projection =
+        sum3((center[0] - start[0]) * dx, (center[1] - start[1]) * dy, (center[2] - start[2]) * dz);
+    const double t = span ? std::clamp(projection / span, 0., 1.) : 0;
+    return distance(lerp(start, next, t), center) < radius;
+}
+} // namespace
+
+MoveResult PhysicalNavigation::walk(MotionState &actor, const Point &goal, double pace,
+                                    const std::vector<Hazard> &fire) const {
+    check_point(actor.position);
+    check_point(goal);
+    if (!std::isfinite(pace))
+        throw std::invalid_argument("Invalid walking pace");
+    if (!std::isfinite(actor.heading) || actor.blocked_ticks < 0 ||
+        actor.blocked_ticks == std::numeric_limits<int>::max())
+        throw std::invalid_argument("Invalid movement state");
+    for (const auto &step : actor.path)
+        check_point(point(step));
+    MoveResult result;
+    if (distance(goal, actor.position) < 1e-6) {
+        actor.blocked_ticks = 0;
+        return result;
+    }
+    auto zone = surfaces_->locate(world(goal), 96);
+    if (!zone) {
+        ++actor.blocked_ticks;
+        return result;
+    }
+    std::set<AreaId> avoided;
+    for (const auto &[center, radius] : fire) {
+        check_point(center);
+        if (!std::isfinite(radius))
+            throw std::invalid_argument("Invalid fire radius");
+        for (const auto &[id, pos] : centers_)
+            if (id != actor.area && id != *zone && distance(center, pos) < radius)
+                avoided.insert(id);
+    }
+    Destination dest{*zone, goal, avoided};
+    bool crossing = !actor.path.empty() && std::get<3>(actor.path.front()) != actor.area;
+    if ((!crossing && dest != actor.destination) || actor.path.empty()) {
+        auto route = path(actor.area, actor.position, *zone, goal, avoided);
+        if (!route && !avoided.empty())
+            route = path(actor.area, actor.position, *zone, goal, {});
+        if (!route) {
+            ++actor.blocked_ticks;
+            return result;
+        }
+        actor.path = std::move(*route);
+        actor.destination = std::move(dest);
+        result.replanned = true;
+    }
+    actor.blocked_ticks = 0;
+    for (const auto &node : actor.path) {
+        if (pace <= 0)
+            break;
+        auto endpoint = point(node);
+        auto length = distance(actor.position, endpoint);
+        if (length > 0) {
+            const double fraction = std::min(1., pace / length);
+            auto next = fraction < 1 ? lerp(actor.position, endpoint, fraction) : endpoint;
+            if (std::ranges::any_of(fire,
+                                    [&](const Hazard &h) { return enters_fire(actor.position, next, h); })) {
+                result.waiting = true;
+                break;
+            }
+            const double dx = next[0] - actor.position[0], dy = next[1] - actor.position[1];
+            if (std::hypot(dx, dy) > 1e-6)
+                actor.heading = std::atan2(dy, dx);
+            actor.position = next;
+            result.moved = true;
+        }
+        pace -= length;
+        if (pace >= 0) {
+            actor.area = std::get<3>(node);
+            ++result.consumed;
+        }
+    }
+    actor.path.erase(actor.path.begin(), actor.path.begin() + result.consumed);
+    return result;
+}
+
+std::vector<Point> PhysicalNavigation::grenade(const Point &origin, const Point &target, int flight) const {
+    check_point(origin);
+    check_point(target);
+    if (flight <= 0)
+        throw std::invalid_argument("Invalid grenade flight duration");
+    Point pos = origin;
+    pos[2] += 4;
+    const double gravity = 8. * std::min(18, flight) / (double(flight) * flight);
+    Point velocity;
+    for (int i = 0; i < 3; ++i)
+        velocity[i] = (target[i] - pos[i]) / flight;
+    velocity[2] += gravity * (flight - 1) / 2;
+    std::vector<Point> track{pos};
+    for (int step = 0; step < flight; ++step) {
+        double remaining = 1;
+        for (int bounce = 0; bounce < 4; ++bounce) {
+            Point end;
+            for (int j = 0; j < 3; ++j)
+                end[j] = pos[j] + velocity[j] * remaining;
+            auto hit = collision_->trace(world(pos), world(end), 8, step == flight - 1);
+            if (!hit) {
+                pos = end;
+                break;
+            }
+            const double t = std::get<0>(*hit);
+            Point normal = std::get<2>(*hit).value();
+            double incidence =
+                sum3(velocity[0] * normal[0], velocity[1] * normal[1], velocity[2] * normal[2]);
+            if (incidence > 0) {
+                incidence = -incidence;
+                for (auto &v : normal)
+                    v = -v;
+            }
+            for (int j = 0; j < 3; ++j) {
+                pos[j] = pos[j] + velocity[j] * remaining * t + normal[j] * 0.02;
+                velocity[j] = 0.65 * (velocity[j] - 1.55 * incidence * normal[j]);
+            }
+            remaining *= 1 - t;
+        }
+        track.push_back(pos);
+        velocity[2] -= gravity;
+    }
+    return track;
+}
+} // namespace esport
