@@ -82,7 +82,6 @@ def performance_signals(s, rounds, role, side):
     assists = (s["a"] - side["assists"]) / (rounds + 12)
     attempts = s.get("opening", 0) + s.get("openingDeaths", 0)
     duels = (s.get("opening", 0) - s.get("openingDeaths", 0)) / (attempts + 6)
-    exposure = (attempts - side["opening"]) / (rounds + 12)
     survival = (rounds - s["d"] + 2) / (rounds + 4)
     contribution = reference + 0.24 * damage + 30 * kills
     signals = dict(
@@ -90,7 +89,8 @@ def performance_signals(s, rounds, role, side):
         positioning=points(reference + 32 * (survival - 0.35)),
         support=points(reference + 60 * assists),
     )
-    if attempts:
+    if attempts and side["opening"] is not None:
+        exposure = (attempts - side["opening"]) / (rounds + 12)
         signals["entry"] = points(reference + 23 * duels + 12 * exposure)
     if s["k"] and "hs" in s:
         signals["first_shot"] = points(

@@ -162,7 +162,7 @@ class Store:
                 pack = self.careers.pack(c["source"])
                 for event in c["history"]:
                     if event["date"] >= training.offset(c["date"], -90):
-                        scout_sources.played(c, pack, event, self.careers.report(event["result"]))
+                        scout_sources.played(c, pack, event, self.careers.historical_report(c, event))
                 scout_sources.freeze(c["scouting"])
         elif c:
             database.require(c["scouting"].get("version") == 1, "Неизвестная версия скаутинга")

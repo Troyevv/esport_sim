@@ -99,6 +99,39 @@ try {
     Stop-Game
     Batch 'stop'
     if ($other.HasExited) { throw 'Unrelated Python process was terminated' }
+    # Start each entry point as the owning server against its own untouched R3.3 profile.
+    $env:ESPORT_SIM_MAPS = Split-Path (Split-Path $cache -Parent) -Parent
+    foreach ($launcher in 'BAT','EXE') {
+        $env:LOCALAPPDATA = Join-Path $env:RUNNER_TEMP "Legacy career $launcher"
+        $profileRoot = Join-Path $env:LOCALAPPDATA 'EsportSim'
+        $null = New-Item -ItemType Directory -Force $profileRoot
+        $descriptor = Join-Path $profileRoot 'instance.json'
+        $save = Join-Path $profileRoot 'scenario.sqlite'
+        python -c "import gzip,sys,pathlib; pathlib.Path(sys.argv[1]).write_bytes(gzip.decompress(pathlib.Path('tests/fixtures/career-0d09f33.sqlite.gz').read_bytes()))" $save
+        if ($LASTEXITCODE) { throw 'Cannot load R3.3 career fixture' }
+        if ($launcher -eq 'BAT') {
+            Batch 'start'
+        } else {
+            $process = Start-Process $exe -PassThru
+            $limit = [DateTime]::UtcNow.AddSeconds(90)
+            while (!(Test-Path $descriptor) -and !$process.HasExited -and [DateTime]::UtcNow -lt $limit) { Start-Sleep -Milliseconds 100 }
+        }
+        $origin = "http://127.0.0.1:$((Instance).port)"
+        $career = (Invoke-RestMethod "$origin/api/career").active
+        if ($career.history.Count -ne 4) { throw "$launcher lost historical matches" }
+        foreach ($event in $career.history) {
+            $report = Invoke-RestMethod "$origin/api/career/report/$($event.id)"
+            if ($report.stats.Count -ne 10 -or $report.rounds.Count -ne ($event.score[0] + $event.score[1])) { throw "$launcher changed the archived protocol" }
+            foreach ($row in $report.stats) {
+                if ($row.teamId -ne $event.teams[$row.club]) { throw "$launcher attributed a player to the wrong team" }
+            }
+            foreach ($round in $report.rounds) {
+                if ($round.winnerTeamId -ne $event.teams[$round.winner]) { throw "$launcher attributed a round to the wrong team" }
+            }
+        }
+        Stop-Game
+        Write-Output "$launcher opened an existing R3.3 career with four verified protocols."
+    }
     Write-Output 'BAT cold start, cached restart, source and lockfile changes, shared EXE state and targeted shutdown passed.'
 } finally {
     $occupied.Stop()

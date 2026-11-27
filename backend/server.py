@@ -400,7 +400,7 @@ def create_app(
         practices = (e for e in c["training"]["practice"] if e.get("result") and c["team"] in e["teams"])
         for event in reversed([*c["history"], *practices]):
             if event["id"] == event_id:
-                return store.careers.report(event["result"])
+                return store.careers.historical_report(c, event)
         raise HTTPException(404, "Отчёт не найден")
 
     @app.get("/api/maps")
@@ -542,13 +542,14 @@ def create_app(
         key = digest(ws.cookies.get(COOKIE, "")) if mode != "local" else None
         if key:
             connections[key] += 1
-        previous = None
-        last = -1
-        try:
+        async def wait_for_disconnect():
+            while (await ws.receive())["type"] != "websocket.disconnect":
+                continue
+
+        async def publish():
+            previous = None
+            last = -1
             while True:
-                if not paired(ws):
-                    await ws.close(code=1008)
-                    return
                 async with condition:
                     snapshot = app.state.store.snapshot(view, previous)
                     if snapshot["sequence"] == last:
@@ -557,13 +558,34 @@ def create_app(
                             continue
                         except TimeoutError:
                             pass
-                # Each message is a complete projection. Slow readers can skip frames.
-                await ws.send_json(snapshot)
+                try:
+                    if not paired(ws):
+                        await ws.close(code=1008)
+                        return
+                    # Each message is a complete projection. Slow readers can skip frames.
+                    await ws.send_json(snapshot)
+                except RuntimeError as exc:
+                    # Uvicorn sansio can close the transport before ASGI delivers disconnect.
+                    if str(exc) not in (
+                        "Unexpected ASGI message 'websocket.send', after sending 'websocket.close'.",
+                        "Unexpected ASGI message 'websocket.close', after sending 'websocket.close'.",
+                    ):
+                        raise
+                    return
                 last = snapshot["sequence"]
                 previous = snapshot["context"], snapshot["world"]["tick"]
+
+        tasks = [asyncio.create_task(wait_for_disconnect()), asyncio.create_task(publish())]
+        try:
+            done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            for task in done:
+                task.result()
         except (WebSocketDisconnect, OSError):
             pass
         finally:
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
             if key:
                 connections[key] -= 1
                 if not connections[key]:

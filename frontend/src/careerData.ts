@@ -84,7 +84,7 @@ type Team = {
 };
 export type Options = { circuit?:boolean; date: string; teams: Team[] };
 export type Catalog = { id: string; title: string; revision: number }[];
-export type RoundSummary = { round: number; winnerTeamId: string; side: string; score: number[]; buys?: string[] };
+export type RoundSummary = { round: number; winnerTeamId: string | null; side: string; score: number[]; buys?: string[] };
 export type Report = {
   simulation?: Simulation;
   maps?: { mapId: string; scoreByTeam: Record<string, number>; rounds: RoundSummary[] }[];
@@ -92,7 +92,7 @@ export type Report = {
     player: string;
     name: string;
     club: number;
-    teamId?: string;
+    teamId: string | null;
     k: number;
     d: number;
     a: number;

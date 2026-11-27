@@ -9,7 +9,7 @@ from pathlib import Path
 from time import monotonic
 from uuid import uuid4
 
-from . import scout_sources, scouting, training, training_center, attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
+from . import historical_protocol, scout_sources, scouting, training, training_center, attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -109,7 +109,8 @@ class CareerStore:
         rows = self.db.execute(
             """SELECT career,slot,body,digest FROM career_slot
             WHERE CASE WHEN json_valid(body) THEN
-                json_extract(body,'$.world.checkpointVersion') IN (4,5) OR
+                (json_extract(body,'$.world.version')=2 AND
+                 coalesce(json_extract(body,'$.world.checkpointVersion'),1) BETWEEN 1 AND 5) OR
                 (json_type(body,'$.career')='object' AND (json_type(body,'$.career.office') IS NULL OR json_type(body,'$.career.training') IS NULL OR json_type(body,'$.career.scouting') IS NULL))
             END"""
         )
@@ -169,6 +170,10 @@ class CareerStore:
         ).fetchone()
         require(row and checksum(row[0]) == digest, "Повреждён отчёт матча")
         return json.loads(row[0])
+
+    def historical_report(self, c, event):
+        report = self.report(event["result"])
+        return historical_protocol.normalize(c, self.pack(c["source"]), event, report)
 
     def record(self, c, report):
         event = c["queue"][0]
