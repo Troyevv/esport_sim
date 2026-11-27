@@ -48,7 +48,10 @@ def run(args):
         from backend import cs2_collision
         from backend.native_physics import NativeCollision
         cs2_collision.Collision = NativeCollision
-    if args.native_physics:
+    if args.native_movement:
+        from backend.native_physics import NativeMovementMap
+        cs2_maps.Map = NativeMovementMap
+    elif args.native_physics:
         from backend.native_physics import NativePhysicalMap
         cs2_maps.Map = NativePhysicalMap
     pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
@@ -103,7 +106,12 @@ def run(args):
     args.out.mkdir(parents=True, exist_ok=True)
     stem = args.out / args.map
     stem.with_suffix(".checkpoint.json.gz").write_bytes(gzip.compress(checkpoint, mtime=0))
-    report = dict(controls=controls, nativePhysics=args.native_physics, nativeCollision=args.native_collision or args.native_physics, nativeRays=args.native_rays or args.native_collision or args.native_physics, nativeNav=args.native_nav or args.native_physics, restored=bool(args.restore or args.checkpoint), python=platform.python_version(),
+    physics = args.native_physics or args.native_movement
+    collision = physics or args.native_collision
+    report = dict(controls=controls, nativeMovement=args.native_movement, nativePhysics=physics,
+                  nativeCollision=collision, nativeRays=collision or args.native_rays,
+                  nativeNav=physics or args.native_nav, restored=bool(args.restore or args.checkpoint),
+                  python=platform.python_version(),
                   platform=platform.platform(), numpy=version("numpy"), embreex=version("embreex"),
                   initMs=initialized / 1e6, bo1WallS=wall / 1e9, cpuS=cpu / 1e9,
                   rssBeforeMiB=rss_start, peakMiB=peak,
@@ -130,6 +138,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", type=Path, help="Continue from a pinned tick-150 checkpoint")
     parser.add_argument("--expect", type=Path, help="Compare all controls to a reference JSON by map")
     parser.add_argument("--native-collision", action="store_true", help="Use complete native segment queries")
+    parser.add_argument("--native-movement", action="store_true", help="Use native walking and grenade flight with physical navigation")
     parser.add_argument("--native-physics", action="store_true", help="Use native physical route planning and collision")
     parser.add_argument("--native-rays", action="store_true", help="Use the native Embree triangle scene")
     parser.add_argument("--native-nav", action="store_true", help="Substitute native NAV lookup for comparison")

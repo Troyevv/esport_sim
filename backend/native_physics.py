@@ -4,7 +4,7 @@ from weakref import proxy
 
 from . import _match_native as native
 from .cs2_collision import Collision
-from .cs2_maps import Map, UNIT
+from .cs2_maps import Map, UNIT, xyz
 from .match_rules import BLAST_RADIUS
 from .native_navigation import NativeNavigation
 
@@ -65,3 +65,34 @@ class NativePhysicalMap(Map):
             distance, path = result
             return distance, tuple(path)
         return None
+
+
+class NativeMovementMap(NativePhysicalMap):
+    def walk(self, actor, goal, pace, hazards):
+        prior = actor["dest"]
+        destination = (prior[0], prior[1:4], set(prior[4])) if len(prior) == 5 and prior[0] is not None else None
+        current = native.MotionState(
+            xyz(actor), actor["navArea"], actor["heading"], actor.get("blockedTicks", 0),
+            actor["path"], destination,
+        )
+        updated, result = self.planner.walk(
+            current, goal, pace, [(xyz(f), f["radius"]) for f in hazards],
+        )
+        actor["blockedTicks"] = updated.blocked_ticks
+        if result.replanned:
+            zone, point, avoided = updated.destination
+            actor["dest"] = [zone, *point, sorted(avoided)]
+            actor["path"] = [list(node) for node in updated.path]
+        elif result.consumed:
+            del actor["path"][:result.consumed]
+        if result.moved:
+            actor["x"], actor["y"], actor["z"] = updated.position
+            actor["heading"] = updated.heading
+        actor["navArea"] = updated.area
+        if result.waiting:
+            actor["status"] = "Пережидает огонь за укрытием"
+        return result.moved
+
+    def grenade(self, origin, target, flight):
+        track = [tuple(p) for p in self.planner.grenade(origin, target, flight)]
+        return *track[-1], track

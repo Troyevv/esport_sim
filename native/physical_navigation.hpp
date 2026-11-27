@@ -15,6 +15,21 @@ using Waypoint = std::tuple<double, double, double, AreaId>;
 using WalkPath = std::vector<Waypoint>;
 using EscapePath = std::pair<double, WalkPath>;
 
+using Destination = std::tuple<AreaId, Point, std::set<AreaId>>;
+using Hazard = std::pair<Point, double>;
+struct MotionState {
+    Point position;
+    AreaId area;
+    double heading;
+    int blocked_ticks;
+    WalkPath path;
+    std::optional<Destination> destination;
+};
+struct MoveResult {
+    bool moved{}, waiting{}, replanned{};
+    std::size_t consumed{};
+};
+
 class PhysicalNavigation {
   public:
     PhysicalNavigation(std::shared_ptr<const CollisionWorld> world, std::shared_ptr<const PortalGraph> graph,
@@ -25,6 +40,10 @@ class PhysicalNavigation {
     std::optional<WalkPath> path(AreaId area, const Point &start, AreaId zone, const Point &goal,
                                  const std::set<AreaId> &avoided) const;
     std::optional<EscapePath> escape(AreaId area, const Point &start, const Point &bomb, double radius) const;
+
+    MoveResult walk(MotionState &actor, const Point &goal, double pace,
+                    const std::vector<Hazard> &fire) const;
+    std::vector<Point> grenade(const Point &origin, const Point &target, int flight) const;
 
   private:
     using State = std::pair<AreaId, Point>;

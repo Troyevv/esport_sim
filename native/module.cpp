@@ -31,11 +31,33 @@ PYBIND11_MODULE(_match_native, module) {
     using namespace esport;
     module.attr("PHYSICAL_NAV_API_VERSION") = 1;
     py::class_<Crossing>(module, "PhysicalCrossing").def(py::init<AreaId, AreaId, bool, std::vector<Lane>>());
+    py::class_<MotionState>(module, "MotionState")
+        .def(py::init<Point, AreaId, double, int, WalkPath, std::optional<Destination>>())
+        .def_readonly("position", &MotionState::position)
+        .def_readonly("area", &MotionState::area)
+        .def_readonly("heading", &MotionState::heading)
+        .def_readonly("blocked_ticks", &MotionState::blocked_ticks)
+        .def_readonly("destination", &MotionState::destination)
+        .def_readonly("path", &MotionState::path);
+    py::class_<MoveResult>(module, "MoveResult")
+        .def_readonly("moved", &MoveResult::moved)
+        .def_readonly("waiting", &MoveResult::waiting)
+        .def_readonly("replanned", &MoveResult::replanned)
+        .def_readonly("consumed", &MoveResult::consumed);
     py::class_<PhysicalNavigation>(module, "PhysicalNavigation")
         .def(py::init<std::shared_ptr<const CollisionWorld>, std::shared_ptr<const PortalGraph>,
                       std::shared_ptr<const NavSurfaces>, Point, double, std::map<AreaId, Point>,
                       std::vector<Area>, std::set<Point>, std::vector<Crossing>>(),
              Release())
+        .def(
+            "walk",
+            [](const PhysicalNavigation &planner, MotionState actor, const Point &goal, double pace,
+               const std::vector<Hazard> &fire) {
+                auto result = planner.walk(actor, goal, pace, fire);
+                return std::pair{std::move(actor), result};
+            },
+            Release())
+        .def("grenade", &PhysicalNavigation::grenade, Release())
         .def("path", &PhysicalNavigation::path, Release())
         .def("escape", &PhysicalNavigation::escape, Release());
 }
