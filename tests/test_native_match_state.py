@@ -668,3 +668,24 @@ def test_peer_utility_call_reaches_only_allies_after_cast_and_delay(combat_arena
         assert (cast in a.get("crossingCalls", [])) == (
             a["hp"] > 0 and a["team"] == caster["team"] and a["id"] != caster["id"]
         )
+
+
+def test_nuke_opening_in_the_windows_archive_scenario(tmp_path, monkeypatch):
+    from zipfile import ZipFile
+    from backend import cs2_maps as production_maps, database, match as production
+
+    name = "de_nuke"
+    packs = Path(__file__).resolve().parents[1] / "resources/cs2" / str(production_maps.BUILD)
+    with ZipFile(packs / (name + ".zip")) as archive:
+        for file in production_maps.RUNTIME_FILES[name]:
+            archive.extract(file, tmp_path / name)
+    monkeypatch.setattr(production_maps, "_active_root", tmp_path)
+    pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
+    ids = [k for k, roster in pack["rosters"].items() if roster["name"] in ("Team Vitality", "Team Falcons")]
+    world = production.initial(42, database.match_input(pack, ids), ids, map_id=name)
+    owner = native_match_state.open_game(world)
+    for _ in range(12):
+        owner.advance_motion(8)
+    state = json.loads(owner.snapshot())
+    assert state["tick"] == 96 and state["phase"] == "live"
+    assert state["plans"]["CT"]["defenseCall"]["kind"]

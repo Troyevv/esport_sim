@@ -1,5 +1,6 @@
 import asyncio
 import ipaddress
+import logging
 import secrets
 from collections import Counter
 from contextlib import asynccontextmanager, suppress
@@ -126,7 +127,14 @@ def create_app(
                         deadline = loop.time() + TICK_SECONDS
                     await asyncio.sleep(max(0, deadline - loop.time()))
                     async with condition:
-                        if store.tick():
+                        try:
+                            advanced = store.tick()
+                        except Exception:
+                            # A failed clock task stays referenced until shutdown. Record the
+                            # original exception while the windowed server is still running.
+                            logging.exception("Ошибка выполнения игрового тика")
+                            raise
+                        if advanced:
                             condition.notify_all()
 
             async def calendar():
