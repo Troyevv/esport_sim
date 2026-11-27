@@ -223,7 +223,7 @@ def test_background_and_observer_career_reports_allow_either_fixture_order(tmp_p
 
 def test_migrate_pre_scorebot_lab_and_parked_slots_without_replaying_rounds(tmp_path):
     from backend import checkpoints
-    from test_career import act
+    from tests.test_career import act
 
     path = tmp_path / "world.sqlite"
     store = Store(path)
