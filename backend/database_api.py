@@ -17,6 +17,10 @@ from .portrait_sources import previously_rejected
 def editor_router(app):
     router = APIRouter(prefix="/api/database")
 
+    def editor_context():
+        if app.state.store.read().get("career"):
+            raise HTTPException(409, "Редактор исходных данных доступен из главного меню вне карьеры")
+
     @router.get("")
     async def catalog():
         return data.installed(app.state.store.db)
@@ -85,6 +89,7 @@ def editor_router(app):
 
     @router.get("/{key}/{revision}")
     async def package(key: str, revision: int):
+        editor_context()
         try:
             p = data.get(app.state.store.db, key, revision)
             return dict(
@@ -100,6 +105,7 @@ def editor_router(app):
 
     @router.get("/{key}/{revision}/ratings/{player}")
     async def ratings(key: str, revision: int, player: str):
+        editor_context()
         try:
             p = data.get_record(app.state.store.db, key, revision, "players", player)
         except (KeyError, ValueError) as exc:
@@ -196,6 +202,7 @@ def editor_router(app):
 
     @router.post("/{key}/{revision}/{group}/{ident}")
     async def change(key: str, revision: int, group: str, ident: str, body: dict):
+        editor_context()
         store = app.state.store
         try:
             with store.transaction():

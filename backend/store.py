@@ -73,6 +73,8 @@ class Store:
         self.motion = deque(maxlen=6)  # Recent committed poses, never part of a save.
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         migrate_profile = career_store.prepare_migration(self.db, path)
+        from .career_bulk import ActiveBulk
+        self.bulk = ActiveBulk(self.db)
         self.careers = career_store.CareerStore(self)
         self.db.executescript("""
             PRAGMA journal_mode=WAL;
@@ -149,7 +151,21 @@ class Store:
             c["training"] = training.new(c["date"])
         elif c:
             database.require(c["training"].get("version") == 1, "Неизвестная версия подготовки")
-        upgraded_career = migrate_office or migrate_training
+        from . import scouting, scout_sources
+        migrate_scouting = c is not None and "scouting" not in c
+        if migrate_scouting:
+            c["scouting"] = scouting.new()
+            if c["history"]:
+                # Old careers retain the verified protocols. Seed the recent public tape,
+                # leaving every organization's observations and authored reports empty.
+                pack = self.careers.pack(c["source"])
+                for event in c["history"]:
+                    if event["date"] >= training.offset(c["date"], -90):
+                        scout_sources.played(c, pack, event, self.careers.report(event["result"]))
+                scout_sources.freeze(c["scouting"])
+        elif c:
+            database.require(c["scouting"].get("version") == 1, "Неизвестная версия скаутинга")
+        upgraded_career = migrate_office or migrate_training or migrate_scouting
         game = state["world"]
         if game["version"] != 2:
             if upgraded_career:
@@ -189,6 +205,9 @@ class Store:
         label = "активный сценарий" if table == "active" else "ручное сохранение"
         try:
             state = json.loads(body)
+            if "bulkDigest" in state:
+                state = self.bulk.expand(state)
+                body = to_json(state).decode()
             changed = self.upgrade_checkpoint(state, table, body)
             c = state.get("career")
             if c and c.get("circuit") and state["world"]["version"] == 1:
@@ -212,8 +231,17 @@ class Store:
             self.db.rollback()
             raise
 
+    def calendar_stamp(self):
+        # total_changes includes rollbacks on this connection. data_version catches
+        # commits from another connection. A spurious retry is safe in either case.
+        return self.db.total_changes, self.db.execute("PRAGMA data_version").fetchone()[0]
+
+    def calendar_checkpoint(self):
+        stamp = self.calendar_stamp()
+        return stamp, self.read()
+
     def read(self):
-        return from_json(self.db.execute("SELECT body FROM active WHERE id=1").fetchone()[0], cache_strings="keys")
+        return self.bulk.expand(from_json(self.db.execute("SELECT body FROM active WHERE id=1").fetchone()[0], cache_strings="keys"))
 
     def write(self, state):
         # Completed rounds are immutable and shared by the active game and save slot.
@@ -225,6 +253,7 @@ class Store:
                     checkpoints.put_round(self.db, events)
                 )
             world["archive"] = []
+        state = self.bulk.compact(state)
         self.db.execute(
             "INSERT OR REPLACE INTO active VALUES(1,?)", (to_json(state, inf_nan_mode="constants").decode(),)
         )

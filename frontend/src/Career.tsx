@@ -18,6 +18,7 @@ import {
 } from "./careerData";
 import { Load, MatchReport, NewCareer, Saves } from "./CareerForms";
 import { TrainingCenter } from "./TrainingCenter";
+import { ScoutingCenter } from "./ScoutingCenter";
 import { StaffOffice } from "./StaffOffice";
 import { CareerMenu } from "./CareerMenu";
 import { CompetitionCenter } from "./CompetitionCenter";
@@ -544,11 +545,13 @@ function Manager({
                 <StaffOffice key={route.profile.id} {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial="Тренерский штаб" personId={route.profile.id}/>
               ) : active === "Тренировочный центр" ? (
                 <TrainingCenter key={route.jump} {...{c,act}} reports={route.entry==="training"} initial={day} revision={frame.careerRevision||0} enabled={enabled && !progress && !frame.world.series && !frame.world.match}/>
-              ) : ["Тренерский штаб","Скаутский отдел"].includes(active) ? (
+              ) : active === "Скаутский отдел" ? (
+                <ScoutingCenter {...{c,scene,act}} enabled={enabled && !progress && !frame.world.series && !frame.world.match} revision={frame.careerRevision||0} open={id=>open({group:"players",id})}/>
+              ) : active === "Тренерский штаб" ? (
                 <StaffOffice {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial={active}/>
               ) : route.profile ? (
                 <EntityProfile
-                  key={route.profile.group + route.profile.id}
+                  revision={frame.careerRevision||0} key={route.profile.group + route.profile.id}
                   {...{ profile: route.profile, scene, c, open, back }}
                 />
               ) : active === "Организация" ? (

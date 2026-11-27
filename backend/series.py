@@ -297,7 +297,7 @@ def project(w, view="full"):
             }
             for t, maps in s["evidence"].items()
         }
-        if s["stage"] == "veto":
+        if s["stage"] == "veto" and not s.get("spectator"):
             advisor = s.get("work", {}).get(w["coachTeamId"], {}).get("veto")
             public["staffAvailable"] = bool(advisor) or "work" not in s
             if advisor:

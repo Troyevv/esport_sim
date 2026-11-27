@@ -51,6 +51,7 @@ class Command(BaseModel):
         "career-create",
         "career-entry",
         "career-staff",
+        "career-scouting",
         "career-training",
         "career-tactic-draft",
         "career-open",
@@ -133,7 +134,8 @@ def create_app(
                 while True:
                     await wake_calendar.wait()
                     async with condition:
-                        state = store.read()
+                        prepared = store.calendar_checkpoint()
+                        state = prepared[1]
                         c = state.get("career")
                         if not c or not c["progress"]:
                             wake_calendar.clear()
@@ -144,7 +146,7 @@ def create_app(
                         work = await asyncio.to_thread(store.careers.work, state, pack)
                     except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                         async with condition:
-                            store.careers.commit_work(token,None,str(exc))
+                            store.careers.commit_work(token,None,str(exc), prepared=prepared)
                             condition.notify_all()
                         continue
                     token, game = work
@@ -156,7 +158,7 @@ def create_app(
                         error = f"Не удалось рассчитать встречу: {exc}"
                     async with condition:
                         try:
-                            changed = store.careers.commit_batch(token, report, error)
+                            changed = store.careers.commit_batch(token, report, error, prepared=prepared)
                         except (ValueError, OSError, ArithmeticError, KeyError, IndexError) as exc:
                             changed = store.careers.commit_work(token, None, str(exc))
                         if changed:
@@ -321,6 +323,36 @@ def create_app(
                     available=registrations.available(c,c["team"],pack),live=c["circuit"].get("live"),
                     snapshots={**competitions.seed_data()["snapshots"], **c["circuit"]["snapshots"]})
 
+    def scouting_career(career_id):
+        store = app.state.store
+        c = store.read().get("career")
+        if not c or c["id"] != career_id:
+            raise HTTPException(404, "Карьера не открыта")
+        return c, store.careers.pack(c["source"])
+
+    @app.get("/api/career/{career_id}/scouting")
+    async def scouting_center(career_id: str):
+        from . import scouting
+        return scouting.center(*scouting_career(career_id))
+
+    @app.get("/api/career/{career_id}/scouting/{pid}")
+    async def scouting_profile(career_id: str, pid: str):
+        from . import scouting
+        c, pack = scouting_career(career_id)
+        if pid not in pack["players"]:
+            raise HTTPException(404, "Игрок не найден")
+        club = scouting.read_club(c, pack, c["team"])
+        return scouting.visible(c, pack, c["team"], club, pid, c["date"])
+
+    @app.get("/api/career/{career_id}/scouting/{pid}/{version}")
+    async def scouting_report(career_id: str, pid: str, version: int):
+        from . import scouting
+        c, pack = scouting_career(career_id)
+        report = scouting.dossier_report(scouting.read_club(c, pack, c["team"]), pack, pid, c["date"], version)
+        if not report:
+            raise HTTPException(404, "Отчёт не найден")
+        return report
+
     @app.get("/api/career/{career_id}/training-calendar")
     async def training_calendar(career_id: str, since: str, count: int):
         store = app.state.store
@@ -363,7 +395,10 @@ def create_app(
     async def career_report(event_id: str):
         store = app.state.store
         c = store.read().get("career")
-        for event in reversed([*c["history"], *[e for e in c["training"]["practice"] if e.get("result")]] if c else []):
+        if not c:
+            raise HTTPException(404, "Отчёт не найден")
+        practices = (e for e in c["training"]["practice"] if e.get("result") and c["team"] in e["teams"])
+        for event in reversed([*c["history"], *practices]):
             if event["id"] == event_id:
                 return store.careers.report(event["result"])
         raise HTTPException(404, "Отчёт не найден")

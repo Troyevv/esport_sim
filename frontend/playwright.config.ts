@@ -11,7 +11,7 @@ const devices = [
 
 export default defineConfig({
   testDir: './e2e',
-  // The five clients exercise the same single-player server and shared save slot.
+  // The clients exercise the same single-player server and shared save slot.
   workers: 1,
   retries: 0,
   timeout: 60_000,
@@ -26,14 +26,17 @@ export default defineConfig({
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
     },
   },
-  projects: devices.map(({name, width, height, touch}) => ({
+  projects: [...devices.map(({name, width, height, touch}) => ({
     name,
     grepInvert: {
       desktop: /@reconnect/,
       'phone-portrait': /@receipts/,
     }[name] ?? /@reconnect|@receipts/,
     use: { viewport: { width, height }, hasTouch: touch, isMobile: touch },
-  })),
+  })), {
+    name: 'desktop-portrait', testMatch: 'scouting.spec.ts',
+    use: {viewport: {width: 960, height: 1440}, hasTouch: false},
+  }],
   webServer: {
     command: 'python frontend/e2e/serve.py',
     cwd: '..',

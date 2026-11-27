@@ -1216,9 +1216,12 @@ def project(w, view="full"):
     sides = {a["teamId"]: a["team"] for a in w["agents"]}
     coach_view = view in ("full", sides[w["coachTeamId"]])
     ratings = {}
+    known = w["domain"].get("managerPlayers")
+    coached = [a for a in w["agents"] if a["teamId"] == w["coachTeamId"]]
+    coach_view = coach_view and not w.get("series", {}).get("spectator")
     if coach_view:
         for a in w["agents"]:
-            if a["teamId"] == w["coachTeamId"]:
+            if a["teamId"] == w["coachTeamId"] and (known is None or a["playerId"] in known):
                 ratings[a["id"]] = world.player_report(w["domain"], a["playerId"])[
                     "ratings"
                 ]
@@ -1244,7 +1247,7 @@ def project(w, view="full"):
                     ),
                     space.name.removeprefix("de_") if space else MAP["id"],
                 )
-                if coach_view
+                if coach_view and (known is None or all(a["playerId"] in known for a in coached))
                 else None
             ),
             round=w["round"],
@@ -1318,7 +1321,7 @@ def project(w, view="full"):
             },
             prepared=(
                 [tactics.reference(p) for p in w.get("playbook", {}).values()]
-                if coach_view
+                if coach_view and (known is None or all(a["playerId"] in known for a in coached))
                 else []
             ),
             pregame=not w.get("started")
@@ -1331,7 +1334,7 @@ def project(w, view="full"):
                         w, [a for a in w["agents"] if a["teamId"] == w["coachTeamId"]]
                     )
                 )[0]
-                if coach_view
+                if coach_view and (known is None or all(a["playerId"] in known for a in coached))
                 else None
             ),
             remaining=w["remaining"],
