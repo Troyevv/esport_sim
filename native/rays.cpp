@@ -20,15 +20,21 @@
 namespace esport {
 namespace {
 // The Python wheel has platform-specific library names. Open the exact library
-// already loaded by embreex, keeping a reference until all scene handles die.
+// already loaded by embreex. TBB can finish worker teardown after C++ static
+// destructors run, so its code must remain mapped until process termination.
 class Library {
 public:
     explicit Library(const std::filesystem::path& path) {
         if (!path.is_absolute()) throw std::invalid_argument("Expected an absolute Embree path");
 #ifdef _WIN32
         handle_ = LoadLibraryExW(path.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+        HMODULE pinned{};
+        if (handle_ && !GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, path.c_str(), &pinned)) {
+            FreeLibrary(handle_);
+            throw std::runtime_error("Could not pin the installed Embree runtime");
+        }
 #else
-        handle_ = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+        handle_ = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
 #endif
         if (!handle_) throw std::runtime_error("Could not load the installed Embree 4 library");
     }

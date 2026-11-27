@@ -12,6 +12,7 @@ concurrency:
 jobs:
   native:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-24.04, windows-2022]
     runs-on: ${{ matrix.os }}
@@ -29,7 +30,7 @@ jobs:
         run: |
           cmake -S native -B build/sanitizers -Dpybind11_DIR="$(python -m pybind11 --cmakedir)" -DNAV_SANITIZERS=ON -DEMBREE_TEST_LIBRARY="$(python -c 'from backend.cs2_rays import _library_path; print(_library_path())')"
           cmake --build build/sanitizers --target check_navigation check_rays
-          ctest --test-dir build/sanitizers --output-on-failure
+          ctest --test-dir build/sanitizers --output-on-failure --repeat until-fail:5
   backend:
     runs-on: ubuntu-24.04
     steps:
