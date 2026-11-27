@@ -1,4 +1,4 @@
-#include "physical_navigation.hpp"
+#include "perception.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -44,7 +44,7 @@ PYBIND11_MODULE(_match_native, module) {
         .def_readonly("waiting", &MoveResult::waiting)
         .def_readonly("replanned", &MoveResult::replanned)
         .def_readonly("consumed", &MoveResult::consumed);
-    py::class_<PhysicalNavigation>(module, "PhysicalNavigation")
+    py::class_<PhysicalNavigation, std::shared_ptr<PhysicalNavigation>>(module, "PhysicalNavigation")
         .def(py::init<std::shared_ptr<const CollisionWorld>, std::shared_ptr<const PortalGraph>,
                       std::shared_ptr<const NavSurfaces>, Point, double, std::map<AreaId, Point>,
                       std::vector<Area>, std::set<Point>, std::vector<Crossing>>(),
@@ -60,4 +60,16 @@ PYBIND11_MODULE(_match_native, module) {
         .def("grenade", &PhysicalNavigation::grenade, Release())
         .def("path", &PhysicalNavigation::path, Release())
         .def("escape", &PhysicalNavigation::escape, Release());
+
+    py::class_<Observer>(module, "Observer").def(py::init<Point, double, bool, bool>());
+    py::class_<Listener>(module, "Listener").def(py::init<Point, double, bool>());
+    py::class_<Heard>(module, "Heard")
+        .def_readonly("listener", &Heard::listener)
+        .def_readonly("estimate", &Heard::estimate)
+        .def_readonly("confidence", &Heard::confidence);
+    py::class_<MapSensors>(module, "MapSensors")
+        .def(py::init<std::shared_ptr<const PhysicalNavigation>, std::vector<std::string>>(), Release())
+        .def("observe", &MapSensors::observe, Release())
+        .def("hear", &MapSensors::hear, Release())
+        .def("shot_transmission", &MapSensors::shot_transmission, Release());
 }

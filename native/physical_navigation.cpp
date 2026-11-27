@@ -16,6 +16,8 @@ void check_point(const Point &p) {
 Point lerp(const Point &a, const Point &b, double t) {
     return {a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t};
 }
+} // namespace
+
 // Compensate the rounding of each square and addition before rounding the
 // root. Path costs must preserve math.dist tie ordering, including on MSVC.
 double distance(const Point &a, const Point &b) {
@@ -31,6 +33,7 @@ double distance(const Point &a, const Point &b) {
     const double root = std::sqrt(sum);
     return root + (std::fma(-root, root, sum) + error) / (2 * root);
 }
+namespace {
 Waypoint waypoint(const Point &p, AreaId area) { return {p[0], p[1], p[2], area}; }
 Point point(const Waypoint &p) { return {std::get<0>(p), std::get<1>(p), std::get<2>(p)}; }
 template <class Key> bool improves(const std::map<Key, double> &costs, const Key &key, double value) {
@@ -425,5 +428,17 @@ std::vector<Point> PhysicalNavigation::grenade(const Point &origin, const Point 
         velocity[2] -= gravity;
     }
     return track;
+}
+} // namespace esport
+
+namespace esport {
+std::optional<Impact> PhysicalNavigation::hit(const Point &start, const Point &end, unsigned mask, double up,
+                                              double target_up, bool canonical) const {
+    auto a = world(start), b = world(end);
+    a[2] += up;
+    b[2] += target_up;
+    if (canonical && b < a)
+        std::swap(a, b);
+    return collision_->trace(a, b, mask);
 }
 } // namespace esport
