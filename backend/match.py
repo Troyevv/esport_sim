@@ -79,7 +79,7 @@ def init_performance(a, now):
     )
 
 
-def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, *, map_id="depo", first_attack=None):
+def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, *, map_id="depo", first_attack=None, native=False):
     space = None if map_id=="depo" else cs2_maps.get(map_id)
     agents = [engine.spawn_slot(seed, side, slot, side_index*5+slot)
               for side_index,side in enumerate(("T","CT")) for slot in range(5)]
@@ -124,6 +124,9 @@ def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, 
         if first_attack not in match_score.team_ids(w):
             raise ValueError("Неизвестная стартующая команда")
         w["firstAttackTeamId"] = first_attack
+    if native and space:
+        from . import native_match_state
+        return native_match_state.start_round(w, space)
     next_round(w)
     return w
 
@@ -847,6 +850,16 @@ def resolve_attacks(w, order, players, ids, space):
                         listener["nextSoundCall"] = now + 10 + delay
                         w["messages"].append(dict(team=listener["team"], sender=listener["id"],
                                                   sight=cue, due=now+delay))
+
+
+def play_map(w):
+    """Finish an unattended detailed map using the rules of its checkpoint."""
+    if w.get("mapId"):
+        from . import native_match_state
+        native_match_state.play_map(w)
+    else:
+        while w["phase"] != "finished":
+            advance(w)
 
 
 def advance(w):

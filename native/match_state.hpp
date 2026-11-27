@@ -34,6 +34,7 @@ class MatchState {
     void buy_equipment(const std::string &side, const std::string &strategy, const std::string &board);
     void command(const std::string &kind, const std::string &value);
     int advance(int ticks);
+    void begin_live();
     std::string advance_recorded(int ticks, TickOutput mode);
     int advance_intermission(int ticks);
     void deliver_radio();

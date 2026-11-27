@@ -344,7 +344,7 @@ int MatchState::Impl::advance(int ticks, TickSamples *output) {
         return std::pair{a.at("teamId") != staged.at("firstAttackTeamId"), a.at("slot").get<int>()};
     };
     std::stable_sort(roster.begin(), roster.end(), [&](auto &l, auto &r) { return rank(l) < rank(r); });
-    staged.at("started") = true;
+    staged["started"] = true;
     int count = 0;
     while (count < ticks && staged.at("phase") != "finished" && staged.at("phase") != "timeout" &&
            (!output || !output->end_of_preview(staged))) {
@@ -413,6 +413,14 @@ int MatchState::advance_intermission(int ticks) {
         w.swap(staged);
     }
     return int(count);
+}
+void MatchState::begin_live() {
+    std::scoped_lock lock(impl_->mutex);
+    if (impl_->state.at("phase") != "freeze")
+        throw std::invalid_argument("Требуется подготовка раунда");
+    auto staged = impl_->state;
+    impl_->opening_map().begin_live(staged, impl_->config);
+    impl_->state.swap(staged);
 }
 void MatchState::deliver_radio() {
     std::scoped_lock lock(impl_->mutex);

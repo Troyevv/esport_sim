@@ -112,7 +112,7 @@ def next_map(w):
         w["rosterIds"],
         w["coachTeamId"],
         map_id=item["map"],
-        first_attack=item["attack"],
+        first_attack=item["attack"], native=True,
     )
     budget = s["profile"].get("timeouts",game["remaining"])
     game["remaining"] = budget if s["profile"].get("timeoutScope")=="map" else w.get("remaining",budget)

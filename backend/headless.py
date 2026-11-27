@@ -24,9 +24,8 @@ def main():
     tracemalloc.start()
     started = time.perf_counter()
     if args.bo1:
-        state = match.initial(args.seed,map_id=args.map)
-        while state["phase"] != "finished":
-            match.advance(state)
+        state = match.initial(args.seed,map_id=args.map, native=True)
+        match.play_map(state)
     else:
         state = engine.initial(args.seed)
         for _ in range(args.ticks):

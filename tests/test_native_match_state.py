@@ -542,3 +542,24 @@ def test_native_tick_batch_stops_at_timeout_without_spending_clock(combat_arenas
     with pytest.raises(ValueError):
         owner.advance(-1)
     assert owner.snapshot() == before
+
+
+def test_batch_starts_new_map_with_older_rules_and_records_exact_profile(combat_arenas, monkeypatch):
+    old, physics = combat_arenas
+    monkeypatch.setattr(cs2_maps, "get", lambda _: old)
+    w = match.initial(41000, map_id="de_nuke")
+    assert encode_world(match.initial(41000, map_id="de_nuke", native=True)) == encode_world(w)
+    w["rules"] = cs2_maps.PREVIOUS_RULES
+    owner = native_match_state.restore(encode_world(w), old, physics=physics)
+    for call in ("timeout", "resume"):
+        match.command(w, call)
+        owner.command(call, "")
+    poses = []
+    for _ in range(75):
+        match.advance(w)
+        if w["tick"] % 10 == 0:
+            poses.append([[a[k] for k in ("id", "x", "y", "z", "hp", "navArea")] for a in w["agents"]])
+    profile = json.loads(owner.profile_ticks(75))
+    assert profile["samples"] == poses
+    assert len(profile["durations"]) == 75
+    assert_same(owner, w)

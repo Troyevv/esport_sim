@@ -68,17 +68,34 @@ def run(args):
     poses = hashlib.sha256()
     started = perf_counter_ns()
     cpu = process_time_ns()
-    game = match.initial(args.seed, domain, pair, map_id=args.map)
+    game = match.initial(args.seed, domain, pair, map_id=args.map, native=args.native_core)
+    owner = None
+    if args.native_core:
+        from backend import native_match_state
+        owner = native_match_state.open_game(game)
     initialized = perf_counter_ns() - started
     # Exercise the same legal manager input in every run.
     commands = [(0, "timeout", None), (0, "resume", None)]
     for _, kind, value in commands:
-        match.command(game, kind, value)
+        if owner is None:
+            match.command(game, kind, value)
+        else:
+            owner.command(kind, value or "")
     checkpoint = None
     while game["phase"] != "finished":
-        before = perf_counter_ns()
-        match.advance(game)
-        durations.append(perf_counter_ns() - before)
+        if owner is None:
+            before = perf_counter_ns()
+            match.advance(game)
+            durations.append(perf_counter_ns() - before)
+        else:
+            report = json.loads(owner.profile_ticks(150 if not durations else 1024))
+            durations.extend(report["durations"])
+            for pose in report["samples"]:
+                poses.update(encode(pose))
+            if report["tick"] == 150 or report["phase"] == "finished":
+                game = json.loads(owner.snapshot())
+            else:
+                game["tick"], game["phase"] = report["tick"], report["phase"]
         if game["tick"] == 150:
             # Store.write preserves insertion order. Dated contacts in an event
             # can reflect that order even when the match outcome is identical.
@@ -90,7 +107,9 @@ def run(args):
                 game = json.loads(saved)
             elif args.restore:
                 game = json.loads(checkpoint)
-        if game["tick"] % 10 == 0:
+            if owner is not None and (args.checkpoint or args.restore):
+                owner = native_match_state.open_game(game)
+        if owner is None and game["tick"] % 10 == 0:
             poses.update(encode([[a["id"], a["x"], a["y"], a["z"], a["hp"], a["navArea"]]
                                  for a in game["agents"]]))
         if game["tick"] >= 180000 or game["phase"] == "timeout":
@@ -114,7 +133,7 @@ def run(args):
     movement = args.native_movement or args.native_perception
     physics = args.native_physics or movement
     collision = physics or args.native_collision
-    report = dict(controls=controls, nativePerception=args.native_perception, nativeMovement=movement, nativePhysics=physics,
+    report = dict(controls=controls, nativeCore=args.native_core, nativePerception=args.native_perception, nativeMovement=movement, nativePhysics=physics,
                   nativeCollision=collision, nativeRays=collision or args.native_rays,
                   nativeNav=physics or args.native_nav, restored=bool(args.restore or args.checkpoint),
                   python=platform.python_version(),
@@ -143,6 +162,7 @@ if __name__ == "__main__":
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, help="Continue from a pinned tick-150 checkpoint")
     parser.add_argument("--expect", type=Path, help="Compare all controls to a reference JSON by map")
+    parser.add_argument("--native-core", action="store_true", help="Run all ticks and coach commands on the C++ owner")
     parser.add_argument("--native-collision", action="store_true", help="Use complete native segment queries")
     parser.add_argument("--native-perception", action="store_true", help="Use native vision, hearing and shot transmission with native movement")
     parser.add_argument("--native-movement", action="store_true", help="Use native walking and grenade flight with physical navigation")

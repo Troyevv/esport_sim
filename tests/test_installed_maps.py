@@ -419,3 +419,38 @@ def test_dust2_short_long_hearing_depends_on_the_actual_approach():
     source.update(match_ai.at(space.centers[1682]))
     match_ai.heard_action(game, space, source, [listener], "Шаги", 88)
     assert not listener["knowledge"]
+
+
+def test_authoritative_native_owner_survives_batches_and_reopens_saved_game(tmp_path, monkeypatch):
+    store = Store(tmp_path / "native.sqlite")
+    command(store, "match", dict(seed=41000, map="de_nuke"))
+    state = store.read()
+    state.update(running=True, speed=8)
+    with store.transaction():
+        store.write(state)
+    reference = deepcopy(state["world"])
+    expected = []
+    for _ in range(9):
+        for _ in range(8):
+            match.advance(reference)
+        expected.append(json.dumps(reference, ensure_ascii=False))
+
+    def unexpected(*args):
+        pytest.fail("The production match called a Python tick")
+
+    monkeypatch.setattr(match, "advance", unexpected)
+    for index, snapshot in enumerate(expected):
+        store.tick()
+        assert json.dumps(store.read()["world"], ensure_ascii=False) == snapshot
+        if index == 0:
+            first_owner = store.match_owner[1]
+        elif index == 1:
+            assert store.match_owner[1] is first_owner
+        if index == 6:
+            command(store, "save")
+            command(store, "load")
+            state = store.read()
+            state.update(running=True, speed=8)
+            with store.transaction():
+                store.write(state)
+    store.db.close()

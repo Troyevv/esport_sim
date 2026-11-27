@@ -253,7 +253,7 @@ def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
         domain,
         rosters,
         c["team"] if c["team"] in event["teams"] else None,
-        map_id=event.get("mapId","depo"),
+        map_id=event.get("mapId","depo"), native=True,
     )
     if event.get("pcw") and event.get("board"):
         match.assign(game, event["board"])
@@ -282,12 +282,10 @@ def simulate(game):
         while game["series"]["stage"] != "finished":
             if game["series"]["stage"] != "playing":
                 game = series.next_map(game)
-            while game["phase"] != "finished":
-                match.advance(game)
+            match.play_map(game)
             series.finish_map(game)
         return result(game)
-    while game["phase"] != "finished":
-        match.advance(game)
+    match.play_map(game)
     return result(game)
 
 

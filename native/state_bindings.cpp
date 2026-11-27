@@ -9,7 +9,15 @@ namespace py = pybind11;
 void bind_state(py::module_ &module) {
     using namespace esport;
     using Release = py::call_guard<py::gil_scoped_release>;
-    module.attr("MATCH_STATE_API_VERSION") = 1;
+    module.attr("MATCH_STATE_API_VERSION") = 2;
+    module.def(
+        "round_checkpoint",
+        [](const std::string &input, const std::string &rules, const std::string &spawn_table) {
+            auto state = Json::parse(input);
+            start_round(state, Json::parse(rules), Json::parse(spawn_table));
+            return state.dump();
+        },
+        Release());
     py::class_<SiteData>(module, "SiteData")
         .def(py::init<decltype(SiteData::solids), decltype(SiteData::costs), decltype(SiteData::samples),
                       Ingress>());
@@ -50,6 +58,7 @@ void bind_state(py::module_ &module) {
             "profile_ticks",
             [](MatchState &owner, int ticks) { return owner.advance_recorded(ticks, TickOutput::Profile); },
             Release())
+        .def("begin_live", &MatchState::begin_live, Release())
         .def("advance", &MatchState::advance, Release())
         .def("advance_intermission", &MatchState::advance_intermission, Release())
         .def("attach_opening", &MatchState::attach_opening, Release())
