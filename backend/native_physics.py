@@ -121,7 +121,9 @@ class NativePerceptionMap(NativeMovementMap):
                   for label in lane for i in self.places[label]}
         nearby = {i: sorted(self.nearby_areas(self.centers[i], 12),
                             key=lambda j: dist(self.centers[j], self.centers[i])) for i in stages}
-        orders = native.OrderData({label: list(ids) for label, ids in self.places.items()}, self.plants, self.holds, nearby, ROLES, [p for _, p in self.cover])
+        plant_corners = {i: [self.to_sim(p) for p in self.nav.areas[i]["corners"]]
+                         for ids in self.plants.values() for i in ids}
+        orders = native.OrderData({label: list(ids) for label, ids in self.places.items()}, self.plants, self.holds, nearby, ROLES, [p for _, p in self.cover], self.attack_spawns, plant_corners)
         return native.OpeningMap(self.objectives, json.dumps(self.profile), json.dumps(self.defense),
                                  contest, stations, self.site_points, orders)
 

@@ -11,6 +11,8 @@ struct OrderData {
     std::map<AreaId, std::vector<AreaId>> nearby;
     std::vector<std::string> roles;
     std::vector<Point> cover;
+    std::vector<AreaId> attack_spawns;
+    std::map<AreaId,std::vector<Point>> plant_corners;
 };
 class OpeningMap {
   public:
@@ -29,6 +31,7 @@ class OpeningMap {
                 const std::string &item, double radius) const;
     const Objectives &objectives() const { return *objectives_; }
     const Json &profile() const { return profile_; }
+    const Contest& contest(const std::string& site,int lane) const {return contest_.at(site).at(lane);}
     const OrderData &layout() const { return orders_; }
     const Point &site_point(const std::string &site) const { return sites_.at(site); }
     void begin_live(Json &w, const Json &cfg) const;

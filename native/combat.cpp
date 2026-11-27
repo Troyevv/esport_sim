@@ -15,7 +15,8 @@ const Json &skills(const Json &w, const Json &a) {
 int draw(Json &a) {
     return int(draw_rng(a) >> 16);
 }
-int accuracy(const Json &w, const Json &cfg, const Json &a, const Json &spec, double gap, int burst) {
+} // namespace
+int weapon_accuracy(const Json &w, const Json &cfg, const Json &a, const Json &spec, double gap, int burst) {
     const auto &player = w.at("domain").at("players").at(a.at("playerId").get<std::string>());
     const auto &skill = player.at("skills");
     auto s = [&](const std::string &k) { return skill.at(k).get<double>(); };
@@ -37,6 +38,7 @@ int accuracy(const Json &w, const Json &cfg, const Json &a, const Json &spec, do
     return int(std::clamp(std::nearbyint(base), 8., 96.));
 }
 
+namespace {
 void add(Json &v, int delta) { v = v.get<int>() + delta; }
 void death(Json &w, const Json &cfg, Json &shooter, Json &target, const std::string &weapon, bool head,
            bool enemy) {
@@ -177,7 +179,7 @@ void Combat::shoot(Json &w, const Json &cfg, Json &agent, const Json &sight, Jso
         now - agent.at("lastShot").get<Tick>() > 4 ? 0 : std::min(4, agent.at("burst").get<int>() + 1);
     const auto start = xyz(agent), end = xyz(sight);
     double gap = distance(start, end);
-    int chance = accuracy(w, cfg, agent, spec, gap, burst);
+    int chance = weapon_accuracy(w, cfg, agent, spec, gap, burst);
     add(agent.at("ammo"), -1);
     agent["lastShot"] = now;
     agent["burst"] = burst;

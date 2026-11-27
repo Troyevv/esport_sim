@@ -94,15 +94,20 @@ NavSurfaces::NavSurfaces(std::vector<Area> areas) : areas_(std::move(areas)) {
 }
 
 std::optional<std::int64_t> NavSurfaces::locate(const Point& p, double max_vertical) const {
+    auto result=locate_with_height(p,max_vertical);
+    return result ? std::optional<std::int64_t>(result->first) : std::nullopt;
+}
+
+std::optional<std::pair<std::int64_t,double>> NavSurfaces::locate_with_height(const Point& p, double max_vertical) const {
     if (!finite(p) || !std::isfinite(max_vertical))
         throw std::invalid_argument("Non-finite NAV query");
     std::optional<std::pair<double, std::int64_t>> best;
+    double height=0;
     auto consider = [&](std::size_t index) {
         const auto& [id, corners] = areas_[index];
         if (auto z = surface_height(corners, p[0], p[1])) {
             auto candidate = std::pair{std::abs(p[2] - *z), id};
-            if (candidate.first <= max_vertical && (!best || candidate < *best))
-                best = candidate;
+            if (candidate.first <= max_vertical && (!best || candidate < *best)) {best = candidate; height=*z;}
         }
     };
     const Sector key{sector(p[0]), sector(p[1])};
@@ -115,7 +120,7 @@ std::optional<std::int64_t> NavSurfaces::locate(const Point& p, double max_verti
             entry.low.second <= key.second && key.second <= entry.high.second)
             consider(entry.index);
     }
-    if (best) return best->second;
+    if (best) return std::pair{best->second,height};
     return std::nullopt;
 }
 

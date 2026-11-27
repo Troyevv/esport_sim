@@ -1,4 +1,5 @@
 #include "match_state.hpp"
+#include "agent_turn.hpp"
 #include "economy.hpp"
 #include "navigation.hpp"
 #include "observation.hpp"
@@ -6,6 +7,7 @@
 #include "round_rules.hpp"
 #include "tactic_execution.hpp"
 #include "team_ai.hpp"
+#include "tick_output.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -245,6 +247,63 @@ class MatchState::Impl {
             roster.at(i).swap(a);
         messages.swap(pending);
     }
+    void resolve(Json &world, Json &intents) const {
+        if (world.at("tick").get<Tick>() % 2 == 0)
+            std::reverse(intents.begin(), intents.end());
+        auto attacks = Json::array();
+        for (const auto &intent : intents)
+            if (intent.at("kind") == "shoot" || intent.at("kind") == "throw")
+                attacks.push_back(intent);
+        combat->execute(world, config, attacks);
+        objectives->resolve(world, config, intents);
+    }
+    int advance(int ticks, TickSamples *output);
+    void tick(Json &world) const {
+        auto &roster = world.at("agents");
+        world.at("tick") = plus_ticks(world.at("tick"), 1);
+        const Tick now = world.at("tick");
+        if (world.at("phase") == "freeze" || world.at("phase") == "result") {
+            if (now >= world.at("deadline")) {
+                if (world.at("phase") == "result") {
+                    start_round(world, config, spawns);
+                    if (world.at("pending") == true)
+                        enter_timeout(world);
+                } else
+                    opening_map().begin_live(world, config);
+            }
+            return;
+        }
+        combat->effects(world, config);
+        deliver_radio(world);
+        observe_contacts(world, combat->sensors(), *objectives);
+        auto &traces = world.at("traces");
+        traces.erase(
+            std::remove_if(traces.begin(), traces.end(),
+                           [&](const Json &trace) { return now - trace.at("tick").get<Tick>() >= 45; }),
+            traces.end());
+        Json intents = Json::array();
+        for (std::string side : {"T", "CT"}) {
+            Squad squad;
+            for (auto &a : roster)
+                if (a.at("team") == side && a.at("hp") != 0)
+                    squad.push_back(&a);
+            if (squad.empty())
+                continue;
+            captain_review(world, config, opening_map(), side);
+            Json recovery = side == "T" ? rescue_c4(world, objectives->map(), squad) : Json(nullptr);
+            for (auto actor : squad) {
+                AgentTurn turn(world, *actor, squad, config, opening_map(), *combat, recovery);
+                turn.prepare();
+                auto intent = turn.priority_intent();
+                if (intent.is_null())
+                    intent = turn.spatial_intent();
+                turn.finish(intent);
+                intents.push_back(
+                    Json{{"actor", actor->at("id")}, {"kind", intent[0]}, {"target", std::move(intent[1])}});
+            }
+        }
+        resolve(world, intents);
+    }
 };
 
 MatchState::MatchState(const std::string &checkpoint, std::string current, std::set<std::string> old,
@@ -262,6 +321,52 @@ void MatchState::command(const std::string &kind, const std::string &value) {
     Json staged = impl_->state;
     impl_->apply_command(staged, kind, value);
     impl_->state.swap(staged);
+}
+int MatchState::Impl::advance(int ticks, TickSamples *output) {
+    if (ticks < 0)
+        throw std::invalid_argument("Отрицательное количество тиков");
+    const auto &initial = state;
+    if (!ticks || initial.at("phase") == "finished" || initial.at("phase") == "timeout")
+        return 0;
+    if (!combat || !opening || !objectives || spawns.is_null())
+        throw std::invalid_argument("Данные карты отсутствуют");
+    // Publish the entire requested batch atomically, including the journal and RNG.
+    auto staged = initial;
+    staged.get_ref<Json::object_t &>().reserve(staged.size() + 16);
+    if (staged.at("rules") != rules) {
+        staged["rulesTransition"] = Json{{"previous", staged.at("rules")},
+                                         {"tick", staged.at("tick")},
+                                         {"lastEvent", staged.at("serial")}};
+        staged.at("rules") = rules;
+    }
+    auto &roster = staged.at("agents");
+    auto rank = [&](const Json &a) {
+        return std::pair{a.at("teamId") != staged.at("firstAttackTeamId"), a.at("slot").get<int>()};
+    };
+    std::stable_sort(roster.begin(), roster.end(), [&](auto &l, auto &r) { return rank(l) < rank(r); });
+    staged.at("started") = true;
+    int count = 0;
+    while (count < ticks && staged.at("phase") != "finished" && staged.at("phase") != "timeout" &&
+           (!output || !output->end_of_preview(staged))) {
+        if (output)
+            output->before(staged);
+        tick(staged);
+        if (output)
+            output->after(staged);
+        ++count;
+    }
+    state.swap(staged);
+    return count;
+}
+int MatchState::advance(int ticks) {
+    std::scoped_lock lock(impl_->mutex);
+    return impl_->advance(ticks, nullptr);
+}
+std::string MatchState::advance_recorded(int ticks, TickOutput mode) {
+    std::scoped_lock lock(impl_->mutex);
+    TickSamples samples(mode);
+    impl_->advance(ticks, &samples);
+    return samples.finish(impl_->state).dump();
 }
 int MatchState::advance_intermission(int ticks) {
     if (ticks < 0)
@@ -312,6 +417,35 @@ int MatchState::advance_intermission(int ticks) {
 void MatchState::deliver_radio() {
     std::scoped_lock lock(impl_->mutex);
     impl_->deliver_radio(impl_->state);
+}
+std::string MatchState::priority_intent(const std::string &id, const std::string &input) {
+    auto observation = Json::parse(input);
+    std::scoped_lock lock(impl_->mutex);
+    if (!impl_->combat)
+        throw std::invalid_argument("Физика карты недоступна");
+    auto staged = impl_->state;
+    auto &roster = staged.at("agents");
+    auto agent = std::find_if(roster.begin(), roster.end(),
+                              [&](const Json &a) { return a.at("id") == id && a.at("hp") != 0; });
+    if (agent == roster.end())
+        throw std::invalid_argument("Игрок недоступен");
+    Squad squad;
+    for (auto &a : roster)
+        if (a.at("team") == agent->at("team") && a.at("hp") != 0)
+            squad.push_back(&a);
+    const auto recovery = observation.value("recovery", Json(nullptr));
+    AgentTurn turn(staged, *agent, squad, impl_->config, impl_->opening_map(), *impl_->combat, recovery);
+    turn.action = observation.at("action");
+    turn.device = observation.at("device");
+    for (auto &f : observation.at("fire"))
+        turn.fire.emplace_back(actor_point(f), f.at("radius"));
+    turn.opening_sight = observation.value("openingSight", false);
+    auto result = turn.priority_intent();
+    if (result.is_null())
+        result = turn.spatial_intent();
+    auto encoded = result.dump();
+    impl_->state.swap(staged);
+    return encoded;
 }
 void MatchState::review_captain(const std::string &side) {
     if (side != "T" && side != "CT")
@@ -403,15 +537,8 @@ void MatchState::resolve_intents(const std::string &input) {
     const auto &phase = impl_->state.at("phase");
     if (phase != "live" && phase != "planted")
         throw std::invalid_argument("Требуется активный раунд");
-    if (impl_->state.at("tick").get<Tick>() % 2 == 0)
-        std::reverse(intents.begin(), intents.end());
     auto staged = impl_->state;
-    auto attacks = Json::array();
-    for (const auto &intent : intents)
-        if (intent.at("kind") == "shoot" || intent.at("kind") == "throw")
-            attacks.push_back(intent);
-    impl_->combat->execute(staged, impl_->config, attacks);
-    impl_->objectives->resolve(staged, impl_->config, intents);
+    impl_->resolve(staged, intents);
     impl_->state.swap(staged);
 }
 

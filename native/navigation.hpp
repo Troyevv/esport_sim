@@ -22,6 +22,7 @@ class NavSurfaces {
   public:
     explicit NavSurfaces(std::vector<Area> areas);
     std::optional<std::int64_t> locate(const Point &point, double max_vertical) const;
+    std::optional<std::pair<std::int64_t,double>> locate_with_height(const Point& point,double max_vertical) const;
     std::vector<std::optional<std::int64_t>> locate_many(const std::vector<Point> &points,
                                                          double max_vertical) const;
 

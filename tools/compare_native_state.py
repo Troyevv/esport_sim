@@ -14,10 +14,10 @@ def encode(world):
     return json.dumps(world, ensure_ascii=False, separators=(",", ":"))
 
 
-def compare(checkpoint, combat=False, opening=False, captains=False):
+def compare(checkpoint, combat=False, opening=False, captains=False, agents=False):
     world = json.loads(gzip.decompress(checkpoint.read_bytes()))
     space = cs2_maps.get(world["mapId"])
-    if combat or opening or captains:
+    if combat or opening or captains or agents:
         from backend.native_physics import NativePerceptionMap
         physics = NativePerceptionMap(space.folder)
     counts = Counter()
@@ -181,9 +181,30 @@ def compare(checkpoint, combat=False, opening=False, captains=False):
         if owner is not None:
             same(owner, "captain_" + side)
 
+    seen_agents = set()
+    ref_act = match_ai.act
+
+    def act(obs, actor, allies, device, fire):
+        key = (actor["team"], world["phase"], actor["weapon"], len(actor["visible"]),
+               bool(actor["ammo"]), bool(actor["reloadAt"]), bool(actor["saving"]) if "saving" in actor else False,
+               bool(obs["action"]), bool(device), len(allies), bool(fire))
+        owner = None
+        if key not in seen_agents:
+            seen_agents.add(key)
+            owner = native_match_state.restore(encode(world), physics=physics)
+            actual = json.loads(owner.priority_intent(actor["id"], encode(dict(action=obs["action"], device=device, fire=fire, recovery=obs.get("recovery"), openingSight=obs.get("openingSight", False)))))
+        result = ref_act(obs, actor, allies, device, fire)
+        if owner is not None and actual is not None:
+            if encode(actual) != encode(result):
+                raise ValueError(f"Individual intent at tick {world['tick']}: {actual} != {result}")
+            same(owner, "individual_" + actual[0])
+        return result
+
     with ExitStack() as patches:
         patches.enter_context(patch.object(cs2_economy, "decision", decide))
         patches.enter_context(patch.object(cs2_economy, "buy", buy))
+        if agents:
+            patches.enter_context(patch.object(match_ai, "act", act))
         if captains:
             patches.enter_context(patch.object(match_ai, "captain", review))
         if opening:
@@ -226,5 +247,6 @@ if __name__ == "__main__":
     parser.add_argument("--combat", action="store_true", help="Also compare first observed attack/utility kinds")
     parser.add_argument("--opening", action="store_true", help="Compare team calls and route choices after freeze time")
     parser.add_argument("--captains", action="store_true", help="Compare active calls as reports and squad size change")
+    parser.add_argument("--agents", action="store_true", help="Compare individual contact and survival decisions")
     args = parser.parse_args()
-    print(json.dumps(compare(args.checkpoint, args.combat, args.opening, args.captains), ensure_ascii=False))
+    print(json.dumps(compare(args.checkpoint, args.combat, args.opening, args.captains, args.agents), ensure_ascii=False))
