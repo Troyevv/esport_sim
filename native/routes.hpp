@@ -41,6 +41,7 @@ public:
 
 private:
     friend class StageRoutes;
+    friend class PhysicalNavigation;
     PortalGraph(const std::map<AreaId, Point>& centers, const std::vector<Portal>& portals);
     struct Node {
         AreaId id;

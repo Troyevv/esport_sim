@@ -13,6 +13,8 @@ bool finite(const Point& p) {
     return std::all_of(p.begin(), p.end(), [](double x) { return std::isfinite(x); });
 }
 
+}
+
 std::optional<double> surface_height(const std::vector<Point>& corners, double x, double y) {
     const auto [ax, ay, az] = corners.front();
     for (std::size_t i = 1; i + 1 < corners.size(); ++i) {
@@ -26,7 +28,6 @@ std::optional<double> surface_height(const std::vector<Point>& corners, double x
             return az + u * (bz - az) + v * (cz - az);
     }
     return std::nullopt;
-}
 }
 
 NavSurfaces::NavSurfaces(std::vector<Area> areas) : areas_(std::move(areas)) {

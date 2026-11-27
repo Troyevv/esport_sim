@@ -1,4 +1,5 @@
-#include "rays.hpp"
+#include "collision.hpp"
+#include <pybind11/stl.h>
 
 #include <algorithm>
 #include <cmath>
@@ -23,7 +24,7 @@ std::vector<std::array<T, 3>> triples(const Array<T>& array, bool pad = false) {
     return result;
 }
 
-std::unique_ptr<esport::TriangleScene> make_scene(
+std::shared_ptr<esport::TriangleScene> make_scene(
     const Array<float>& vertices, const Array<std::int32_t>& faces, const Array<std::uint8_t>& masks) {
     if (masks.ndim() != 1) throw py::value_error("Expected one mask per face");
     auto points = triples(vertices, true);
@@ -32,7 +33,7 @@ std::unique_ptr<esport::TriangleScene> make_scene(
     // The installed wheel resolves its dependencies before we take a library reference.
     auto path = py::module_::import("backend.cs2_rays").attr("_library_path")().cast<std::filesystem::path>();
     py::gil_scoped_release release;
-    return std::make_unique<esport::TriangleScene>(path, std::move(points), triangles, channels);
+    return std::make_shared<esport::TriangleScene>(path, std::move(points), triangles, channels);
 }
 
 // NumPy slices can be contiguous but start at an unaligned buffer offset.
@@ -90,8 +91,28 @@ py::tuple first_many(const esport::TriangleScene& scene, const Array<float>& sta
 
 void bind_rays(py::module_& module) {
     module.attr("TRIANGLE_API_VERSION") = 1;
-    py::class_<esport::TriangleScene>(module, "TriangleScene")
+    py::class_<esport::TriangleScene,std::shared_ptr<esport::TriangleScene>>(module, "TriangleScene")
         .def(py::init(&make_scene), py::arg("vertices"), py::arg("faces"), py::arg("masks"))
         .def("first_many", &first_many, py::arg("starts"), py::arg("directions"),
              py::arg("limits"), py::arg("channel"));
+}
+
+void bind_collision(py::module_& module) {
+    using namespace esport;
+    using Release = py::call_guard<py::gil_scoped_release>;
+    module.attr("COLLISION_API_VERSION") = 1;
+    py::class_<Primitive>(module, "Primitive")
+        .def(py::init<Matrix,Point,Point,Point,Point,double,double,Point,Point,unsigned,unsigned>());
+    py::class_<CollisionWorld, std::shared_ptr<CollisionWorld>>(module, "CollisionWorld")
+        .def(py::init([](std::shared_ptr<TriangleScene> scene, const Array<unsigned short>& faces,
+                         std::vector<Primitive> shapes) {
+            if (faces.ndim() != 1) throw py::value_error("Expected one material per face");
+            std::vector<unsigned short> materials(faces.size());
+            if (!materials.empty()) std::memcpy(materials.data(), faces.data(), faces.nbytes());
+            py::gil_scoped_release release;
+            return std::make_shared<CollisionWorld>(std::move(scene), std::move(materials), std::move(shapes));
+        }))
+        .def("trace", &CollisionWorld::trace, py::arg("start"), py::arg("end"), py::arg("channel"),
+             py::arg("terminal")=false, Release())
+        .def("visible", &CollisionWorld::visible, Release());
 }

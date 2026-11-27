@@ -44,6 +44,13 @@ def run(args):
         from backend import cs2_collision
         from backend._match_native import TriangleScene
         cs2_collision.TriangleScene = TriangleScene
+    if args.native_collision:
+        from backend import cs2_collision
+        from backend.native_physics import NativeCollision
+        cs2_collision.Collision = NativeCollision
+    if args.native_physics:
+        from backend.native_physics import NativePhysicalMap
+        cs2_maps.Map = NativePhysicalMap
     pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
     pair = random.Random(args.seed).sample(sorted(career.roster_index(pack).values()), 2)
     domain = database.match_input(pack, pair)
@@ -96,7 +103,7 @@ def run(args):
     args.out.mkdir(parents=True, exist_ok=True)
     stem = args.out / args.map
     stem.with_suffix(".checkpoint.json.gz").write_bytes(gzip.compress(checkpoint, mtime=0))
-    report = dict(controls=controls, nativeRays=args.native_rays, nativeNav=args.native_nav, restored=bool(args.restore or args.checkpoint), python=platform.python_version(),
+    report = dict(controls=controls, nativePhysics=args.native_physics, nativeCollision=args.native_collision or args.native_physics, nativeRays=args.native_rays or args.native_collision or args.native_physics, nativeNav=args.native_nav or args.native_physics, restored=bool(args.restore or args.checkpoint), python=platform.python_version(),
                   platform=platform.platform(), numpy=version("numpy"), embreex=version("embreex"),
                   initMs=initialized / 1e6, bo1WallS=wall / 1e9, cpuS=cpu / 1e9,
                   rssBeforeMiB=rss_start, peakMiB=peak,
@@ -122,6 +129,8 @@ if __name__ == "__main__":
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, help="Continue from a pinned tick-150 checkpoint")
     parser.add_argument("--expect", type=Path, help="Compare all controls to a reference JSON by map")
+    parser.add_argument("--native-collision", action="store_true", help="Use complete native segment queries")
+    parser.add_argument("--native-physics", action="store_true", help="Use native physical route planning and collision")
     parser.add_argument("--native-rays", action="store_true", help="Use the native Embree triangle scene")
     parser.add_argument("--native-nav", action="store_true", help="Substitute native NAV lookup for comparison")
     parser.add_argument("--restore", action="store_true", help="Continue from JSON at tick 150")
