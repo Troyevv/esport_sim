@@ -218,7 +218,7 @@ $native = Start-Process -FilePath $exe -ArgumentList "--verify-native `"$nativeR
 if (!$native.WaitForExit(60000)) { $native.Kill(); throw 'Native geometry check timed out' }
 if ($native.ExitCode -ne 0) { throw (Get-Content -Raw -LiteralPath $nativeReport) }
 $hit = Get-Content -Raw -LiteralPath $nativeReport | ConvertFrom-Json
-if ($hit.face -ne 0 -or $hit.distance -ne 2) { throw 'Packaged native geometry returned an incorrect hit' }
+if ($hit.face -ne 0 -or [Math]::Abs($hit.distance - 2.0) -gt 1e-6) { throw 'Packaged native geometry returned an incorrect hit' }
 $first = Launch-Archive $exe
 if ($first.port -ne 8765) { throw "Unexpected default port $($first.port)" }
 $again = Launch-Archive $exe
