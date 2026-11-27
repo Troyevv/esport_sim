@@ -13,9 +13,7 @@ const Json &skills(const Json &w, const Json &a) {
     return w.at("domain").at("players").at(a.at("playerId").get<std::string>()).at("skills");
 }
 int draw(Json &a) {
-    const auto next = a.at("rng").get<std::uint32_t>() * 1664525u + 1013904223u;
-    a.at("rng") = next;
-    return int(next >> 16);
+    return int(draw_rng(a) >> 16);
 }
 int accuracy(const Json &w, const Json &cfg, const Json &a, const Json &spec, double gap, int burst) {
     const auto &player = w.at("domain").at("players").at(a.at("playerId").get<std::string>());

@@ -85,6 +85,9 @@ void equip(Json &a, const Json &item, const Json &cfg) {
 }
 } // namespace
 
+Json grenade_needs(const Json& w,const Json& cfg,const Json& actor,const std::string& site,const Json& board) {
+    return grenades_for(actor,cfg.at("longApproaches").at(w.at("mapId").get<std::string>()).value(site,false),board);
+}
 Json buy_decision(const Json &w, const Json &cfg, const std::string &side, const Json &call, const Json &site,
                   const Json &board, const Json &requested) {
     const auto &rules = cfg.at("rules");

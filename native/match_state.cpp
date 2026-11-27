@@ -2,6 +2,7 @@
 #include "economy.hpp"
 #include "navigation.hpp"
 #include "observation.hpp"
+#include "opening.hpp"
 #include "round_rules.hpp"
 #include "tactic_execution.hpp"
 
@@ -56,6 +57,18 @@ class MatchState::Impl {
     Json state, config, spawns;
     std::unique_ptr<Combat> combat;
     std::shared_ptr<const Objectives> objectives;
+    std::shared_ptr<const OpeningMap> opening;
+    const OpeningMap &opening_map() const {
+        if (!opening)
+            throw std::invalid_argument("Данные плана карты отсутствуют");
+        return *opening;
+    }
+    Json &captain(const std::string &side) {
+        for (auto &a : state.at("agents"))
+            if (a.at("team") == side && a.at("appointed") == true)
+                return a;
+        throw std::invalid_argument("Капитан не назначен");
+    }
     std::string rules;
     std::set<std::string> calls;
     int freeze;
@@ -257,7 +270,8 @@ int MatchState::advance_intermission(int ticks) {
     if (ticks == 0 || (w.at("phase") != "freeze" && w.at("phase") != "result"))
         return 0;
     const Tick tick = w.at("tick"), deadline = w.at("deadline");
-    const bool can_start = w.at("phase") == "result" && !impl_->spawns.is_null();
+    const bool can_start = (w.at("phase") == "result" && !impl_->spawns.is_null()) ||
+                           (w.at("phase") == "freeze" && impl_->opening);
     if (!can_start && (deadline <= tick || deadline - tick <= 1))
         return 0;
     const auto until = deadline > tick ? deadline - tick : 1;
@@ -283,9 +297,13 @@ int MatchState::advance_intermission(int ticks) {
     current["started"] = true;
     current.at("tick") = plus_ticks(tick, count);
     if (transition) {
-        start_round(current, impl_->config, impl_->spawns);
-        if (current.at("pending") == true)
-            impl_->enter_timeout(current);
+        if (current.at("phase") == "result") {
+            start_round(current, impl_->config, impl_->spawns);
+            if (current.at("pending") == true)
+                impl_->enter_timeout(current);
+        } else {
+            impl_->opening_map().begin_live(current,impl_->config);
+        }
         w.swap(staged);
     }
     return int(count);
@@ -402,6 +420,51 @@ std::string MatchState::board_step(const std::string &id, const std::string &dev
             return result;
         }
     throw std::invalid_argument("Игрок отсутствует в матче");
+}
+
+void MatchState::attach_opening(const std::string &map, std::shared_ptr<const OpeningMap> opening) {
+    std::scoped_lock lock(impl_->mutex);
+    if (!opening || impl_->state.at("mapId") != map)
+        throw std::invalid_argument("Неверная карта");
+    impl_->opening = std::move(opening);
+}
+std::string MatchState::defense_orders(const std::string &site, int lane) const {
+    std::scoped_lock lock(impl_->mutex);
+    return impl_->opening_map().defense_orders(impl_->state, site, lane).dump();
+}
+std::string MatchState::attack_orders(const std::string &site, int lane, const std::string &style) const {
+    std::scoped_lock lock(impl_->mutex);
+    return impl_->opening_map().attack_orders(impl_->state, site, lane, style).dump();
+}
+std::string MatchState::opening_call(const std::string &side, const std::string &buy, const std::string &site,
+                                     const std::string &style, const std::string &coach) {
+    auto call = Json::parse(coach);
+    std::scoped_lock lock(impl_->mutex);
+    auto &original = impl_->captain(side);
+    auto captain = original;
+    auto result = impl_->opening_map().call(impl_->state, captain, buy, site, style, call).dump();
+    original.swap(captain);
+    return result;
+}
+std::string MatchState::select_defense(const std::string &plan, const std::string &predicted,
+                                       const std::string &explicit_site) {
+    std::scoped_lock lock(impl_->mutex);
+    auto &original = impl_->captain("CT");
+    auto captain = original;
+    auto result = impl_->opening_map()
+                      .select_defense(impl_->state, captain, Json::parse(plan), Json::parse(predicted),
+                                      Json::parse(explicit_site))
+                      .dump();
+    original.swap(captain);
+    return result;
+}
+std::string MatchState::defensive_read() const {
+    std::scoped_lock lock(impl_->mutex);
+    return esport::defensive_read(impl_->state, impl_->captain("CT")).dump();
+}
+std::string MatchState::default_probe(const std::string &plan) const {
+    std::scoped_lock lock(impl_->mutex);
+    return impl_->opening_map().default_probe(impl_->state, Json::parse(plan), impl_->config).dump();
 }
 
 void MatchState::assign_board(const std::string &input) {

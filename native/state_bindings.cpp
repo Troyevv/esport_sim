@@ -1,5 +1,6 @@
 #include "match_state.hpp"
 #include "objectives.hpp"
+#include "opening.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -14,6 +15,13 @@ void bind_state(py::module_ &module) {
     py::class_<Objectives, std::shared_ptr<Objectives>>(module, "Objectives")
         .def(py::init<std::shared_ptr<const PhysicalNavigation>, SiteData>(), Release())
         .def("site_at", &Objectives::site_at, Release());
+    py::class_<OrderData>(module, "OrderData")
+        .def(py::init<decltype(OrderData::places), decltype(OrderData::plants), decltype(OrderData::holds),
+                      decltype(OrderData::nearby), decltype(OrderData::roles), decltype(OrderData::cover)>());
+    py::class_<OpeningMap, std::shared_ptr<OpeningMap>>(module, "OpeningMap")
+        .def(py::init<std::shared_ptr<const Objectives>, const std::string &, const std::string &,
+                      ContestTable, Stations, std::map<std::string, Point>, OrderData>(),
+             Release());
     py::class_<MatchState>(module, "MatchState")
         .def(py::init<const std::string &, std::string, std::set<std::string>, std::set<std::string>, int,
                       int, const std::string &>(),
@@ -29,6 +37,13 @@ void bind_state(py::module_ &module) {
              })
         .def("command", &MatchState::command, py::arg("kind"), py::arg("value") = "", Release())
         .def("advance_intermission", &MatchState::advance_intermission, Release())
+        .def("attach_opening", &MatchState::attach_opening, Release())
+        .def("defense_orders", &MatchState::defense_orders, Release())
+        .def("attack_orders", &MatchState::attack_orders, Release())
+        .def("opening_call", &MatchState::opening_call, Release())
+        .def("select_defense", &MatchState::select_defense, Release())
+        .def("defensive_read", &MatchState::defensive_read, Release())
+        .def("default_probe", &MatchState::default_probe, Release())
         .def("board_step", &MatchState::board_step, Release())
         .def("assign_board", &MatchState::assign_board, Release())
         .def("buy_decision", &MatchState::buy_decision, Release())

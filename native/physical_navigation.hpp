@@ -43,6 +43,9 @@ class PhysicalNavigation {
 
     std::optional<Impact> hit(const Point &start, const Point &end, unsigned mask, double up,
                               double target_up, bool canonical = false) const;
+    const PortalGraph& graph() const { return *graph_; }
+    const std::map<AreaId,Point>& centers() const {return centers_;}
+    const Point& center(AreaId id) const { return centers_.at(id); }
     double unit() const { return unit_; }
     std::optional<AreaId> locate(const Point& p) const { return surfaces_->locate(world(p),96); }
     Point world(const Point &p) const;

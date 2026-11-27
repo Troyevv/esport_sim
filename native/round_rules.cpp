@@ -8,6 +8,11 @@
 #include <vector>
 
 namespace esport {
+std::uint32_t draw_rng(Json &actor) {
+    auto next = actor.at("rng").get<std::uint32_t>() * 1664525u + 1013904223u;
+    actor.at("rng") = next;
+    return next;
+}
 namespace {
 using Names = std::set<std::string>;
 std::string name(const Json &j, const char *key) { return j.at(key).get<std::string>(); }
