@@ -5,7 +5,6 @@
 #include <mutex>
 
 namespace esport {
-double distance(const Point &a, const Point &b);
 using Lane = std::pair<Point, Point>;
 struct Crossing {
     AreaId from, to;
