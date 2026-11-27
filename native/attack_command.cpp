@@ -1,9 +1,8 @@
-#include "team_ai.hpp"
+#include "attack_options.hpp"
 #include <algorithm>
 #include <limits>
 
 namespace esport {
-namespace {
 // The same reverse NAV costs used by the opening planner, in simulation ticks.
 double travel_ticks(const OpeningMap &arena, const std::string &site, AreaId area) {
     return arena.objectives().site_cost(site, area, std::numeric_limits<double>::infinity()) /
@@ -27,7 +26,6 @@ void resume_routes(const OpeningMap &arena, Json &plan, const Squad &squad) {
         (*a)["waypoint"] = index;
     }
 }
-} // namespace
 
 void review_attack(Json &w, const Json &cfg, const OpeningMap &arena, Json &plan, const Squad &squad,
                    const Json &captain, const Reports &reports) {
@@ -40,11 +38,12 @@ void review_attack(Json &w, const Json &cfg, const OpeningMap &arena, Json &plan
     for (auto a : squad)
         if (a->at("id") == w.at("bomb").at("carrier"))
             carrier = a;
-    if (!carrier || !w.at("action").empty())
+    const bool ranked = w.value("agentPolicy", 0) >= 9;
+    if ((!carrier && !ranked) || !w.at("action").empty())
         return;
 
     const int plant = cfg.at("rules").at("plant");
-    const auto area = carrier->at("navArea").get<AreaId>();
+    const auto area = carrier ? carrier->at("navArea").get<AreaId>() : captain.at("navArea").get<AreaId>();
     const double travel = travel_ticks(arena, site, area);
     const bool urgent = remaining <= travel + plant + 45;
     Reports credible;
@@ -74,6 +73,10 @@ void review_attack(Json &w, const Json &cfg, const OpeningMap &arena, Json &plan
         if (now - row[1].get<Tick>() < 45)
             ++blocked[row[0].get<std::string>()];
 
+    if (ranked) {
+        compare_attack(w, cfg, arena, plan, squad, captain, carrier, credible, pressure, held, blocked, probing);
+        return;
+    }
     const bool obstructed = blocked[site] > 0 && blocked[other] == 0;
     const bool contested = pressure[site] >= (squad.size() < 4 ? 1.25 : 1.65) &&
                            pressure[site] - pressure[other] > (held[other] ? .55 : 1.);

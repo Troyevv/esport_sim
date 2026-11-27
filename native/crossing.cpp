@@ -26,7 +26,11 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
                  a.at("id") == probe.value("scout", Json(nullptr));
     if (collective_attack(w) && probe.contains("stations"))
         feint &= probe.value("feint", false) && !a.value("feintThrown", false);
-    if (feint && !probe.contains("stations"))
+    if (side == "T" && plan.contains("commandKind")) {
+        feint = plan.at("commandKind") == "feint" && plan.at("commandJobs").contains(a.at("id").get<std::string>()) &&
+                !a.value("feintThrown", false);
+    }
+    if (feint && !probe.contains("stations") && !plan.contains("commandKind"))
         site = site == "A" ? "B" : "A";
     if (!radio_memory.contains("crossingCalls"))
         radio_memory["crossingCalls"] = Json::array();

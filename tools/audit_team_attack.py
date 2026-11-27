@@ -16,14 +16,15 @@ from backend import career, cs2_maps, database, match, native_match_state
 
 
 def timing(world, output):
-    owner = native_match_state.open_game(dict(world, agentPolicy=7))
+    old, new = world["agentPolicy"] - 1, world["agentPolicy"]
+    owner = native_match_state.open_game(dict(world, agentPolicy=old))
     rows = []
     for n, delta in enumerate((90, 320, 420, 610)):
         owner.advance(delta)
         state = json.loads(owner.snapshot())
         measurements = defaultdict(list)
         hashes = {}
-        for policy in ((7, 8, 8, 7) if n % 2 == 0 else (8, 7, 7, 8)):
+        for policy in ((old, new, new, old) if n % 2 == 0 else (new, old, old, new)):
             replay = native_match_state.open_game(dict(state, agentPolicy=policy))
             before = process_time()
             assert replay.advance(180) == 180
@@ -34,6 +35,34 @@ def timing(world, output):
             rows.append(dict(map=world["mapId"], tick=state["tick"], phase=state["phase"],
                              policy=policy, cpuUsTick=round(median(values), 3), sha256=hashes[policy]))
     (output / f"timing-{world['mapId']}.json").write_text(json.dumps(rows), encoding="utf-8")
+
+
+def rotation_window(event, samples, actions, space, counts):
+    """Classify the four-second window using the same two-player threshold as the original audit."""
+    site = event.get("site") or event["text"][-1]
+    tick = event["tick"] - event["tick"] % 5
+    begin, end = samples.get(tick, {}), samples.get(tick+40, {})
+    living = begin.keys() & end.keys()
+    if len(living) < 2:
+        return "tooFewOrRoundEnded"
+    costs = space.site_costs[site]
+    center = space.site_points[site]
+    straight = nav = 0
+    for who in living:
+        p, q = begin[who], end[who]
+        straight += dist(p, center) - dist(q, center) > 5
+        a, b = space.locate(tuple(p)), space.locate(tuple(q))
+        nav += a in costs and b in costs and costs[a] - costs[b] > 5 * cs2_maps.UNIT
+    if straight >= 2:
+        return "direct"
+    if nav >= 2:
+        return "navOnly"
+    window = [intent for t in range(tick, tick+41, 5) for who, intent in actions.get(t, {}).items() if who in living]
+    if any(intent in ("engage", "cover", "reload", "watch") for intent in window):
+        return "contactOrRecovery"
+    if "assist" in window:
+        return "peerTask"
+    return "noMeasuredAdvance"
 
 
 def run(map_id, base, policy, output, timing_only=False):
@@ -65,6 +94,7 @@ def run(map_id, base, policy, output, timing_only=False):
         counts = Counter()
         samples = defaultdict(dict)
         defenders = defaultdict(dict)
+        actions = defaultdict(dict)
         positions = {}
         examples = {}
         previous_round = None
@@ -81,9 +111,16 @@ def run(map_id, base, policy, output, timing_only=False):
                     continue
                 attackers = [row for row in actors if row[1] == "T" and row[6] > 0]
                 if tick % 5 == 0:
+                    actions[rnd][tick] = {r[0]: r[2] for r in attackers}
                     defenders[rnd][tick] = {r[0]: r[3:6] for r in actors if r[1] == "CT" and r[6] > 0}
                     samples[rnd][tick] = {r[0]: r[3:6] for r in attackers}
                 covers = []
+                fake = [r for r in attackers if r[17] == "Давит на ложный вход"]
+                if len(fake) >= 2 and any(dist(r[3:6], positions[r[0]]) > .1 for r in attackers
+                                          if r not in fake and r[0] in positions):
+                    counts["feintAndMainMoveTicks"] += 1
+                    examples.setdefault("fakePair", [rnd, tick, [[r[0], r[3:6], positions.get(r[0])] for r in attackers]])
+                    counts["movingFeintPairAndMain"] += all(r[0] in positions and dist(r[3:6], positions[r[0]]) > .1 for r in fake)
                 for row in attackers:
                     who, pos, status = row[0], row[3:6], row[17]
                     old = positions.get(who, pos)
@@ -97,7 +134,7 @@ def run(map_id, base, policy, output, timing_only=False):
                         counts["splitWaitTicks"] += 1
                     if status == "Прикрывает установку C4" and traveled < .1:
                         counts["plantCoverTicks"] += 1
-                    if status == "Перегруппировка у носителя C4" and traveled > .1:
+                    if status in ("Перегруппировка у носителя C4", "Перестраивается по парам") and traveled > .1:
                         counts["regroupMoveTicks"] += 1
                     if phase == "planted" and status == "Прикрывает C4" and traveled < .1:
                         covers.append(pos)
@@ -123,10 +160,16 @@ def run(map_id, base, policy, output, timing_only=False):
         for rnd, events in enumerate([*final["archive"], final["events"]], 1):
             hits = {}
             throws = {}
+            rotations = []
             for e in events:
                 kind, tick = e["kind"], e["tick"]
                 if kind == "plan" and e["team"] == "T":
                     initial_site = e["site"]
+                if "choice" in e:
+                    assert e["scores"][e["choice"]] == max(e["scores"].values())
+                    counts["decisionsWithAck"] += e["acknowledged"] > 0
+                if kind == "command" and e["team"] == "T":
+                    counts["call/" + e["choice"]] += 1
                 if kind == "throw":
                     throws[e["player"], e["land"]] = e["team"]
                     if e["team"] == "T":
@@ -167,6 +210,17 @@ def run(map_id, base, policy, output, timing_only=False):
                 elif kind in ("rotate", "execute", "regroup") and e["team"] == "T":
                     counts[kind] += 1
                     if kind == "rotate":
+                        counts["rotation/" + rotation_window(e, samples[rnd], actions[rnd], space, counts)] += 1
+                        if rotations:
+                            counts["secondOrLaterRotate"] += 1
+                            gap = tick - rotations[-1]
+                            counts["minReturnTicks"] = min(counts.get("minReturnTicks", gap), gap)
+                            examples.setdefault("return", [rnd, rotations[-1], tick, e["site"],
+                                                           e["freshPressure"], e["freshBlock"], e["remaining"],
+                                                           round(e["alternateTravel"], 1)])
+                        if "freshPressure" in e:
+                            assert e["freshPressure"] >= .8 or e["freshBlock"]
+                        rotations.append(tick)
                         site = e.get("site") or e["text"][-1]
                         center = space.site_points[site]
                         poses = samples[rnd]
@@ -192,7 +246,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--map", choices=cs2_maps.NAMES, required=True)
     parser.add_argument("--base", type=int, default=55300)
-    parser.add_argument("--policy", type=int, choices=(7, 8), default=8)
+    parser.add_argument("--policy", type=int, choices=(7, 8, 9), default=9)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--timing", action="store_true", help="Matched CPU windows instead of BO1")
     args = parser.parse_args()

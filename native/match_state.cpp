@@ -138,7 +138,7 @@ class MatchState::Impl {
             opening = std::make_shared<OpeningMap>(objectives);
         }
         if (state.contains("agentPolicy") && (!state.at("agentPolicy").is_number_integer() ||
-                                              (state.at("agentPolicy") < 1 || state.at("agentPolicy") > 8)))
+                                              (state.at("agentPolicy") < 1 || state.at("agentPolicy") > 9)))
             throw std::invalid_argument("Неизвестная версия индивидуального ИИ");
         if (spatial_grenades(state) && config.contains("utility")) {
             config.at("utility").at("Дым")[1] = 200;
@@ -284,9 +284,12 @@ class MatchState::Impl {
                 items.end());
             items.push_back(m.at("friendlyUtility"));
             a["friendlyUtility"] = std::move(items);
-        } else if (m.contains("blockedSite"))
-            a["routeReports"][sender] = Json::array({m.at("blockedSite"), now});
-        else if (m.contains("device")) {
+        } else if (m.contains("blockedSite")) {
+            auto &reports = a.at("routeReports");
+            auto observed = m.value("observed", now);
+            if (observed <= now && (!reports.contains(sender) || reports.at(sender).at(1) <= observed))
+                reports[sender] = Json::array({m.at("blockedSite"), observed});
+        } else if (m.contains("device")) {
             a["seenDevice"] = m.at("device");
             a["heardSite"] = m.at("device").at("site");
         } else if (m.contains("site"))

@@ -20,6 +20,38 @@ Json AgentTurn::priority_intent() {
                           recovery.at("player") == a.at("id");
     const bool reinforce = side == "CT" && (w.at("phase") == "planted" || relief(plan, a));
     bool board = active(plan, "board");
+    if (side == "T" && w.at("phase") == "live" && !rescuing && !board && action.empty() &&
+        plan.contains("commandJobs")) {
+        const auto &jobs = plan.at("commandJobs");
+        const auto it = jobs.find(a.at("id").get<std::string>());
+        if (it != jobs.end()) {
+            const auto &duty = *it;
+            const auto &kind = plan.at("commandKind");
+            const Point goal = duty.at("point");
+            const auto pos = actor_point(a);
+            if (!device.empty() && device.at("carrier") == a.at("id") && arena.objectives().site_at(pos))
+                return nullptr; // Let the objective executor take the plant.
+            if (kind == "feint") {
+                if (!a.value("feintThrown", false) && distance(pos, goal) < 48) {
+                    auto order = plan.at("orders").at("slots").at(slot);
+                    order["lane"] = duty.at("lane");
+                    auto cast = crossing(order, duty.at("site"));
+                    if (!cast.is_null())
+                        return cast;
+                }
+                a["status"] = "Давит на ложный вход";
+            } else if (kind == "regroup")
+                a["status"] = "Перестраивается по парам";
+            else if (kind == "save")
+                a["status"] = "Сохраняет оружие до конца раунда";
+            else
+                a["status"] = "Занимает дополнительный рубеж";
+            if (distance(pos, goal) > 5)
+                return movement(goal, kind == "space" ? 1.65 : 2.);
+            heading_to(a, duty.at("watch"));
+            return Json::array({"hold", nullptr});
+        }
+    }
     auto pos = actor_point(a);
     if (!rescuing && !board && !reinforce && (!collective_attack(w) || action.empty()) && squad.size() < 5 && a.at("playingRole") == "support" &&
         side == "T" && w.at("phase") == "live" && (device.empty() || device.at("carrier") != a.at("id"))) {

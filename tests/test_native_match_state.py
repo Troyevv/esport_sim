@@ -553,7 +553,7 @@ def test_batch_starts_new_map_with_older_rules_and_records_exact_profile(combat_
     from backend import match as production_match, cs2_maps as installed_maps
     monkeypatch.setattr(installed_maps,"get",lambda _:old)
     fresh = production_match.initial(41000, map_id="de_nuke")
-    assert fresh.pop("agentPolicy") == 8
+    assert fresh.pop("agentPolicy") == 9
     assert encode_world(fresh) == encode_world(w)
     w["rules"] = cs2_maps.PREVIOUS_RULES
     owner = native_match_state.restore(encode_world(w), old, physics=physics)
@@ -576,7 +576,7 @@ def test_depo_owner_restores_mid_board_and_continues_exact_events():
 
     game = match.initial(42)
     fresh = production.initial(42)
-    assert fresh.pop("agentPolicy") == 8
+    assert fresh.pop("agentPolicy") == 9
     assert encode_world(fresh) == encode_world(game)
     board = dict(tactics.propose("T", "Пистолетная", 17), id="depo-regression", revision=1)
     owner = native_match_state.open_game(game)

@@ -308,7 +308,10 @@ void AgentTurn::finish(const Json &intent) {
             a["blockedTicks"] = 0;
         if (side == "T" && w.at("phase") == "live" && a.value("blockedTicks", 0) >= 20 &&
             now - a.value("lastRouteReport", Tick{-100}) >= 60) {
-            const auto site = plan.at("site");
+            auto site = plan.at("site");
+            const auto id = a.at("id").get<std::string>();
+            if (plan.contains("commandJobs") && plan.at("commandJobs").contains(id))
+                site = plan.at("commandJobs").at(id).at("site");
             a["lastRouteReport"] = now;
             a["routeReports"][a.at("id").get<std::string>()] = Json::array({site, now});
             w.at("messages")
@@ -316,6 +319,8 @@ void AgentTurn::finish(const Json &intent) {
                                 {"sender", a.at("id")},
                                 {"blockedSite", site},
                                 {"due", now + 1 + (100 - skills.at("communication").get<int>()) / 12}});
+            if (w.value("agentPolicy", 0) >= 9)
+                w.at("messages").back()["observed"] = now;
         }
         if (side == "CT" && w.at("phase") == "live" && now % 5 == slot)
             duty_feedback();

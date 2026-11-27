@@ -33,6 +33,7 @@ bool AgentTurn::wait_for_split(const Json &order, Tick remaining) {
             continue;
         if (auto call = recent_call(mate->at("id"), "entry", 28))
             if (call->at("order") == site && call->at("state") == "ready" &&
+                call->at("tick") >= a.value("routeIssued", Tick{-1}) &&
                 distance(actor_point(*mate), call->at("origin").get<Point>()) < 14)
                 partner = mate->at("id");
     }
@@ -377,7 +378,8 @@ Json AgentTurn::spatial_intent() {
             }
         }
     }
-    bool moved = move(goal, plan.at("style") == "Быстро" || !live ? 2 : 1.65);
+    const bool slow = live && side == "T" && plan.contains("commandKind") && plan.at("commandKind") == "slow";
+    bool moved = move(goal, slow ? 1.25 : plan.at("style") == "Быстро" || !live ? 2 : 1.65);
     bool follow =
         latest &&
         (!holding || (!checking && (latest->at("source") == "Зрение" ||

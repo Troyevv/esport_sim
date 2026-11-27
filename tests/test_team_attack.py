@@ -18,7 +18,7 @@ pytestmark = pytest.mark.skipif("de_dust2" not in cs2_maps.installed(), reason="
 
 @pytest.fixture
 def live():
-    w = match.initial(17, map_id="de_dust2")
+    w = match.initial(17, map_id="de_dust2", agent_policy=8)
     match.advance(w, 45)
     w["tick"] += 20
     w["plans"]["T"]["review"] = 0
@@ -100,7 +100,7 @@ def test_stage_waits_for_other_lane_delivery_then_moves(live):
     assert execute(dict(held, tick=w["tick"]+45), actor["id"])[0][0] == "move"
 
 
-@pytest.mark.parametrize("policy", (None, 1, 2, 3, 4, 5, 6, 7, 8))
+@pytest.mark.parametrize("policy", (None, 1, 2, 3, 4, 5, 6, 7, 8, 9))
 def test_active_and_manual_checkpoints_keep_policy_and_exact_continuation(tmp_path, policy):
     w = match.initial(41, map_id="de_dust2", agent_policy=policy)
     match.advance(w, 95)
@@ -195,12 +195,12 @@ def test_same_position_preserves_ct_review_and_executable_orders(map_id):
             pos = end
         assert space.site_at(pos) == plan["site"]
     ct = []
-    for policy in (7, 8):
+    for policy in (7, 8, 9):
         ref = native_match_state.open_game(dict(w, agentPolicy=policy))
         ref.review_captain("CT")
         state = json.loads(ref.snapshot())
         ct.append((state["plans"]["CT"], [e for e in state["events"] if e["team"] == "CT"]))
-    assert ct[0] == ct[1]
+    assert ct[0] == ct[1] == ct[2]
 
 
 def test_carrier_walks_to_sheltered_plant_surface_only_with_clock_to_spare(live):

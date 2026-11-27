@@ -142,6 +142,12 @@ void AgentTurn::peer_feedback(const std::string &kind) {
             task = Json::array({board.at("id"), board.at("revision"), step_index});
         }
     }
+    if (side == "T" && active(plan, "revision") && w.at("phase") == "live") {
+        const auto &jobs = plan.at("commandJobs");
+        if (auto duty = jobs.find(a.at("id").get<std::string>()); duty != jobs.end())
+            goal = duty->at("point");
+        task = Json::array({"live", plan.at("site"), goal, plan.at("revision")});
+    }
     const char *state = "ack";
     if (refused)
         state = "refused";
@@ -181,7 +187,12 @@ const Json *AgentTurn::peer_request(int &benefit) const {
             continue;
         // A fresh contact supersedes this speaker's waypoint invitation even
         // for listeners who were only named in the older invitation.
+        if (state == "stage" && call.at("tick") < a.value("routeIssued", Tick{-1}))
+            continue;
         if (grouped && state == "stage") {
+            auto source = plan.find("routeChanges");
+            if (source != plan.end() && call.at("tick") < source->value(call.at("sender").get<std::string>(), Tick{-1}))
+                continue;
             auto contact = recent_call(call.at("sender"), "contact", 25);
             if (contact && contact->at("tick") >= call.at("tick"))
                 continue;
