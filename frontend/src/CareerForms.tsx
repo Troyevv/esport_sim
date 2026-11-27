@@ -256,14 +256,14 @@ export function MatchReport({
             <details className="cr-rounds" key={m.mapId}>
               <summary>Раунды · {fixtureMap({...event,bestOf:undefined,mapId:m.mapId})}</summary>
               <ol>{m.rounds.map(r=><li key={r.round}>
-                <strong>{r.score.join(" : ")}</strong> {teams[r.winnerTeamId]} · {r.side}
+                <strong>{r.score.join(" : ")}</strong> {r.winnerTeamId ? teams[r.winnerTeamId] : "Победитель неизвестен"} · {r.side}
                 <small>{r.buys?.map((b,i)=>teams[event.teams[i]]+" · "+(buyName[b] || b)).join(" / ")}</small>
               </li>)}</ol>
             </details>
           ))}
-          {event.teams.map((tid, club) => (
-            <table key={tid}>
-              <caption>{teams[tid]}</caption>
+          {[...event.teams, ...(data.data.stats.some(p => p.teamId === null) ? [null] : [])].map(tid => (
+            <table key={tid ?? "unassigned"}>
+              <caption>{tid === null ? "Команда не установлена по протоколу" : teams[tid]}</caption>
               <thead>
                 <tr>
                   <th scope="col">Игрок</th>
@@ -277,9 +277,7 @@ export function MatchReport({
               </thead>
               <tbody>
                 {data
-                  .data!.stats.filter((p) =>
-                    p.teamId ? p.teamId === tid : p.club === club,
-                  )
+                  .data!.stats.filter((p) => p.teamId === tid)
                   .map((p) => (
                     <tr key={p.player}>
                       <th scope="row">{p.name}</th>

@@ -6,7 +6,8 @@ import random
 from math import dist
 from pathlib import Path
 
-from backend import career, cs2_maps, database, match
+from tests.reference_kernel import cs2_maps, match
+from backend import career, database
 
 
 def main():

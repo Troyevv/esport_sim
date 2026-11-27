@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <charconv>
 #include <set>
 #include <stdexcept>
 
@@ -30,6 +31,42 @@ std::optional<double> surface_height(const std::vector<Point>& corners, double x
     return std::nullopt;
 }
 
+double round_decimal(double value,int digits) {
+    // Decimal tie rounding starts from the exact binary64 value (Python round).
+    char buffer[32];
+    auto out = std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::fixed, digits);
+    double rounded;
+    if (out.ec != std::errc{} || std::from_chars(buffer, out.ptr, rounded).ec != std::errc{})
+        throw std::invalid_argument("Invalid acoustic confidence");
+    return rounded;
+}
+
+// CPython 3.12 sum() uses Neumaier summation of the rounded products.
+double sum3(double a, double b, double c) {
+    double total = 0, correction = 0;
+    for (double x : {a, b, c}) {
+        const double next = total + x;
+        correction += std::abs(total) >= std::abs(x) ? (total - next) + x : (x - next) + total;
+        total = next;
+    }
+    return total + correction;
+}
+
+// Compensate the rounding of each square and addition before rounding the
+// root. Path costs must preserve math.dist tie ordering, including on MSVC.
+double distance(const Point &a, const Point &b) {
+    double sum = 0, error = 0;
+    for (int j = 0; j < 3; ++j) {
+        const double d = a[j] - b[j], square = d * d, next = sum + square;
+        error += std::fma(d, d, -square);
+        error += sum >= square ? (sum - next) + square : (square - next) + sum;
+        sum = next;
+    }
+    if (sum == 0)
+        return 0;
+    const double root = std::sqrt(sum);
+    return root + (std::fma(-root, root, sum) + error) / (2 * root);
+}
 NavSurfaces::NavSurfaces(std::vector<Area> areas) : areas_(std::move(areas)) {
     std::set<std::int64_t> ids;
     for (std::size_t i = 0; i < areas_.size(); ++i) {
@@ -57,15 +94,20 @@ NavSurfaces::NavSurfaces(std::vector<Area> areas) : areas_(std::move(areas)) {
 }
 
 std::optional<std::int64_t> NavSurfaces::locate(const Point& p, double max_vertical) const {
+    auto result=locate_with_height(p,max_vertical);
+    return result ? std::optional<std::int64_t>(result->first) : std::nullopt;
+}
+
+std::optional<std::pair<std::int64_t,double>> NavSurfaces::locate_with_height(const Point& p, double max_vertical) const {
     if (!finite(p) || !std::isfinite(max_vertical))
         throw std::invalid_argument("Non-finite NAV query");
     std::optional<std::pair<double, std::int64_t>> best;
+    double height=0;
     auto consider = [&](std::size_t index) {
         const auto& [id, corners] = areas_[index];
         if (auto z = surface_height(corners, p[0], p[1])) {
             auto candidate = std::pair{std::abs(p[2] - *z), id};
-            if (candidate.first <= max_vertical && (!best || candidate < *best))
-                best = candidate;
+            if (candidate.first <= max_vertical && (!best || candidate < *best)) {best = candidate; height=*z;}
         }
     };
     const Sector key{sector(p[0]), sector(p[1])};
@@ -78,7 +120,7 @@ std::optional<std::int64_t> NavSurfaces::locate(const Point& p, double max_verti
             entry.low.second <= key.second && key.second <= entry.high.second)
             consider(entry.index);
     }
-    if (best) return best->second;
+    if (best) return std::pair{best->second,height};
     return std::nullopt;
 }
 

@@ -6,7 +6,7 @@ import httpx
 
 from backend import lan, server
 from backend.paths import migrate_legacy
-from test_server import local_server, send, snapshot
+from tests.test_server import local_server, send, snapshot
 
 
 def test_migrate_old_database_once(tmp_path):

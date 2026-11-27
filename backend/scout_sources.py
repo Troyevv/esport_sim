@@ -7,7 +7,7 @@ from functools import lru_cache
 
 from pydantic_core import from_json, to_json
 
-from . import scout_reports as reports, skills, training
+from . import historical_protocol, scout_reports as reports, skills, training
 
 
 def encode(value):
@@ -47,6 +47,12 @@ def competition_context(pack, event, protocol):
     """Compare players with their actual teammates and the advertised level of the opposition."""
     sides = {}
     round_wins = Counter(r.get("winnerTeamId") for r in protocol["rounds"])
+    # Team-relative ratings need attributable teammates and round outcomes.
+    teams = event["teams"]
+    if (len(set(teams)) != 2 or any(t not in pack["teams"] for t in teams)
+            or not round_wins or any(t not in teams for t in round_wins)
+            or any(s["teamId"] not in teams for s in protocol["stats"])):
+        return sides
     for tid in event["teams"]:
         opponent = next(t for t in event["teams"] if t != tid)
         side = [s for s in protocol["stats"] if s["teamId"] == tid]
@@ -56,7 +62,7 @@ def competition_context(pack, event, protocol):
         own_level = TIER_REFERENCE.get(own_tier, 62)
         opposition = TIER_REFERENCE.get(tier, 62)
         rounds = len(protocol["rounds"])
-        won = round_wins[tid] if None not in round_wins else rounds / 2
+        won = round_wins[tid]
         # The same score line carries different evidence against different opponents.
         margin = (won - rounds / 2) / (rounds + 12)
         sides[tid] = dict(
@@ -66,8 +72,8 @@ def competition_context(pack, event, protocol):
             damage=sum(s["damage"] for s in side) / max(1, len(side)),
             kills=sum(s["k"] for s in side) / max(1, len(side)),
             assists=sum(s["a"] for s in side) / max(1, len(side)),
-            opening=sum(s.get("opening", 0) + s.get("openingDeaths", 0) for s in side)
-            / max(1, len(side)),
+            opening=(sum(s["opening"] + s["openingDeaths"] for s in side) / len(side)
+                     if side and all("opening" in s and "openingDeaths" in s for s in side) else None),
         )
     return sides
 
@@ -103,9 +109,11 @@ def played(c, pack, event, report):
         r["player"]: r["host"] for r in state["trials"] if r["status"] == "active"
     }
     context = competition_context(pack, event, report)
+    if not context:
+        return
     for s in report["stats"]:
         pid = s["player"]
-        if event.get("pcw") and guests.get(pid) != s["teamId"]:
+        if pid not in pack["players"] or (event.get("pcw") and guests.get(pid) != s["teamId"]):
             continue
         idx = state["private"] if event.get("pcw") else state["public"]
         fact = performance(pack, event, s, len(report["rounds"]), context)
@@ -229,13 +237,15 @@ def assignment_archive(c, pack, task, clubs, read_report):
         if kind == "tournament":
             if game.get("edition") != task["target"]:
                 continue
-        elif not clubs.intersection(game["teams"]):
+        elif kind == "team" and not clubs.intersection(game["teams"]):
             continue
-        protocol = read_report(game["result"])
+        protocol = historical_protocol.normalize(c, pack, game, read_report(game["result"]))
         context = competition_context(pack, game, protocol)
+        if not context:
+            continue
         for row in protocol["stats"]:
             pid = row["player"]
-            if (wanted and pid not in wanted) or (
+            if pid not in pack["players"] or (wanted and pid not in wanted) or (
                 kind == "team" and row["teamId"] != task["target"]
             ):
                 continue

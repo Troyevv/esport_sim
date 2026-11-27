@@ -1,18 +1,19 @@
-"""Map import and differential adapter for the C++ physical world."""
+"""Import installed map geometry once and share its native owners."""
+import json
+from math import dist
 from functools import cached_property, lru_cache, partial
 from weakref import proxy
 
 from . import _match_native as native
-from .cs2_collision import Collision
-from .cs2_maps import Map, UNIT
-from .match_rules import BLAST_RADIUS
+from .cs2_collision import CollisionData
+from .cs2_maps import BUILD, Map, UNIT, xyz
+from .match_rules import BLAST_RADIUS, ROLES
 from .native_navigation import NativeNavigation
 
 
-class NativeCollision(Collision):
-    _make_scene = staticmethod(native.TriangleScene)
-
-    def _finish_geometry(self):
+class NativeCollision(CollisionData):
+    def __init__(self, folder):
+        super().__init__(folder, native.TriangleScene)
         materials = {name: i for i, name in enumerate(self.materials)}
         shapes = [native.Primitive(
             s.inv, s.translation, s.centers[0], s.centers[-1], s.axis, s.length,
@@ -59,9 +60,32 @@ class NativePhysicalMap(Map):
         path = self.planner.path(area, start, zone, goal, avoided)
         return None if path is None else tuple(path)
 
-    def _physical_exit(self, area, origin, bomb):
-        result = self.planner.escape(area, origin, bomb, BLAST_RADIUS + 4)
-        if result is not None:
-            distance, path = result
-            return distance, tuple(path)
-        return None
+    def orders(self, side, site, squad, lane, style=None):
+        # Editor drafts have spawn slots but no assigned playing roles.
+        world = dict(mapId=self.name, map_version=BUILD,
+                     agents=[{"playingRole":"", **actor, "team":side} for actor in squad])
+        return json.loads(self.opening.editor_orders(json.dumps(world), side, site, lane, style or ""))
+
+
+class NativePerceptionMap(NativePhysicalMap):
+    @cached_property
+    def objectives(self):
+        solids = {site: [solid.faces for solid in volumes] for site, volumes in self.sites.volumes.items()}
+        ingress = {site: [self.ingress(site, lane) for lane in (0, 1)] for site in self.sites.volumes}
+        data = native.SiteData(solids, self.site_costs, self.plant_surfaces, ingress)
+        return native.Objectives(self.planner, data)
+
+    @cached_property
+    def opening(self):
+        # Static costs and named NAV surfaces are shared by matches on this map.
+        contest = {site: [self.contest(site, lane) for lane in (0, 1)] for site in self.site_points}
+        stations = {label: [self.centers[i] for i in sorted(ids)] for label, ids in self.places.items()}
+        stages = {i for site in self.site_points for lane in self.profile[site]
+                  for label in lane for i in self.places[label]}
+        nearby = {i: sorted(self.nearby_areas(self.centers[i], 12),
+                            key=lambda j: dist(self.centers[j], self.centers[i])) for i in stages}
+        plant_corners = {i: [self.to_sim(p) for p in self.nav.areas[i]["corners"]]
+                         for ids in self.plants.values() for i in ids}
+        orders = native.OrderData({label: list(ids) for label, ids in self.places.items()}, self.plants, self.holds, nearby, ROLES, [p for _, p in self.cover], self.attack_spawns, plant_corners)
+        return native.OpeningMap(self.objectives, json.dumps(self.profile), json.dumps(self.defense),
+                                 contest, stations, self.site_points, orders)

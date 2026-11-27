@@ -1,4 +1,5 @@
 #include "physical_navigation.hpp"
+#include <numbers>
 
 #include <algorithm>
 #include <cmath>
@@ -16,21 +17,9 @@ void check_point(const Point &p) {
 Point lerp(const Point &a, const Point &b, double t) {
     return {a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t};
 }
-// Compensate the rounding of each square and addition before rounding the
-// root. Path costs must preserve math.dist tie ordering, including on MSVC.
-double distance(const Point &a, const Point &b) {
-    double sum = 0, error = 0;
-    for (int j = 0; j < 3; ++j) {
-        const double d = a[j] - b[j], square = d * d, next = sum + square;
-        error += std::fma(d, d, -square);
-        error += sum >= square ? (sum - next) + square : (square - next) + sum;
-        sum = next;
-    }
-    if (sum == 0)
-        return 0;
-    const double root = std::sqrt(sum);
-    return root + (std::fma(-root, root, sum) + error) / (2 * root);
-}
+} // namespace
+
+namespace {
 Waypoint waypoint(const Point &p, AreaId area) { return {p[0], p[1], p[2], area}; }
 Point point(const Waypoint &p) { return {std::get<0>(p), std::get<1>(p), std::get<2>(p)}; }
 template <class Key> bool improves(const std::map<Key, double> &costs, const Key &key, double value) {
@@ -145,7 +134,7 @@ std::optional<WalkPath> PhysicalNavigation::inside(AreaId area, const Point &sta
     }
     return std::nullopt;
 }
-std::optional<WalkPath> PhysicalNavigation::gate(EdgeId id, const Point &start) const {
+const std::optional<WalkPath> &PhysicalNavigation::gate(EdgeId id, const Point &start) const {
     const auto key = std::pair{id, start};
     if (const auto it = gates_.find(key); it != gates_.end())
         return it->second;
@@ -172,8 +161,7 @@ std::optional<WalkPath> PhysicalNavigation::gate(EdgeId id, const Point &start) 
     }
     if (gates_.size() >= 32768)
         gates_.clear();
-    gates_.emplace(key, best);
-    return best;
+    return gates_.emplace(key, std::move(best)).first->second;
 }
 
 std::optional<WalkPath> PhysicalNavigation::path(AreaId area, const Point &start, AreaId zone,
@@ -181,6 +169,16 @@ std::optional<WalkPath> PhysicalNavigation::path(AreaId area, const Point &start
     check_point(start);
     check_point(goal);
     std::scoped_lock lock(mutex_);
+    const PathKey key{area, start, zone, goal, avoided};
+    if (auto found = paths_.find(key); found != paths_.end())
+        return found->second;
+    if (paths_.size() >= 4096)
+        paths_.clear();
+    return paths_.emplace(key, find_path(area, start, zone, goal, avoided)).first->second;
+}
+std::optional<WalkPath> PhysicalNavigation::find_path(AreaId area, const Point &start, AreaId zone,
+                                                      const Point &goal,
+                                                      const std::set<AreaId> &avoided) const {
     auto route = graph_->route(area, zone, avoided, {});
     if (!route)
         return std::nullopt;
@@ -188,7 +186,7 @@ std::optional<WalkPath> PhysicalNavigation::path(AreaId area, const Point &start
     Point pos = start;
     bool complete = true;
     for (const auto edge : *route) {
-        auto leg = gate(edge, pos);
+        const auto &leg = gate(edge, pos);
         if (!leg) {
             complete = false;
             break;
@@ -216,7 +214,12 @@ std::optional<EscapePath> PhysicalNavigation::escape(AreaId area, const Point &s
     if (!centers_.contains(area))
         return std::nullopt;
     std::scoped_lock lock(mutex_);
-    return search({area, start}, std::nullopt, bomb, {}, radius);
+    const auto key = std::tuple{area, start, bomb, radius};
+    if (auto found = escapes_.find(key); found != escapes_.end())
+        return found->second;
+    if (escapes_.size() >= 1024)
+        escapes_.clear();
+    return escapes_.emplace(key, search({area, start}, std::nullopt, bomb, {}, radius)).first->second;
 }
 std::optional<EscapePath> PhysicalNavigation::search(const State &start, std::optional<AreaId> zone,
                                                      const Point &goal, const std::set<AreaId> &avoided,
@@ -225,14 +228,21 @@ std::optional<EscapePath> PhysicalNavigation::search(const State &start, std::op
         double d = distance(pos, goal);
         return zone ? d : std::max(0., radius - d);
     };
-    std::map<State, double> costs{{start, 0}};
-    std::map<State, std::pair<State, WalkPath>> parents;
+    // The priority queue and exported edge order determine all tie breaks.
+    // This table is accessed by key only.
+    struct SearchNode {
+        double cost;
+        State previous;
+        WalkPath path;
+    };
+    std::unordered_map<State, SearchNode, PositionedKeyHash> reached;
+    reached.emplace(start, SearchNode{0, start, {}});
     Queue<std::tuple<double, double, State>> queue;
     queue.emplace(estimate(start.second), 0, start);
     while (!queue.empty()) {
         const auto [rank, length, state] = queue.top();
         queue.pop();
-        if (length != costs.at(state))
+        if (length != reached.at(state).cost)
             continue;
         const auto &[here, pos] = state;
         std::optional<WalkPath> end;
@@ -243,7 +253,7 @@ std::optional<EscapePath> PhysicalNavigation::search(const State &start, std::op
         if (end) {
             WalkPath result;
             for (auto step = state; step != start;) {
-                const auto &[prev, leg] = parents.at(step);
+                const auto &[cost, prev, leg] = reached.at(step);
                 result.insert(result.end(), leg.rbegin(), leg.rend());
                 step = prev;
             }
@@ -262,15 +272,15 @@ std::optional<EscapePath> PhysicalNavigation::search(const State &start, std::op
                 traveled += distance(prev, q);
                 prev = q;
             }
-            if (!improves(costs, target, traveled))
+            auto [it, inserted] = reached.try_emplace(target);
+            if (!inserted && traveled >= it->second.cost)
                 return;
-            costs[target] = traveled;
-            parents[target] = {state, leg};
+            it->second = {traveled, state, leg};
             queue.emplace(traveled + estimate(target.second), traveled, target);
         };
         if (auto it = outgoing_.find(here); it != outgoing_.end())
             for (auto id : it->second)
-                if (auto leg = gate(id, pos))
+                if (const auto &leg = gate(id, pos))
                     visit(*leg);
         if (!zone) {
             const auto &center = centers_.at(here);
@@ -279,6 +289,201 @@ std::optional<EscapePath> PhysicalNavigation::search(const State &start, std::op
                     visit(*leg);
         }
     }
+    return std::nullopt;
+}
+} // namespace esport
+
+namespace esport {
+namespace {
+bool enters_fire(const Point &start, const Point &next, const Hazard &hazard) {
+    const auto &[center, radius] = hazard;
+    if (distance(start, center) < radius)
+        return false;
+    const double dx = next[0] - start[0], dy = next[1] - start[1], dz = next[2] - start[2];
+    const double span = sum3(dx * dx, dy * dy, dz * dz);
+    const double projection =
+        sum3((center[0] - start[0]) * dx, (center[1] - start[1]) * dy, (center[2] - start[2]) * dz);
+    const double t = span ? std::clamp(projection / span, 0., 1.) : 0;
+    return distance(lerp(start, next, t), center) < radius;
+}
+} // namespace
+
+MoveResult PhysicalNavigation::walk(MotionState &actor, const Point &goal, double pace,
+                                    const std::vector<Hazard> &fire) const {
+    check_point(actor.position);
+    check_point(goal);
+    if (!std::isfinite(pace))
+        throw std::invalid_argument("Invalid walking pace");
+    if (!std::isfinite(actor.heading) || actor.blocked_ticks < 0 ||
+        actor.blocked_ticks == std::numeric_limits<int>::max())
+        throw std::invalid_argument("Invalid movement state");
+    for (const auto &step : actor.path)
+        check_point(point(step));
+    MoveResult result;
+    if (distance(goal, actor.position) < 1e-6) {
+        actor.blocked_ticks = 0;
+        return result;
+    }
+    auto zone = surfaces_->locate(world(goal), 96);
+    if (!zone) {
+        ++actor.blocked_ticks;
+        return result;
+    }
+    std::set<AreaId> avoided;
+    for (const auto &[center, radius] : fire) {
+        check_point(center);
+        if (!std::isfinite(radius))
+            throw std::invalid_argument("Invalid fire radius");
+        for (const auto &[id, pos] : centers_)
+            if (id != actor.area && id != *zone && distance(center, pos) < radius)
+                avoided.insert(id);
+    }
+    Destination dest{*zone, goal, avoided};
+    bool crossing = !actor.path.empty() && std::get<3>(actor.path.front()) != actor.area;
+    if ((!crossing && dest != actor.destination) || actor.path.empty()) {
+        auto route = path(actor.area, actor.position, *zone, goal, avoided);
+        if (!route && !avoided.empty())
+            route = path(actor.area, actor.position, *zone, goal, {});
+        if (!route) {
+            ++actor.blocked_ticks;
+            return result;
+        }
+        actor.path = std::move(*route);
+        actor.destination = std::move(dest);
+        result.replanned = true;
+    }
+    actor.blocked_ticks = 0;
+    for (const auto &node : actor.path) {
+        if (pace <= 0)
+            break;
+        auto endpoint = point(node);
+        auto length = distance(actor.position, endpoint);
+        if (length > 0) {
+            const double fraction = std::min(1., pace / length);
+            auto next = fraction < 1 ? lerp(actor.position, endpoint, fraction) : endpoint;
+            if (std::ranges::any_of(fire,
+                                    [&](const Hazard &h) { return enters_fire(actor.position, next, h); })) {
+                result.waiting = true;
+                break;
+            }
+            const double dx = next[0] - actor.position[0], dy = next[1] - actor.position[1];
+            if (std::hypot(dx, dy) > 1e-6)
+                actor.heading = std::atan2(dy, dx);
+            actor.position = next;
+            result.moved = true;
+        }
+        pace -= length;
+        if (pace >= 0) {
+            actor.area = std::get<3>(node);
+            ++result.consumed;
+        }
+    }
+    actor.path.erase(actor.path.begin(), actor.path.begin() + result.consumed);
+    return result;
+}
+
+std::vector<Point> PhysicalNavigation::grenade(const Point &origin, const Point &target, int flight) const {
+    check_point(origin);
+    check_point(target);
+    if (flight <= 0)
+        throw std::invalid_argument("Invalid grenade flight duration");
+    Point pos = origin;
+    pos[2] += 4;
+    const double gravity = 8. * std::min(18, flight) / (double(flight) * flight);
+    Point velocity;
+    for (int i = 0; i < 3; ++i)
+        velocity[i] = (target[i] - pos[i]) / flight;
+    velocity[2] += gravity * (flight - 1) / 2;
+    std::vector<Point> track{pos};
+    for (int step = 0; step < flight; ++step) {
+        double remaining = 1;
+        for (int bounce = 0; bounce < 4; ++bounce) {
+            Point end;
+            for (int j = 0; j < 3; ++j)
+                end[j] = pos[j] + velocity[j] * remaining;
+            auto hit = collision_->trace(world(pos), world(end), 8, step == flight - 1);
+            if (!hit) {
+                pos = end;
+                break;
+            }
+            const double t = std::get<0>(*hit);
+            Point normal = std::get<2>(*hit).value();
+            double incidence =
+                sum3(velocity[0] * normal[0], velocity[1] * normal[1], velocity[2] * normal[2]);
+            if (incidence > 0) {
+                incidence = -incidence;
+                for (auto &v : normal)
+                    v = -v;
+            }
+            for (int j = 0; j < 3; ++j) {
+                pos[j] = pos[j] + velocity[j] * remaining * t + normal[j] * 0.02;
+                velocity[j] = 0.65 * (velocity[j] - 1.55 * incidence * normal[j]);
+            }
+            remaining *= 1 - t;
+        }
+        track.push_back(pos);
+        velocity[2] -= gravity;
+    }
+    return track;
+}
+} // namespace esport
+
+namespace esport {
+std::optional<Impact> PhysicalNavigation::hit(const Point &start, const Point &end, unsigned mask, double up,
+                                              double target_up, bool canonical) const {
+    auto a = world(start), b = world(end);
+    a[2] += up;
+    b[2] += target_up;
+    if (canonical && b < a)
+        std::swap(a, b);
+    return collision_->trace(a, b, mask);
+}
+} // namespace esport
+
+namespace esport {
+std::shared_ptr<const StageRoutes> PhysicalNavigation::safe_routes(const Point &bomb, double radius) const {
+    const auto key = std::pair{bomb, radius};
+    std::scoped_lock lock(mutex_);
+    auto it = std::find_if(safe_zones_.begin(), safe_zones_.end(),
+                           [&](const auto &item) { return item.first == key; });
+    if (it == safe_zones_.end()) {
+        std::vector<AreaId> safe;
+        for (auto &[id, p] : centers_)
+            if (distance(p, bomb) >= radius)
+                safe.push_back(id);
+        safe_zones_.emplace_front(key, std::make_shared<StageRoutes>(graph_->routes_through({safe})));
+        if (safe_zones_.size() > 16)
+            safe_zones_.pop_back();
+    } else
+        safe_zones_.splice(safe_zones_.begin(), safe_zones_, it);
+    return safe_zones_.front().second;
+}
+
+std::optional<Point> PhysicalNavigation::use_position(AreaId start, const Point &origin, const Point &goal,
+                                                      double radius) const {
+    if (auto at = locate(goal); at && path(start, origin, *at, goal, {}) && !hit(goal, goal, 1, 64, 5))
+        return goal;
+    std::vector<Point> choices;
+    for (double step : {radius * .85, radius * .4})
+        for (int i = 0; i < 12; ++i) {
+            auto angle = 2 * std::numbers::pi * i / 12;
+            Point q{goal[0] + step * std::cos(angle), goal[1] + step * std::sin(angle), goal[2]};
+            if (auto floor = surfaces_->locate_with_height(world(q), radius * unit_)) {
+                q[2] = floor->second / unit_;
+                if (distance(q, goal) <= radius && !hit(q, goal, 1, 64, 5))
+                    choices.push_back(q);
+            }
+        }
+    std::stable_sort(choices.begin(), choices.end(),
+                     [&](const auto &a, const auto &b) { return distance(a, origin) < distance(b, origin); });
+    for (auto &q : choices)
+        if (auto at = locate(q); at && path(start, origin, *at, q, {}))
+            return q;
+    return {};
+}
+std::optional<Point> PhysicalNavigation::nav_center(const Point &pos) const {
+    if (auto area = surfaces_->locate(world(pos), 96))
+        return centers_.at(*area);
     return std::nullopt;
 }
 } // namespace esport

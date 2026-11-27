@@ -3,7 +3,7 @@
 from math import dist, hypot
 
 from .cs2_maps import xyz
-from .match_rules import THROW_RECOVERY, UTILITY
+from backend.match_rules import THROW_RECOVERY, UTILITY
 
 
 def facing(origin, watch, point):
@@ -203,7 +203,7 @@ def check_carrier(space, actor, allies, cue, now, reading):
     """A fresh carrier report can narrow a keypad sound to one playable angle."""
     from .cs2_play import outside_bearing
     from .match_ai import near_line
-    from .match_rules import WEAPONS
+    from backend.match_rules import WEAPONS
 
     if (
         actor["blind"] > now
@@ -616,7 +616,7 @@ def protected_by(space, actor, contact, squad):
 def contact_grenade(space, actor, contact, visible, allies, player, plan, now, phase):
     """Compare a throw with the shots forgone before it lands."""
     from . import match_performance as perf
-    from .match_rules import WEAPONS
+    from backend.match_rules import WEAPONS
     from .match_ai import distance
 
     if not actor["utility"] or now < actor["throwAt"]:
@@ -704,7 +704,7 @@ def last_burst(space, actor, sight, squad, player, now):
 
 def support_partner(plan, actor, squad, chemistry, skills):
     """Support the actual entry or carrier on our approach, with a trade partner in mind."""
-    from .world import pair_key
+    from backend.world import pair_key
 
     slots = plan["orders"]["slots"]
     lane = slots[actor["slot"]]["lane"]

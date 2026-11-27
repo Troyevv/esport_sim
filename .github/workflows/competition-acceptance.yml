@@ -24,6 +24,7 @@ jobs:
         with:
           name: cs2-runtime-26879581
           path: runtime-data/maps/26879581
-      - run: python -m pip install -r requirements-test.txt
+      - run: python -m pip install -r requirements-test.txt -r requirements-native.txt
+      - run: python -m tools.build_native
       - run: python -m tools.check_competition_lifecycle
       - run: python -m tools.check_competition_seasons

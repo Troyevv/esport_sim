@@ -282,12 +282,10 @@ def simulate(game):
         while game["series"]["stage"] != "finished":
             if game["series"]["stage"] != "playing":
                 game = series.next_map(game)
-            while game["phase"] != "finished":
-                match.advance(game)
+            match.play_map(game)
             series.finish_map(game)
         return result(game)
-    while game["phase"] != "finished":
-        match.advance(game)
+    match.play_map(game)
     return result(game)
 
 

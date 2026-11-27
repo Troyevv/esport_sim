@@ -9,7 +9,8 @@ from pathlib import Path
 import random
 from time import perf_counter
 
-from backend import career, cs2_maps, database, match, match_inventory
+from tests.reference_kernel import cs2_maps, match, match_inventory
+from backend import career, database
 from backend.match_rules import equipment_value
 
 

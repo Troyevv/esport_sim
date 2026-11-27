@@ -1,8 +1,9 @@
 from copy import deepcopy
 import json
 
-from backend import checkpoints, match, match_ai, match_inventory as inventory
-from backend.match_events import damage
+from tests.reference_kernel import match, match_ai, match_inventory as inventory
+from backend import checkpoints
+from tests.reference_kernel.match_events import damage
 from backend.match_rules import equipment_value
 from backend.store import Store
 

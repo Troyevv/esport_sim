@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from backend import cs2_intel, match, match_ai
+from tests.reference_kernel import cs2_intel, match, match_ai
 
 
 class SightLines:
@@ -86,7 +86,7 @@ def test_repeated_group_reports_do_not_multiply_the_enemy_count():
 
 
 def test_defensive_opening_uses_only_own_identified_sites():
-    from backend.cs2_play import defensive_read
+    from tests.reference_kernel.cs2_play import defensive_read
 
     w = dict(siteHistory={"attack":[["B", True]] * 6})
     captain = dict(teamId="defence")
@@ -97,8 +97,8 @@ def test_defensive_opening_uses_only_own_identified_sites():
     assert defensive_read(w,captain) == "A"
 
 def test_velocity_estimate_uses_only_observed_reacquisitions_and_freezes_sent_evidence():
-    from backend.cs2_intel import learn_motion
-    from backend.cs2_defense import expected_travel
+    from tests.reference_kernel.cs2_intel import learn_motion
+    from tests.reference_kernel.cs2_defense import expected_travel
 
     observer = {}
     report = dict(id="T1", x=0, y=0, z=0, source="Радио", tick=10,

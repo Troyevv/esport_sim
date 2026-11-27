@@ -114,6 +114,12 @@ StageRoutes PortalGraph::routes_through(const std::vector<std::vector<AreaId>>& 
     return plan;
 }
 
+std::optional<double> StageRoutes::cost(AreaId start) const {
+    auto it=graph_->index_.find(start);
+    if(it!=graph_->index_.end() && std::isfinite(costs_[it->second])) return costs_[it->second];
+    return std::nullopt;
+}
+
 std::map<AreaId, double> StageRoutes::costs() const {
     std::map<AreaId, double> result;
     for (std::size_t i = 0; i < costs_.size(); ++i) {

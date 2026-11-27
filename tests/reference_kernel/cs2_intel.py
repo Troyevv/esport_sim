@@ -45,7 +45,7 @@ def learn_motion(observer, sight, prior):
 
 def duel_priority(observer, sight, focus, skills):
     """Estimate exposure from the visible weapon, coarse facing and distance."""
-    from .match_rules import WEAPONS
+    from backend.match_rules import WEAPONS
     delta = [a-b for a,b in zip(xyz(observer),xyz(sight))]
     gap = hypot(*delta)
     apparent = gap

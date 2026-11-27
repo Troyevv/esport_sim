@@ -4,20 +4,11 @@ from collections import deque
 from functools import lru_cache
 from math import cos, dist, atan2, ceil, hypot, pi, sin
 
-from . import engine, match_inventory, tactic_execution, world
+from . import match_inventory, tactic_execution
+from backend import engine, world
 from . import match_performance as perf
 from .match_events import impact, emit
-from .match_rules import (
-    BLAST_RADIUS,
-    equipment_value,
-    MAP,
-    POSITIONS,
-    RULES,
-    UTILITY,
-    THROW_RECOVERY,
-    WEAPONS,
-    role_orders,
-)
+from backend.match_rules import BLAST_RADIUS, equipment_value, MAP, POSITIONS, RULES, UTILITY, THROW_RECOVERY, WEAPONS, role_orders
 
 
 from . import cs2_intel, cs2_play
@@ -88,9 +79,7 @@ def radio_delay(skills):
     return 1 + (100 - skills["communication"]) // 12
 
 
-def heard_action(w, space, source, guards, kind, radius):
-    """Model a game audio event at the listener, before any radio transmission."""
-    now = w["tick"]
+def hearing_estimates(w, space, source, guards, radius):
     pos = xyz(source)
     for guard in guards:
         if (
@@ -117,6 +106,13 @@ def heard_action(w, space, source, guards, kind, radius):
         band = 14 if d < 25 else 43 if d < 62 else 83
         step = band / hypot(dx, dy)
         estimate = (guard["x"] + dx * step, guard["y"] + dy * step, guard["z"])
+        yield guard, skills, estimate, 0.35 + 0.45 * (1 - d / reach)
+
+
+def heard_action(w, space, source, guards, kind, radius):
+    """Model a game audio event at the listener, before any radio transmission."""
+    now = w["tick"]
+    for guard, skills, estimate, confidence in hearing_estimates(w, space, source, guards, radius):
         key = "Шум · " + kind
         prior = guard["knowledge"].get(key)
         # Several footsteps or fake shots are one cue, never a head count.
@@ -134,7 +130,7 @@ def heard_action(w, space, source, guards, kind, radius):
             sound=kind,
             witness=guard["id"],
             repeated=sustained,
-            confidence=round(0.35 + 0.45 * (1 - d / reach), 2),
+            confidence=round(confidence, 2),
         )
         guard["knowledge"][key] = cue
         clocks = guard.setdefault("audioCalls", {})
@@ -160,7 +156,32 @@ def send_sector(w, actor, call):
     )
 
 
-def observe(w, players, space=None):
+def observed_players(space, players, now, smoke):
+    opponents = {"CT": [], "T": []}
+    for agent in players:
+        opponents["CT" if agent["team"]=="T" else "T"].append(agent)
+    pairs = []
+    for a in players:
+        if a["blind"]>now:
+            continue
+        x,y = a["x"],a["y"]
+        dx,dy = cos(a["heading"]),sin(a["heading"])
+        for b in opponents[a["team"]]:
+            vx,vy = b["x"]-x,b["y"]-y
+            dot = vx*dx+vy*dy
+            if dot>=0 and 4*dot*dot>=vx*vx+vy*vy:
+                pairs.append((a,b))
+    visible = space.visible_pairs(pairs)
+    observed_by = {a["id"]:[] for a in players}
+    for a,b in pairs:
+        if (a["id"],b["id"]) in visible and not any(
+            near_line(a,b,fog,fog["radius"]) for fog in smoke
+        ):
+            observed_by[a["id"]].append(b)
+    return observed_by
+
+
+def deliver_radio(w, players, space=None):
     now = w["tick"]
     for message in w["messages"][:]:
         if message["due"] > now:
@@ -250,31 +271,16 @@ def observe(w, players, space=None):
                             )
                             plan["review"] = min(plan["review"], now + delay)
                     a["knowledge"][sight["id"]] = delivered
+
+
+def observe(w, players, space=None):
+    now = w["tick"]
+    deliver_radio(w, players, space)
     smoke = [
         f for f in w["effects"] if f["kind"] == "Дым" and f["land"] <= now < f["end"]
     ]
     if space:
-        opponents = {"CT": [], "T": []}
-        for agent in players:
-            opponents["CT" if agent["team"]=="T" else "T"].append(agent)
-        pairs = []
-        for a in players:
-            if a["blind"]>now:
-                continue
-            x,y = a["x"],a["y"]
-            dx,dy = cos(a["heading"]),sin(a["heading"])
-            for b in opponents[a["team"]]:
-                vx,vy = b["x"]-x,b["y"]-y
-                dot = vx*dx+vy*dy
-                if dot>=0 and 4*dot*dot>=vx*vx+vy*vy:
-                    pairs.append((a,b))
-        visible = space.visible_pairs(pairs)
-        observed_by = {a["id"]:[] for a in players}
-        for a,b in pairs:
-            if (a["id"],b["id"]) in visible and not any(
-                near_line(a,b,fog,fog["radius"]) for fog in smoke
-            ):
-                observed_by[a["id"]].append(b)
+        observed_by = observed_players(space, players, now, smoke)
     for a in players:
         previous = a["visible"]
         a["visible"] = []

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from backend.cs2_maps import NAMES
+from tests.reference_kernel.cs2_maps import NAMES
 
 METRICS = (
     ("T", "T", "rounds", 100),

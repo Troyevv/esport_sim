@@ -434,3 +434,23 @@ def test_calendar_recovery_actions_over_http(tmp_path, monkeypatch):
                 break
             time.sleep(0.02)
         assert not career["progress"] and career["attention"][0]["action"] == "play"
+
+
+def test_sansio_disconnect_stops_idle_and_live_streams(tmp_path, caplog):
+    # The desktop entry point uses sansio. Exercise both a close frame and an abrupt EOF.
+    path = tmp_path / "profile.sqlite"
+    with listener() as sock, serve(create_app(path), sock, ws="websockets-sansio"):
+        origin = f"http://127.0.0.1:{sock.getsockname()[1]}"
+        url = origin.replace("http:", "ws:") + "/api/stream"
+        with httpx.Client(base_url=origin, headers={"Origin": origin}, trust_env=False) as client:
+            for live in (False, True):
+                if live:
+                    send(client, "start")
+                with connect(url, origin=origin, proxy=None) as device:
+                    assert json.loads(device.recv(timeout=4))["running"] == live
+                    if live:
+                        device.socket.shutdown(socket.SHUT_RDWR)
+            send(client, "pause")
+            with connect(url, origin=origin, proxy=None) as device:
+                assert json.loads(device.recv(timeout=4)) == snapshot(client)
+    assert not [r for r in caplog.records if r.name == "uvicorn.error" and r.levelno >= 40]

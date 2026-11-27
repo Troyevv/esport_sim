@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from backend.cs2_navigation import Navigation, surface_height
+from tests.reference_kernel.cs2_navigation import Navigation, surface_height
 from backend.cs2_sites import BombSites
 
 

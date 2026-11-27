@@ -26,14 +26,6 @@ def initialize(w):
     w["winnerTeamId"] = None
 
 
-def award(w, side):
-    winner = side_team(w, side)
-    w["scoreByTeam"][winner] += 1
-    ids = team_ids(w)
-    w["score"] = [w["scoreByTeam"][tid] for tid in ids]
-    return winner, ids.index(winner)
-
-
 def validate(w):
     ids = team_ids(w)
     if (

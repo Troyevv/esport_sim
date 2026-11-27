@@ -7,7 +7,8 @@ from math import dist
 from pathlib import Path
 from statistics import mean
 
-from backend import career, cs2_maps, database, match, match_ai, match_performance as performance
+from tests.reference_kernel import cs2_maps, match, match_ai, match_performance as performance
+from backend import career, database
 from backend.match_rules import WEAPONS
 
 

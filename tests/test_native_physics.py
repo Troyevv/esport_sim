@@ -5,12 +5,12 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from backend.cs2_collision import Collision, Primitive
-from backend.cs2_maps import Map
-from backend.cs2_rays import TriangleScene
+from tests.reference_kernel.cs2_collision import Collision, Primitive
+from tests.reference_kernel.cs2_maps import Map
+from tests.reference_kernel.cs2_rays import TriangleScene
 
 native = pytest.importorskip("backend._match_native")
-from backend.native_physics import NativeCollision, NativePhysicalMap
+from tests.reference_kernel.native_physics import NativeCollision, NativePhysicalMap, NativeMovementMap
 
 
 def collision(cls, vertices, faces, masks, shapes=()):
@@ -63,7 +63,7 @@ def corridor(cls):
     obj = object.__new__(cls)
     obj.overview = dict(pos_x=0, pos_y=0)
     wall = [(24,-7,0),(24,7,0),(24,7,70),(24,-7,70)]
-    obj.collision = collision(NativeCollision if cls is NativePhysicalMap else Collision,
+    obj.collision = collision(NativeCollision if issubclass(cls, NativePhysicalMap) else Collision,
                               wall, [[0,1,2],[0,2,3]], [2,2])
     areas = {1: dict(corners=[[-36,-36,0],[24,-36,0],[24,36,0],[-36,36,0]]),
              2: dict(corners=[[24,-36,0],[84,-36,0],[84,36,0],[24,36,0]])}
@@ -104,3 +104,67 @@ def test_invalid_physical_input():
         planner.path(1, (np.nan,0.,0.), 2, (5.,0.,0.), set())
     with pytest.raises(ValueError):
         native.CollisionWorld(corridor(NativePhysicalMap).collision.scene, np.zeros(0,np.uint16), [])
+
+
+def test_persistent_motion_matches_mid_portal_restore_and_fire_wait():
+    from copy import deepcopy
+
+    reference, candidate = corridor(Map), corridor(NativeMovementMap)
+    reference.path = reference._path
+    # The two NAV centers are outside the intervening flame.
+    reference.nearby_areas = lambda p, r: []
+    actor = dict(x=-.5,y=0.,z=0.,navArea=1,heading=1.,path=[],dest=[],blockedTicks=7,status="Ход")
+    old, new = deepcopy(actor), deepcopy(actor)
+    goal = reference.centers[2]
+    fire = dict(x=1., y=-.75, z=0.,radius=.6)
+    for dest, pace, hazards in [(goal,.7,[]), (goal,3.,[fire]), (goal,2.2,[]),
+                                (reference.centers[1],.1,[]), (goal,2.,[]), (goal,8.,[]),
+                                ((100.,100.,0.),1.,[]), (goal,1.,[])]:
+        assert candidate.walk(new,dest,pace,hazards) == reference.walk(old,dest,pace,hazards)
+        assert old == new
+    assert new["navArea"] == 2
+    assert not new["path"]
+
+
+def test_grenade_trajectory_including_terminal_mesh_contact():
+
+    old, new = corridor(Map), corridor(NativeMovementMap)
+    wall = [(24.,-70.,-5.), (24.,70.,-5.), (24.,70.,120.), (24.,-70.,120.)]
+    old.collision = collision(Collision, wall, [[0,1,2],[0,2,3]], [8,8])
+    new.collision = collision(NativeCollision, wall, [[0,1,2],[0,2,3]], [8,8])
+    origin = (-1.,0.,0.)
+    for goal in ((2.,0.,3.), (4.,.5,0.), (1.,-1.,2.)):
+        expected = old.grenade(origin,goal,6)
+        assert new.grenade(origin,goal,6) == expected
+        assert len(expected[-1]) == 7
+
+
+def test_sensor_frame_preserves_order_blindness_smoke_and_anonymous_hearing():
+    from tests.reference_kernel.native_physics import NativePerceptionMap
+
+    old, new = corridor(Map), corridor(NativePerceptionMap)
+    points = [(0.,0.,0.),(4.,0.,0.),(4.,2.,0.),(-4.,0.,0.)]
+    team = [False, True, True, True]
+    players = [native.Observer(p,0.,t,False) for p,t in zip(points,team)]
+    assert new.sensors.observe(players, [])[0] == [1,2]
+    assert new.sensors.observe(players, [((2.,0.,0.),.4)])[0] == [2]
+    players[0] = native.Observer(points[0],0.,False,True)
+    assert new.sensors.observe(players, [])[0] == []
+    guards = [native.Listener(points[0],80,True), native.Listener(points[0],80,False),
+              native.Listener((100.,100.,0.),80,True)]
+    cues = new.sensors.hear(points[1],88.,guards)
+    assert [(c.listener,c.estimate) for c in cues] == [(0,[14.,0.,0.])]
+    assert cues[0].confidence == .35+.45*(1-4/(88*(.78+80/460)))
+
+
+def test_native_transmission_through_multiple_layers():
+    from tests.reference_kernel.native_physics import NativePerceptionMap
+
+    old, new = corridor(Map), corridor(NativePerceptionMap)
+    wall = [(x,y,z) for x in (12.,24.) for y,z in ((-20.,0.),(20.,0.),(20.,70.),(-20.,70.))]
+    faces = [[0,1,2],[0,2,3],[4,5,6],[4,6,7]]
+    old.collision = collision(Collision,wall,faces,[4]*4)
+    new.collision = collision(NativeCollision,wall,faces,[4]*4)
+    for a,b in [((0.,0.,0.),(4.,0.,0.)), ((0.,0.,0.),(1.5,0.,0.)), ((4.,0.,0.),(4.,0.,0.))]:
+        for power in (.1, 1., 3.):
+            assert new.shot_transmission(a,b,power) == old.shot_transmission(a,b,power)
