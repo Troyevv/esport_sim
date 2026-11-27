@@ -5,6 +5,7 @@
 #include <mutex>
 
 namespace esport {
+double distance(const Point &a, const Point &b);
 using Lane = std::pair<Point, Point>;
 struct Crossing {
     AreaId from, to;
@@ -41,6 +42,8 @@ class PhysicalNavigation {
                                  const std::set<AreaId> &avoided) const;
     std::optional<EscapePath> escape(AreaId area, const Point &start, const Point &bomb, double radius) const;
 
+    std::optional<Impact> hit(const Point &start, const Point &end, unsigned mask, double up,
+                              double target_up, bool canonical = false) const;
     MoveResult walk(MotionState &actor, const Point &goal, double pace,
                     const std::vector<Hazard> &fire) const;
     std::vector<Point> grenade(const Point &origin, const Point &target, int flight) const;

@@ -48,7 +48,12 @@ def run(args):
         from backend import cs2_collision
         from backend.native_physics import NativeCollision
         cs2_collision.Collision = NativeCollision
-    if args.native_movement:
+    if args.native_perception:
+        from backend import match_ai, native_physics
+        cs2_maps.Map = native_physics.NativePerceptionMap
+        match_ai.observed_players = native_physics.observed_players
+        match_ai.hearing_estimates = native_physics.hearing_estimates
+    elif args.native_movement:
         from backend.native_physics import NativeMovementMap
         cs2_maps.Map = NativeMovementMap
     elif args.native_physics:
@@ -106,9 +111,10 @@ def run(args):
     args.out.mkdir(parents=True, exist_ok=True)
     stem = args.out / args.map
     stem.with_suffix(".checkpoint.json.gz").write_bytes(gzip.compress(checkpoint, mtime=0))
-    physics = args.native_physics or args.native_movement
+    movement = args.native_movement or args.native_perception
+    physics = args.native_physics or movement
     collision = physics or args.native_collision
-    report = dict(controls=controls, nativeMovement=args.native_movement, nativePhysics=physics,
+    report = dict(controls=controls, nativePerception=args.native_perception, nativeMovement=movement, nativePhysics=physics,
                   nativeCollision=collision, nativeRays=collision or args.native_rays,
                   nativeNav=physics or args.native_nav, restored=bool(args.restore or args.checkpoint),
                   python=platform.python_version(),
@@ -138,6 +144,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", type=Path, help="Continue from a pinned tick-150 checkpoint")
     parser.add_argument("--expect", type=Path, help="Compare all controls to a reference JSON by map")
     parser.add_argument("--native-collision", action="store_true", help="Use complete native segment queries")
+    parser.add_argument("--native-perception", action="store_true", help="Use native vision, hearing and shot transmission with native movement")
     parser.add_argument("--native-movement", action="store_true", help="Use native walking and grenade flight with physical navigation")
     parser.add_argument("--native-physics", action="store_true", help="Use native physical route planning and collision")
     parser.add_argument("--native-rays", action="store_true", help="Use the native Embree triangle scene")

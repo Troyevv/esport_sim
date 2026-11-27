@@ -96,3 +96,32 @@ class NativeMovementMap(NativePhysicalMap):
     def grenade(self, origin, target, flight):
         track = [tuple(p) for p in self.planner.grenade(origin, target, flight)]
         return *track[-1], track
+
+
+class NativePerceptionMap(NativeMovementMap):
+    @cached_property
+    def sensors(self):
+        return native.MapSensors(self.planner, self.collision.materials)
+
+    def shot_transmission(self, start, end, power):
+        return self.sensors.shot_transmission(start, end, power)
+
+
+def observed_players(space, players, now, smoke):
+    observers = [native.Observer(xyz(a), a["heading"], a["team"] == "T", a["blind"] > now)
+                 for a in players]
+    seen = space.sensors.observe(observers, [(xyz(f), f["radius"]) for f in smoke])
+    return {actor["id"]: [players[i] for i in targets]
+            for actor, targets in zip(players, seen, strict=True)}
+
+
+def hearing_estimates(w, space, source, guards, radius):
+    from .world import match_player
+
+    guards = list(guards)
+    skills = [match_player(w, a)["skills"] for a in guards]
+    listeners = [native.Listener(xyz(a), s["game_reading"], a["team"] == "CT" and bool(a["hp"])
+                                 and source.get("id") not in a["visible"])
+                 for a, s in zip(guards, skills, strict=True)]
+    for cue in space.sensors.hear(xyz(source), radius, listeners):
+        yield guards[cue.listener], skills[cue.listener], cue.estimate, cue.confidence

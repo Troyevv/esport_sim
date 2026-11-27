@@ -137,3 +137,34 @@ def test_grenade_trajectory_including_terminal_mesh_contact():
         expected = old.grenade(origin,goal,6)
         assert new.grenade(origin,goal,6) == expected
         assert len(expected[-1]) == 7
+
+
+def test_sensor_frame_preserves_order_blindness_smoke_and_anonymous_hearing():
+    from backend.native_physics import NativePerceptionMap
+
+    old, new = corridor(Map), corridor(NativePerceptionMap)
+    points = [(0.,0.,0.),(4.,0.,0.),(4.,2.,0.),(-4.,0.,0.)]
+    team = [False, True, True, True]
+    players = [native.Observer(p,0.,t,False) for p,t in zip(points,team)]
+    assert new.sensors.observe(players, [])[0] == [1,2]
+    assert new.sensors.observe(players, [((2.,0.,0.),.4)])[0] == [2]
+    players[0] = native.Observer(points[0],0.,False,True)
+    assert new.sensors.observe(players, [])[0] == []
+    guards = [native.Listener(points[0],80,True), native.Listener(points[0],80,False),
+              native.Listener((100.,100.,0.),80,True)]
+    cues = new.sensors.hear(points[1],88.,guards)
+    assert [(c.listener,c.estimate) for c in cues] == [(0,[14.,0.,0.])]
+    assert cues[0].confidence == .35+.45*(1-4/(88*(.78+80/460)))
+
+
+def test_native_transmission_through_multiple_layers():
+    from backend.native_physics import NativePerceptionMap
+
+    old, new = corridor(Map), corridor(NativePerceptionMap)
+    wall = [(x,y,z) for x in (12.,24.) for y,z in ((-20.,0.),(20.,0.),(20.,70.),(-20.,70.))]
+    faces = [[0,1,2],[0,2,3],[4,5,6],[4,6,7]]
+    old.collision = collision(Collision,wall,faces,[4]*4)
+    new.collision = collision(NativeCollision,wall,faces,[4]*4)
+    for a,b in [((0.,0.,0.),(4.,0.,0.)), ((0.,0.,0.),(1.5,0.,0.)), ((4.,0.,0.),(4.,0.,0.))]:
+        for power in (.1, 1., 3.):
+            assert new.shot_transmission(a,b,power) == old.shot_transmission(a,b,power)
