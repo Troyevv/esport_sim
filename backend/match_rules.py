@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from . import engine
 
-AGENT_POLICY = 9
+AGENT_POLICY = 10
 UTILITY_STATS = ("flashesThrown", "enemiesFlashed", "alliesFlashed", "selfFlashes",
                  "enemyBlindTicks", "flashAssists", "heThrown", "heDamage", "smokesThrown",
                  "smokeScreenTicks", "smokesOpened", "smokeShots", "firesQuenched",

@@ -100,7 +100,7 @@ def test_stage_waits_for_other_lane_delivery_then_moves(live):
     assert execute(dict(held, tick=w["tick"]+45), actor["id"])[0][0] == "move"
 
 
-@pytest.mark.parametrize("policy", (None, 1, 2, 3, 4, 5, 6, 7, 8, 9))
+@pytest.mark.parametrize("policy", (None, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
 def test_active_and_manual_checkpoints_keep_policy_and_exact_continuation(tmp_path, policy):
     w = match.initial(41, map_id="de_dust2", agent_policy=policy)
     match.advance(w, 95)

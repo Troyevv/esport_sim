@@ -3,7 +3,7 @@
 import hashlib
 import json
 
-from .match_rules import role_orders
+from .match_rules import AGENT_POLICY, role_orders
 from . import tactics
 
 VERSION = 6
@@ -100,7 +100,7 @@ def upgrade_match(db, world):
 
 
 def validate_current(world):
-    if "agentPolicy" in world and (type(world["agentPolicy"]) is not int or world["agentPolicy"] not in (1, 2, 3, 4, 5, 6, 7, 8, 9)):
+    if "agentPolicy" in world and (type(world["agentPolicy"]) is not int or world["agentPolicy"] not in range(1, AGENT_POLICY + 1)):
         raise CheckpointError("Неизвестная версия индивидуального ИИ")
     if world.get("mapId"):
         from math import isfinite

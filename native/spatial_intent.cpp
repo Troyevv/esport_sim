@@ -192,7 +192,12 @@ Json AgentTurn::spatial_intent() {
         watch = sector_watch;
         if (relief(plan, a)) {
             a["status"] = "Перетягивается на " + site;
-            if (auto q = flank(assigned, home)) {
+            if (order.contains("maneuver"))
+                a["status"] = order.at("maneuver") == "yield"     ? "Отходит на рубеж ретейка"
+                              : order.at("maneuver") == "save"    ? "Сохраняет оружие до установки"
+                              : order.at("maneuver") == "reclaim" ? "Возвращает контроль сектора"
+                                                                  : "Собирается с напарником";
+            else if (auto q = flank(assigned, home)) {
                 goal = *q;
                 a["status"] = "Обходит к " + site + " по другому входу";
             }
@@ -201,8 +206,9 @@ Json AgentTurn::spatial_intent() {
         else
             a["status"] = "Занимает " + site;
     }
-    bool checking = holding && active(a, "plantCue") && a.at("plantCue").at("tick") <= now &&
-                    now - a.at("plantCue").at("tick").get<Tick>() < 30;
+    bool checking = holding && order.value("maneuver", std::string{}) != "save" &&
+                    order.value("maneuver", std::string{}) != "yield" && active(a, "plantCue") &&
+                    a.at("plantCue").at("tick") <= now && now - a.at("plantCue").at("tick").get<Tick>() < 30;
     if (!checking && action.empty()) {
         Json result;
         if (live)

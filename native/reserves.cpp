@@ -21,11 +21,11 @@ Json station(const OpeningMap &arena, const Json &actor, const std::string &site
     return nullptr;
 }
 void assign(const OpeningMap &arena, Json &plan, const Squad &squad, const Json &target, double pressure,
-            bool second) {
+            bool second, int limit) {
     const auto key = second ? "secondBackup" : "backup";
     auto erase = [&]() { plan.erase(key); };
-    if (target.is_null() ||
-        (second && (pressure < 2.5 || !plan.contains("backup") || plan.at("backup").empty()))) {
+    if (target.is_null() || (second && ((limit < 0 && pressure < 2.5) || !plan.contains("backup") ||
+                                        plan.at("backup").empty()))) {
         erase();
         return;
     }
@@ -53,15 +53,27 @@ void assign(const OpeningMap &arena, Json &plan, const Squad &squad, const Json 
         lane = 1 - first.value("lane", plan.at("lane").get<int>());
     } else {
         for (auto p : squad)
-            if ((off(p) || slot(p) == 4) && !unavailable(p) && (pressure >= 1.65 || slot(p) == 4))
+            if ((off(p) || slot(p) == 4) && !unavailable(p) &&
+                (pressure >= 1.65 || slot(p) == 4 ||
+                 (limit > 0 && plan.at("defenseCall").at("kind") == "reclaim")))
                 candidates.push_back(p);
         if (std::ranges::any_of(candidates, [](auto p) { return slot(p) >= 2; }))
             std::erase_if(candidates, [](auto p) { return slot(p) < 2; });
-        else if (candidates.size() == 1 && std::ranges::any_of(squad, [&](auto p) { return !off(p); })) {
+        else if (limit < 0 && candidates.size() == 1 &&
+                 std::ranges::any_of(squad, [&](auto p) { return !off(p); })) {
             erase();
             return;
         }
         lane = plan.value("reliefLanes", Json::object()).value(site, plan.at("lane").get<int>());
+    }
+    if (limit > 0 && plan.at("defenseCall").at("kind") != "full") {
+        // Always leave somebody responsible for the other site. Opening stacks
+        // can give the nominal reserve a regular sector there as well.
+        std::erase_if(candidates, [&](auto p) {
+            return off(p) && std::ranges::none_of(squad, [&](auto mate) {
+                       return mate != p && off(mate) && (!second || plan.at("backup").at("id") != id(mate));
+                   });
+        });
     }
     if (candidates.empty()) {
         erase();
@@ -89,7 +101,7 @@ void assign(const OpeningMap &arena, Json &plan, const Squad &squad, const Json 
 }
 } // namespace
 void assign_reserves(const OpeningMap &arena, Json &plan, const Squad &squad, Json destination,
-                     const Pressure &counts, Tick now, const Json &bomb_site) {
+                     const Pressure &counts, Tick now, const Json &bomb_site, int limit) {
     auto order = [&](const std::string &key) { return plan.value(key, Json(nullptr)); };
     auto en_route = [&](const Json &o, const Json &other) {
         if (o.empty() || now > o.value("arriveBy", Tick{-1}))
@@ -112,11 +124,14 @@ void assign_reserves(const OpeningMap &arena, Json &plan, const Squad &squad, Js
     if (en_route(first, second))
         destination = first.at("site");
     else
-        assign(arena, plan, squad, destination, value(), false);
+        assign(arena, plan, squad, destination, value(), false, limit);
     first = order("backup");
-    if (first.empty() || second.empty() || !second.value("objectiveConfirmed", false) ||
-        second.at("id") == first.at("id") || second.at("site") != destination || !en_route(second, first))
-        assign(arena, plan, squad, destination, value(), true);
+    if (limit == 1)
+        plan.erase("secondBackup");
+    else if (first.empty() || second.empty() || !second.value("objectiveConfirmed", false) ||
+             second.at("id") == first.at("id") || second.at("site") != destination ||
+             !en_route(second, first))
+        assign(arena, plan, squad, destination, value(), true, limit);
     auto &nav = arena.objectives().map();
     for (auto k : {"backup", "secondBackup"})
         if (plan.contains(k) && !plan.at(k).empty()) {

@@ -195,6 +195,21 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
            : !a.at("heardSite").is_null() ? search_site(site)
                                           : arena.site_point(site);
     bool helping = !action.empty() && action.at("player") != id;
+    Json coverFor = helping ? action.at("player") : Json(nullptr);
+    if (!helping && !device.empty() && plan.contains("retakeCall")) {
+        const auto &call = plan.at("retakeCall");
+        // Cover a nearby, faster kit. The first player in range can still
+        // start immediately when the kit player is late, blocked or fighting.
+        for (auto m : squad)
+            if (m != &a && call.at("kind") == "retake" && m->at("id") == call.at("defuser") &&
+                m->at("kit") == true && a.at("kit") == false && !active(*m, "saving") &&
+                distance(actor_point(*m), goal) < 10 && clear(*m, device) && !observed_aim(*m) &&
+                call.at("slack") > 12 && distance(pos, goal) < 18) {
+                helping = true;
+                coverFor = m->at("id");
+                break;
+            }
+    }
     if (!device.empty() && distance(pos, goal) <= 6 && !helping && clear(a, device))
         return Json::array({"defuse", nullptr});
     if (!device.empty() && !helping && a.value("blockedTicks", 0) >= 5 &&
@@ -206,7 +221,7 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
     if (!device.empty() && a.value("useTarget", Json(nullptr)) == goal && active(a, "useFloor"))
         goal = a.at("useFloor").get<Point>();
     if (helping) {
-        auto who = action.at("player");
+        auto who = coverFor;
         if (a.value("coveredDefuser", Json(nullptr)) != who) {
             auto center = pos;
             Points occupied;
@@ -243,8 +258,10 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
         if (active(plan, "retake") && plan.at("retake").at("duties").contains(id))
             duty = &plan.at("retake").at("duties").at(id);
         if (duty && !active(*duty, "done")) {
-            if (now >= duty->at("latest").get<Tick>() || a.value("blockedTicks", 0) >= 5 ||
-                std::ranges::none_of(squad, [&](auto m) { return m != &a && (small_groups(w) || !active(*m, "saving")); }))
+            if ((plan.contains("retakeCall") && plan.at("retakeCall").at("slack") <= 25) ||
+                now >= duty->at("latest").get<Tick>() || a.value("blockedTicks", 0) >= 5 ||
+                std::ranges::none_of(
+                    squad, [&](auto m) { return m != &a && (small_groups(w) || !active(*m, "saving")); }))
                 (*duty)["done"] = true;
             else if (distance(pos, duty->at("stage").get<Point>()) > 4) {
                 a["status"] = "Заходит на ретейк через свой проход";

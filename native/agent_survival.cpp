@@ -1,4 +1,4 @@
-#include "agent_turn.hpp"
+#include "agent_helpers.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -82,6 +82,13 @@ Json AgentTurn::saved_exit() {
         }
         if (remaining > departure)
             return nullptr;
+    } else if (plan.contains("retakeCall") && plan.at("retakeCall").at("kind") == "save") {
+        // A locally actionable defuse or a teammate already using the device
+        // takes priority over an earlier estimate at the site centre.
+        if (!action.empty() ||
+            (!device.empty() && distance(origin, pos) <= 6 && clear(a, device) &&
+             remaining > cfg.at("rules").at(a.at("kit") == true ? "kitDefuse" : "defuse").get<int>()))
+            return nullptr;
     } else {
         if (!action.empty())
             return nullptr;
@@ -113,6 +120,20 @@ Json AgentTurn::saved_exit() {
                 path = path_to(goal);
             if (path)
                 length = walk_length(origin, *path);
+        }
+        if (path && plan.contains("retakeCall")) {
+            const auto &call = plan.at("retakeCall");
+            const auto assigned = call.at("defuser").get<std::string>();
+            if (call.at("kind") == "retake" && call.at("slack") > 0 &&
+                (a.at("id") == assigned
+                     ? length / speed + use < remaining
+                     : length / speed + 12 < remaining && std::ranges::any_of(
+                                                              squad,
+                                                              [&](auto mate) {
+                                                                  return mate->at("id") == assigned &&
+                                                                         !active(*mate, "saving");
+                                                              })))
+                return nullptr;
         }
         if (path && length / speed + 12 < remaining && std::ranges::any_of(squad, [&](const Json *p) {
                 return p != &a && p->at("kit") == true && p->value("saving", Json(nullptr)).empty() &&

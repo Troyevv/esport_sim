@@ -27,7 +27,12 @@ const Json &assignment(const Json &plan, const Json &a, const Squad &squad) {
     int i = a.at("slot");
     const auto &slots = plan.at("orders").at("slots"), &order = slots.at(i);
     if ((i == 2 || i == 3) && slots.at(i - 2).at("site") == order.at("site") &&
-        std::ranges::none_of(squad, [&](auto p) { return p->at("slot") == i - 2; }))
+        std::ranges::none_of(squad, [&](auto p) {
+            if (p->at("slot") != i - 2)
+                return false;
+            auto moved = relief(plan, *p);
+            return !plan.contains("defenseCall") || !moved || moved->at("site") == order.at("site");
+        }))
         return slots.at(i - 2);
     if (order.contains("screen") && !order.at("screen").empty() && !a.value("leftScreen", false))
         return order.at("screen");
@@ -200,12 +205,14 @@ void captain_review(Json &w, const Json &cfg, const OpeningMap &arena, const std
         plan["review"] =
             now + 5 + (200 - skills.at("calling").get<int>() - skills.at("communication").get<int>()) / 8;
         if (w.at("phase") == "live") {
-            direct_defense(w, arena, plan, squad, captain);
+            direct_defense(w, cfg, arena, plan, squad, captain);
             return;
         }
         if (w.at("phase") == "planted" && !captain.at("heardSite").empty()) {
             plan["reinforce"] = captain.at("heardSite");
-            if (!plan.contains("retake"))
+            if (collective_defense(w) && !arena.objectives().grid())
+                review_retake(w, cfg, arena, squad, captain, captain.at("heardSite"));
+            else if (!plan.contains("retake"))
                 assemble_retake(w, cfg, arena, squad, captain, captain.at("heardSite"));
         }
         return;

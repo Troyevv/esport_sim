@@ -179,15 +179,19 @@ void review_opening(const OpeningMap &arena, Json &plan, const Squad &squad, Tic
         if (job.contains("coverOrder") && job.at("coverOrder").at("until") <= now)
             job.erase("coverOrder");
 }
-void direct_defense(Json &w, const OpeningMap &arena, Json &plan, const Squad &squad, Json &leader) {
+void direct_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &plan, const Squad &squad,
+                    Json &leader) {
     Tick now = w.at("tick");
     const auto &sites = arena.objectives();
     std::set<std::string> dead;
     for (auto &k : w.at("kills"))
         dead.insert(k.at("target"));
     Reports reports, calls;
+    const bool ranked = collective_defense(w) && !truth(plan, "board");
     for (auto &r : leader.at("knowledge"))
-        if (!dead.contains(r.at("id").get<std::string>()))
+        if ((!ranked ||
+             (!r.value("disputed", false) && r.value("confidence", 1.) >= .35 && r.at("tick") <= now)) &&
+            !dead.contains(r.at("id").get<std::string>()))
             reports.push_back(&r);
     auto counts = site_pressure(arena, reports, now);
     Json sector = leader.value("sectorCalls", Json::object()), unavailable = Json::object();
@@ -234,7 +238,8 @@ void direct_defense(Json &w, const OpeningMap &arena, Json &plan, const Squad &s
                             (1 - (now - *std::max_element(times.begin(), times.end())) / 75.);
     const Json *carrier = nullptr;
     for (auto r : reports)
-        if (r->value("carryingC4", false) && now - r->at("tick").get<Tick>() < 35 &&
+        if ((!ranked || (direct_sight(*r) && r->value("confidence", 1.) >= .55)) &&
+            r->value("carryingC4", false) && now - r->at("tick").get<Tick>() < 35 &&
             (!carrier || r->at("tick") > carrier->at("tick")))
             carrier = r;
     Json bomb = nullptr, on_site = nullptr;
@@ -244,6 +249,11 @@ void direct_defense(Json &w, const OpeningMap &arena, Json &plan, const Squad &s
         if (now - carrier->at("tick").get<Tick>() < 20)
             if (auto s = sites.site_at(actor_point(*carrier)))
                 on_site = *s;
+    }
+    if (ranked) {
+        compare_defense(w, cfg, arena, plan, squad, leader, reports, counts, losses, bomb, on_site);
+        review_opening(arena, plan, squad, now, leader);
+        return;
     }
     std::string high = counts.at("B") > counts.at("A") ? "B" : "A", low = high == "A" ? "B" : "A";
     Json destination = on_site;

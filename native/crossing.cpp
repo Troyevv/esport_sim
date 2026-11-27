@@ -49,6 +49,8 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
             targets.push_back(nav.center(id));
     };
     if (defending) {
+        if (order.value("maneuver", std::string{}) == "save")
+            return nullptr;
         int lane = plan.at("lane");
         if (order.at("site") == site)
             lane = order.value("lane", lane);
@@ -62,6 +64,10 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
                     std::ranges::any_of(targets, [&](auto &q) { return distance(p, q) < 16; }))
                     reports.push_back(&r);
             }
+        if (a.at("id") == plan.value("utilityReserve", std::string{}) && a.at("utility").size() == 1 &&
+            std::ranges::none_of(reports, [](auto r) { return visual(*r); }) &&
+            w.at("deadline").get<Tick>() - now > 160)
+            return nullptr;
         pressure = !reports.empty();
         if (pressure) {
             auto gap = [&](const Point &p) {
