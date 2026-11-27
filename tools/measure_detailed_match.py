@@ -69,7 +69,12 @@ def run(args):
     started = perf_counter_ns()
     cpu = process_time_ns()
     from backend import match as production_match
-    game = (production_match if args.native_core else match).initial(args.seed, domain, pair, map_id=args.map)
+    start = domain["rosters"][pair[args.first_attack]]["team"] if args.first_attack is not None else None
+    if args.native_core:
+        game = production_match.initial(args.seed, domain, pair, map_id=args.map, first_attack=start,
+                                        agent_policy=1 if args.current_ai else None)
+    else:
+        game = match.initial(args.seed, domain, pair, map_id=args.map, first_attack=start)
     owner = None
     if args.native_core:
         from backend import native_match_state
@@ -128,6 +133,8 @@ def run(args):
                     eventCounts=counts, ledgerHash=digest(rounds), stats=game["stats"],
                     posesHash=poses.hexdigest(), stateHash=digest(game),
                     checkpointHash=hashlib.sha256(checkpoint).hexdigest())
+    if "agentPolicy" in game:
+        controls["agentPolicy"] = game["agentPolicy"]
     args.out.mkdir(parents=True, exist_ok=True)
     stem = args.out / args.map
     stem.with_suffix(".checkpoint.json.gz").write_bytes(gzip.compress(checkpoint, mtime=0))
@@ -171,4 +178,9 @@ if __name__ == "__main__":
     parser.add_argument("--native-rays", action="store_true", help="Use the native Embree triangle scene")
     parser.add_argument("--native-nav", action="store_true", help="Substitute native NAV lookup for comparison")
     parser.add_argument("--restore", action="store_true", help="Continue from JSON at tick 150")
-    run(parser.parse_args())
+    parser.add_argument("--current-ai", action="store_true", help="Measure R5.5 decisions on the native owner")
+    parser.add_argument("--first-attack", choices=(0, 1), type=int, help="Roster starting on T for a mirrored pair")
+    args = parser.parse_args()
+    if args.current_ai and not args.native_core:
+        parser.error("--current-ai requires --native-core")
+    run(args)

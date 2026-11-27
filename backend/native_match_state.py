@@ -9,7 +9,7 @@ from . import _match_native, cs2_maps, tactics
 from .match_rules import BLAST_RADIUS, CALLS, PRICES, RULES, SIDEARMS, THROW_RECOVERY, UTILITY, WEAPONS
 from .match_rules import WEAPON_CLASS, GRENADE_SKILL
 
-if _match_native.MATCH_STATE_API_VERSION != 3:
+if _match_native.MATCH_STATE_API_VERSION != 4:
     raise ImportError("Несовместимая версия нативного ядра. Пересоберите модуль для текущих исходников.")
 
 _GRID_SPAWNS = {

@@ -2,7 +2,7 @@
 namespace esport {
 Json AgentTurn::priority_intent() {
 
-    auto intent = contact_decision();
+    auto intent = individual ? personal_decision() : contact_decision();
     if (!intent.is_null())
         return intent;
     if (grid)

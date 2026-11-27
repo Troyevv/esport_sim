@@ -38,7 +38,7 @@ Point AgentTurn::search_site(const std::string &site) {
     Points taken;
     int sweep = state.value("sweep", 0);
     for (auto m : squad)
-        if (m != &a && active(*m, "bombSearch") && m->at("bombSearch").at("site") == site && gap(*m) <= 20) {
+        if (!individual && m != &a && active(*m, "bombSearch") && m->at("bombSearch").at("site") == site && gap(*m) <= 20) {
             auto &report = m->at("bombSearch");
             if (report.value("sweep", 0) == sweep) {
                 for (auto &i : report.at("seen"))

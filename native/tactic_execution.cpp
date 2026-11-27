@@ -100,6 +100,31 @@ Json board_step(Json &w, Json &a, const Json &cfg, const Objectives &objectives,
     const auto goal = pos(step);
     const auto &player = w.at("domain").at("players").at(a.at("playerId").get<std::string>());
     a["status"] = cfg.at("boardLabels").at(kind).get<std::string>() + " · точка " + std::to_string(index + 1);
+    if (w.contains("agentPolicy")) {
+        const char *reason = nullptr;
+        const auto &inventory = a.at("utility");
+        if (kind == "throw" && std::find(inventory.begin(), inventory.end(), step.at("utility")) == inventory.end())
+            reason = "нет назначенной гранаты";
+        else if (kind == "throw" && objectives.grid() && !objectives.grid()->clear(xy(a), {goal[0], goal[1]}))
+            reason = "линия броска перекрыта";
+        else if (kind == "plant" && !bomb.empty() && bomb.at("carrier") != a.at("id"))
+            reason = "у игрока нет C4";
+        else if (kind != "throw" && kind != "face" && a.value("blockedTicks", 0) >= 12 &&
+                 a.value("blockedGoal", Json(nullptr)) == goal)
+            reason = "маршрут повторно перекрыт";
+        else if (objectives.grid() && a.value("blockedStep", -1) == index && a.value("boardFailures", 0) >= 12)
+            reason = "маршрут повторно перекрыт";
+        if (reason) {
+            a["stepIndex"] = index + 1;
+            a["stepUntil"] = nullptr;
+            a["stepReady"] = plus_ticks(now, execution_delay(w, a, player, board));
+            a["status"] = std::string("Отклоняет шаг · ") + reason;
+            a["lastRefusal"] = {{"tick", now}, {"step", index}, {"reason", reason}};
+            emit(w, "order_refused", a.at("name").get<std::string>() + " · " + a.at("status").get<std::string>(), a.at("team"))
+                .update(Json{{"player", a.at("id")}, {"step", index}, {"reason", reason}});
+            return hold;
+        }
+    }
     if (kind != "throw" && kind != "face" && pos(a) != goal) {
         double pace = kind == "exit" || kind == "retreat" ? 2. : 1.;
         bool moved;
@@ -111,6 +136,11 @@ Json board_step(Json &w, Json &a, const Json &cfg, const Objectives &objectives,
                                hazards, true);
         } else
             moved = travel(a, player, objectives.map(), goal, pace, fire, now);
+        if (objectives.grid() && w.contains("agentPolicy")) {
+            int failures = a.value("blockedStep", -1) == index ? a.value("boardFailures", 0) : 0;
+            a["blockedStep"] = index;
+            a["boardFailures"] = moved ? 0 : failures + 1;
+        }
         if (!moved)
             return hold;
         if (kind == "retreat")

@@ -419,6 +419,11 @@ def test_authoritative_native_owner_survives_batches_and_reopens_saved_game(tmp_
     state.update(running=True, speed=8)
     with store.transaction():
         store.write(state)
+    # The Python reference models the historical R5.4 checkpoint, including radio order.
+    # Restore that version into the store to exercise its active and manual save paths.
+    state["world"].pop("agentPolicy")
+    with store.transaction():
+        store.write(state)
     reference = deepcopy(state["world"])
     expected = []
     for _ in range(9):

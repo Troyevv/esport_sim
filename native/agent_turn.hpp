@@ -13,6 +13,9 @@ class AgentTurn {
     void finish(const Json &intent);
     Json priority_intent();
     Json contact_decision();
+    Json personal_decision();
+    bool ally_covers(const Json &mate, const Json &report) const;
+    const Json *observed_aim(const Json &mate) const;
     Json opening_decision();
     Point anticipated(const Json &report) const;
     Json &attention(Point &focus);
@@ -29,7 +32,7 @@ class AgentTurn {
     bool smokes_plant(const std::string &site, const Point &p) const;
     Json select_contact() const;
     void service_weapon();
-    Json seek_cover(const Json &contact);
+    Json seek_cover(const Json &contact, bool requested = false);
     Json saved_exit();
     Json duel(const Json &contact);
     Json last_burst();
@@ -45,6 +48,7 @@ class AgentTurn {
     Json &w;
     Json &a;
     const Squad &squad;
+    const bool individual;
     const Json &cfg;
     const OpeningMap &arena;
     const GridMap *grid;

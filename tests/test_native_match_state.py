@@ -552,7 +552,9 @@ def test_batch_starts_new_map_with_older_rules_and_records_exact_profile(combat_
     w = match.initial(41000, map_id="de_nuke")
     from backend import match as production_match, cs2_maps as installed_maps
     monkeypatch.setattr(installed_maps,"get",lambda _:old)
-    assert encode_world(production_match.initial(41000, map_id="de_nuke")) == encode_world(w)
+    fresh = production_match.initial(41000, map_id="de_nuke")
+    assert fresh.pop("agentPolicy") == 1
+    assert encode_world(fresh) == encode_world(w)
     w["rules"] = cs2_maps.PREVIOUS_RULES
     owner = native_match_state.restore(encode_world(w), old, physics=physics)
     for call in ("timeout", "resume"):
@@ -573,7 +575,9 @@ def test_depo_owner_restores_mid_board_and_continues_exact_events():
     from backend import match as production, tactics
 
     game = match.initial(42)
-    assert encode_world(production.initial(42)) == encode_world(game)
+    fresh = production.initial(42)
+    assert fresh.pop("agentPolicy") == 1
+    assert encode_world(fresh) == encode_world(game)
     board = dict(tactics.propose("T", "Пистолетная", 17), id="depo-regression", revision=1)
     owner = native_match_state.open_game(game)
     match.assign(game, board)
@@ -617,3 +621,25 @@ def test_depo_preserves_binary64_speed_in_visual_memory():
     owner.observe()
     assert watcher["knowledge"][target["id"]]["speed"] == 0.25723335709040107
     assert_same(owner, game)
+
+
+@pytest.mark.parametrize("source_index,listener_index", [(0, 5), (5, 0)])
+def test_individual_policy_gives_both_sides_an_uncertain_acoustic_report(combat_arenas, source_index, listener_index):
+    _, physics = combat_arenas
+    w = read_checkpoint()
+    w.update(agentPolicy=1, messages=[])
+    source, listener = w["agents"][source_index], w["agents"][listener_index]
+    for a in w["agents"]:
+        a.update(hp=0, knowledge={}, visible=[])
+    source.update(hp=100, ammo=8)
+    listener.update(hp=100, x=source["x"]-8, y=source["y"], z=source["z"])
+    target = dict(x=source["x"]+8, y=source["y"], z=source["z"])
+    owner = native_match_state.restore(encode_world(w), physics=physics)
+    owner.resolve_actions(encode_world([dict(actor=source["id"], kind="shoot", target=target)]))
+    after = json.loads(owner.snapshot())
+    report = after["agents"][listener_index]["knowledge"]["Шум · Выстрел"]
+    assert report["source"] == "Слух" and report["witness"] == listener["id"]
+    assert report["id"] != source["id"] and report["x"] != source["x"]
+    assert 0 < report["confidence"] < 1
+    assert any(m["team"] == listener["team"] and m["sight"] == report and m["due"] > w["tick"]
+               for m in after["messages"] if "sight" in m)

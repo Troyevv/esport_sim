@@ -42,6 +42,8 @@ def initial(
         "rosterIds": list(rosters),
         "coachTeamId": coach or teams[0],
     }
+    if detailed:
+        w["agentPolicy"] = 1
     match.check_coach(w)
     w["series"] = {
         "version": VERSION,
@@ -113,6 +115,7 @@ def next_map(w):
         w["coachTeamId"],
         map_id=item["map"],
         first_attack=item["attack"],
+        agent_policy=w.get("agentPolicy"),
     )
     budget = s["profile"].get("timeouts",game["remaining"])
     game["remaining"] = budget if s["profile"].get("timeoutScope")=="map" else w.get("remaining",budget)
@@ -143,6 +146,7 @@ def map_result(w):
         scoreByTeam=w["scoreByTeam"],
         winnerTeamId=w["winnerTeamId"],
         rules=w["rules"],
+        **({"agentPolicy": w["agentPolicy"]} if "agentPolicy" in w else {}),
         map=w["map_version"],
         **({"mapId": w["mapId"]} if w.get("mapId") else {}),
         seed=w["seed"],

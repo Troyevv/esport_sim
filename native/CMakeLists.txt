@@ -8,7 +8,7 @@ execute_process(COMMAND "${Python_EXECUTABLE}" -X utf8 -c "import nlohmann_json;
 set(MATCH_CORE_SOURCES
     grid.cpp grid_round.cpp grid_turn.cpp match_state.cpp tick_output.cpp round_rules.cpp begin_live.cpp economy.cpp combat.cpp objectives.cpp observation.cpp
     opening.cpp defense_orders.cpp defense_opening.cpp team_ai.cpp reserves.cpp defense_review.cpp retake.cpp
-    agent_turn.cpp agent_priority.cpp agent_survival.cpp contact.cpp spatial_intent.cpp sector.cpp postplant.cpp agent_utility.cpp crossing.cpp opening_execution.cpp tactic_execution.cpp
+    agent_turn.cpp individual_decision.cpp personal_turn.cpp agent_priority.cpp agent_survival.cpp contact.cpp spatial_intent.cpp sector.cpp postplant.cpp agent_utility.cpp crossing.cpp opening_execution.cpp tactic_execution.cpp
     navigation.cpp routes.cpp rays.cpp collision.cpp perception.cpp physical_navigation.cpp)
 pybind11_add_module(_match_native module.cpp ray_bindings.cpp state_bindings.cpp ${MATCH_CORE_SOURCES})
 target_include_directories(_match_native PRIVATE vendor/embree4 "${MATCH_JSON_INCLUDE}")

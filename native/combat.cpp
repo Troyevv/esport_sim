@@ -378,7 +378,7 @@ void Combat::hear(Json &w, const Json &source, const std::string &kind, double r
     std::vector<Listener> listeners;
     const auto ident = source.value("id", Json(nullptr));
     for (const auto &a : roster) {
-        bool eligible = a.at("hp") != 0 && a.at("team") == "CT" && !contains_value(a.at("visible"), ident);
+        bool eligible = a.at("hp") != 0 && a.at("team") != source.at("team") && !contains_value(a.at("visible"), ident);
         listeners.push_back(
             {xyz(a), eligible ? skills(w, a).at("game_reading").get<double>() : 0., eligible});
     }
@@ -412,14 +412,15 @@ void Combat::hear(Json &w, const Json &source, const std::string &kind, double r
             calls[kind] = plus_ticks(now, 12 + delay);
             w.at("messages")
                 .push_back(Json{
-                    {"team", "CT"}, {"sender", a.at("id")}, {"sight", cue}, {"due", plus_ticks(now, delay)}});
+                    {"team", a.at("team")}, {"sender", a.at("id")}, {"sight", cue}, {"due", plus_ticks(now, delay)}});
         }
     }
 }
 void Combat::report_shot(Json &w, const Json &actor, const Json &target) const {
     Tick now = w.at("tick");
     bool live = w.at("phase") == "live";
-    if (planner_ && actor.at("team") == "T" && live) {
+    const bool acoustic = planner_ && (w.contains("agentPolicy") || (actor.at("team") == "T" && live));
+    if (acoustic) {
         const auto &gun = actor.at("weapon");
         hear(w, actor, "Выстрел", (gun == "USP" || gun == "M4A1-S") ? 75 : 128);
     }
@@ -443,7 +444,7 @@ void Combat::report_shot(Json &w, const Json &actor, const Json &target) const {
                                     {"due", plus_ticks(now, delay)}});
             }
         }
-        if (a.at("team") != actor.at("team") && !(planner_ && live && a.at("team") == "CT") &&
+        if (a.at("team") != actor.at("team") && !acoustic &&
             distance(xyz(a), xyz(actor)) < 55) {
             Json cue = {{"id", "Шум"}};
             cue.update(sound_position(xyz(actor)));
@@ -482,7 +483,7 @@ void Combat::effects(Json &w, const Json &cfg) const {
         Tick age = now - f.at("land").get<Tick>();
         double radius = f.at("radius");
         bool decoy = kind == "Ложная", fire = kind == "Огонь";
-        if (planner_ && f.at("team") == "T" && w.at("phase") == "live" &&
+        if (planner_ && (w.contains("agentPolicy") || (f.at("team") == "T" && w.at("phase") == "live")) &&
             (age == 0 || (decoy && age > 0 && age % 10 == 0)))
             hear(w, f, decoy ? "Выстрел" : "Граната", decoy || kind == "HE" || kind == "Свет" ? 108 : 54);
         if (planner_ && (kind == "Дым" || fire) && age == 0)
@@ -514,7 +515,7 @@ void Combat::effects(Json &w, const Json &cfg) const {
         if (age < 0 || kind == "Дым")
             continue;
         if (decoy) {
-            if (age % 10 == 0) {
+            if (age % 10 == 0 && !(planner_ && w.contains("agentPolicy"))) {
                 auto sector = sound_position(p);
                 for (auto &a : roster)
                     if (a.at("hp") != 0 && a.at("team") != f.at("team") &&

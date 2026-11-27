@@ -5,7 +5,8 @@ from uuid import uuid4
 import pytest
 
 from tests.reference_kernel import match
-from backend import tactic_library, tactic_preview, tactics
+from backend import match as production
+from backend import native_match_state, tactic_library, tactic_preview, tactics
 from tests.reference_kernel.match_events import damage
 from backend.store import Conflict, Store
 from tests.test_server import envelope, local_server, send, snapshot
@@ -92,15 +93,16 @@ def test_preview_matches_real_bo1_and_does_not_mutate_draft():
     plan = hand_plan()
     copy = deepcopy(plan)
     preview = tactic_preview.simulate(plan)
-    w = match.initial(42)
-    match.assign(w, dict(plan, revision=1))
-    match.begin_live(w)
+    owner = native_match_state.open_game(production.initial(42))
+    native_match_state.assign(owner, dict(plan, revision=1))
+    owner.begin_live()
     for i, frame in enumerate(preview["frames"]):
+        w = json.loads(owner.snapshot())
         assert frame == [
             [a["x"], a["y"], round(a["heading"], 3), a["hp"]] for a in w["agents"]
         ]
         if i + 1 < len(preview["frames"]):
-            match.advance(w)
+            owner.advance(1)
     assert w["phase"] == "result"
     assert plan == copy
 
@@ -213,7 +215,7 @@ def test_pinned_versions_receipts_timeout_rules_and_save_restart(tmp_path):
     s = Store(path)
     apply("load")
     for _ in range(8):
-        match.advance(expected)
+        production.advance(expected)
     s.tick()
     assert s.read()["world"] == json.loads(json.dumps(expected))
     s.db.close()

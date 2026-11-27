@@ -237,7 +237,7 @@ Json AgentTurn::spatial_intent() {
         (a.at("playingRole") == "support" || skills.at("coordination").get<int>() + familiar >= 145)) {
         Squad partners;
         for (auto m : squad)
-            if (m != &a && m->at("target") == latest->at("id"))
+            if (m != &a && ally_covers(*m, *latest))
                 partners.push_back(m);
         if (!partners.empty()) {
             a["assistReview"] = now + 5;
@@ -279,7 +279,7 @@ Json AgentTurn::spatial_intent() {
                                     (distance(pos, actor_point(*latest)) < 55 &&
                                      (latest->at("source") == "Слух" || latest->at("source") == "Радио")) ||
                                     std::ranges::any_of(squad, [&](auto m) {
-                                        return m != &a && m->at("target") == latest->at("id") &&
+                                        return m != &a && ally_covers(*m, *latest) &&
                                                distance(pos, actor_point(*m)) < 35;
                                     }))));
     if (moved) {
