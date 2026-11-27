@@ -2,6 +2,7 @@
 #include "collision.hpp"
 #include "routes.hpp"
 
+#include <list>
 #include <mutex>
 
 namespace esport {
@@ -39,16 +40,19 @@ class PhysicalNavigation {
 
     std::optional<WalkPath> path(AreaId area, const Point &start, AreaId zone, const Point &goal,
                                  const std::set<AreaId> &avoided) const;
+    std::shared_ptr<const StageRoutes> safe_routes(const Point &bomb, double radius) const;
     std::optional<EscapePath> escape(AreaId area, const Point &start, const Point &bomb, double radius) const;
 
     std::optional<Impact> hit(const Point &start, const Point &end, unsigned mask, double up,
                               double target_up, bool canonical = false) const;
-    const PortalGraph& graph() const { return *graph_; }
-    const std::map<AreaId,Point>& centers() const {return centers_;}
-    const Point& center(AreaId id) const { return centers_.at(id); }
+    const PortalGraph &graph() const { return *graph_; }
+    const std::map<AreaId, Point> &centers() const { return centers_; }
+    const Point &center(AreaId id) const { return centers_.at(id); }
     double unit() const { return unit_; }
-    std::optional<AreaId> locate(const Point& p) const { return surfaces_->locate(world(p),96); }
+    std::optional<AreaId> locate(const Point &p) const { return surfaces_->locate(world(p), 96); }
     Point world(const Point &p) const;
+    std::optional<Point> use_position(AreaId start, const Point &origin, const Point &goal,
+                                      double radius) const;
     std::optional<Point> nav_center(const Point &pos) const;
     MoveResult walk(MotionState &actor, const Point &goal, double pace,
                     const std::vector<Hazard> &fire) const;
@@ -67,7 +71,14 @@ class PhysicalNavigation {
     std::vector<Crossing> crossings_;
     std::map<AreaId, std::vector<EdgeId>> outgoing_;
     mutable std::mutex mutex_;
+    using SafeZones = std::pair<std::pair<Point, double>, std::shared_ptr<const StageRoutes>>;
+    mutable std::list<SafeZones> safe_zones_;
     mutable std::map<std::pair<EdgeId, Point>, std::optional<WalkPath>> gates_;
+    using PathKey = std::tuple<AreaId, Point, AreaId, Point, std::set<AreaId>>;
+    mutable std::map<PathKey, std::optional<WalkPath>> paths_;
+    mutable std::map<std::tuple<AreaId, Point, Point, double>, std::optional<EscapePath>> escapes_;
+    std::optional<WalkPath> find_path(AreaId area, const Point &start, AreaId zone, const Point &goal,
+                                      const std::set<AreaId> &avoided) const;
 
     Point sim(const Point &p) const;
     bool passage(Point p, Point q, bool climb) const;

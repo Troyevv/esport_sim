@@ -465,3 +465,80 @@ def test_captain_reviews_update_only_from_team_observations(combat_arenas, scena
     owner.review_captain(side)
     match_ai.captain(w, squad, arena)
     assert_same(owner, w)
+
+
+@pytest.mark.parametrize("scenario", ["sight", "aim", "reload", "empty", "last-burst", "use", "save", "fire"])
+def test_contact_and_survival_decisions_from_limited_view(combat_arenas, scenario):
+    arena, physics = combat_arenas
+    w = read_checkpoint()
+    a, target = w["agents"][0], w["agents"][5]
+    squad = [p for p in w["agents"] if p["team"] == a["team"] and p["hp"]]
+    w.update(phase="live", action=None)
+    sight = {k: target[k] for k in ("id", "x", "y", "z", "weapon")}
+    sight.update(source="Зрение", tick=w["tick"], speed=.5, bodySector=2, interaction=None)
+    a.update(knowledge={target["id"]:sight}, visible=[target["id"]], target=target["id"], ready=0, utility=[],
+             hp=100, ammo=15, reserve=30, reloadAt=0, shelter=None, coverReview=w["tick"]+50)
+    if scenario == "aim":
+        a["target"] = None
+    if scenario in ("reload", "empty"):
+        a.update(ammo=0, reserve=0 if scenario == "empty" else 30)
+    if scenario == "last-burst":
+        a.update(visible=[], ammo=30)
+        sight.update(tick=w["tick"]-1)
+        for mate in squad:
+            if mate is not a:
+                mate["hp"] = 0
+        squad = [a]
+    if scenario == "use":
+        w["action"] = dict(kind="plant", player=a["id"], end=w["tick"]+1)
+    if scenario == "save":
+        w["phase"] = "planted"
+        a["saving"] = list(arena.site_points["B"])
+    fire = [dict(x=a["x"] + 2, y=a["y"], z=a["z"], radius=4)] if scenario == "fire" else []
+    player = w["domain"]["players"][a["playerId"]]
+    owner = native_match_state.restore(encode_world(w), physics=physics)
+    context = dict(space=arena, player=player, tick=w["tick"], plan=w["plans"][a["team"]], phase=w["phase"],
+                   chemistry=w["domain"]["chemistry"], action=w["action"], deadline=w["deadline"])
+    actual = json.loads(owner.priority_intent(a["id"], encode_world(dict(action=w["action"], device=w["bomb"], fire=fire))))
+    expected = match_ai.act(context, a, squad, w["bomb"], fire)
+    assert actual == list(expected)
+    assert_same(owner,w)
+
+
+def test_autonomous_ticks_observer_frames_and_restoration(combat_arenas, monkeypatch):
+    from backend import engine
+    old, physics = combat_arenas
+    monkeypatch.setattr(cs2_maps, "for_match", lambda w: old)
+    reference = read_checkpoint()
+    owner = native_match_state.restore(encode_world(reference), old, physics=physics)
+    for size in (45, 180, 202):
+        assert owner.advance(size) == size
+        for _ in range(size):
+            match.advance(reference)
+        assert_same(owner, reference)
+        owner = native_match_state.restore(owner.snapshot(), old, physics=physics)
+    expected = []
+    for _ in range(8):
+        expected.append(engine.motion_sample(reference))
+        match.advance(reference)
+    assert json.loads(owner.advance_motion(8)) == json.loads(encode_world(expected))
+    assert_same(owner, reference)
+
+
+def test_native_tick_batch_stops_at_timeout_without_spending_clock(combat_arenas, monkeypatch):
+    old, physics = combat_arenas
+    monkeypatch.setattr(cs2_maps, "for_match", lambda w: old)
+    w = read_checkpoint()
+    match.finish_round(w, "T", "Устранение")
+    w["pending"] = True
+    owner = native_match_state.restore(encode_world(w), old, physics=physics)
+    remaining = w["deadline"] - w["tick"]
+    assert owner.advance(remaining + 10) == remaining
+    for _ in range(remaining):
+        match.advance(w)
+    assert_same(owner, w)
+    assert owner.advance(8) == 0
+    before = owner.snapshot()
+    with pytest.raises(ValueError):
+        owner.advance(-1)
+    assert owner.snapshot() == before

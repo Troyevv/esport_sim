@@ -7,6 +7,7 @@
 #include <vector>
 
 namespace esport {
+enum class TickOutput;
 class PhysicalNavigation;
 class Objectives;
 class OpeningMap;
@@ -32,6 +33,8 @@ class MatchState {
     std::string buy_decision(const std::string &side, const std::string &options) const;
     void buy_equipment(const std::string &side, const std::string &strategy, const std::string &board);
     void command(const std::string &kind, const std::string &value);
+    int advance(int ticks);
+    std::string advance_recorded(int ticks, TickOutput mode);
     int advance_intermission(int ticks);
     void deliver_radio();
     void attach_spawns(const std::string &map, const std::string &spawns);
@@ -39,6 +42,7 @@ class MatchState {
                         std::vector<std::string> materials);
     void apply_effects();
     void observe();
+    std::string priority_intent(const std::string &id, const std::string &observation);
     void review_captain(const std::string &side);
     void attach_objectives(const std::string &map, std::shared_ptr<const Objectives> sites);
     void resolve_intents(const std::string &intents);

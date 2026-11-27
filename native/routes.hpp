@@ -19,6 +19,7 @@ class PortalGraph;
 class StageRoutes {
 public:
     std::map<AreaId, double> costs() const;
+    std::optional<double> cost(AreaId start) const;
     std::optional<StagePath> route(AreaId start) const;
 
 private:

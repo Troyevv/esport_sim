@@ -1,4 +1,5 @@
 #include "physical_navigation.hpp"
+#include <numbers>
 
 #include <algorithm>
 #include <cmath>
@@ -169,6 +170,16 @@ std::optional<WalkPath> PhysicalNavigation::path(AreaId area, const Point &start
     check_point(start);
     check_point(goal);
     std::scoped_lock lock(mutex_);
+    const PathKey key{area, start, zone, goal, avoided};
+    if (auto found = paths_.find(key); found != paths_.end())
+        return found->second;
+    if (paths_.size() >= 4096)
+        paths_.clear();
+    return paths_.emplace(key, find_path(area, start, zone, goal, avoided)).first->second;
+}
+std::optional<WalkPath> PhysicalNavigation::find_path(AreaId area, const Point &start, AreaId zone,
+                                                      const Point &goal,
+                                                      const std::set<AreaId> &avoided) const {
     auto route = graph_->route(area, zone, avoided, {});
     if (!route)
         return std::nullopt;
@@ -204,7 +215,12 @@ std::optional<EscapePath> PhysicalNavigation::escape(AreaId area, const Point &s
     if (!centers_.contains(area))
         return std::nullopt;
     std::scoped_lock lock(mutex_);
-    return search({area, start}, std::nullopt, bomb, {}, radius);
+    const auto key = std::tuple{area, start, bomb, radius};
+    if (auto found = escapes_.find(key); found != escapes_.end())
+        return found->second;
+    if (escapes_.size() >= 1024)
+        escapes_.clear();
+    return escapes_.emplace(key, search({area, start}, std::nullopt, bomb, {}, radius)).first->second;
 }
 std::optional<EscapePath> PhysicalNavigation::search(const State &start, std::optional<AreaId> zone,
                                                      const Point &goal, const std::set<AreaId> &avoided,
@@ -419,6 +435,46 @@ std::optional<Impact> PhysicalNavigation::hit(const Point &start, const Point &e
 } // namespace esport
 
 namespace esport {
+std::shared_ptr<const StageRoutes> PhysicalNavigation::safe_routes(const Point &bomb, double radius) const {
+    const auto key = std::pair{bomb, radius};
+    std::scoped_lock lock(mutex_);
+    auto it = std::find_if(safe_zones_.begin(), safe_zones_.end(),
+                           [&](const auto &item) { return item.first == key; });
+    if (it == safe_zones_.end()) {
+        std::vector<AreaId> safe;
+        for (auto &[id, p] : centers_)
+            if (distance(p, bomb) >= radius)
+                safe.push_back(id);
+        safe_zones_.emplace_front(key, std::make_shared<StageRoutes>(graph_->routes_through({safe})));
+        if (safe_zones_.size() > 16)
+            safe_zones_.pop_back();
+    } else
+        safe_zones_.splice(safe_zones_.begin(), safe_zones_, it);
+    return safe_zones_.front().second;
+}
+
+std::optional<Point> PhysicalNavigation::use_position(AreaId start, const Point &origin, const Point &goal,
+                                                      double radius) const {
+    if (auto at = locate(goal); at && path(start, origin, *at, goal, {}) && !hit(goal, goal, 1, 64, 5))
+        return goal;
+    std::vector<Point> choices;
+    for (double step : {radius * .85, radius * .4})
+        for (int i = 0; i < 12; ++i) {
+            auto angle = 2 * std::numbers::pi * i / 12;
+            Point q{goal[0] + step * std::cos(angle), goal[1] + step * std::sin(angle), goal[2]};
+            if (auto floor = surfaces_->locate_with_height(world(q), radius * unit_)) {
+                q[2] = floor->second / unit_;
+                if (distance(q, goal) <= radius && !hit(q, goal, 1, 64, 5))
+                    choices.push_back(q);
+            }
+        }
+    std::stable_sort(choices.begin(), choices.end(),
+                     [&](const auto &a, const auto &b) { return distance(a, origin) < distance(b, origin); });
+    for (auto &q : choices)
+        if (auto at = locate(q); at && path(start, origin, *at, q, {}))
+            return q;
+    return {};
+}
 std::optional<Point> PhysicalNavigation::nav_center(const Point &pos) const {
     if (auto area = surfaces_->locate(world(pos), 96))
         return centers_.at(*area);

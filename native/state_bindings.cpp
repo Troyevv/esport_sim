@@ -1,6 +1,7 @@
 #include "match_state.hpp"
 #include "objectives.hpp"
 #include "opening.hpp"
+#include "tick_output.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -17,7 +18,8 @@ void bind_state(py::module_ &module) {
         .def("site_at", &Objectives::site_at, Release());
     py::class_<OrderData>(module, "OrderData")
         .def(py::init<decltype(OrderData::places), decltype(OrderData::plants), decltype(OrderData::holds),
-                      decltype(OrderData::nearby), decltype(OrderData::roles), decltype(OrderData::cover)>());
+                      decltype(OrderData::nearby), decltype(OrderData::roles), decltype(OrderData::cover),
+                      decltype(OrderData::attack_spawns), decltype(OrderData::plant_corners)>());
     py::class_<OpeningMap, std::shared_ptr<OpeningMap>>(module, "OpeningMap")
         .def(py::init<std::shared_ptr<const Objectives>, const std::string &, const std::string &,
                       ContestTable, Stations, std::map<std::string, Point>, OrderData>(),
@@ -36,6 +38,19 @@ void bind_state(py::module_ &module) {
                  return py::bytes(json);
              })
         .def("command", &MatchState::command, py::arg("kind"), py::arg("value") = "", Release())
+        .def(
+            "advance_motion",
+            [](MatchState &owner, int ticks) { return owner.advance_recorded(ticks, TickOutput::Motion); },
+            Release())
+        .def(
+            "advance_preview",
+            [](MatchState &owner, int ticks) { return owner.advance_recorded(ticks, TickOutput::Preview); },
+            Release())
+        .def(
+            "profile_ticks",
+            [](MatchState &owner, int ticks) { return owner.advance_recorded(ticks, TickOutput::Profile); },
+            Release())
+        .def("advance", &MatchState::advance, Release())
         .def("advance_intermission", &MatchState::advance_intermission, Release())
         .def("attach_opening", &MatchState::attach_opening, Release())
         .def("defense_orders", &MatchState::defense_orders, Release())
@@ -52,6 +67,7 @@ void bind_state(py::module_ &module) {
         .def("attach_objectives", &MatchState::attach_objectives, Release())
         .def("resolve_intents", &MatchState::resolve_intents, Release())
         .def("attach_physics", &MatchState::attach_physics, Release())
+        .def("priority_intent", &MatchState::priority_intent, Release())
         .def("review_captain", &MatchState::review_captain, Release())
         .def("observe", &MatchState::observe, Release())
         .def("apply_effects", &MatchState::apply_effects, Release())

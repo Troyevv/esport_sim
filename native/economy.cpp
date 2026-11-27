@@ -70,7 +70,8 @@ int price(const Json &cfg, const std::string &item) {
     const auto &guns = cfg.at("weapons");
     return guns.contains(item) ? guns.at(item).at("price").get<int>() : cfg.at("prices").at(item).get<int>();
 }
-void equip(Json &a, const Json &item, const Json &cfg) {
+} // namespace
+void equip_weapon(Json &a, const Json &item, const Json &cfg) {
     Json active = {{"weapon", a.at("weapon")}, {"ammo", a.at("ammo")}, {"reserve", a.at("reserve")}};
     bool secondary = pistol(cfg, item.at("weapon"));
     if (secondary == pistol(cfg, a.at("weapon"))) {
@@ -83,7 +84,6 @@ void equip(Json &a, const Json &item, const Json &cfg) {
     } else
         a["holster"] = item;
 }
-} // namespace
 
 Json grenade_needs(const Json& w,const Json& cfg,const Json& actor,const std::string& site,const Json& board) {
     return grenades_for(actor,cfg.at("longApproaches").at(w.at("mapId").get<std::string>()).value(site,false),board);
@@ -214,7 +214,7 @@ void buy_equipment(Json &w, const Json &cfg, const std::string &side, const Json
         const auto &guns = cfg.at("weapons");
         if (guns.contains(item)) {
             int mag = guns.at(item).at("mag");
-            equip(recipient, Json{{"weapon", item}, {"ammo", mag}, {"reserve", mag * 3}}, cfg);
+            equip_weapon(recipient, Json{{"weapon", item}, {"ammo", mag}, {"reserve", mag * 3}}, cfg);
         } else if (item == "Броня")
             payer["armor"] = 100;
         else if (item == "Шлем")
