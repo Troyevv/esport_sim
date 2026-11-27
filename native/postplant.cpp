@@ -1,4 +1,5 @@
 #include "agent_helpers.hpp"
+#include "radio.hpp"
 namespace esport {
 namespace {
 using Points = std::vector<Point>;
@@ -108,7 +109,10 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
         else {
             Points taken, named;
             for (auto m : squad)
-                if (m != &a && active(*m, "plantCover"))
+                if (small_groups(w) && m != &a) {
+                    const auto call = recent_call(m->at("id"), "position", 30);
+                    taken.push_back(call && call->at("order") == site ? call->at("point").get<Point>() : actor_point(*m));
+                } else if (m != &a && active(*m, "plantCover"))
                     taken.push_back(m->at("plantCover").get<Point>());
             for (auto &[area, q] : arena.layout().holds.at(site))
                 named.push_back(q);
@@ -131,6 +135,8 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
             std::stable_sort(candidates.begin(), candidates.end(),
                              [&](auto &l, auto &r) { return rank(l) < rank(r); });
             goal = first_reachable(nav, pos, candidates).value_or(pos);
+            if (small_groups(w))
+                signal_group("position", "occupying", goal, site);
             a["plantCover"] = goal;
             a["watchDevice"] = direct;
         }
@@ -195,7 +201,10 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
             for (auto m : squad) {
                 if (m->at("id") == who)
                     center = actor_point(*m);
-                if (m != &a && m->value("coveredDefuser", Json(nullptr)) == who && active(*m, "coverPoint"))
+                if (small_groups(w) && m != &a) {
+                    const auto call = recent_call(m->at("id"), "position", 30);
+                    occupied.push_back(call && call->at("order") == who ? call->at("point").get<Point>() : actor_point(*m));
+                } else if (m != &a && m->value("coveredDefuser", Json(nullptr)) == who && active(*m, "coverPoint"))
                     occupied.push_back(m->at("coverPoint").get<Point>());
             }
             occupied.push_back(center);
@@ -208,7 +217,10 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
             std::stable_sort(choices.begin(), choices.end(),
                              [&](auto &l, auto &r) { return rank(l) < rank(r); });
             a["coveredDefuser"] = who;
-            a["coverPoint"] = first_reachable(nav, pos, choices).value_or(pos);
+            auto selected = first_reachable(nav, pos, choices).value_or(pos);
+            if (small_groups(w))
+                signal_group("position", "occupying", selected, who);
+            a["coverPoint"] = selected;
         }
         goal = a.at("coverPoint").get<Point>();
     } else
@@ -220,18 +232,29 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
             duty = &plan.at("retake").at("duties").at(id);
         if (duty && !active(*duty, "done")) {
             if (now >= duty->at("latest").get<Tick>() || a.value("blockedTicks", 0) >= 5 ||
-                std::ranges::none_of(squad, [&](auto m) { return m != &a && !active(*m, "saving"); }))
+                std::ranges::none_of(squad, [&](auto m) { return m != &a && (small_groups(w) || !active(*m, "saving")); }))
                 (*duty)["done"] = true;
             else if (distance(pos, duty->at("stage").get<Point>()) > 4) {
                 a["status"] = "Заходит на ретейк через свой проход";
                 goal = duty->at("stage").get<Point>();
             } else {
                 (*duty)["ready"] = true;
+                if (small_groups(w) && a.at("reloadAt") == 0 && a.at("ammo") > 0 && a.at("blind") <= now &&
+                    a.at("ready") <= now && a.at("visible").empty())
+                    signal_group("retake", "set", pos, site);
                 bool waiting = false;
                 if (active(*duty, "partner") && now < duty->value("release", now)) {
                     auto partner = duty->at("partner").get<std::string>();
                     auto &duties = plan.at("retake").at("duties");
-                    waiting = duties.contains(partner) && !active(duties.at(partner), "ready") &&
+                    if (small_groups(w)) {
+                        auto report = recent_call(partner, "retake", 20);
+                        waiting = std::ranges::any_of(squad, [&](auto m) {
+                            return m->at("id") == partner &&
+                                   !(report && report->at("state") == "set" && report->at("order") == site &&
+                                     distance(actor_point(*m), report->at("origin").get<Point>()) <= 5);
+                        });
+                    } else
+                        waiting = duties.contains(partner) && !active(duties.at(partner), "ready") &&
                               !active(duties.at(partner), "done") && std::ranges::any_of(squad, [&](auto m) {
                                   return m != &a && m->at("id") == partner && !active(*m, "saving");
                               });

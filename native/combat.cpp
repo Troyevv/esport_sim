@@ -282,6 +282,11 @@ void Combat::throw_grenade(Json &w, const Json &cfg, Json &agent, const Json &ta
                     {"end", plus_ticks(effect.at("land"), 10)}};
         if (peer_radio(w)) {
             cue["cast"] = {{"item", type}, {"point", goal}, {"end", effect.at("end")}};
+            if (small_groups(w) && target.contains("openingZone")) {
+                const auto &job = w.at("plans").at("CT").at("opening").at("jobs").at(agent.at("id").get<std::string>());
+                cue["cast"]["forPlayer"] = job.at("throw").at("forPlayer");
+                cue["cast"]["land"] = effect.at("land");
+            }
             if (target.contains("openingCall")) {
                 cue["openingCall"] = target.at("openingCall");
                 cue["site"] = target.at("site");

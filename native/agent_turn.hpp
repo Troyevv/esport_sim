@@ -15,8 +15,15 @@ class AgentTurn {
     Json contact_decision();
     Json personal_decision();
     bool ally_covers(const Json &mate, const Json &report) const;
+    bool sees_teammate(const Json &mate) const;
     const Json *observed_aim(const Json &mate) const;
     Json opening_decision();
+    const Json *recent_call(const Json &sender, const std::string &channel, int lifetime) const;
+    Json group_members(const Point &origin) const;
+    void signal_group(const std::string &channel, const std::string &state, const Point &point, const Json &order);
+    bool group_lane(const Point &point) const;
+    Json group_assist(const Json &request);
+    Json stage_pair(const Point &goal, bool arrived);
     Point anticipated(const Json &report) const;
     Json &attention(Point &focus);
     Json plant_intercept(Point &goal, Point &watch, Json &cue);

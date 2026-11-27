@@ -17,8 +17,12 @@ Json AgentTurn::assist_contact(const Squad &partners, const Json &r) {
     if (!radio_memory.contains("crossingCalls"))
         radio_memory["crossingCalls"] = Json::array();
     auto &calls = radio_memory.at("crossingCalls");
-    bool needy =
-        std::ranges::all_of(partners, [](auto m) { return active(*m, "reloadAt") || m->at("hp") < 45; });
+    bool needy = std::ranges::all_of(partners, [&](auto m) {
+        if (!small_groups(w))
+            return active(*m, "reloadAt") || m->at("hp") < 45;
+        auto call = recent_call(m->at("id"), "contact", 25);
+        return call && call->at("state") == "help";
+    });
     using Items = std::array<std::string, 3>;
     for (auto &g : needy ? Items{"Дым", "Свет", "HE"} : Items{"Свет", "HE", "Огонь"}) {
         const auto &params = cfg.at("utility").at(g);

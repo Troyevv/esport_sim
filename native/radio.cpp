@@ -5,7 +5,7 @@
 
 namespace esport {
 bool peer_radio(const Json &world) {
-    return world.value("agentPolicy", 0) == 3;
+    return world.value("agentPolicy", 0) >= 3;
 }
 
 int reception_quality(const Json &world, const Json &sender, const Json &recipient) {

@@ -12,6 +12,15 @@ bool can_see(const Json &a, const Json &target) {
     return dot >= 0 && 4 * dot * dot >= dx * dx + dy * dy;
 }
 } // namespace
+bool AgentTurn::sees_teammate(const Json &mate) const {
+    if (a.at("blind") > now || gap(mate) > 45 || !can_see(a, mate) || !clear(a, mate))
+        return false;
+    const auto start = actor_point(a), end = actor_point(mate);
+    return std::ranges::none_of(w.at("effects"), [&](const Json &f) {
+        return f.at("kind") == "Дым" && f.at("land") <= now && now < f.at("end") &&
+               near_segment(start, end, actor_point(f), f.at("radius"));
+    });
+}
 // Estimate a visible ally's line of fire against *our own* reports. A teammate's
 // untransmitted sighting, target ID and crosshair are private.
 const Json *AgentTurn::observed_aim(const Json &mate) const {
@@ -21,15 +30,9 @@ const Json *AgentTurn::observed_aim(const Json &mate) const {
             return nullptr;
         return &mate.at("knowledge").at(id.get_ref<const std::string &>());
     }
-    if (a.at("knowledge").empty() || a.at("blind") > now || gap(mate) > 45 || !can_see(a, mate) ||
-        !clear(a, mate))
+    if (a.at("knowledge").empty() || !sees_teammate(mate))
         return nullptr;
-    const auto start = actor_point(a), end = actor_point(mate);
-    if (std::ranges::any_of(w.at("effects"), [&](const Json &f) {
-            return f.at("kind") == "Дым" && f.at("land") <= now && now < f.at("end") &&
-                   near_segment(start, end, actor_point(f), f.at("radius"));
-        }))
-        return nullptr;
+    const auto end = actor_point(mate);
     const Json *best = nullptr;
     double alignment = .94; // A narrow sector around the visible weapon direction.
     const double heading = mate.at("heading");
