@@ -38,6 +38,17 @@ Json support_flash(AgentTurn &t, const Json &offer, const Point &pos) {
     Point target = aim;
     for (size_t i = 0; i < 3; ++i)
         target[i] += (aim[i] - origin[i]) * radius * (spatial_grenades(t.w) ? .45 : 1.) / reach;
+    if (collective_attack(t.w) && t.side == "T") {
+        // A fresh report can place the burst beyond the entry's own angle.
+        // An unseen corner is also eligible when occlusion protects the lead.
+        const Json *contact = nullptr;
+        for (const auto &r : t.a.at("knowledge"))
+            if (visual(r) && t.now - r.at("tick").get<Tick>() <= 20 &&
+                distance(actor_point(r), aim) < radius && (!contact || r.at("tick") > contact->at("tick")))
+                contact = &r;
+        if (contact)
+            target = actor_point(*contact);
+    }
     const int flight = std::max(3, int(std::nearbyint(distance(pos, target) / 7)));
     const auto land = nav.grenade(pos, target, flight).back();
     if (coordinated_utility(t.w)) {

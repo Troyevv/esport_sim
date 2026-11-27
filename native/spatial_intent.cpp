@@ -3,6 +3,55 @@
 #include "radio.hpp"
 
 namespace esport {
+// Each route reports readiness from its own staging area. The other group
+// acts on delivered calls. Loss of a partner or the plant clock breaks the wait.
+bool AgentTurn::wait_for_split(const Json &order, Tick remaining) {
+    if (squad.size() < 4 || active(plan, "board") || plan.at("style") == "Быстро" ||
+        plan.at("style") == "Групповой выход" || !a.at("visible").empty() ||
+        a.at("blind") > now || a.at("reloadAt") > now || a.at("ammo") == 0 || a.at("ready") > now)
+        return false;
+    const auto site = order.at("site").get<std::string>();
+    const auto stage = order.at("stage").get<Point>();
+    if (distance(actor_point(a), stage) > 10 ||
+        remaining <= arena.objectives().site_cost(site, a.at("navArea"), 0) /
+                     (arena.objectives().map().unit() * 1.65) + cfg.at("rules").at("plant").get<int>() + 40)
+        return false;
+    auto &gate = a["attackGate"];
+    if (gate.is_null() || gate.at("site") != site)
+        gate = {{"site", site}, {"start", now}, {"released", false}};
+    if (gate.at("released") == true)
+        return false;
+    bool opposite = false;
+    Json partner = nullptr;
+    for (const auto *mate : squad) {
+        const auto &other = plan.at("orders").at("slots").at(mate->at("slot").get<int>());
+        if (other.at("lane") == order.at("lane"))
+            continue;
+        opposite = true;
+        if (auto update = recent_call(mate->at("id"), "order", 18);
+            update && (!update->value("armed", true) || update->at("state") == "unavailable"))
+            continue;
+        if (auto call = recent_call(mate->at("id"), "entry", 28))
+            if (call->at("order") == site && call->at("state") == "ready" &&
+                distance(actor_point(*mate), call->at("origin").get<Point>()) < 14)
+                partner = mate->at("id");
+    }
+    if (!opposite)
+        return false;
+    const bool release = !partner.is_null() || now - gate.at("start").get<Tick>() >=
+                                  12 + skills.at("synchronization").get<int>() / 5;
+    gate["released"] = release;
+    signal_group("entry", "ready", stage, site);
+    if (release && !partner.is_null())
+        emit(w, "split", a.at("name").get<std::string>() + " получил готовность второго входа", "T")
+            .update(Json{{"player", a.at("id")}, {"partner", partner}, {"site", site}, {"lane", order.at("lane")}});
+    if (!release) {
+        heading_to(a, order.at("watch"));
+        a["status"] = "Ждёт второй вход";
+    }
+    return !release;
+}
+
 Json AgentTurn::spatial_intent() {
     const auto &nav = arena.objectives().map();
     auto &slots = plan.at("orders").at("slots");
@@ -45,11 +94,46 @@ Json AgentTurn::spatial_intent() {
                 if (at && (*at == site || remaining < 90))
                     return prepare_plant(*at);
             }
+            if (collective_attack(w) && active(plan, "regroup") && now < plan.at("regroup").at("until") &&
+                action.empty() && a.at("visible").empty() && remaining > 145) {
+                const Point rally = plan.at("regroup").at("point");
+                if (std::ranges::any_of(squad, [&](auto m) { return distance(actor_point(*m), rally) > 23; })) {
+                    heading_to(a, latest ? actor_point(*latest) : order.at("watch").get<Point>());
+                    a["status"] = "Перегруппировка у носителя C4";
+                    if (distance(pos, rally) > 16)
+                        return movement(rally, 2);
+                    return Json::array({"hold", nullptr});
+                }
+            }
+            if (collective_attack(w) && !carrying && !action.empty() && action.at("kind") == "plant") {
+                for (auto mate : squad) {
+                    if (mate->at("id") != action.at("player") || gap(*mate) > 45 || !sees_teammate(*mate))
+                        continue;
+                    const auto aim = latest ? actor_point(*latest) : order.at("watch").get<Point>();
+                    if (distance(pos, aim) > 5 && !nav.hit(pos, aim, 1, 64, 64)) {
+                        heading_to(a, aim);
+                        a["status"] = "Прикрывает установку C4";
+                        return Json::array({"hold", nullptr});
+                    }
+                }
+            }
+            if (collective_attack(w) && !carrying && squad.size() >= 3 && latest && visual(*latest) &&
+                a.at("playingRole") == "lurker" && now - latest->at("tick").get<Tick>() < 20 &&
+                remaining > 150 && !active(plan, "board")) {
+                const auto q = actor_point(*latest), ahead = arena.site_point(site);
+                if (distance(pos, q) < 55 && (q[0]-pos[0])*(ahead[0]-pos[0]) + (q[1]-pos[1])*(ahead[1]-pos[1]) < 0) {
+                    heading_to(a, q);
+                    a["status"] = "Страхует тыл по контакту";
+                    return Json::array({"hold", nullptr});
+                }
+            }
             const auto &route = order.at("via");
             auto index = a.at("waypoint").get<std::size_t>();
             const bool arrived = index < route.size() && distance(pos, route[index]) < 2.6;
             if (arrived)
                 a["waypoint"] = ++index;
+            if (collective_attack(w) && index >= route.size() && wait_for_split(order, remaining))
+                return Json::array({"hold", nullptr});
             if (index < route.size() && remaining > 145)
                 goal = route[index].get<Point>();
             else if (carrying)

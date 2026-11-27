@@ -102,7 +102,18 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
                                          [&](auto l, auto r) { return rank(l) < rank(r); });
             plan["deviceWatch"] = who->at("id");
         }
-        bool direct = check || a.at("id") == plan.at("deviceWatch");
+        bool direct = a.at("id") == plan.at("deviceWatch");
+        if (check && collective_attack(w) && squad.size() > 2 && !direct) {
+            // One more player checks the sound. The remaining players retain
+            // their entrance assignments during a possible tap.
+            const Json *nearest = nullptr;
+            for (const auto *mate : squad)
+                if (mate->at("id") != plan.at("deviceWatch") &&
+                    (!nearest || distance(actor_point(*mate), bomb) < distance(actor_point(*nearest), bomb)))
+                    nearest = mate;
+            check = nearest == &a;
+        }
+        direct |= check;
         if (active(a, "plantCover") && a.value("watchDevice", Json(nullptr)) == direct &&
             a.value("blockedTicks", 0) < 5)
             goal = a.at("plantCover").get<Point>();
@@ -146,7 +157,8 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
             if (!a.contains("postWatch")) {
                 double best = std::numeric_limits<double>::infinity();
                 auto point = watch;
-                for (auto &q : arena.objectives().ingress().at(site).at(plan.at("lane").get<int>())) {
+                const int lane = collective_attack(w) ? order.value("lane", 0) : plan.at("lane").get<int>();
+                for (auto &q : arena.objectives().ingress().at(site).at(lane)) {
                     double d = distance(pos, q);
                     if (d > 8 && d < 90 && !nav.hit(pos, q, 1, 64, 64) && d < best) {
                         best = d;

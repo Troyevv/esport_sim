@@ -2,6 +2,7 @@
 #include "objectives.hpp"
 
 namespace esport {
+inline bool collective_attack(const Json &world) { return world.value("agentPolicy", 0) >= 8; }
 using Contest = std::pair<std::map<AreaId, double>, double>;
 using ContestTable = std::map<std::string, std::array<Contest, 2>>;
 using Stations = std::map<std::string, std::vector<Point>>;

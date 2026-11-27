@@ -48,6 +48,15 @@ void announce(AgentTurn &turn, const char *channel, const char *state, const Poi
 }
 
 void AgentTurn::peer_feedback(const std::string &kind) {
+    if (!grid && side == "T" && collective_attack(w) && active(plan, "probe") &&
+        !active(plan.at("probe"), "released") && a.contains("sentFeedback")) {
+        const auto &sent = a.at("sentFeedback");
+        if (sent.contains("sector") && sent.at("sector").at("state") == "held") {
+            const Json last = sent.at("sector");
+            if (distance(actor_point(a), last.at("point")) > 6 || !a.at("visible").empty() || a.at("blind") > now)
+                signal_group("sector", "lost", actor_point(a), last.at("order"));
+        }
+    }
     if (small_groups(w) && !grid && side == "CT" && w.at("phase") == "live" && active(plan, "opening")) {
         const auto &job = plan.at("opening").at("jobs").at(a.at("id").get<std::string>());
         if (active(job, "partner") && job.contains("gate")) {

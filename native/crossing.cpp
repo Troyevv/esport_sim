@@ -24,6 +24,8 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
     Json probe = active(plan, "probe") ? plan.at("probe") : Json::object();
     bool feint = side == "T" && !active(probe, "released") && plan.at("rotated") == false &&
                  a.at("id") == probe.value("scout", Json(nullptr));
+    if (collective_attack(w) && probe.contains("stations"))
+        feint &= probe.value("feint", false) && !a.value("feintThrown", false);
     if (feint && !probe.contains("stations"))
         site = site == "A" ? "B" : "A";
     if (!radio_memory.contains("crossingCalls"))
@@ -103,10 +105,31 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
         if (relief(plan, a) && pressure)
             gadgets = {"Дым", "Свет", "Огонь"};
     } else {
+        if (collective_attack(w) && feint) {
+            const auto &entries = arena.objectives().ingress().at(site).at(order.value("lane", 0));
+            targets.insert(targets.end(), entries.begin(), entries.end());
+            add_named(arena.profile().at(site).at(order.value("lane", 0)).back());
+        }
         for (auto &label : arena.profile().at("guards").at(site))
             add_named(label);
+        if (collective_attack(w) && !feint) {
+            for (const auto &r : a.at("knowledge")) {
+                if (!visual(r) || now - r.at("tick").get<Tick>() >= 25)
+                    continue;
+                const Point sight = actor_point(r);
+                if (distance(sight, arena.site_point(site)) < 45) {
+                    pressure = true;
+                    targets.push_back(sight);
+                }
+            }
+        }
         gadgets = feint ? std::vector<std::string>{"Ложная", "Дым", "Свет"}
                         : std::vector<std::string>{"Дым", "Свет"};
+        if (collective_attack(w) && pressure)
+            gadgets = {"Огонь", "Дым", "Свет"};
+        if (collective_attack(w) && !pressure && !feint && active(probe, "stations") &&
+            !active(probe, "released") && a.at("utility").size() == 1)
+            return nullptr;
         if (!feint && std::ranges::none_of(squad, [&](auto m) { return m != &a && gap(*m) < 35; }))
             return nullptr;
     }
@@ -168,6 +191,8 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
         }
         a["status"] = feint ? "Имитирует выход" : "Готовит гранату на подход";
         std::string purpose;
+        if (collective_attack(w) && !defending)
+            purpose = feint ? "Ложный выход" : pressure ? "Изолирует контакт" : "Выход на плент";
         if (defending)
             purpose = relief(plan, a)                        ? "Прикрывает перетяжку"
                       : (!pushing.empty() && item == "Свет") ? "Поддерживает поджим"
@@ -195,8 +220,16 @@ Json AgentTurn::hold_sector() {
     a["status"] = "Берёт контроль · " + label;
     int delay = 1 + (100 - skills.at("communication").get<int>()) / 12;
     if (distance(pos, goal) > 4) {
+        if (collective_attack(w) && probe.value("feint", false) && probe.at("scout") == id &&
+            !a.value("feintThrown", false) && distance(pos, goal) < 35) {
+            auto cast = crossing(plan.at("orders").at("slots").at(slot), st.at("sector"));
+            if (!cast.is_null())
+                return cast;
+        }
         if (move(goal, 1.65))
             return Json::array({"move", nullptr});
+        if (collective_attack(w) && a.value("blockedTicks", 0) >= 8)
+            signal_group("sector", "blocked", goal, st.at("sector"));
         if (a.value("blockedTicks", 0) >= 20 &&
             (!probe.contains("unreachable") || !probe.at("unreachable").contains(id)))
             probe["unreachable"][id] = now + delay;
@@ -228,6 +261,8 @@ Json AgentTurn::hold_sector() {
     }
     if (st.contains("check") && now < probe.at("reports").at(id).get<Tick>())
         heading_to(a, st.at("check"));
+    if (collective_attack(w) && now >= probe.at("reports").at(id).get<Tick>())
+        signal_group("sector", "held", goal, site);
     auto result = crossing(plan.at("orders").at("slots").at(slot), site);
     return result.is_null() ? Json::array({"hold", nullptr}) : result;
 }
@@ -236,6 +271,43 @@ Json AgentTurn::prepare_plant(const std::string &site) {
     if (!action.empty() || w.at("deadline").get<Tick>() - now <= cfg.at("rules").at("plant").get<int>() + 10)
         return Json::array({"plant", site});
     auto pos = actor_point(a);
+    if (collective_attack(w) && !active(plan, "board")) {
+        if (!a.contains("plantSpot") || a.at("plantSpot").at("site") != site) {
+            Reports angles;
+            for (const auto &r : a.at("knowledge"))
+                if (visual(r) && now - r.at("tick").get<Tick>() < 40 &&
+                    !nav.hit(pos, actor_point(r), 1, 46, 64))
+                    angles.push_back(&r);
+            Point best = pos;
+            auto exposure = [&](const Point &p) {
+                return std::count_if(angles.begin(), angles.end(), [&](auto r) {
+                    return !nav.hit(p, actor_point(*r), 1, 46, 64);
+                });
+            };
+            auto risk = angles.size();
+            if (risk) {
+                for (const auto &p : arena.objectives().samples(site)) {
+                    if (distance(pos, p) > 10)
+                        continue;
+                    auto score = exposure(p);
+                    if (score > risk || (score == risk && distance(pos, p) >= distance(pos, best)))
+                        continue;
+                    auto dest = nav.locate(p);
+                    auto route = dest ? nav.path(a.at("navArea"), pos, *dest, p, {}) : std::nullopt;
+                    if (route && walk_length(pos, *route) <= 13) {
+                        best = p;
+                        risk = score;
+                    }
+                }
+            }
+            a["plantSpot"] = {{"site", site}, {"point", best}, {"until", now + 12}};
+        }
+        const auto point = a.at("plantSpot").at("point").get<Point>();
+        if (now < a.at("plantSpot").at("until") && distance(pos, point) > 2 && move(point, 1.65)) {
+            a["status"] = "Занимает место установки";
+            return Json::array({"move", nullptr});
+        }
+    }
     if (!active(a, "plantCheck") || a.at("plantCheck").at("site") != site ||
         distance(pos, a.at("plantCheck").at("origin").get<Point>()) > 6) {
         Reports reports;

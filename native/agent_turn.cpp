@@ -300,6 +300,8 @@ void AgentTurn::duty_feedback() {
 void AgentTurn::finish(const Json &intent) {
     const auto kind = intent.at(0).get<std::string>();
     if (!grid) {
+        if (side == "T" && kind == "throw" && intent.at(1).value("purpose", std::string{}) == "Ложный выход")
+            a["feintThrown"] = true;
         if (a.at("status") != "Отворачивается от флешки")
             check_incoming(kind);
         if (a.value("lastBlockedTick", Tick{-1}) != now)

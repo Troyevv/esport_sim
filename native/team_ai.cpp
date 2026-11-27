@@ -210,6 +210,11 @@ void captain_review(Json &w, const Json &cfg, const OpeningMap &arena, const std
         }
         return;
     }
+    if (collective_attack(w) && !arena.objectives().grid() && plan.value("board", Json(nullptr)).empty()) {
+        if (w.at("phase") == "live")
+            review_attack(w, cfg, arena, plan, squad, captain, reports);
+        return;
+    }
     std::string site = plan.at("site"), other = site == "A" ? "B" : "A";
     auto counts = site_pressure(arena, reports, now);
     if (plan.contains("probe") && !plan.at("probe").empty()) {

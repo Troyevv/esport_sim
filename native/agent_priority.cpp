@@ -21,7 +21,7 @@ Json AgentTurn::priority_intent() {
     const bool reinforce = side == "CT" && (w.at("phase") == "planted" || relief(plan, a));
     bool board = active(plan, "board");
     auto pos = actor_point(a);
-    if (!rescuing && !board && !reinforce && squad.size() < 5 && a.at("playingRole") == "support" &&
+    if (!rescuing && !board && !reinforce && (!collective_attack(w) || action.empty()) && squad.size() < 5 && a.at("playingRole") == "support" &&
         side == "T" && w.at("phase") == "live" && (device.empty() || device.at("carrier") != a.at("id"))) {
         const auto &slots = plan.at("orders").at("slots");
         auto lane = slots.at(slot).at("lane");

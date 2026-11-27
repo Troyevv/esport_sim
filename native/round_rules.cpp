@@ -304,7 +304,7 @@ void start_round(Json &w, const Json &cfg, const Json &spawns) {
         for (auto key :
              {"confirmedHit",    "pendingFlash",     "flashPulses",     "flashLevel",      "flashAssistOwner",
               "resumeFlashLook", "flashWarnings",    "flashImpairedAt", "flashImpairedBy", "flashWarning",
-              "audioCalls",      "lastDutyFeedback", "postWatch",       "decision",        "lastReloadBreak",
+              "feintThrown",     "plantSpot",       "attackGate",      "audioCalls",      "lastDutyFeedback", "postWatch",       "decision",        "lastReloadBreak",
               "groupDuty",       "groupLead",        "groupInboxTick",  "declinedSupport", "sentContacts",
               "sentFeedback",    "peerCalls",        "crossingCalls",   "openingThrows",   "pushFlash"})
             a.erase(key);

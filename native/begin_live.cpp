@@ -171,6 +171,17 @@ void OpeningMap::begin_live(Json &w, const Json &cfg) const {
             if (a.at("team") == side) {
                 const auto id = a.at("id").get<std::string>();
                 Json items = grenade_needs(w, cfg, a, site, board);
+                if (collective_attack(w) && side == "T" && plan.contains("probe") &&
+                    plan.at("probe").contains("stations") && plan.at("probe").at("scout") == id &&
+                    (buy == "Полная" || buy == "Антиэко" || buy == "Бонусная")) {
+                    plan.at("probe")["feint"] = true;
+                    const auto decoy = std::find(items.begin(), items.end(), "Ложная");
+                    if (decoy != items.end())
+                        items.erase(decoy);
+                    items.insert(items.begin(), "Ложная");
+                    if (items.size() > 4)
+                        items.erase(items.end() - 1);
+                }
                 if (plan.contains("opening")) {
                     const auto &opening = plan.at("opening"), job = opening.at("jobs").at(id);
                     auto &focus = opening.at("focus");
