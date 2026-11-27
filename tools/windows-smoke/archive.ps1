@@ -282,14 +282,8 @@ if ((Invoke-RestMethod "$origin/api/state").world.map.id -ne 'de_nuke') { throw 
 Command $origin 'speed' 8
 Command $origin 'start'
 Wait-Check 'native live ticks on Nuke' {
-    $state = Invoke-RestMethod "$origin/api/state"
-    if ($state -is [string]) {
-        # Windows PowerShell can return the response text if automatic decoding fails.
-        $state = $state | ConvertFrom-Json -ErrorAction Stop
-    }
-    $world = $state.world
-    if ($world.match.phase -eq 'live' -and $world.tick -ge 90) { return $true }
-    throw "Nuke tick=$($world.tick), phase=$($world.match.phase), running=$($state.running), speed=$($state.speed)"
+    $world = (Invoke-RestMethod "$origin/api/state").world
+    $world.match.phase -eq 'live' -and $world.tick -ge 90
 }
 Command $origin 'pause'
 Command $origin 'save'
