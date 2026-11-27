@@ -189,6 +189,10 @@ def main():
             return 1
         return 0
     try:
+        if getattr(sys, "frozen", False):
+            from backend import _match_native
+            if _match_native.NAV_API_VERSION != 1:
+                raise RuntimeError("Несовместимая версия нативного модуля карты")
         data = windows_data_dir()
         directory = (
             Path(sys.executable).parent

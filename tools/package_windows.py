@@ -22,6 +22,7 @@ def main():
         or struct.calcsize("P") != 8
     ):
         raise SystemExit("Сборка требует 64-разрядный Windows x64 и Python x64.")
+    subprocess.run([sys.executable, "-m", "tools.build_native"], cwd=ROOT, check=True)
     frontend = ROOT / "frontend" / "dist"
     if not (frontend / "index.html").is_file() or not any(
         (frontend / "assets").glob("*.js")
@@ -60,6 +61,8 @@ def main():
             f"{frontend}:frontend/dist",
             "--add-data",
             f"{ROOT / 'backend' / 'data'}:backend/data",
+            "--hidden-import",
+            "backend._match_native",
             "--collect-all",
             "embreex",
             "--add-binary",
@@ -93,6 +96,8 @@ def main():
     for file in ("EsportSim.exe", "_internal/frontend/dist/index.html"):
         if not (output / file).is_file():
             raise RuntimeError(f"В сборке отсутствует {file}")
+    if not list((output / "_internal/backend").glob("_match_native*.pyd")):
+        raise RuntimeError("В сборке отсутствует нативный матчевый модуль")
     shutil.copyfile(ROOT / "LICENSE", output / "LICENSE")
     shutil.copyfile(ROOT / "docs" / "TACTICS.md", output / "TACTICS.md")
     shutil.copyfile(ROOT / "docs" / "WORLD_R31.md", output / "WORLD_R31.md")

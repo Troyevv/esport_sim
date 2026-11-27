@@ -61,7 +61,7 @@
 
 ## Запуск из исходников для разработчиков
 
-Для запуска из исходников на Windows установите Python 3.12 и Node.js 24 с npm. Распакуйте или клонируйте проект и дважды щёлкните **start.bat** в его корне. При первом запуске потребуется интернет для установки зависимостей. Скрипт создаст `.venv`, соберёт интерфейс и откроет игру в браузере после готовности сервера. Следующие запуски используют локальные зависимости и сборку. Изменение lock-файла обновляет соответствующие зависимости, изменение исходников интерфейса запускает новую сборку.
+Для запуска из исходников на Windows установите Python 3.12 x64, Node.js 24 с npm и Visual Studio Build Tools 2022 с компонентом разработки на C++ для x64. Распакуйте или клонируйте проект и дважды щёлкните **start.bat** в его корне. При первом запуске потребуется интернет для установки зависимостей. Скрипт создаст `.venv`, установит CMake и pybind11, соберёт модуль C++ и интерфейс и откроет игру в браузере после готовности сервера. Следующие запуски используют локальные зависимости и сборку. Изменение lock-файла обновляет соответствующие зависимости, изменение исходников интерфейса или C++ запускает пересборку соответствующей части.
 
 При первом запуске после обновления сохранения BO1 из ранних сборок PR #3 переносятся автоматически. Игра сохраняет исходные снимки и журналы в той же базе SQLite. Если журнал повреждён или версия сохранения неизвестна, подробности доступны в `%LOCALAPPDATA%\EsportSim\launcher.log`.
 
@@ -71,7 +71,8 @@
 
 ```powershell
 py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt -r requirements-native.txt
+.\.venv\Scripts\python.exe -m tools.build_native
 npm.cmd ci --prefix frontend
 npm.cmd run build --prefix frontend
 .\.venv\Scripts\python.exe -m backend.run
@@ -106,9 +107,11 @@ npm.cmd run build --prefix frontend
 
 ### Сборка дистрибутива
 
-Workflow **Windows distribution** собирает frontend с npm lock-файлом и упаковывает его вместе с интерпретатором и сервером с помощью PyInstaller. Для повторения на Windows x64 соберите frontend, установите в отдельное виртуальное окружение `requirements-package.txt` и запустите `python tools/package_windows.py` из корня. Готовый файл — `dist/EsportSim-windows-x64.zip`. Точные версии инструментов зафиксированы в [workflow](.github/workflows/windows-distribution.yml).
+Workflow **Windows distribution** собирает frontend с npm lock-файлом и упаковывает его вместе с интерпретатором и сервером с помощью PyInstaller. Для повторения на Windows x64 соберите frontend, установите в отдельное виртуальное окружение `requirements-package.txt` и `requirements-native.txt` и запустите `python tools/package_windows.py` из корня. Готовый файл — `dist/EsportSim-windows-x64.zip`. Точные версии инструментов зафиксированы в [workflow](.github/workflows/windows-distribution.yml).
 
 ## Проверки
+
+Эталонные BO1 на девяти картах, профиль тика и команды сборки модуля на Linux и Windows описаны в [отчёте R5.4](docs/NATIVE_MATCH_R54.md).
 
 В PowerShell из корня репозитория. Добавление виртуального окружения в PATH даёт браузерным тестам доступ к тому же Python.
 
