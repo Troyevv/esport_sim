@@ -12,18 +12,20 @@ namespace esport {
 using Point = std::array<double, 3>;
 using Area = std::pair<std::int64_t, std::vector<Point>>;
 
+double round_decimal(double value, int digits);
+double sum3(double a, double b, double c);
 double distance(const Point &a, const Point &b);
-std::optional<double> surface_height(const std::vector<Point>& corners, double x, double y);
+std::optional<double> surface_height(const std::vector<Point> &corners, double x, double y);
 
 // World-space polygons remain immutable for the lifetime of an installed map.
 class NavSurfaces {
-public:
+  public:
     explicit NavSurfaces(std::vector<Area> areas);
-    std::optional<std::int64_t> locate(const Point& point, double max_vertical) const;
-    std::vector<std::optional<std::int64_t>> locate_many(
-        const std::vector<Point>& points, double max_vertical) const;
+    std::optional<std::int64_t> locate(const Point &point, double max_vertical) const;
+    std::vector<std::optional<std::int64_t>> locate_many(const std::vector<Point> &points,
+                                                         double max_vertical) const;
 
-private:
+  private:
     using Sector = std::pair<double, double>;
     std::vector<Area> areas_;
     std::map<Sector, std::vector<std::size_t>> sectors_;
@@ -34,4 +36,4 @@ private:
     };
     std::vector<WideArea> wide_;
 };
-}
+} // namespace esport

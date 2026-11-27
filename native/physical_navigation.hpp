@@ -43,6 +43,8 @@ class PhysicalNavigation {
 
     std::optional<Impact> hit(const Point &start, const Point &end, unsigned mask, double up,
                               double target_up, bool canonical = false) const;
+    double unit() const { return unit_; }
+    std::optional<AreaId> locate(const Point& p) const { return surfaces_->locate(world(p),96); }
     Point world(const Point &p) const;
     std::optional<Point> nav_center(const Point &pos) const;
     MoveResult walk(MotionState &actor, const Point &goal, double pace,

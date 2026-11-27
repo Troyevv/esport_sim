@@ -106,7 +106,8 @@ class NativePerceptionMap(NativeMovementMap):
     @cached_property
     def objectives(self):
         solids = {site: [solid.faces for solid in volumes] for site, volumes in self.sites.volumes.items()}
-        data = native.SiteData(solids, self.site_costs, self.plant_surfaces)
+        ingress = {site: [self.ingress(site, lane) for lane in (0, 1)] for site in self.sites.volumes}
+        data = native.SiteData(solids, self.site_costs, self.plant_surfaces, ingress)
         return native.Objectives(self.planner, data)
 
     def shot_transmission(self, start, end, power):

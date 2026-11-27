@@ -1,6 +1,6 @@
 #include "match_state.hpp"
 #include "navigation.hpp"
-#include "objectives.hpp"
+#include "observation.hpp"
 #include "round_rules.hpp"
 
 #include <nlohmann/json.hpp>
@@ -130,7 +130,7 @@ class MatchState::Impl {
             throw std::invalid_argument("Неизвестное указание");
     }
 
-    void deliver(Json &a, const Json &m, Tick now, Tick &review) const {
+    void deliver(const Json &w, Json &a, const Json &m, Tick now, Tick &review) const {
         const auto sender = m.at("sender").get<std::string>();
         if (m.contains("crossing")) {
             const auto &call = m.at("crossing");
@@ -168,16 +168,16 @@ class MatchState::Impl {
                 return;
             if (sight.at("source") != "Граната" && sight.at("source") != "Слух")
                 sight["source"] = "Радио";
-            if (a.at("team") == "CT" && state.at("phase") == "live") {
+            if (a.at("team") == "CT" && w.at("phase") == "live") {
                 sight["reporter"] = sender;
-                if (a.at("id") == state.at("plans").at("CT").at("captain") && sight.at("source") == "Радио" &&
+                if (a.at("id") == w.at("plans").at("CT").at("captain") && sight.at("source") == "Радио" &&
                     (!old || (sight.value("carryingC4", false) && !old->value("carryingC4", false)) ||
                      sight.value("groupSize", 1) > old->value("groupSize", 1))) {
                     const auto player = a.at("playerId").get<std::string>();
-                    const auto &domain = state.at("domain");
+                    const auto &domain = w.at("domain");
                     const auto &skill = domain.at("players").at(player).at("skills");
                     int chemistry = 0;
-                    for (const auto &s : state.at("agents"))
+                    for (const auto &s : w.at("agents"))
                         if (s.at("id") == sender) {
                             auto p = s.at("playerId").get<std::string>();
                             chemistry = domain.at("chemistry")
@@ -193,6 +193,36 @@ class MatchState::Impl {
             }
             a["knowledge"][id] = std::move(sight);
         }
+    }
+    void deliver_radio(Json &w) const {
+        const Tick now = w.at("tick");
+        auto &messages = w.at("messages");
+        if (std::none_of(messages.begin(), messages.end(), [&](const Json &m) { return m.at("due") <= now; }))
+            return;
+        auto &roster = w.at("agents");
+        // Prepare only affected recipients. A malformed report cannot consume the queue.
+        std::map<std::size_t, Json> changes;
+        Json pending = Json::array();
+        bool live = w.at("phase") == "live" && w.at("plans").contains("CT");
+        Tick review = live ? w.at("plans").at("CT").at("review").get<Tick>() : 0;
+        for (const auto &m : messages) {
+            if (m.at("due") > now) {
+                pending.push_back(m);
+                continue;
+            }
+            for (std::size_t i = 0; i < roster.size(); ++i) {
+                const auto &a = roster.at(i);
+                if (a.at("hp") == 0 || a.at("team") != m.at("team") || a.at("id") == m.at("sender"))
+                    continue;
+                auto [it, inserted] = changes.try_emplace(i, a);
+                deliver(w, it->second, m, now, review);
+            }
+        }
+        if (live)
+            w.at("plans").at("CT").at("review") = review;
+        for (auto &[i, a] : changes)
+            roster.at(i).swap(a);
+        messages.swap(pending);
     }
 };
 
@@ -255,37 +285,17 @@ int MatchState::advance_intermission(int ticks) {
 }
 void MatchState::deliver_radio() {
     std::scoped_lock lock(impl_->mutex);
-    auto &w = impl_->state;
-    const Tick now = w.at("tick");
-    auto &messages = w.at("messages");
-    if (std::none_of(messages.begin(), messages.end(), [&](const Json &m) { return m.at("due") <= now; }))
-        return;
-    auto &roster = w.at("agents");
-    // Prepare only affected recipients. A malformed report cannot consume the queue.
-    std::map<std::size_t, Json> changes;
-    Json pending = Json::array();
-    bool live = w.at("phase") == "live" && w.at("plans").contains("CT");
-    Tick review = live ? w.at("plans").at("CT").at("review").get<Tick>() : 0;
-    for (const auto &m : messages) {
-        if (m.at("due") > now) {
-            pending.push_back(m);
-            continue;
-        }
-        for (std::size_t i = 0; i < roster.size(); ++i) {
-            const auto &a = roster.at(i);
-            if (a.at("hp") == 0 || a.at("team") != m.at("team") || a.at("id") == m.at("sender"))
-                continue;
-            auto [it, inserted] = changes.try_emplace(i, a);
-            impl_->deliver(it->second, m, now, review);
-        }
-    }
-    if (live)
-        w.at("plans").at("CT").at("review") = review;
-    for (auto &[i, a] : changes)
-        roster.at(i).swap(a);
-    messages.swap(pending);
+    impl_->deliver_radio(impl_->state);
 }
-
+void MatchState::observe() {
+    std::scoped_lock lock(impl_->mutex);
+    if (!impl_->combat || !impl_->objectives)
+        throw std::invalid_argument("Физика карты недоступна");
+    auto staged = impl_->state;
+    impl_->deliver_radio(staged);
+    observe_contacts(staged, impl_->combat->sensors(), *impl_->objectives);
+    impl_->state.swap(staged);
+}
 void MatchState::finish_round(const std::string &side, const std::string &reason) {
     std::scoped_lock lock(impl_->mutex);
     if (impl_->state.at("phase") == "finished" || impl_->state.at("phase") == "result")

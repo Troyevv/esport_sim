@@ -9,7 +9,8 @@ void bind_state(py::module_ &module) {
     using Release = py::call_guard<py::gil_scoped_release>;
     module.attr("MATCH_STATE_API_VERSION") = 1;
     py::class_<SiteData>(module, "SiteData")
-        .def(py::init<decltype(SiteData::solids), decltype(SiteData::costs), decltype(SiteData::samples)>());
+        .def(py::init<decltype(SiteData::solids), decltype(SiteData::costs), decltype(SiteData::samples),
+                      Ingress>());
     py::class_<Objectives, std::shared_ptr<Objectives>>(module, "Objectives")
         .def(py::init<std::shared_ptr<const PhysicalNavigation>, SiteData>(), Release())
         .def("site_at", &Objectives::site_at, Release());
@@ -31,6 +32,7 @@ void bind_state(py::module_ &module) {
         .def("attach_objectives", &MatchState::attach_objectives, Release())
         .def("resolve_intents", &MatchState::resolve_intents, Release())
         .def("attach_physics", &MatchState::attach_physics, Release())
+        .def("observe", &MatchState::observe, Release())
         .def("apply_effects", &MatchState::apply_effects, Release())
         .def("resolve_actions", &MatchState::resolve_actions, Release())
         .def("attach_spawns", &MatchState::attach_spawns, Release())

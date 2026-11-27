@@ -75,6 +75,20 @@ def compare(checkpoint, combat=False):
             same(owner, "effects")
             seen_effects.update(types)
 
+    ref_observe = match_ai.observe
+    seen_contacts = set()
+    def observation(w, players, arena):
+        # Capture first acquisition, continuity, loss and the five guard report slots.
+        old = tuple((p["id"], tuple(p["visible"])) for p in players if p["visible"])
+        key = (bool(old), w["phase"], w["tick"] % 5, (w["tick"] // 5) % 5)
+        owner = native_match_state.restore(encode(w), physics=physics) if key not in seen_contacts else None
+        if owner is not None:
+            owner.observe()
+        ref_observe(w, players, arena)
+        if owner is not None:
+            same(owner, "observation")
+            seen_contacts.add(key)
+
     ref_resolve = match.resolve_intents
     def resolve(w, intents, players, ids, arena):
         landmarks = {(a["team"], k, w["phase"]) for a, k, _ in intents if k in ("plant", "defuse")}
@@ -93,6 +107,7 @@ def compare(checkpoint, combat=False):
 
     with ExitStack() as patches:
         if combat:
+            patches.enter_context(patch.object(match_ai, "observe", observation))
             patches.enter_context(patch.object(match, "resolve_intents", resolve))
             patches.enter_context(patch.object(match, "resolve_attacks", attacks))
             patches.enter_context(patch.object(match_ai, "apply_effects", effects))
