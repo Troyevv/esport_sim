@@ -1,6 +1,6 @@
 #include "match_state.hpp"
-#include "combat.hpp"
 #include "navigation.hpp"
+#include "objectives.hpp"
 #include "round_rules.hpp"
 
 #include <nlohmann/json.hpp>
@@ -53,6 +53,7 @@ class MatchState::Impl {
   public:
     Json state, config, spawns;
     std::unique_ptr<Combat> combat;
+    std::shared_ptr<const Objectives> objectives;
     std::string rules;
     std::set<std::string> calls;
     int freeze;
@@ -339,6 +340,34 @@ void MatchState::apply_effects() {
         throw std::invalid_argument("Эффекты требуют активной фазы раунда");
     auto staged = impl_->state;
     impl_->combat->effects(staged, impl_->config);
+    impl_->state.swap(staged);
+}
+
+void MatchState::attach_objectives(const std::string &map, std::shared_ptr<const Objectives> sites) {
+    std::scoped_lock lock(impl_->mutex);
+    if (!sites || impl_->objectives || impl_->state.at("mapId") != map)
+        throw std::invalid_argument("Неожиданная карта плентов");
+    impl_->objectives = std::move(sites);
+}
+void MatchState::resolve_intents(const std::string &input) {
+    auto intents = Json::parse(input);
+    if (!intents.is_array())
+        throw std::invalid_argument("Expected an intent batch");
+    std::scoped_lock lock(impl_->mutex);
+    if (!impl_->combat || !impl_->objectives)
+        throw std::invalid_argument("Физика карты недоступна");
+    const auto &phase = impl_->state.at("phase");
+    if (phase != "live" && phase != "planted")
+        throw std::invalid_argument("Требуется активный раунд");
+    if (impl_->state.at("tick").get<Tick>() % 2 == 0)
+        std::reverse(intents.begin(), intents.end());
+    auto staged = impl_->state;
+    auto attacks = Json::array();
+    for (const auto &intent : intents)
+        if (intent.at("kind") == "shoot" || intent.at("kind") == "throw")
+            attacks.push_back(intent);
+    impl_->combat->execute(staged, impl_->config, attacks);
+    impl_->objectives->resolve(staged, impl_->config, intents);
     impl_->state.swap(staged);
 }
 } // namespace esport

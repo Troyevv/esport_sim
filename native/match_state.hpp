@@ -7,6 +7,7 @@
 
 namespace esport {
 class PhysicalNavigation;
+class Objectives;
 // Owns a single detailed match. External snapshots are copied only at an explicit
 // boundary. No Python objects or callbacks are retained by the owner.
 class MatchState {
@@ -22,6 +23,8 @@ class MatchState {
     void attach_physics(const std::string &map, std::shared_ptr<const PhysicalNavigation> planner,
                         std::vector<std::string> materials);
     void apply_effects();
+    void attach_objectives(const std::string &map, std::shared_ptr<const Objectives> sites);
+    void resolve_intents(const std::string &intents);
     void resolve_actions(const std::string &intents);
     void finish_round(const std::string &side, const std::string &reason);
 

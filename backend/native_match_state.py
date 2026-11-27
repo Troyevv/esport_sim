@@ -3,12 +3,12 @@ from dataclasses import asdict
 import json
 
 from . import _match_native, cs2_maps
-from .match_rules import CALLS, RULES, SIDEARMS, THROW_RECOVERY, UTILITY, WEAPONS
+from .match_rules import BLAST_RADIUS, CALLS, RULES, SIDEARMS, THROW_RECOVERY, UTILITY, WEAPONS
 from .match_performance import WEAPON_CLASS, GRENADE_SKILL
 
 _RULEBOOK = json.dumps(dict(rules=RULES, weapons={k: asdict(v) for k, v in WEAPONS.items()},
                             sidearms=sorted(SIDEARMS), classes=WEAPON_CLASS, grenadeSkills=GRENADE_SKILL,
-                            utility=UTILITY, throwRecovery=THROW_RECOVERY), ensure_ascii=False)
+                            utility=UTILITY, blastRadius=BLAST_RADIUS, throwRecovery=THROW_RECOVERY), ensure_ascii=False)
 
 
 def restore(checkpoint, space=None, *, physics=None):
@@ -20,4 +20,5 @@ def restore(checkpoint, space=None, *, physics=None):
         owner.attach_spawns(space.name, json.dumps(table))
     if physics is not None:
         owner.attach_physics(physics.name, physics.planner, physics.collision.materials)
+        owner.attach_objectives(physics.name, physics.objectives)
     return owner
