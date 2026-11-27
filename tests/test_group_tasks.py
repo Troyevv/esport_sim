@@ -254,3 +254,33 @@ def test_active_duty_and_inflight_launch_survive_manual_and_active_save(tmp_path
             restored.advance(size)
         assert restored.snapshot() == source.snapshot()
     store.db.close()
+
+
+@pytest.mark.parametrize("side", ["T", "CT"])
+def test_urgent_offer_releases_an_accepted_task_before_switching(side):
+    w, _, lead, _ = scenario(side, policy=5)
+    help_call = notice(w, "help", lead)
+    helper = help_call["feedback"]["members"][0]
+    idx = member(w, helper)
+    other = next(p for p in w["agents"] if p["team"] == side and p["hp"] and p["id"] not in (helper, lead))
+    stage = deepcopy(help_call)
+    stage["sender"] = other["id"]
+    stage["feedback"].update(channel="stage", state="stage", origin=point(w["agents"][idx]), members=[helper])
+    w["messages"] = [stage]
+    _, w = execute(delivered(w, stage["due"]), helper)
+    original = w["agents"][idx]["groupDuty"]["ticket"]
+    assert original[0] == other["id"]
+    # A new firsthand contact reaches the helper while the old obligation is still valid.
+    tick = stage["due"] + 12
+    assert tick < stage["feedback"]["until"]
+    help_call.update(due=tick)
+    help_call["feedback"].update(tick=tick - 1, until=tick + 22, origin=point(w["agents"][idx]))
+    w["messages"] = [help_call]
+    _, early = execute(delivered(w, tick - 1), helper)
+    assert early["agents"][idx]["groupDuty"]["ticket"] == original
+    _, switched = execute(delivered(w, tick), helper)
+    replacement = switched["agents"][idx]["groupDuty"]["ticket"]
+    assert replacement == [lead, "contact", tick - 1]
+    changes = [(m["feedback"]["state"], m["feedback"]["order"]) for m in switched["messages"]
+               if m["sender"] == helper and "feedback" in m]
+    assert changes[:2] == [("cancel", original), ("accept", replacement)]
