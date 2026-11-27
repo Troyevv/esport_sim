@@ -78,7 +78,10 @@ Options alternatives(const Situation &s, const ExecutionContext *execution) {
           !contact && !s.reload_ticks && s.reserve > 0 && ammunition < 55 && s.interaction_left < 0},
          {Choice::objective, 120 - std::min(55, std::max(0, s.interaction_left)), contact ? exposure / 2 : 0,
           s.interaction_left >= 0},
-         {Choice::escape, 160, exposure / 3, s.can_escape && s.interaction_left < 0}}};
+         {Choice::escape, 160, exposure / 3, s.can_escape && s.interaction_left < 0},
+         {Choice::assist, execution ? execution->assist_benefit : 0, urgency,
+          execution && execution->assist_benefit > 0 && !contact && !weapon_busy && s.ammo > 0 &&
+              s.interaction_left < 0 && !execution->under_fire}}};
     if (execution)
         assess_execution(options, s, *execution);
     // The enum order resolves equal scores deterministically. Comparing

@@ -301,7 +301,8 @@ void start_round(Json &w, const Json &cfg, const Json &spawns) {
                           {"squadPressure", obj},
                           {"screenedOpening", false},
                           {"friendlyUtility", array}});
-        for (auto key : {"audioCalls", "lastDutyFeedback", "postWatch", "decision", "lastReloadBreak"})
+        for (auto key : {"audioCalls", "lastDutyFeedback", "postWatch", "decision", "lastReloadBreak",
+                         "sentContacts", "sentFeedback", "peerCalls", "crossingCalls", "openingThrows", "pushFlash"})
             a.erase(key);
         if (w.contains("agentPolicy")) {
             a.erase("lastRefusal");

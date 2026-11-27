@@ -553,7 +553,7 @@ def test_batch_starts_new_map_with_older_rules_and_records_exact_profile(combat_
     from backend import match as production_match, cs2_maps as installed_maps
     monkeypatch.setattr(installed_maps,"get",lambda _:old)
     fresh = production_match.initial(41000, map_id="de_nuke")
-    assert fresh.pop("agentPolicy") == 2
+    assert fresh.pop("agentPolicy") == 3
     assert encode_world(fresh) == encode_world(w)
     w["rules"] = cs2_maps.PREVIOUS_RULES
     owner = native_match_state.restore(encode_world(w), old, physics=physics)
@@ -576,7 +576,7 @@ def test_depo_owner_restores_mid_board_and_continues_exact_events():
 
     game = match.initial(42)
     fresh = production.initial(42)
-    assert fresh.pop("agentPolicy") == 2
+    assert fresh.pop("agentPolicy") == 3
     assert encode_world(fresh) == encode_world(game)
     board = dict(tactics.propose("T", "Пистолетная", 17), id="depo-regression", revision=1)
     owner = native_match_state.open_game(game)
@@ -643,3 +643,28 @@ def test_individual_policy_gives_both_sides_an_uncertain_acoustic_report(combat_
     assert 0 < report["confidence"] < 1
     assert any(m["team"] == listener["team"] and m["sight"] == report and m["due"] > w["tick"]
                for m in after["messages"] if "sight" in m)
+
+
+@pytest.mark.parametrize("index", [1, 6])
+def test_peer_utility_call_reaches_only_allies_after_cast_and_delay(combat_arenas, index):
+    _, physics = combat_arenas
+    w = read_checkpoint()
+    w.update(agentPolicy=3, messages=[])
+    caster = w["agents"][index]
+    caster.update(utility=["Дым"], hp=100)
+    aim = dict(x=caster["x"]+12, y=caster["y"], z=caster["z"], utility="Дым")
+    owner = native_match_state.restore(encode_world(w), physics=physics)
+    owner.resolve_actions(encode_world([dict(actor=caster["id"], kind="throw", target=aim)]))
+    w = json.loads(owner.snapshot())
+    packet, = [m for m in w["messages"] if "friendlyUtility" in m]
+    cast = packet["friendlyUtility"]["cast"]
+    assert packet["due"] > w["tick"] and cast["point"] == [aim[k] for k in ("x", "y", "z")]
+    assert all(cast not in a.get("crossingCalls", []) for a in w["agents"])
+    w["tick"] = packet["due"]
+    owner = native_match_state.restore(encode_world(w), physics=physics)
+    owner.deliver_radio()
+    after = json.loads(owner.snapshot())
+    for a in after["agents"]:
+        assert (cast in a.get("crossingCalls", [])) == (
+            a["hp"] > 0 and a["team"] == caster["team"] and a["id"] != caster["id"]
+        )

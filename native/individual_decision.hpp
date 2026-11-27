@@ -5,7 +5,7 @@
 namespace esport {
 // This policy receives observations and personal resources. It cannot query a
 // match or a map.
-enum class Choice { assignment, engage, cover, watch, reload, objective, escape, count };
+enum class Choice { assignment, engage, cover, watch, reload, objective, escape, assist, count };
 struct Situation {
     int contacts, hp, ammo, magazine, reserve, reload_ticks, time_left, interaction_left;
     int aggression, risk, discipline, reading, familiarity, role_experience;
@@ -24,6 +24,7 @@ struct ExecutionContext {
     bool can_draw_loaded_gun{}, unsafe_reload_window{}, exposed_lane{}, under_fire{};
     bool changed{}, advancing{}, finishing_cover{}, continuing_reload{}, protected_cover{}, tracking{};
     bool route_available = true;
+    int assist_benefit{};
 };
 struct Option {
     Choice choice;

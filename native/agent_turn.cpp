@@ -1,3 +1,4 @@
+#include "radio.hpp"
 #include "agent_helpers.hpp"
 #include "economy.hpp"
 #include <algorithm>
@@ -271,6 +272,8 @@ void AgentTurn::finish(const Json &intent) {
         if (side == "CT" && w.at("phase") == "live" && now % 5 == slot)
             duty_feedback();
     }
+    if (peer_radio(w))
+        peer_feedback(kind);
     if (kind == "move") {
         if (!grid && (individual || (side == "T" && w.at("phase") == "live")) && now % 5 == slot &&
             distance(prior_position, actor_point(a)) > .9)

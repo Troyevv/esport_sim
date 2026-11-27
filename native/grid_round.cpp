@@ -1,3 +1,4 @@
+#include "radio.hpp"
 #include "grid_round.hpp"
 #include "economy.hpp"
 #include <algorithm>
@@ -82,6 +83,9 @@ void grid_observe(Json &w, const GridMap &grid) {
             continue;
         auto previous = std::move(a.at("visible"));
         a["visible"] = Json::array();
+        // ordered_json invalidates sibling references when a new actor field is inserted.
+        if (peer_radio(w) && !a.contains("sentContacts"))
+            a["sentContacts"] = Json::object();
         auto &intel = a.at("knowledge");
         for (auto it = intel.begin(); it != intel.end();)
             if (now - it->at("tick").get<Tick>() >= 75)
@@ -107,14 +111,7 @@ void grid_observe(Json &w, const GridMap &grid) {
             a.at("visible").push_back(id);
             intel[id] = sight;
             if (!seen || now % 10 == 0)
-                w.at("messages")
-                    .push_back(Json{
-                        {"team", a.at("team")},
-                        {"sender", a.at("id")},
-                        {"sight", sight},
-                        {"due",
-                         now + 1 +
-                             (100 - player_profile(w, a).at("skills").at("communication").get<int>()) / 12}});
+                report_contact(w, a, sight);
             if (!seen) {
                 std::string name = b.at("name");
                 auto &e =

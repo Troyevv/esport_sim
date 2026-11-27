@@ -1,7 +1,9 @@
+#include "radio.hpp"
 #include "agent_helpers.hpp"
 
 namespace esport {
 Json AgentTurn::assist_contact(const Squad &partners, const Json &r) {
+    auto &radio_memory = peer_radio(w) ? a : plan;
     const auto &nav = arena.objectives().map();
     if (partners.empty() || !visual(r) || now < r.at("tick").get<Tick>() ||
         now - r.at("tick").get<Tick>() >= 15)
@@ -12,9 +14,9 @@ Json AgentTurn::assist_contact(const Squad &partners, const Json &r) {
         return nullptr;
     auto flight = std::max(3, int(std::nearbyint(gap / 7)));
     auto land = nav.grenade(origin, target, flight).back();
-    if (!plan.contains("crossingCalls"))
-        plan["crossingCalls"] = Json::array();
-    auto &calls = plan.at("crossingCalls");
+    if (!radio_memory.contains("crossingCalls"))
+        radio_memory["crossingCalls"] = Json::array();
+    auto &calls = radio_memory.at("crossingCalls");
     bool needy =
         std::ranges::all_of(partners, [](auto m) { return active(*m, "reloadAt") || m->at("hp") < 45; });
     using Items = std::array<std::string, 3>;
@@ -50,6 +52,7 @@ Json AgentTurn::assist_contact(const Squad &partners, const Json &r) {
     return nullptr;
 }
 Json AgentTurn::retake_utility(const std::string &site) {
+    auto &radio_memory = peer_radio(w) ? a : plan;
     const auto &nav = arena.objectives().map();
     if (now < std::max(a.at("throwAt").get<Tick>(), a.value("crossingReview", Tick{0})) ||
         a.at("utility").empty())
@@ -71,9 +74,9 @@ Json AgentTurn::retake_utility(const std::string &site) {
         if (d > 9 && d < 45)
             cover.push_back(q);
     }
-    if (!plan.contains("crossingCalls"))
-        plan["crossingCalls"] = Json::array();
-    auto &calls = plan.at("crossingCalls");
+    if (!radio_memory.contains("crossingCalls"))
+        radio_memory["crossingCalls"] = Json::array();
+    auto &calls = radio_memory.at("crossingCalls");
     calls.erase(std::remove_if(calls.begin(), calls.end(), [&](auto &c) { return c.at("end") <= now; }),
                 calls.end());
     auto nearest = [&](const Point &q) {
@@ -130,6 +133,7 @@ Json AgentTurn::retake_utility(const std::string &site) {
 }
 
 Json AgentTurn::plant_intercept(Point &goal, Point &watch, Json &cue) {
+    auto &radio_memory = peer_radio(w) ? a : plan;
     const auto &nav = arena.objectives().map();
     const auto pos = actor_point(a);
     const std::string site = cue.at("site");
@@ -245,14 +249,14 @@ Json AgentTurn::plant_intercept(Point &goal, Point &watch, Json &cue) {
                             return distance(actor_point(*m), target) < radius;
                         }))
                         continue;
-                    if (plan.contains("crossingCalls") &&
-                        std::ranges::any_of(plan.at("crossingCalls"), [&](auto &c) {
+                    if (radio_memory.contains("crossingCalls") &&
+                        std::ranges::any_of(radio_memory.at("crossingCalls"), [&](auto &c) {
                             return c.at("item") == item && now < c.at("end") &&
                                    distance(c.at("point"), target) < radius;
                         }))
                         continue;
                     if (distance(nav.grenade(pos, target, flight).back(), target) < radius / 2) {
-                        plan["crossingCalls"].push_back(
+                        radio_memory["crossingCalls"].push_back(
                             Json{{"item", item},
                                  {"point", target},
                                  {"end", now + flight + cfg.at("utility").at(item)[1].get<int>()}});

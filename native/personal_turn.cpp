@@ -1,10 +1,11 @@
+#include "radio.hpp"
 #include "agent_helpers.hpp"
 #include "individual_decision.hpp"
 #include <numbers>
 
 namespace esport {
 namespace {
-constexpr std::array names{"assignment", "engage", "cover", "watch", "reload", "objective", "escape"};
+constexpr std::array names{"assignment", "engage", "cover", "watch", "reload", "objective", "escape", "assist"};
 const char *name(Choice choice) { return names[static_cast<size_t>(choice)]; }
 
 // Only available reports compete for attention. A distant sound or an old radio
@@ -231,7 +232,7 @@ Json AgentTurn::personal_decision() {
     const Json empty;
     const auto previous = a.find("decision");
     const auto &mind = previous == a.end() ? empty : *previous;
-    const bool revised = w.at("agentPolicy") == 2;
+    const bool revised = w.at("agentPolicy") >= 2;
     const bool new_task = mind.empty() || mind.at("goal") != goal || mind.at("site") != site ||
                           mind.at("task") != task || mind.at("step") != step;
     const Json threat = revised && report_focus ? report_focus->value("id", Json(nullptr)) : Json(nullptr);
@@ -251,6 +252,10 @@ Json AgentTurn::personal_decision() {
             }
         }
     }
+    const Json *received = peer_radio(w) && !situation.contacts ? peer_request(execution.assist_benefit) : nullptr;
+    // Movement and the decision snapshot can grow the ordered actor object.
+    // Keep the accepted message independent of those mutations.
+    const Json request = received ? *received : Json(nullptr);
     auto options = alternatives(situation, revised ? &execution : nullptr);
     Json intent;
     Choice chosen = Choice::assignment;
@@ -323,6 +328,24 @@ Json AgentTurn::personal_decision() {
             a["status"] = "Пополняет магазин в паузе";
             intent = Json::array({"hold", nullptr});
             break;
+        case Choice::assist: {
+            const auto origin = request.at("origin").get<Point>();
+            if (request.at("state") == "help" && distance(pos, origin) > 14) {
+                bool moved = grid ? grid->walk(a, Json::array({origin[0], origin[1]}), 2 * move_speed(player), grid_fire, true)
+                                  : move(origin, 2);
+                if (!moved) {
+                    candidate.reachable = false;
+                    continue;
+                }
+                a["status"] = "Идёт на запрос помощи";
+                intent = Json::array({"move", nullptr});
+            } else {
+                heading_to(a, request.at("point").get<Point>());
+                a["status"] = "Прикрывает направление по радио";
+                intent = Json::array({"hold", nullptr});
+            }
+            break;
+        }
         case Choice::watch:
             heading_to(a, focus);
             a["status"] = "Проверяет направление последнего контакта";
@@ -348,7 +371,10 @@ Json AgentTurn::personal_decision() {
     // task, choice, or on the personal review interval. Match-center statuses
     // come from the actual executor.
     auto &snapshot = a["decision"];
-    if ((revised && execution.changed) || snapshot.empty() || snapshot.at("intent") != name(chosen) ||
+    const bool new_request = chosen == Choice::assist &&
+        (!snapshot.contains("respondingTo") || snapshot.at("respondingTo").at("sender") != request.at("sender") ||
+         snapshot.at("respondingTo").at("tick") != request.at("tick"));
+    if (new_request || (revised && execution.changed) || snapshot.empty() || snapshot.at("intent") != name(chosen) ||
         snapshot.at("goal") != goal || snapshot.at("task") != task || snapshot.at("site") != site ||
         snapshot.at("step") != step || now - snapshot.at("tick").get<Tick>() >= 12) {
         Json scores = Json::object();
@@ -366,6 +392,9 @@ Json AgentTurn::personal_decision() {
                     {"confidence", certainty},
                     {"reloadExposure", reload_exposure},
                     {"alternatives", std::move(scores)}};
+        if (chosen == Choice::assist)
+            snapshot["respondingTo"] = {{"sender", request.at("sender")}, {"tick", request.at("tick")},
+                                        {"state", request.at("state")}};
         if (revised) {
             snapshot["since"] = execution.incumbent == chosen ? since : now;
             snapshot["threat"] = threat;

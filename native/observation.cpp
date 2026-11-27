@@ -1,3 +1,4 @@
+#include "radio.hpp"
 #include "observation.hpp"
 #include <algorithm>
 #include <bit>
@@ -155,7 +156,7 @@ void observe_contacts(Json &w, const MapSensors &sensors, const Objectives &site
             }
             bool acquired = !has(previous, id);
             if (acquired || now % 10 == 0 || changed)
-                report(w, a, "sight", sight);
+                report_contact(w, a, sight);
             if (acquired) {
                 auto &e =
                     emit(w, "contact",

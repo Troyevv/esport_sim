@@ -1,3 +1,4 @@
+#include "radio.hpp"
 #include "agent_helpers.hpp"
 
 namespace esport {
@@ -66,8 +67,19 @@ Json AgentTurn::spatial_intent() {
                             continue;
                         cohesion = std::max(cohesion, chemistry(w, a, *m));
                         nearest = std::min(nearest, gap(*m));
-                        behind |= m->at("waypoint") < index;
-                        blocked |= m->value("blockedTicks", 0) >= 5;
+                        if (peer_radio(w)) {
+                            const auto key = m->at("id").get<std::string>() + "/order";
+                            if (a.contains("peerCalls") && a.at("peerCalls").contains(key)) {
+                                const auto &update = a.at("peerCalls").at(key);
+                                if (now - update.at("tick").get<Tick>() < 30) {
+                                    behind |= update.value("waypoint", 0) < index;
+                                    blocked |= update.at("state") == "unavailable";
+                                }
+                            }
+                        } else {
+                            behind |= m->at("waypoint") < index;
+                            blocked |= m->value("blockedTicks", 0) >= 5;
+                        }
                     }
                 double spacing =
                     52 -
