@@ -49,7 +49,7 @@ def compare(checkpoint, combat=False):
             same(owner, "radio")
             radio_types.update(kinds)
 
-    seen_attacks, seen_effects = set(), set()
+    seen_attacks, seen_effects, seen_objectives = set(), set(), set()
     ref_attacks, ref_effects = match.resolve_attacks, match_ai.apply_effects
 
     def attacks(w, order, players, ids, arena):
@@ -75,8 +75,25 @@ def compare(checkpoint, combat=False):
             same(owner, "effects")
             seen_effects.update(types)
 
+    ref_resolve = match.resolve_intents
+    def resolve(w, intents, players, ids, arena):
+        landmarks = {(a["team"], k, w["phase"]) for a, k, _ in intents if k in ("plant", "defuse")}
+        if w["action"] and w["action"]["end"] <= w["tick"]:
+            landmarks.add(("complete", w["action"]["kind"]))
+        if w["deadline"] <= w["tick"]:
+            landmarks.add(("deadline", w["phase"]))
+        owner = native_match_state.restore(encode(w), physics=physics) if landmarks - seen_objectives else None
+        if owner is not None:
+            commands = [dict(actor=a["id"], kind=k, target=t) for a, k, t in intents]
+            owner.resolve_intents(encode(commands))
+        ref_resolve(w, intents, players, ids, arena)
+        if owner is not None:
+            same(owner, "objectives")
+            seen_objectives.update(landmarks)
+
     with ExitStack() as patches:
         if combat:
+            patches.enter_context(patch.object(match, "resolve_intents", resolve))
             patches.enter_context(patch.object(match, "resolve_attacks", attacks))
             patches.enter_context(patch.object(match_ai, "apply_effects", effects))
         patches.enter_context(patch.object(match, "finish_round", finish))

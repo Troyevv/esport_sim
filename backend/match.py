@@ -1028,6 +1028,11 @@ def advance(w):
                     weapon=a["weapon"],
                     player=a["id"],
                 )
+    resolve_intents(w, intents, players, ids, space)
+
+
+def resolve_intents(w, intents, players, ids, space):
+    now, bomb = w["tick"], w["bomb"]
     # Alternate initiative on a tick. A dead or newly occluded target cannot be hit.
     order = intents if now % 2 else intents[::-1]
     resolve_attacks(w, order, players, ids, space)

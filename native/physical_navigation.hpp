@@ -43,6 +43,7 @@ class PhysicalNavigation {
 
     std::optional<Impact> hit(const Point &start, const Point &end, unsigned mask, double up,
                               double target_up, bool canonical = false) const;
+    Point world(const Point &p) const;
     std::optional<Point> nav_center(const Point &pos) const;
     MoveResult walk(MotionState &actor, const Point &goal, double pace,
                     const std::vector<Hazard> &fire) const;
@@ -63,7 +64,6 @@ class PhysicalNavigation {
     mutable std::mutex mutex_;
     mutable std::map<std::pair<EdgeId, Point>, std::optional<WalkPath>> gates_;
 
-    Point world(const Point &p) const;
     Point sim(const Point &p) const;
     bool passage(Point p, Point q, bool climb) const;
     std::optional<WalkPath> inside(AreaId area, const Point &start, const Point &end,

@@ -208,3 +208,45 @@ def test_throw_and_effects_on_landing(combat_arenas,kind):
     match_ai.apply_effects(w,ids,old)
     owner.apply_effects()
     assert_same(owner,w)
+
+
+def test_site_volumes_include_exact_faces_edges_and_legal_nav_points(combat_arenas):
+    old, new = combat_arenas
+    points = [p for site in old.plant_surfaces.values() for p in site]
+    for solids in old.sites.volumes.values():
+        for solid in solids:
+            for face in solid.faces:
+                for x, y, z in face:
+                    points.append(old.to_sim((x,y,z-1)))
+    for p in points + [old.centers[i] for i in list(old.centers)[::23]]:
+        assert new.objectives.site_at(p) == old.site_at(p)
+
+
+@pytest.mark.parametrize("mode",["plant","planted","defuse","explode","time","interrupt"])
+def test_full_intent_resolution_on_objective_and_timer_boundaries(combat_arenas,mode,monkeypatch):
+    old,new = combat_arenas
+    monkeypatch.setattr(cs2_maps, "for_match", lambda _: old)
+    w=read_checkpoint()
+    t=next(a for a in w["agents"] if a["team"]=="T")
+    ct=next(a for a in w["agents"] if a["team"]=="CT")
+    goal=old.site_points["A"]
+    t.update(x=goal[0],y=goal[1],z=goal[2])
+    ct.update(x=goal[0],y=goal[1],z=goal[2])
+    w["action"]=None
+    w["phase"]="planted" if mode in ("defuse","explode") else "live"
+    w["deadline"]=w["tick"] if mode in ("time","explode") else w["tick"]+300
+    w["bomb"]=dict(carrier=t["id"],site=None,x=goal[0],y=goal[1],z=goal[2])
+    if w["phase"]=="planted":
+        w["bomb"].update(site="A",carrier=None)
+    if mode in ("planted","interrupt","explode","defuse"):
+        defusing = mode in ("explode","defuse")
+        w["action"]=dict(kind="defuse" if defusing else "plant",player=(ct if defusing else t)["id"],
+                         site=None if defusing else "A",start=w["tick"]-100,end=w["tick"])
+    actor = ct if w["phase"]=="planted" else t
+    kind = {"plant":"plant","planted":"objective","defuse":"objective","explode":"objective"}.get(mode,"hold")
+    intents=[(actor,kind,"A" if kind=="plant" else None)]
+    owner = native_match_state.restore(encode_world(w),physics=new)
+    owner.resolve_intents(encode_world([dict(actor=a["id"],kind=k,target=p) for a,k,p in intents]))
+    ids={a["id"]:a for a in w["agents"]}
+    match.resolve_intents(w,intents,[a for a in w["agents"] if a["hp"]],ids,old)
+    assert_same(owner,w)
