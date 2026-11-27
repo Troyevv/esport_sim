@@ -18,21 +18,6 @@ Point lerp(const Point &a, const Point &b, double t) {
 }
 } // namespace
 
-// Compensate the rounding of each square and addition before rounding the
-// root. Path costs must preserve math.dist tie ordering, including on MSVC.
-double distance(const Point &a, const Point &b) {
-    double sum = 0, error = 0;
-    for (int j = 0; j < 3; ++j) {
-        const double d = a[j] - b[j], square = d * d, next = sum + square;
-        error += std::fma(d, d, -square);
-        error += sum >= square ? (sum - next) + square : (square - next) + sum;
-        sum = next;
-    }
-    if (sum == 0)
-        return 0;
-    const double root = std::sqrt(sum);
-    return root + (std::fma(-root, root, sum) + error) / (2 * root);
-}
 namespace {
 Waypoint waypoint(const Point &p, AreaId area) { return {p[0], p[1], p[2], area}; }
 Point point(const Waypoint &p) { return {std::get<0>(p), std::get<1>(p), std::get<2>(p)}; }

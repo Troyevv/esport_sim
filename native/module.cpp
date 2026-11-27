@@ -5,10 +5,12 @@
 
 namespace py = pybind11;
 
+void bind_state(py::module_ &module);
 void bind_collision(py::module_ &module);
 void bind_rays(py::module_ &module);
 
 PYBIND11_MODULE(_match_native, module) {
+    bind_state(module);
     bind_rays(module);
     bind_collision(module);
     module.doc() = "Detailed match engine components";

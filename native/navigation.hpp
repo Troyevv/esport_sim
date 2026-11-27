@@ -12,6 +12,7 @@ namespace esport {
 using Point = std::array<double, 3>;
 using Area = std::pair<std::int64_t, std::vector<Point>>;
 
+double distance(const Point &a, const Point &b);
 std::optional<double> surface_height(const std::vector<Point>& corners, double x, double y);
 
 // World-space polygons remain immutable for the lifetime of an installed map.

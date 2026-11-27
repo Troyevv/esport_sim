@@ -190,7 +190,7 @@ def observed_players(space, players, now, smoke):
     return observed_by
 
 
-def observe(w, players, space=None):
+def deliver_radio(w, players, space=None):
     now = w["tick"]
     for message in w["messages"][:]:
         if message["due"] > now:
@@ -280,6 +280,11 @@ def observe(w, players, space=None):
                             )
                             plan["review"] = min(plan["review"], now + delay)
                     a["knowledge"][sight["id"]] = delivered
+
+
+def observe(w, players, space=None):
+    now = w["tick"]
+    deliver_radio(w, players, space)
     smoke = [
         f for f in w["effects"] if f["kind"] == "Дым" and f["land"] <= now < f["end"]
     ]

@@ -30,6 +30,21 @@ std::optional<double> surface_height(const std::vector<Point>& corners, double x
     return std::nullopt;
 }
 
+// Compensate the rounding of each square and addition before rounding the
+// root. Path costs must preserve math.dist tie ordering, including on MSVC.
+double distance(const Point &a, const Point &b) {
+    double sum = 0, error = 0;
+    for (int j = 0; j < 3; ++j) {
+        const double d = a[j] - b[j], square = d * d, next = sum + square;
+        error += std::fma(d, d, -square);
+        error += sum >= square ? (sum - next) + square : (square - next) + sum;
+        sum = next;
+    }
+    if (sum == 0)
+        return 0;
+    const double root = std::sqrt(sum);
+    return root + (std::fma(-root, root, sum) + error) / (2 * root);
+}
 NavSurfaces::NavSurfaces(std::vector<Area> areas) : areas_(std::move(areas)) {
     std::set<std::int64_t> ids;
     for (std::size_t i = 0; i < areas_.size(); ++i) {
