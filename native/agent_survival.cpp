@@ -1,7 +1,8 @@
-#include "agent_helpers.hpp"
+#include "defense_route.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <numbers>
 namespace esport {
 double walk_length(Point origin, const WalkPath &route) {
     double length = 0;
@@ -148,6 +149,58 @@ Json AgentTurn::saved_exit() {
         if (path && remaining > std::max(0., length - 6) / speed + use +
                                     std::max(0, threats - int(squad.size()) + 1) * 8 + (threats ? margin : 0))
             return nullptr;
+    }
+    if (side == "CT" && revised_defense(w)) {
+        // Compare exits in different directions, including staying at an already
+        // safe position. Test travel time on NAV before pricing the exposure of a
+        // route.
+        std::array<std::optional<Point>, 8> exits{};
+        auto rank = [&](const Point &q) {
+            return distance(origin, q) + (nav.hit(q, pos, 1, 64, 64) ? 0. : 17.);
+        };
+        for (const auto &[id, q] : nav.centers()) {
+            const double d = distance(q, pos);
+            if (d < blast + 4 || d > blast + 40)
+                continue;
+            const auto direction = (8 + int(std::round(heading_gap(pos, q) * 4 / std::numbers::pi))) % 8;
+            auto &best = exits.at(direction);
+            if (!best || rank(q) < rank(*best))
+                best = q;
+        }
+        std::vector<Point> options{chosen};
+        if (distance(origin, pos) >= blast + 4)
+            options.push_back(origin);
+        for (const auto &p : exits)
+            if (p)
+                options.push_back(*p);
+        double bestCost = 1e9, bestTime = 0;
+        std::optional<Point> best;
+        for (const auto &q : options) {
+            auto path = path_to(q);
+            if (!path)
+                continue;
+            double eta = walk_length(origin, *path) / speed;
+            double risk = route_resistance(w, cfg, nav, a, origin, *path, speed);
+            for (const auto &r : a.at("knowledge")) {
+                auto age = now - r.at("tick").get<Tick>();
+                if (age >= 0 && age < 45 && visual(r) && !r.value("disputed", false) &&
+                    distance(actor_point(r), q) < 68 && !nav.hit(q, actor_point(r), 1, 64, 64))
+                    risk += 18 * (1 - age / 45.);
+            }
+            if (!nav.hit(q, pos, 1, 64, 64))
+                risk += 8;
+            double cost = eta + risk * (1 + std::min(1., equipment_value(a, cfg) / 4500.)) +
+                          3 * std::max(0., eta - remaining);
+            if (cost < bestCost) {
+                bestCost = cost;
+                bestTime = eta;
+                best = q;
+            }
+        }
+        if (best) {
+            a["escapeArrival"] = now + Tick(std::ceil(bestTime));
+            return *best;
+        }
     }
     if (nav.path(area, origin, zone, chosen, {}))
         return chosen;

@@ -32,7 +32,10 @@ void assign(const OpeningMap &arena, Json &plan, const Squad &squad, const Json 
     const auto site = target.get<std::string>();
     const auto &slots = plan.at("orders").at("slots");
     auto off = [&](Json *p) { return slots.at(slot(p)).at("site") != site; };
-    auto unavailable = [&](Json *p) { return plan.at("unavailable").value(id(p), std::string{}) == site; };
+    auto unavailable = [&](Json *p) {
+        return plan.at("unavailable").value(id(p), std::string{}) == site ||
+               (plan.contains("retainedAnchor") && plan.at("retainedAnchor") == id(p));
+    };
     Squad candidates;
     int lane;
     std::vector<Point> occupied;
@@ -47,7 +50,8 @@ void assign(const OpeningMap &arena, Json &plan, const Squad &squad, const Json 
             return;
         }
         for (auto p : squad)
-            if (!unavailable(p) && first.at("id") != id(p) && (slot(p) == 4 || (off(p) && slot(p) >= 2)))
+            if (!unavailable(p) && first.at("id") != id(p) &&
+                (slot(p) == 4 || (off(p) && (slot(p) >= 2 || plan.contains("retainedAnchor")))))
                 candidates.push_back(p);
         occupied.push_back(first.at("hold").get<Point>());
         lane = 1 - first.value("lane", plan.at("lane").get<int>());
@@ -108,7 +112,9 @@ void assign_reserves(const OpeningMap &arena, Json &plan, const Squad &squad, Js
             return false;
         auto actor =
             std::find_if(squad.begin(), squad.end(), [&](auto p) { return p->at("id") == o.at("id"); });
-        if (actor == squad.end() || o.at("site") == plan.at("unavailable").value(id(*actor), std::string{}) ||
+        if (actor == squad.end() ||
+            (plan.contains("retainedAnchor") && plan.at("retainedAnchor") == o.at("id")) ||
+            o.at("site") == plan.at("unavailable").value(id(*actor), std::string{}) ||
             distance(actor_point(**actor), o.at("hold").get<Point>()) < 8)
             return false;
         std::string site = o.at("site"), away = site == "A" ? "B" : "A";

@@ -160,8 +160,24 @@ Json AgentTurn::personal_decision() {
         if (!grid && side == "CT" && !action.empty() && !device.empty() && gap(device) < 45)
             a.erase("saving");
         escape = a.value("saving", Json(nullptr));
+        if (!grid && side == "CT" && revised_defense(w) && !escape.empty() &&
+            now >= a.value("escapeReview", Tick{0}) &&
+            (a.value("blockedTicks", 0) >= 5 || now - a.at("lastHurt").get<Tick>() < 12 || !contact.empty() ||
+             (plan.contains("retakeCall") && plan.at("retakeCall").at("kind") == "retake"))) {
+            a.erase("saving");
+            escape = nullptr;
+            a["escapeReview"] = now + 15;
+        }
         if (escape.empty())
             escape = grid ? grid_exit() : saved_exit();
+    }
+    if (!grid && side == "CT" && revised_defense(w) && !escape.empty() && !contact.empty()) {
+        // With time to reach safety a visible pursuer can pin the player. Reuse
+        // the usual duel/cover choice, including when already beyond the blast.
+        const double travel = std::max<Tick>(0, a.value("escapeArrival", now) - now);
+        if (w.at("deadline").get<Tick>() - now > travel + 20 &&
+            (now - a.at("lastHurt").get<Tick>() < 5 || distance(actor_point(a), escape.get<Point>()) < 5))
+            escape = nullptr;
     }
     const auto &gun = cfg.at("weapons").at(a.at("weapon").get<std::string>());
     const auto pos = actor_point(a);
@@ -202,6 +218,8 @@ Json AgentTurn::personal_decision() {
     const bool recovering = !recovery.empty() && recovery.at("player") == a.at("id");
     const auto role = a.at("playingRole").get<std::string>();
     const auto map = grid ? std::string("depo") : w.at("mapId").get<std::string>().substr(3);
+    const Json *duty = !grid && side == "CT" && !planted && revised_defense(w) ? relief(plan, a) : nullptr;
+    const bool withdrawing = duty && duty->value("maneuver", std::string{}) == "yield";
     const Situation situation{
         .contacts = int(a.at("visible").size()),
         .hp = a.at("hp"),
@@ -219,7 +237,7 @@ Json AgentTurn::personal_decision() {
         .role_experience = player.at("roleMastery").value(role, 0),
         .entry = role == "entry",
         .support = role == "support",
-        .committed = board || planted || recovering,
+        .committed = board || planted || recovering || withdrawing,
         .carrying = carrying,
         .can_escape = !escape.empty(),
         .remembered = certainty > 0 && a.at("blind") <= now,
@@ -229,7 +247,11 @@ Json AgentTurn::personal_decision() {
     };
     const char *goal =
         planted ? (side == "CT" ? "retake" : "postplant") : (side == "CT" ? "defend" : "attack");
-    const char *task = recovering ? "recover" : board ? "board" : carrying ? "carry" : "order";
+    const char *task = withdrawing  ? "yield"
+                       : recovering ? "recover"
+                       : board      ? "board"
+                       : carrying   ? "carry"
+                                    : "order";
     const int step = board ? step_index : -1;
     const Json empty;
     const auto previous = a.find("decision");

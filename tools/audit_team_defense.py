@@ -121,7 +121,7 @@ def rounds(events, frames, site_points, clubs, counts, examples):
                                     [tick, e["site"], i, begin[i][1], end[i][1]])
 
 
-def run(map_id, base, policy, out, clock=False):
+def run(map_id, base, policy, out, clock=False, traces=None):
     pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
     seed = base + list(cs2_maps.NAMES).index(map_id)
     pair = random.Random(seed).sample(sorted(career.roster_index(pack).values()), 2)
@@ -136,6 +136,9 @@ def run(map_id, base, policy, out, clock=False):
         owner = native_match_state.open_game(world)
         cpu = process_time()
         frames = defaultdict(dict)
+        samples = defaultdict(dict)
+        if traces:
+            traces.mkdir(parents=True, exist_ok=True)
         counts, examples = Counter(), {}
         proc = psutil.Process()
         peak = 0
@@ -158,6 +161,8 @@ def run(map_id, base, policy, out, clock=False):
                 if rnd != last_round:
                     prior = {}
                     last_round = rnd
+                if traces:
+                    samples[rnd][tick] = rows
                 sample = {r[0]: (r[1], r[3:6], r[17]) for r in rows if r[6] > 0}
                 frames[rnd][tick] = sample
                 for i, (side, p, status) in sample.items():
@@ -176,6 +181,10 @@ def run(map_id, base, policy, out, clock=False):
         assert final["phase"] == "finished"
         clubs = {a["id"]: a["club"] for a in final["agents"]}
         for rnd, events in enumerate([*final["archive"], final["events"]], 1):
+            if traces:
+                path = traces / f"{policy}-{seed}-{start}-{rnd}.json.gz"
+                with gzip.open(path, "wt", encoding="utf-8", compresslevel=1) as trace:
+                    json.dump(dict(map=map_id, events=events, samples=samples.pop(rnd, {})), trace, ensure_ascii=False)
             rounds(events, frames[rnd], cs2_maps.get(map_id).site_points, clubs, counts, examples)
         row = dict(map=map_id, seed=seed, start=start, policy=policy, rosters=pair,
                    score=final["score"], rounds=len(final["history"]), ticks=final["tick"],
@@ -208,14 +217,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--map", choices=cs2_maps.NAMES)
     parser.add_argument("--base", type=int, default=55300)
-    parser.add_argument("--policy", type=int, choices=(9, 10), default=10)
+    parser.add_argument("--policy", type=int, choices=(9, 10, 11), default=11)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--traces", type=Path)
     parser.add_argument("--timing", action="store_true")
     parser.add_argument("--csv", type=Path)
     args = parser.parse_args()
     if args.csv:
         export(args.out, args.csv, args.timing)
     elif args.map:
-        run(args.map, args.base, args.policy, args.out, args.timing)
+        run(args.map, args.base, args.policy, args.out, args.timing, args.traces)
     else:
         parser.error("Укажите карту или выходной CSV")

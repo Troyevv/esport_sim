@@ -112,7 +112,7 @@ def test_ten_private_decisions_and_checkpoint_policy_guard():
     match.advance(w, 1)
     assert len([a for a in w["agents"] if a["decision"]["tick"] == w["tick"]]) == 10
     assert all(a["decision"]["goal"] == ("attack" if a["team"] == "T" else "defend") for a in w["agents"])
-    for bad in (11, True, "1"):
+    for bad in (12, True, "1"):
         with pytest.raises(ValueError):
             native_match_state.open_game(dict(w, agentPolicy=bad))
         with pytest.raises(ValueError):

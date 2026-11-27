@@ -639,6 +639,8 @@ void Combat::effects(Json &w, const Json &cfg) const {
                 cue.update(sound_position(p));
                 cue["tick"] = now;
                 cue["source"] = "Граната";
+                if (revised_defense(w) && a.at("team") == "CT")
+                    cue["item"] = kind;
                 a.at("knowledge")["Граната"] = cue;
                 w.at("messages")
                     .push_back(Json{{"team", a.at("team")},

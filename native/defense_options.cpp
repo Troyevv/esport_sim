@@ -59,6 +59,18 @@ void reclaim_post(const Json &world, const OpeningMap &arena, Json &plan, const 
     }
 }
 
+// Repeated radio packets about the same obstruction do not create another task.
+Json latest_block(const Json &leader, const std::string &site, Tick now) {
+    Json block;
+    for (auto &[sender, call] : leader.at("sectorCalls").items()) {
+        Tick tick = call.at("tick");
+        if (call.at("site") == site && call.at("state") == "blocked" && tick <= now && now - tick < 35 &&
+            (block.empty() || tick > block.at("tick").get<Tick>()))
+            block = {{"sender", sender}, {"point", call.at("point")}, {"tick", tick}};
+    }
+    return block;
+}
+
 struct Option {
     std::string kind, site;
     double score;
@@ -66,8 +78,8 @@ struct Option {
 
 // Rally points come from reachable NAV surfaces. Keep the rally off the lost
 // site and separate teammates who would otherwise stop on the same surface.
-Json rally(const OpeningMap &arena, const Json &plan, const Squad &squad, const std::string &site,
-           bool yield) {
+Json rally(const OpeningMap &arena, const Json &plan, const Squad &squad, const std::string &site, bool yield,
+           bool revised, const Json &leader, Tick now) {
     const auto &nav = arena.objectives().map();
     const Point center = arena.site_point(site);
     Json duties = Json::object();
@@ -76,6 +88,11 @@ Json rally(const OpeningMap &arena, const Json &plan, const Squad &squad, const 
         if ((yield && arena.objectives().reported_site(actor_point(*p)) == site) ||
             home(plan, *p).at("site") == site || (relief(plan, *p) && relief(plan, *p)->at("site") == site))
             local.push_back(p);
+    if (yield && revised)
+        std::erase_if(local, [&](auto p) {
+            return arena.objectives().reported_site(actor_point(*p)) != site &&
+                   distance(actor_point(*p), center) > 55;
+        });
     if (local.empty())
         return duties;
     // Regroup on a retained home sector. A wandering wing at the opposite
@@ -111,14 +128,73 @@ Json rally(const OpeningMap &arena, const Json &plan, const Squad &squad, const 
                    (yield && !nav.hit(q, center, 1, 64, 64) ? 24. : 0.);
         };
         std::stable_sort(points.begin(), points.end(), [&](auto &l, auto &r) { return cost(l) < cost(r); });
+        if (revised && yield) {
+            // Compare short reachable exits by the route actually walked. A wall
+            // between the destination and the site does not protect a path through
+            // the contact.
+            std::vector<std::pair<double, Point>> exits;
+            int tested = 0;
+            for (const auto &q : points) {
+                auto area = nav.locate(q);
+                if (!area)
+                    continue;
+                auto route = nav.path(p->at("navArea"), pos, *area, q, {});
+                if (!route)
+                    continue;
+                double danger = 0;
+                for (const auto &r : leader.at("knowledge")) {
+                    auto age = now - r.at("tick").get<Tick>();
+                    if (!visual(r) || age < 0 || age >= 35 || r.value("disputed", false))
+                        continue;
+                    const Point contact = actor_point(r);
+                    for (auto &[x, y, z, id] : *route) {
+                        Point step{x, y, z};
+                        if (distance(step, contact) < 33 && !nav.hit(step, contact, 1, 64, 64)) {
+                            danger += 30 * (1 - age / 35.);
+                            break;
+                        }
+                    }
+                }
+                if (!duties.empty() && std::ranges::none_of(duties, [&](const Json &d) {
+                        const Point cover = d.at("hold");
+                        return distance(cover, q) < 35 && !nav.hit(cover, q, 1, 64, 64);
+                    }))
+                    danger += 18;
+                exits.emplace_back(walk_length(pos, *route) + .35 * cost(q) + danger, q);
+                if (++tested == 12)
+                    break;
+            }
+            std::sort(exits.begin(), exits.end());
+            points.clear();
+            for (const auto &[score, q] : exits)
+                points.push_back(q);
+        }
         if (auto q = first_reachable(nav, pos, points, p->at("navArea"))) {
             const auto &slot = home(plan, *p);
-            duties[p->at("id").get<std::string>()] = {{"id", p->at("id")},
-                                                      {"site", site},
-                                                      {"hold", *q},
-                                                      {"lane", slot.at("lane")},
-                                                      {"watch", yield ? Json(center) : slot.at("watch")},
-                                                      {"maneuver", yield ? "yield" : "regroup"}};
+            Point watch = yield ? center : slot.at("watch").get<Point>();
+            if (yield && revised && !duties.empty()) {
+                const auto &entry = arena.objectives().ingress().at(site).at(slot.at("lane").get<int>());
+                auto visible = std::find_if(entry.begin(), entry.end(), [&](const Point &e) {
+                    return distance(*q, e) > 8 && !nav.hit(*q, e, 1, 64, 64);
+                });
+                if (visible != entry.end())
+                    watch = *visible;
+            }
+            duties[p->at("id").get<std::string>()] = {
+                {"id", p->at("id")},
+                {"site", site},
+                {"hold", *q},
+                {"lane", slot.at("lane")},
+                {"watch", revised ? Json(watch) : (yield ? Json(center) : slot.at("watch"))},
+                {"maneuver", yield ? "yield" : "regroup"}};
+            if (revised) {
+                auto &duty = duties.at(p->at("id").get<std::string>());
+                duty["startPoint"] = pos;
+                auto to = nav.locate(*q);
+                if (to)
+                    if (auto route = nav.path(p->at("navArea"), pos, *to, *q, {}))
+                        duty["arriveBy"] = now + Tick(std::ceil(walk_length(pos, *route) / 1.65)) + 12;
+            }
         }
     }
     return duties;
@@ -145,10 +221,39 @@ void issue_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &plan
         plan["defenseCall"] = {{"kind", best.kind}, {"site", best.site}, {"issued", now}};
         if (best.kind == "regroup")
             plan["lastRally"][best.site] = {{"alive", n}, {"tick", now}};
+        if (best.kind == "regroup" && revised_defense(w))
+            plan["lastRally"][best.site]["block"] = latest_block(leader, best.site, now);
         if (rotated || best.kind == "yield")
             plan["lastFront"] = {{"site", best.site}, {"tick", now}};
     }
     plan["reinforce"] = rotated && best.kind != "reinforce" ? Json(best.site) : Json(nullptr);
+    if (revised_defense(w)) {
+        plan.erase("retainedAnchor");
+        if (rotated && best.kind != "full") {
+            const std::string other = best.site == "A" ? "B" : "A";
+            // Keep control until someone can actually cover the vacated site.
+            // Radar distance along NAV breaks ties between assigned home players.
+            const Json *anchor = nullptr;
+            double cost = 1e9;
+            for (auto p : squad) {
+                if (home(plan, *p).at("site") != other)
+                    continue;
+                const auto id = p->at("id").get<std::string>();
+                double d = arena.objectives().site_cost(other, p->at("navArea"), 1e8) /
+                           arena.objectives().map().unit();
+                const auto &calls = leader.at("sectorCalls");
+                if (calls.contains(id) && calls.at(id).at("site") == other &&
+                    calls.at(id).at("state") == "watching" && now - calls.at(id).at("tick").get<Tick>() < 25)
+                    d -= 20;
+                if (!anchor || d < cost) {
+                    anchor = p;
+                    cost = d;
+                }
+            }
+            if (anchor)
+                plan["retainedAnchor"] = anchor->at("id");
+        }
+    }
     if (rotated) {
         if (changed)
             brief_defense(arena, plan, squad, leader, profile, now, w.at("mapId"), true);
@@ -177,8 +282,17 @@ void issue_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &plan
             {"id", leader.at("id")}, {"site", best.site}, {"lane", home(plan, leader).at("lane")},
             {"hold", goal},          {"watch", center},   {"maneuver", "save"}};
     }
-    if (gather && (changed || prior.value("alive", 0) != n))
-        plan["commitments"] = rally(arena, plan, squad, best.site, best.kind == "yield");
+    if (gather && (changed || (!revised_defense(w) && prior.value("alive", 0) != n)))
+        plan["commitments"] =
+            rally(arena, plan, squad, best.site, best.kind == "yield", revised_defense(w), leader, now);
+    if (gather && revised_defense(w)) {
+        auto &jobs = plan.at("commitments");
+        for (auto it = jobs.begin(); it != jobs.end();)
+            if (std::ranges::none_of(squad, [&](auto p) { return p->at("id") == it.key(); }))
+                it = jobs.erase(it);
+            else
+                ++it;
+    }
     plan.at("defenseCall")["alive"] = n;
     if (best.kind == "space") {
         const auto &pair = pairBySite.at(best.site);
@@ -258,10 +372,43 @@ void compare_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &pl
     for (std::string site : {"A", "B"}) {
         const std::string other = site == "A" ? "B" : "A";
         const double threat = pressure.at(site), away = pressure.at(other);
-        int local = 0, anchors = 0;
+        int local = 0, anchors = 0, exposed = 0;
+        bool displaced = false, progressing = false, workingPair = false;
+        double exposedHealth = 0;
         double health = 0, spread = 0, eta = 10000;
         const Json *first = nullptr;
         for (auto p : squad) {
+            if (revised_defense(w)) {
+                const auto pos = actor_point(*p);
+                const auto &job = home(plan, *p);
+                if (arena.objectives().reported_site(pos) == site ||
+                    (job.at("site") == site && distance(pos, arena.site_point(site)) <= 55)) {
+                    ++exposed;
+                    exposedHealth += p->at("hp").get<int>() / 100.;
+                }
+                if (job.at("site") == site && active(plan, "opening")) {
+                    const auto &opening =
+                        plan.at("opening").at("jobs").at(p->at("id").template get<std::string>());
+                    if (active(opening, "partner") && !active(opening, "withdrawn") &&
+                        std::ranges::any_of(squad,
+                                            [&](auto m) { return m->at("id") == opening.at("partner"); }) &&
+                        ((opening.contains("gate") && distance(pos, opening.at("gate")) < 14) ||
+                         (opening.contains("peek") && distance(pos, opening.at("peek")) < 14)))
+                        workingPair = true;
+                }
+                if (job.at("site") == site && arena.objectives().reported_site(pos) == other)
+                    displaced = true;
+                if (const auto duty = relief(plan, *p);
+                    duty && duty->at("site") == site &&
+                    duty->value("maneuver", std::string{}) == prior.value("kind", std::string{}) &&
+                    (duty->value("acknowledged", std::string{}) == "moving" ||
+                     (duty->contains("startPoint") && distance(pos, duty->at("startPoint")) > 3)) &&
+                    distance(pos, duty->at("hold")) > 8 &&
+                    plan.at("unavailable").value(p->at("id").template get<std::string>(), std::string{}) !=
+                        site &&
+                    now <= duty->value("arriveBy", now))
+                    progressing = true;
+            }
             if (home(plan, *p).at("site") == site) {
                 ++local;
                 health += p->at("hp").get<int>() / 100.;
@@ -351,9 +498,15 @@ void compare_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &pl
         if ((lost || (recoveredContact && local < 2)) && n >= 2 && fresh && eta < remaining && threat < 3.2 &&
             hasReserve)
             offer("reclaim", site, 57 + 8 * lost + 5 * fit, travel + 5 * seen + 5 * away);
-        if (fresh && local && n > 1 && seen >= 2 && health + .35 < seen && (bomb == site || lost))
+        if (revised_defense(w))
+            health = exposedHealth;
+        if (fresh && (revised_defense(w) ? exposed : local) && n > 1 && seen >= 2 && health + .35 < seen &&
+            (bomb == site || lost))
             offer("yield", site, 66 + 10 * (seen - health) + 7 * fit,
                   8 * aggression + std::min(8, utility) + 4 * (on_site != site));
+        if (revised_defense(w) && progressing && priorSite == site && prior.at("kind") == "yield" &&
+            away < 1 && on_site != other && !scores.contains("yield/" + site))
+            offer("yield", site, 41 + std::min(2., threat) * 5, away * 5);
         // Saving during live play requires a witnessed objective and a
         // meaningful purchase to carry forward. A late noise is insufficient.
         if (fresh && n == 1 && seen >= 2 && on_site == site &&
@@ -370,11 +523,30 @@ void compare_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &pl
                 blocked = std::max(blocked, call.at("tick").get<Tick>());
         const auto rallies = plan.find("lastRally");
         const bool continuingRally = prior.value("kind", std::string{}) == "regroup" && priorSite == site;
-        const bool newRally = rallies == plan.end() || !rallies->contains(site) ||
-                              rallies->at(site).at("alive") != n ||
-                              blocked > rallies->at(site).at("tick").get<Tick>();
-        if (local >= 2 && n < 5 && spread > (continuingRally ? 28 : 58) && threat < 2 && elapsed > 60 &&
-            (continuingRally || newRally))
+        bool newRally = rallies == plan.end() || !rallies->contains(site) ||
+                        rallies->at(site).at("alive") != n ||
+                        blocked > rallies->at(site).at("tick").get<Tick>();
+        const bool localLoss =
+            !losses.at(site).empty() && (rallies == plan.end() || !rallies->contains(site) ||
+                                         *std::max_element(losses.at(site).begin(), losses.at(site).end()) >
+                                             rallies->at(site).at("tick").get<Tick>());
+        if (revised_defense(w) && rallies != plan.end() && rallies->contains(site)) {
+            const auto &last = rallies->at(site);
+            const auto block = latest_block(leader, site, now);
+            const auto previous = last.value("block", Json(nullptr));
+            const bool different = !block.empty() && block.at("tick") > last.at("tick") &&
+                                   (previous.empty() || previous.at("sender") != block.at("sender") ||
+                                    distance(previous.at("point"), block.at("point")) > 10);
+            newRally = localLoss || different ||
+                       (displaced && plan.contains("lastFront") &&
+                        plan.at("lastFront").at("tick") > last.at("tick"));
+        }
+        const bool disrupted =
+            !revised_defense(w) ||
+            (continuingRally ? progressing || displaced
+                             : ((!workingPair || localLoss) && (displaced || localLoss || blocked >= 0)));
+        if (disrupted && local >= 2 && n < 5 && spread > (continuingRally ? 28 : 58) && threat < 2 &&
+            elapsed > 60 && (continuingRally || newRally))
             offer("regroup", site, 35 + std::min(15., spread / 10.) + 10 * fit, 6 * threat + 3 * aggression);
         // Reuse the opening's validated gate, observer and escort. Permission
         // ends when the pair breaks up or pressure rises.

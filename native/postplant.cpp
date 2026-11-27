@@ -220,9 +220,17 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
     }
     if (!device.empty() && a.value("useTarget", Json(nullptr)) == goal && active(a, "useFloor"))
         goal = a.at("useFloor").get<Point>();
+    const Json *sector = nullptr;
+    if (helping && revised_defense(w) && plan.contains("retakeCall")) {
+        const auto &call = plan.at("retakeCall");
+        if (call.contains("sectors") && call.at("sectors").contains(id))
+            sector = &call.at("sectors").at(id);
+    }
     if (helping) {
         auto who = coverFor;
-        if (a.value("coveredDefuser", Json(nullptr)) != who) {
+        if (a.value("coveredDefuser", Json(nullptr)) != who ||
+            (sector &&
+             (a.value("coverSector", Json(nullptr)) != *sector || a.value("blockedTicks", 0) >= 5))) {
             auto center = pos;
             Points occupied;
             for (auto m : squad) {
@@ -230,16 +238,29 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
                     center = actor_point(*m);
                 if (small_groups(w) && m != &a) {
                     const auto call = recent_call(m->at("id"), "position", 30);
-                    occupied.push_back(call && call->at("order") == who ? call->at("point").get<Point>() : actor_point(*m));
-                } else if (m != &a && m->value("coveredDefuser", Json(nullptr)) == who && active(*m, "coverPoint"))
+                    occupied.push_back(call && call->at("order") == who ? call->at("point").get<Point>()
+                                                                        : actor_point(*m));
+                } else if (m != &a && m->value("coveredDefuser", Json(nullptr)) == who &&
+                           active(*m, "coverPoint"))
                     occupied.push_back(m->at("coverPoint").get<Point>());
             }
             occupied.push_back(center);
             Points choices;
             for (auto &[area, q] : arena.layout().holds.at(site))
                 choices.push_back(q);
+            if (sector) {
+                a["coverSector"] = *sector;
+                choices.push_back(pos);
+                const auto extra = nearby_points(nav, center, 23);
+                choices.insert(choices.end(), extra.begin(), extra.end());
+            }
             auto rank = [&](const Point &q) {
-                return std::tuple{reserved(q, occupied, 5), std::abs(q[2] - center[2]), distance(q, pos)};
+                const bool screened = sector && nav.hit(q, sector->at("watch"), 1, 64, 64);
+                const double offset =
+                    sector && sector->at("role") == "clear" ? .5 * distance(q, sector->at("watch")) : 0;
+                const bool detached = sector && sector->at("role") == "cover" && distance(q, center) > 26;
+                return std::tuple{detached, reserved(q, occupied, 5),   screened,
+                                  offset,   std::abs(q[2] - center[2]), distance(q, pos)};
             };
             std::stable_sort(choices.begin(), choices.end(),
                              [&](auto &l, auto &r) { return rank(l) < rank(r); });
@@ -253,6 +274,8 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
     } else
         a.erase("coveredDefuser");
     a["status"] = helping ? "Прикрывает разминирование" : "Идёт на ретейк";
+    if (sector && sector->at("role") == "clear")
+        a["status"] = "Зачищает подход к обезвреживающему";
     if (!helping) {
         Json *duty = nullptr;
         if (active(plan, "retake") && plan.at("retake").at("duties").contains(id))
@@ -323,6 +346,10 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
                 sweep["next"] = now + (point ? 3 + (100 - skills.at("positioning").get<int>()) / 15 : 6);
             }
         }
+    } else if (sector) {
+        watch = latest && visual(*latest) && now - latest->at("tick").get<Tick>() < 12
+                    ? actor_point(*latest)
+                    : sector->at("watch").get<Point>();
     } else if (!device.empty()) {
         if (latest)
             watch = actor_point(*latest);

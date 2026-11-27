@@ -42,7 +42,7 @@ def act(w, who):
 
 @pytest.fixture
 def live():
-    w = match.initial(17, map_id="de_dust2", agent_policy=10)
+    w = match.initial(17, map_id="de_dust2", agent_policy=11)
     match.advance(w, 45)
     w["tick"] += 70
     return w
@@ -148,6 +148,8 @@ def test_outnumbered_wounded_anchors_yield_to_reachable_distinct_points(live):
     for a in players(w):
         if w["plans"]["CT"]["orders"]["slots"][a["slot"]]["site"] == "A":
             a["hp"] = 22
+            pos = arena.site_points["A"]
+            put(a, pos, arena.locate(pos))
     inform(w, report(w, "A", carryingC4=True), report(w, "A", 2), report(w, "A", 3))
     after = review(w)
     p = after["plans"]["CT"]
@@ -226,7 +228,7 @@ def test_t_captain_and_all_five_executors_match_r554_on_same_snapshot(map_id):
         pytest.skip("Нужна физическая карта")
     w = match.initial(53, map_id=map_id, agent_policy=9)
     match.advance(w, 130)
-    old, new = (review(dict(deepcopy(w), agentPolicy=policy), "T") for policy in (9, 10))
+    old, new = (review(dict(deepcopy(w), agentPolicy=policy), "T") for policy in (9, 11))
     assert old["plans"]["T"] == new["plans"]["T"]
     for a in players(old, "T"):
         assert act(old, a["id"]) == act(new, a["id"])
@@ -335,7 +337,7 @@ def test_same_clubs_open_the_real_r554_feint_without_giving_ct_the_t_jobs():
                       first_attack=d["rosters"][pair[0]]["team"])
     match.advance(w, 156)
     assert any(e["kind"] == "throw" and e.get("purpose") == "Ложный выход" for e in w["events"])
-    w["agentPolicy"] = 10
+    w["agentPolicy"] = 11
     before = review(w)
     plan = w["plans"]["T"]
     plan.update(commandKind="rotate", commandJobs={}, site="B" if plan["site"] == "A" else "A")
@@ -472,3 +474,137 @@ def test_split_pressure_then_fast_group_with_a_lurker_on_the_other_site(live):
     later = review(rushed)
     assert later["plans"]["CT"]["defenseCall"]["kind"] in ("hold", "space")
     assert anchor["id"] not in rushed["events"][-1]["goals"]
+
+
+def test_later_clear_only_invalidates_the_observed_crossing(live):
+    w = live
+    msg = report(w, "B", carryingC4=True, tick=w["tick"]-5)
+    inform(w, msg)
+    leader = captain(w)
+    pos = [msg[k] for k in "xyz"]
+    clear = dict(state="watching", site="B", point=pos, lane=0, tick=w["tick"]-2)
+    leader["sectorCalls"]["CT2"] = clear
+    assert review(w)["plans"]["CT"]["defenseCall"]["kind"] != "full"
+    msg["tick"] = w["tick"]
+    assert review(w)["plans"]["CT"]["defenseCall"]["kind"] == "full"
+    msg["tick"] -= 5
+    clear["point"] = list(cs2_maps.get(w["mapId"]).site_points["A"])
+    assert review(w)["plans"]["CT"]["defenseCall"]["kind"] == "full"
+
+
+def test_home_assignment_without_a_defender_on_site_cannot_trigger_withdrawal(live):
+    arena = cs2_maps.get(live["mapId"])
+    pos = arena.site_points["B"]
+    for a in players(live):
+        put(a, pos, arena.locate(pos))
+        a["hp"] = 22
+    inform(live, report(live, "A", carryingC4=True), report(live, "A", 2), report(live, "A", 3))
+    call = review(live)["plans"]["CT"]["defenseCall"]
+    assert call["kind"] == "full" and call["site"] == "A"
+
+
+@pytest.mark.parametrize("item", ["Дым", "Огонь"])
+def test_observed_obstruction_and_weapon_recovery_change_retake_eta(live, item):
+    w = live
+    arena, pos = planted(w, 310)
+    player = players(w)[0]
+    candidates = sorted(arena.centers, key=lambda i: abs(dist(arena.centers[i], pos)-24))
+    area = next(i for i in candidates if arena.path(i, arena.centers[i], arena.locate(pos), pos, frozenset()))
+    put(player, arena.centers[area], area)
+    who = player["id"]
+
+    def arrival():
+        return review(w)["plans"]["CT"]["retakeCall"]["eta"][who]
+
+    base = arrival()
+    cast = dict(item=item, point=point(player), end=w["tick"]+60)
+    captain(w)["crossingCalls"] = [cast]
+    obstructed = arrival()
+    assert obstructed > base
+    cast["end"] = w["tick"]
+    assert arrival() == base
+    player["ready"] = w["tick"]+int(base)+20
+    assert arrival() >= base+20
+
+
+def test_cover_and_clear_face_distinct_assigned_points_and_kit_loss_releases_cover(live):
+    w = live
+    arena, pos = planted(w, 240)
+    kit, *mates = players(w)
+    near = sorted(arena.centers, key=lambda i: dist(arena.centers[i], pos))
+    for a, area in zip(mates, near):
+        put(a, arena.centers[area], area)
+    put(kit, pos, arena.locate(pos))
+    kit["kit"] = True
+    w["action"] = dict(kind="defuse", player=kit["id"], end=w["tick"]+45)
+    state = review(w)
+    call = state["plans"]["CT"]["retakeCall"]
+    jobs = call["sectors"]
+    assert {job["role"] for job in jobs.values()} == {"cover", "clear"}
+    assert len({tuple(job["watch"]) for job in jobs.values()}) == len(jobs)
+    for who, job in jobs.items():
+        cmd, defender = act(state, who)
+        assert cmd[0] in ("hold", "move")
+        assert defender["coverSector"] == job and defender["coveredDefuser"] == kit["id"]
+    state["action"] = None
+    actor(state, kit["id"])["hp"] = 0
+    # The nearest survivor can take over even during captain succession.
+    successor = mates[0]["id"]
+    put(actor(state, successor), pos, arena.locate(pos))
+    assert act(state, successor)[0][0] == "defuse"
+
+
+def test_stale_ack_for_another_destination_does_not_mark_current_reserve(live):
+    w = live
+    inform(w, report(w, "A"), report(w, "A", 2))
+    w = review(w)
+    job = w["plans"]["CT"]["backup"]
+    who = job["id"]
+    leader = captain(w)
+    reply = dict(duty=True, state="moving", tick=w["tick"], point=point(actor(w, who)),
+                 site=job["site"], lane=job["lane"], goal=list(cs2_maps.get(w["mapId"]).site_points["B"]))
+    leader["sectorCalls"][who+"/order"] = reply
+    assert "acknowledged" not in review(w)["plans"]["CT"]["backup"]
+    reply["goal"] = job["hold"]
+    assert review(w)["plans"]["CT"]["backup"]["acknowledged"] == "moving"
+
+
+def test_repeated_block_at_same_position_cannot_reopen_completed_rally(live):
+    arena = cs2_maps.get(live["mapId"])
+    anchor, opposite, wing, *others = players(live)
+    for a in others:
+        a["hp"] = 0
+    home = live["plans"]["CT"]["orders"]["slots"][anchor["slot"]]["hold"]
+    put(anchor, home, arena.locate(tuple(home)))
+    far = arena.site_points["B"]
+    put(wing, far, arena.locate(far))
+    p = live["plans"]["CT"]
+    tick = live["tick"]
+    sender = wing["id"]
+    p["lastRally"] = {"A": dict(alive=4, tick=tick-50,
+                                block=dict(sender=sender, point=far, tick=tick-51))}
+    p.pop("lastFront", None)
+    captain(live)["sectorCalls"][sender] = dict(site="A", state="blocked", tick=tick, point=far, lane=0)
+    assert "regroup/A" not in review(live)["plans"]["CT"]["defenseScores"]
+
+
+def test_safe_exit_is_reachable_outside_blast_and_can_be_contested(live):
+    from backend.match_rules import BLAST_RADIUS
+    w = live
+    arena, pos = planted(w, 32)
+    who = captain(w)["id"]
+    for a in players(w):
+        if a["id"] != who:
+            a["hp"] = 0
+    defender = actor(w, who)
+    put(defender, pos, arena.locate(pos))
+    defender["weapon"] = "AWP"
+    state = review(w)
+    _, moving = act(state, who)
+    safe = tuple(moving["saving"])
+    assert dist(pos, safe) > BLAST_RADIUS
+    assert arena.path(defender["navArea"], pos, arena.locate(safe), safe, frozenset())
+    # The actor never acquires a pursuer's true position from the escape search.
+    for enemy in players(state, "T"):
+        put(enemy, safe, arena.locate(safe))
+    assert act(state, who)[1]["saving"] == list(safe)

@@ -290,6 +290,8 @@ void AgentTurn::duty_feedback() {
                  {"lane", order.value("lane", 0)},
                  {"tick", now},
                  {"duty", bool(duty)}};
+    if (revised_defense(w) && duty)
+        call["goal"] = goal;
     a["sectorCalls"][a.at("id").get<std::string>() + "/order"] = call;
     w.at("messages")
         .push_back(Json{{"team", "CT"},
