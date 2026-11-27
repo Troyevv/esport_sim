@@ -127,7 +127,7 @@ class Map:
         ):
             raise ValueError(f"{name}: неверная версия карты или неполные ресурсы")
         self.overview = src["overview"]
-        self.nav = Navigation(data)
+        self.nav = self._make_navigation(data)
         self.sites = BombSites(data["targets"])
         self.spawns = {
             s: [p for p in data["spawns"] if p["enabled"] and p["side"] == s]
@@ -194,7 +194,7 @@ class Map:
         self.gate = lru_cache(maxsize=32768)(partial(Map._gate, proxy(self)))
         self.inside = lru_cache(maxsize=32768)(partial(Map._inside, proxy(self)))
         self.exits = lru_cache(maxsize=8192)(partial(Map._exits, proxy(self)))
-        self.path = lru_cache(maxsize=4096)(partial(Map._path, proxy(self)))
+        self.path = lru_cache(maxsize=4096)(partial(type(self)._path, proxy(self)))
         self.route = lru_cache(maxsize=8192)(self.nav.route)
         self.approach = lru_cache(maxsize=32)(partial(Map._approach, proxy(self)))
         self.contest = lru_cache(maxsize=4)(partial(Map._contest, proxy(self)))
@@ -209,7 +209,7 @@ class Map:
         self.angles = lru_cache(maxsize=128)(partial(Map._angles, proxy(self)))
         self.escape = lru_cache(maxsize=16)(partial(Map._escape, proxy(self)))
         self.nominal_exit = lru_cache(maxsize=1024)(partial(Map._nominal_exit, proxy(self)))
-        self.physical_exit = lru_cache(maxsize=1024)(partial(Map._physical_exit, proxy(self)))
+        self.physical_exit = lru_cache(maxsize=1024)(partial(type(self)._physical_exit, proxy(self)))
         self.locate = lru_cache(maxsize=8192)(partial(Map._locate, proxy(self)))
         self.use_floors = lru_cache(maxsize=256)(partial(Map._use_floors, proxy(self)))
 
@@ -247,6 +247,10 @@ class Map:
                     gaps[p] = min(gaps[p],dist(p,point))
             result[site] = tuple(samples)
         return result
+
+    @staticmethod
+    def _make_navigation(data):
+        return Navigation(data)
 
     @cached_property
     def collision(self):

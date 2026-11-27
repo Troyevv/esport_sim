@@ -171,6 +171,8 @@ TriangleScene::TriangleScene(const std::filesystem::path& library, std::vector<V
     : impl_(std::make_unique<Impl>(library, std::move(vertices), faces, masks)) {}
 TriangleScene::~TriangleScene() = default;
 
+std::size_t TriangleScene::face_count() const { return impl_->face_ids.size(); }
+
 void TriangleScene::intersect(std::span<RTCRayHit> rays) const {
     for (auto& item : rays) {
         item.hit.geomID = item.hit.primID = RTC_INVALID_GEOMETRY_ID;

@@ -19,6 +19,7 @@ public:
     TriangleScene(const std::filesystem::path& library, std::vector<Vertex> vertices,
                   const std::vector<Face>& faces, const std::vector<std::uint8_t>& masks);
     ~TriangleScene();
+    std::size_t face_count() const;
     void intersect(std::span<RTCRayHit> rays) const;
 
 private:

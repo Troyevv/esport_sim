@@ -193,12 +193,19 @@ class Collision:
             self.mask[f : f + nf] = masks[key][material]
             v += nv
             f += nf
-        self.scene = TriangleScene(vertices, faces, self.mask)
+        self.scene = self._make_scene(vertices, faces, self.mask)
         self.shapes = [
             Primitive(p, self.materials[materials[p["material"]]])
             for p in data["primitives"]
             if active(p)
         ]
+        self._finish_geometry()
+
+    @staticmethod
+    def _make_scene(vertices, faces, mask):
+        return TriangleScene(vertices, faces, mask)
+
+    def _finish_geometry(self):
         self.bounds = Bounds(self.shapes) if self.shapes else None
         # Cache only exact segments and bound retention to this map.
         self.sight_cache = OrderedDict()

@@ -24,7 +24,7 @@ jobs:
       - run: python -m pip install -r requirements-native.txt -c requirements-test.txt pytest numpy embreex
       - run: python -m tools.build_native
       - run: python -c "from backend import _match_native"
-      - run: python -m pytest -q tests/test_native_navigation.py tests/test_native_rays.py
+      - run: python -m pytest -q tests/test_native_navigation.py tests/test_native_rays.py tests/test_native_physics.py
       - name: Check native ownership and arithmetic under sanitizers
         if: runner.os == 'Linux'
         run: |
