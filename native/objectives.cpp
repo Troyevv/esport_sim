@@ -261,6 +261,8 @@ void Objectives::resolve(Json &w, const Json &cfg, const Json &order) const {
     }
 }
 std::optional<std::string> Objectives::reported_site(const Point &p) const {
+    if (grid_)
+        return grid_->zone({p[0], p[1]});
     auto area = map_->locate(p);
     if (!area)
         return std::nullopt;

@@ -305,6 +305,7 @@ def test_board_assignment_before_start_and_during_timeout(combat_arenas, monkeyp
 
     space, _ = combat_arenas
     monkeypatch.setattr(cs2_maps, "get", lambda name: space)
+    monkeypatch.setattr(tactics.cs2_maps, "get", lambda name: combat_arenas[1])
     w = read_checkpoint()
     w.update(tick=0, round=1, phase="freeze", started=False, remaining=match.RULES["timeouts"])
     side = next(a["team"] for a in w["agents"] if a["teamId"] == w["coachTeamId"])

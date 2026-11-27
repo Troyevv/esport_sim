@@ -521,7 +521,15 @@ void MatchState::review_captain(const std::string &side) {
         throw std::invalid_argument("Неизвестная сторона");
     std::scoped_lock lock(impl_->mutex);
     auto staged = impl_->state;
-    captain_review(staged, impl_->config, impl_->opening_map(), side);
+    if (impl_->grid) {
+        Squad squad;
+        for (auto &a : staged.at("agents"))
+            if (a.at("team") == side && a.at("hp") != 0)
+                squad.push_back(&a);
+        if (!squad.empty())
+            grid_review(staged, squad, *impl_->grid);
+    } else
+        captain_review(staged, impl_->config, impl_->opening_map(), side);
     impl_->state.swap(staged);
 }
 void MatchState::observe() {
