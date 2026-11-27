@@ -175,6 +175,28 @@ Json OpeningMap::attack_orders(const Json &w, const std::string &site, int lane,
     auto squad = squad_for(w, "T");
     std::stable_sort(squad.begin(), squad.end(),
                      [](auto a, auto b) { return a->at("slot") < b->at("slot"); });
+    // Keep the carrier and entry together. Assign the opposite route to two
+    // living players who can cover one another, even after a substitution.
+    std::set<int> wing;
+    if (collective_attack(w) && style != "Групповой выход") {
+        auto candidates = squad;
+        std::erase_if(candidates, [&](auto a) {
+            return a->at("hp") == 0 || a->at("id") == w.at("bomb").at("carrier");
+        });
+        if (candidates.size() >= 3) {
+            const auto &costs = contest_.at(site).at(1 - lane).first;
+            auto fit = [&](const Json *a) {
+                auto role = a->at("playingRole").get<std::string>();
+                auto it = costs.find(a->at("navArea").get<AreaId>());
+                double travel = it == costs.end() ? infinity : it->second / nav.unit();
+                return std::tuple{role == "entry", role == "support", role != "lurker",
+                                  travel, a->at("slot").get<int>()};
+            };
+            std::stable_sort(candidates.begin(), candidates.end(), [&](auto a, auto b) { return fit(a) < fit(b); });
+            wing.insert(candidates[0]->at("slot").get<int>());
+            wing.insert(candidates[1]->at("slot").get<int>());
+        }
+    }
     Json slots = Json::array();
     auto reachable = [&](const Point &start, const std::vector<Point> &options) -> std::optional<Point> {
         auto from = nav.locate(start);
@@ -193,9 +215,14 @@ Json OpeningMap::attack_orders(const Json &w, const std::string &site, int lane,
                           ? lane
                           : 1 - lane;
         auto start = a->at("navArea").get<AreaId>();
+        if (collective_attack(w))
+            variant = wing.contains(i) ? 1 - lane : lane;
         auto selected = approaches_.at({site, variant}).route(start);
-        if (!selected)
+        if (!selected) {
             selected = approaches_.at({site, 1 - variant}).route(start);
+            if (selected && collective_attack(w))
+                variant = 1 - variant;
+        }
         Point plant = sites_.at(site);
         auto pos = xyz(*a);
         std::vector<Point> via;

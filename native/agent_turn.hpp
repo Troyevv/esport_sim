@@ -3,6 +3,7 @@
 #include "team_ai.hpp"
 
 namespace esport {
+double walk_length(Point origin, const WalkPath &route);
 Json rescue_c4(Json &w, const PhysicalNavigation &nav, const Squad &allies);
 
 class AgentTurn {
@@ -46,6 +47,7 @@ class AgentTurn {
     Json spatial_intent();
     Json crossing(const Json &order, std::string site);
     Json hold_sector();
+    bool wait_for_split(const Json &order, Tick remaining);
     Json prepare_plant(const std::string &site);
     bool smokes_plant(const std::string &site, const Point &p) const;
     Json select_contact() const;

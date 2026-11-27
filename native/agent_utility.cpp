@@ -24,11 +24,15 @@ bool AgentTurn::flash_risk(const Json &mate, const Point &burst, int flight) con
         return false;
     const bool seen = &mate == &a || sees_teammate(mate);
     const double facing = seen ? mate.at("heading").get<double>() : heading_gap(eye, burst);
-    if (flash_exposure(eye, facing, burst, radius) < .38)
+    const double exposure = flash_exposure(eye, facing, burst, radius);
+    if (exposure < .38)
         return false;
     if (grid ? !grid->clear(xy(mate), {burst[0], burst[1]})
              : bool(arena.objectives().map().hit(burst, eye, 1, 5, 64)))
         return false;
+    if (!grid && side == "T" && collective_attack(w) &&
+        (exposure >= .72 || (&mate == &a && !a.at("visible").empty())))
+        return true;
     if (!action.empty() && action.at("player") == mate.at("id"))
         return true;
     // A visible partner engaging a known contact may have to keep the angle.
@@ -46,6 +50,16 @@ Json AgentTurn::prepare_flash(Json intent) {
     const Tick delay = 1 + (100 - skills.at("communication").get<int>()) / 12;
 
     const int flight = std::max(3, int(std::nearbyint(distance(actor_point(a), p) / 7)));
+    if (!grid && side == "T" && collective_attack(w) && !active(plan, "board")) {
+        // Use the physical endpoint before spending the item. Error at release
+        // remains private to combat's RNG.
+        const auto land = arena.objectives().map().grenade(actor_point(a), p, flight).back();
+        if (std::ranges::any_of(squad, [&](auto mate) { return flash_risk(*mate, land, flight); })) {
+            a["throwAt"] = now + 6;
+            a["status"] = "Сохраняет флешку";
+            return Json::array({"hold", nullptr});
+        }
+    }
     // Communication and flight run concurrently. Leave the recipient one
     // decision before the burst.
     const Tick release = now + (coordinated_utility(w) ? std::max<Tick>(0, delay + 1 - flight) : delay);

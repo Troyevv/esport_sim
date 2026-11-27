@@ -3,7 +3,6 @@
 #include <cmath>
 #include <limits>
 namespace esport {
-namespace {
 double walk_length(Point origin, const WalkPath &route) {
     double length = 0;
     for (auto &[x, y, z, area] : route) {
@@ -13,7 +12,6 @@ double walk_length(Point origin, const WalkPath &route) {
     }
     return length;
 }
-} // namespace
 int equipment_value(const Json &a, const Json &cfg) {
     const auto &guns = cfg.at("weapons"), &prices = cfg.at("prices");
     int value = guns.at(a.at("weapon").get<std::string>()).at("price");
