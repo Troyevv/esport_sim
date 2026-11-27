@@ -70,6 +70,8 @@ class AgentTurn {
     Point prior_position;
     void pickup();
     void duty_feedback();
+    void peer_feedback(const std::string &kind);
+    const Json *peer_request(int &benefit) const;
     void check_incoming(const std::string &intent);
 };
 } // namespace esport

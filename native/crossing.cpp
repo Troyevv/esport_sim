@@ -1,3 +1,4 @@
+#include "radio.hpp"
 #include "agent_helpers.hpp"
 #include <limits>
 namespace esport {
@@ -12,6 +13,7 @@ bool AgentTurn::smokes_plant(const std::string &site, const Point &point) const 
     return false;
 }
 Json AgentTurn::crossing(const Json &order, std::string site) {
+    auto &radio_memory = peer_radio(w) ? a : plan;
     const auto &nav = arena.objectives().map();
     if (a.at("utility").empty() || now < a.at("throwAt").get<Tick>() ||
         now < a.value("crossingReview", Tick{0}))
@@ -23,9 +25,9 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
                  a.at("id") == probe.value("scout", Json(nullptr));
     if (feint && !probe.contains("stations"))
         site = site == "A" ? "B" : "A";
-    if (!plan.contains("crossingCalls"))
-        plan["crossingCalls"] = Json::array();
-    auto &calls = plan.at("crossingCalls");
+    if (!radio_memory.contains("crossingCalls"))
+        radio_memory["crossingCalls"] = Json::array();
+    auto &calls = radio_memory.at("crossingCalls");
     calls.erase(std::remove_if(calls.begin(), calls.end(),
                                [&](const Json &r) { return now >= r.at("end").get<Tick>(); }),
                 calls.end());
@@ -72,7 +74,7 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
                     pushing.push_back(m);
             }
         flash_support = !pushing.empty() && member_of(a.at("utility"), "Свет") &&
-                        !active(plan.value("pushFlash", Json::object()), site) &&
+                        !active(radio_memory.value("pushFlash", Json::object()), site) &&
                         skills.at("flashes").get<int>() + skills.at("coordination").get<int>() >= 100;
         if (!pressure && !flash_support) {
             const auto &costs = arena.contest(site, lane).first;
@@ -82,9 +84,9 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
                     best = std::min(best, it->second);
             double arrival = best / (2 * nav.unit());
             auto elapsed = now - plan.at("start").get<Tick>();
-            if (!plan.contains("openingThrows"))
-                plan["openingThrows"] = Json::object();
-            if (active(plan, "opening") || plan.at("openingThrows").contains(site) ||
+            if (!radio_memory.contains("openingThrows"))
+                radio_memory["openingThrows"] = Json::object();
+            if (active(plan, "opening") || radio_memory.at("openingThrows").contains(site) ||
                 active(a, "screenedOpening") || elapsed > arrival + 55 || elapsed + 35 < arrival ||
                 ((plan.at("buy") == "Эко" || plan.at("buy") == "Частичная") && a.at("utility").size() == 1))
                 return nullptr;
@@ -123,7 +125,7 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
                 continue;
             double radius = cfg.at("utility").at(g)[0];
             // plan may acquire additional keys above. Reacquire the list from its owner.
-            if (std::ranges::any_of(plan.at("crossingCalls"), [&](const Json &c) {
+            if (std::ranges::any_of(radio_memory.at("crossingCalls"), [&](const Json &c) {
                     return c.at("item") == g && distance(c.at("point").get<Point>(), p) < radius;
                 }))
                 continue;
@@ -141,13 +143,13 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
         if (distance(land, p) > 8 ||
             (defending && item == "Дым" && (smokes_plant(site, land) || !screen_safe(land))))
             continue;
-        plan.at("crossingCalls")
+        radio_memory.at("crossingCalls")
             .push_back(Json{{"item", item},
                             {"point", p},
                             {"end", now + flight + cfg.at("utility").at(item)[1].get<int>()}});
         if (defending && !pressure) {
             a["screenedOpening"] = true;
-            plan[flash_support ? "pushFlash" : "openingThrows"][site] = a.at("id");
+            radio_memory[flash_support ? "pushFlash" : "openingThrows"][site] = a.at("id");
         }
         a["status"] = feint ? "Имитирует выход" : "Готовит гранату на подход";
         std::string purpose;
@@ -156,7 +158,12 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
                       : (!pushing.empty() && item == "Свет") ? "Поддерживает поджим"
                       : pressure                             ? "Сдерживает выход"
                                                              : "Стартовый контроль";
-        return grenade_intent(p, item, purpose);
+        auto intent = grenade_intent(p, item, purpose);
+        if (peer_radio(w) && defending && !pressure) {
+            intent[1]["openingCall"] = flash_support ? "flash" : "screen";
+            intent[1]["site"] = site;
+        }
+        return intent;
     }
     return nullptr;
 }

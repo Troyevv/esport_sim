@@ -1,3 +1,4 @@
+#include "radio.hpp"
 #include "defense_command.hpp"
 #include <algorithm>
 #include <cmath>
@@ -19,7 +20,7 @@ bool truth(const Json &j, const std::string &key) {
 }
 } // namespace
 void brief_defense(const OpeningMap &arena, Json &plan, const Squad &squad, const Json &leader,
-                   const Json &player, Tick now, const std::string &map) {
+                   const Json &player, Tick now, const std::string &map, bool peers) {
     const auto &nav = arena.objectives().map();
     auto &skills = player.at("skills");
     int familiar = player.at("mapKnowledge").value(map.substr(3), 0), base = plan.at("lane");
@@ -46,6 +47,8 @@ void brief_defense(const OpeningMap &arena, Json &plan, const Squad &squad, cons
                         continue;
                     }
                 }
+                if (peers && mate != &leader)
+                    continue;
                 auto hold = order.at("hold").get<Point>(), watch = order.at("watch").get<Point>();
                 if (distance(actor_point(*mate), hold) < 8 && mate->at("reloadAt") == 0) {
                     for (auto &p : route)
@@ -287,7 +290,7 @@ void direct_defense(Json &w, const OpeningMap &arena, Json &plan, const Squad &s
                             ? destination
                             : Json(nullptr);
     if (!destination.is_null() && !truth(plan, "board"))
-        brief_defense(arena, plan, squad, leader, player_profile(w, leader), now, w.at("mapId"));
+        brief_defense(arena, plan, squad, leader, player_profile(w, leader), now, w.at("mapId"), peer_radio(w));
     if (!on_site.is_null() && (!truth(plan, "backup") || plan.at("backup").at("site") != on_site)) {
         plan.erase("backup");
         plan.erase("secondBackup");

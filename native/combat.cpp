@@ -1,3 +1,4 @@
+#include "radio.hpp"
 #include "combat.hpp"
 
 #include <algorithm>
@@ -274,11 +275,18 @@ void Combat::throw_grenade(Json &w, const Json &cfg, Json &agent, const Json &ta
         effect["x"] = clear ? Json(int(aim[0])) : agent.at("x");
         effect["y"] = clear ? Json(int(aim[1])) : agent.at("y");
     }
-    if (planner_ && (type == "Дым" || type == "Огонь")) {
+    if (planner_ && (peer_radio(w) || type == "Дым" || type == "Огонь")) {
         Json cue = {{"x", target.at("x")},
                     {"y", target.at("y")},
                     {"z", target.at("z")},
                     {"end", plus_ticks(effect.at("land"), 10)}};
+        if (peer_radio(w)) {
+            cue["cast"] = {{"item", type}, {"point", goal}, {"end", effect.at("end")}};
+            if (target.contains("openingCall")) {
+                cue["openingCall"] = target.at("openingCall");
+                cue["site"] = target.at("site");
+            }
+        }
         w.at("messages")
             .push_back(Json{
                 {"team", agent.at("team")},

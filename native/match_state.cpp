@@ -1,3 +1,4 @@
+#include "radio.hpp"
 #include "match_state.hpp"
 #include "agent_turn.hpp"
 #include "economy.hpp"
@@ -136,7 +137,7 @@ class MatchState::Impl {
             opening = std::make_shared<OpeningMap>(objectives);
         }
         if (state.contains("agentPolicy") &&
-            (!state.at("agentPolicy").is_number_integer() || (state.at("agentPolicy") != 1 && state.at("agentPolicy") != 2)))
+            (!state.at("agentPolicy").is_number_integer() || (state.at("agentPolicy") < 1 || state.at("agentPolicy") > 3)))
             throw std::invalid_argument("Неизвестная версия индивидуального ИИ");
         if (freeze <= 0 ||
             (!grid && (state.at("map_version") != build || state.at("checkpointVersion") != 7)) ||
@@ -213,9 +214,20 @@ class MatchState::Impl {
             throw std::invalid_argument("Неизвестное указание");
     }
 
-    void deliver(const Json &w, Json &a, const Json &m, Tick now, Tick &review) const {
+    void deliver(const Json &w, Json &a, const Json &m, Tick now, Tick &review, int quality) const {
         const auto sender = m.at("sender").get<std::string>();
-        if (m.contains("crossing")) {
+        if (m.contains("feedback") && quality >= 0) {
+            Json call = m.at("feedback");
+            const Tick observed = call.at("tick");
+            if (observed > now || now - observed >= 30)
+                return;
+            auto &previous = a["peerCalls"][sender + "/" + call.at("channel").get<std::string>()];
+            if (previous.is_null() || previous.at("tick") < observed) {
+                call["sender"] = sender;
+                call["quality"] = quality;
+                previous = std::move(call);
+            }
+        } else if (m.contains("crossing")) {
             const auto &call = m.at("crossing");
             auto key = sender + (call.contains("feedback") && has_value(call.at("feedback")) ? "/order" : "");
             auto &calls = a["sectorCalls"];
@@ -229,6 +241,22 @@ class MatchState::Impl {
                  call.at("tick") > a.at("pressureCall").at("tick")))
                 a["pressureCall"] = call;
         } else if (m.contains("friendlyUtility")) {
+            const auto &cue = m.at("friendlyUtility");
+            if (cue.contains("cast")) {
+                const auto &cast = cue.at("cast");
+                if (cue.contains("openingCall"))
+                    a[cue.at("openingCall") == "flash" ? "pushFlash" : "openingThrows"][cue.at("site").get<std::string>()] = sender;
+                auto &calls = a["crossingCalls"];
+                if (calls.is_null())
+                    calls = Json::array();
+                calls.erase(std::remove_if(calls.begin(), calls.end(), [&](const Json &c) {
+                    return c.at("end") <= now;
+                }), calls.end());
+                if (cast.at("end") > now)
+                    calls.push_back(cast);
+                if (cast.at("item") != "Дым" && cast.at("item") != "Огонь")
+                    return;
+            }
             auto items = a.value("friendlyUtility", Json::array());
             items.erase(
                 std::remove_if(items.begin(), items.end(), [&](const Json &p) { return p.at("end") < now; }),
@@ -245,9 +273,12 @@ class MatchState::Impl {
         else {
             auto sight = m.at("sight");
             auto id = sight.at("id").get<std::string>();
-            const auto &knowledge = a.at("knowledge");
-            const Json *old = knowledge.contains(id) ? &knowledge.at(id) : nullptr;
-            if (sight.at("tick") <= (old ? old->value("tick", Tick{-1}) : -1))
+            auto &knowledge = a.at("knowledge");
+            Json *old = knowledge.contains(id) ? &knowledge.at(id) : nullptr;
+            if (quality >= 0) {
+                if (!accept_report(sight, old, sender, quality, now))
+                    return;
+            } else if (sight.at("tick") <= (old ? old->value("tick", Tick{-1}) : -1))
                 return;
             if (sight.at("source") != "Граната" && sight.at("source") != "Слух")
                 sight["source"] = "Радио";
@@ -292,11 +323,20 @@ class MatchState::Impl {
                 pending.push_back(m);
                 continue;
             }
+            const Json *speaker = nullptr;
+            if (peer_radio(w) && (m.contains("sight") || m.contains("feedback"))) {
+                auto found = std::find_if(roster.begin(), roster.end(), [&](const Json &p) {
+                    return p.at("id") == m.at("sender") && p.at("team") == m.at("team");
+                });
+                if (found == roster.end())
+                    throw std::invalid_argument("Неизвестный отправитель радио");
+                speaker = &*found;
+            }
             for (std::size_t i = 0; i < roster.size(); ++i) {
                 auto &a = roster.at(i);
                 if (a.at("hp") == 0 || a.at("team") != m.at("team") || a.at("id") == m.at("sender"))
                     continue;
-                deliver(w, a, m, now, review);
+                deliver(w, a, m, now, review, speaker ? reception_quality(w, *speaker, a) : -1);
             }
         }
         if (live)
