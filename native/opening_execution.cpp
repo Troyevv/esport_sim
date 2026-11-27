@@ -210,6 +210,16 @@ Json AgentTurn::opening_decision() {
             (pending.contains("item") && !pending.contains("skip") && now < pending.value("land", now + 1)))
             return towards(gate, "Ждёт страховку");
     }
+    if (group_tasks(w) && other && (!job.contains("departed") ||
+        (active(a, "groupLead") && !a.at("groupLead").value("closed", false)))) {
+        auto paired = coordinated_peek(peek, Json::array({"opening", job.at("zone"), gate}),
+                                       !job.contains("departed"), support->at("id"));
+        if (!paired.is_null()) {
+            if (paired.at(0) == "move")
+                job["departed"] = now;
+            return paired;
+        }
+    }
     if (!job.contains("departed"))
         job["departed"] = now;
     auto &reports = op.at("reports");

@@ -2,6 +2,7 @@
 #include "team_ai.hpp"
 
 namespace esport {
+inline bool group_tasks(const Json &world) { return world.value("agentPolicy", 0) >= 5; }
 inline bool small_groups(const Json &world) { return world.value("agentPolicy", 0) >= 4; }
 bool peer_radio(const Json &world);
 void report_contact(Json &world, Json &actor, const Json &sight);

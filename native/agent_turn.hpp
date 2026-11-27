@@ -20,7 +20,14 @@ class AgentTurn {
     Json opening_decision();
     const Json *recent_call(const Json &sender, const std::string &channel, int lifetime) const;
     Json group_members(const Point &origin) const;
-    void signal_group(const std::string &channel, const std::string &state, const Point &point, const Json &order);
+    void signal_group(const std::string &channel, const std::string &state, const Point &point, const Json &order, const Json &detail = Json::object());
+    Json nominate_group(const Point &origin, const Point &aim, Tick until) const;
+    bool cover_from_place(const Json &actor, const Point &origin, const Point &aim) const;
+    bool protects_sector(const Json &actor) const;
+    Tick offer_deadline(bool urgent) const;
+    Json execute_group_task(const Json &offer);
+    void finish_group_tasks();
+    Json coordinated_peek(const Point &goal, const Json &step, bool arrived, const Json &partner = nullptr);
     bool group_lane(const Point &point) const;
     Json group_assist(const Json &request);
     Json stage_pair(const Point &goal, bool arrived);

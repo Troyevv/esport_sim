@@ -3,7 +3,7 @@
 #include <chrono>
 
 namespace esport {
-enum class TickOutput { Motion, Preview, Profile, Individual };
+enum class TickOutput { Motion, Preview, Profile, Individual, Group };
 
 // Collect only the requested boundary DTOs as a batch. The simulation never
 // calls into a renderer, timer service or Python observer.

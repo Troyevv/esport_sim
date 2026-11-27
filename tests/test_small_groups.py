@@ -68,7 +68,7 @@ def execute(w, ident):
 
 @pytest.mark.skipif("de_dust2" not in cs2_maps.installed(), reason="Нужна карта Dust II")
 def test_waypoint_release_requires_delivered_matching_cover_at_the_reported_position():
-    w = match.initial(17, map_id="de_dust2")
+    w = match.initial(17, map_id="de_dust2", agent_policy=4)
     match.advance(w, 45)
     plan = w["plans"]["T"]
     plan.update(style="Сбор", probe=None)
@@ -109,7 +109,7 @@ def test_waypoint_release_requires_delivered_matching_cover_at_the_reported_posi
     assert all(m.get("feedback", {}).get("state") != "set" for m in busy["messages"])
 
 
-@pytest.mark.parametrize("policy", [3, 4])
+@pytest.mark.parametrize("policy", [3, 4, 5])
 def test_pending_group_call_survives_manual_and_active_slot(tmp_path, policy):
     w, *_ = scenario("CT", communication=0, policy=policy)
     assert w["messages"]
@@ -145,7 +145,7 @@ def test_policy_three_matches_pr43_binary():
 def test_ct_scout_moves_only_under_confirmed_cover(name):
     if name not in cs2_maps.installed():
         pytest.skip("Нужна установленная карта")
-    w = match.initial(15, map_id=name)
+    w = match.initial(15, map_id=name, agent_policy=4)
     match.advance(w, 45)
     w["tick"] = 60
     jobs = w["plans"]["CT"]["opening"]["jobs"]
@@ -252,7 +252,7 @@ def test_nomination_uses_role_experience_chemistry_and_delivered_resource_report
 @pytest.mark.skipif("de_dust2" not in cs2_maps.installed(), reason="Нужна карта Dust II")
 @pytest.mark.parametrize("side", ["T", "CT"])
 def test_named_support_cast_uses_inventory_and_a_real_grenade_trajectory(side):
-    w = match.initial(17, map_id="de_dust2")
+    w = match.initial(17, map_id="de_dust2", agent_policy=4)
     match.advance(w, 45)
     start, goal = point(w["agents"][0]), point(w["agents"][3])
     allies = [p for p in w["agents"] if p["team"] == side]

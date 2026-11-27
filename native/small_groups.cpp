@@ -56,15 +56,21 @@ Json AgentTurn::group_members(const Point &origin) const {
 }
 
 void AgentTurn::signal_group(const std::string &channel, const std::string &state, const Point &point,
-                            const Json &order) {
+                            const Json &order, const Json &detail) {
     if (channel == "support" && state == "decline")
         a["declinedSupport"][order.at(0).get<std::string>()] = order.at(1);
     auto &last = a["sentFeedback"][channel];
     if (!last.is_null() && last.at("state") == state && last.at("order") == order &&
         distance(last.at("origin").get<Point>(), actor_point(a)) < 5 && now - last.at("tick").get<Tick>() < 10)
         return;
+    const int sequence = !detail.empty() && !last.is_null() && last.at("tick") == now
+                             ? last.value("sequence", 0) + 1 : 0;
     last = {{"channel", channel}, {"state", state}, {"tick", now}, {"origin", actor_point(a)},
             {"point", point}, {"order", order}};
+    if (!detail.empty()) {
+        last.update(detail);
+        last["sequence"] = sequence;
+    }
     w.at("messages").push_back({{"team", side}, {"sender", a.at("id")}, {"feedback", last},
                                 {"due", now + 1 + (100 - skills.at("communication").get<int>()) / 12}});
 }
@@ -81,6 +87,8 @@ bool AgentTurn::group_lane(const Point &point) const {
 }
 
 Json AgentTurn::group_assist(const Json &request) {
+    if (group_tasks(w))
+        return execute_group_task(request);
     const auto origin = request.at("origin").get<Point>(), point = request.at("point").get<Point>();
     const Json task = Json::array({request.at("sender"), request.at("tick")});
     const auto &primary = request.at("members").front();
@@ -129,7 +137,10 @@ Json AgentTurn::group_assist(const Json &request) {
 }
 
 Json AgentTurn::stage_pair(const Point &goal, bool arrived) {
-    // A waypoint is an actual arrival. Bound the pause to a single radio
+    if (group_tasks(w))
+        return coordinated_peek(goal, Json::array({plan.at("site"), a.at("waypoint"), goal}), arrived &&
+                                (a.at("playingRole") == "entry" || a.at("playingRole") == "rifler"));
+    // Saved version 4. A waypoint is an actual arrival. Bound the pause to a single radio
     // exchange, and leave the individual executor in charge during contact.
     if (arrived && a.at("visible").empty() && a.at("ammo") > 0 &&
         (a.at("playingRole") == "entry" || a.at("playingRole") == "rifler")) {

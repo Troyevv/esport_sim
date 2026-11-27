@@ -1,5 +1,6 @@
 #include "agent_helpers.hpp"
 #include "radio.hpp"
+#include "group_tasks.hpp"
 
 namespace esport {
 namespace {
@@ -25,7 +26,15 @@ void announce(AgentTurn &turn, const char *channel, const char *state, const Poi
         last["reason"] = a.at("lastRefusal").at("reason");
     if (small_groups(turn.w)) {
         if (last.at("channel") == "contact" || last.at("state") == "refused" || last.at("state") == "unavailable")
-            last["members"] = turn.group_members(actor_point(a));
+        {
+            if (group_tasks(turn.w)) {
+                auto until = turn.offer_deadline(last.at("state") == "help");
+                last["until"] = until;
+                last["phase"] = turn.w.at("phase");
+                last["members"] = turn.nominate_group(actor_point(a), point, until);
+            } else
+                last["members"] = turn.group_members(actor_point(a));
+        }
         if (last.at("channel") == "order") {
             last["armed"] = a.at("ammo") > 0 && a.at("reloadAt") == 0 && a.at("blind") <= turn.now;
             last["hasUtility"] = !a.at("utility").empty();
@@ -56,7 +65,9 @@ void AgentTurn::peer_feedback(const std::string &kind) {
     }
     // A nominee who loses the angle, ammunition or route releases the other
     // member through the same delayed channel as the original confirmation.
-    if (small_groups(w) && a.contains("peerCalls")) {
+    if (group_tasks(w))
+        finish_group_tasks();
+    else if (small_groups(w) && a.contains("peerCalls")) {
         for (const auto &call : a.at("peerCalls")) {
             if (!call.contains("members") || call.at("members").empty() ||
                 call.at("members").front() != a.at("id") || now - call.at("tick").get<Tick>() >= 25)
@@ -165,11 +176,12 @@ const Json *AgentTurn::peer_request(int &benefit) const {
         if (grouped && (!call.contains("members") || !member_of(call.at("members"), a.at("id"))))
             continue;
         auto age = now - call.at("tick").get<Tick>();
-        if (age < 0 || age >= 25)
+        const bool tasks = group_tasks(w);
+        if (age < 0 || (tasks ? now >= call.value("until", call.at("tick").get<Tick>() + 25) : age >= 25))
             continue;
         const auto point = call.at("point").get<Point>();
         const double range = distance(actor_point(a), call.at("origin").get<Point>());
-        if (range > 75)
+        if (range > (tasks ? 96 : 75))
             continue;
         if (!grouped && std::ranges::none_of(squad, [&](auto mate) { return mate->at("id") == call.at("sender"); }))
             continue;
@@ -181,6 +193,32 @@ const Json *AgentTurn::peer_request(int &benefit) const {
             if (other.at("state") == "ready" && now - other.at("tick").get<Tick>() < 18 &&
                 distance(point, other.at("point").get<Point>()) < 14)
                 score -= 16;
+        }
+        if (tasks) {
+            if (call.value("phase", w.at("phase")) != w.at("phase"))
+                continue;
+            auto ticket = group_ticket(call);
+            auto sent = a.find("sentFeedback");
+            auto channel = reply_channel(ticket);
+            if (sent != a.end() && sent->contains(channel)) {
+                const auto &reply = sent->at(channel);
+                if (reply.at("order") == ticket && terminal_reply(reply.at("state")))
+                    continue;
+            }
+            auto release = recent_call(call.at("sender"), "launch", 45);
+            if (release && release->at("order") == ticket && terminal_reply(release->at("state")))
+                continue;
+            const bool incumbent = active(a, "groupDuty") && a.at("groupDuty").at("ticket") == ticket;
+            if (incumbent)
+                score += state == "stage" ? 22 + int(age) : 16;
+            if (state == "help")
+                score += 10;
+            if (active(plan, "board") || (!device.empty() && device.value("carrier", Json(nullptr)) == a.at("id")))
+                score -= 18;
+            if (active(a, "groupLead") && !a.at("groupLead").value("closed", false) && state != "help")
+                continue;
+            if (score == benefit && best && ticket < group_ticket(*best))
+                best = &call;
         }
         if (score > benefit) {
             benefit = score;

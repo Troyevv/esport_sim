@@ -6,7 +6,7 @@ find_package(pybind11 CONFIG REQUIRED)
 execute_process(COMMAND "${Python_EXECUTABLE}" -X utf8 -c "import nlohmann_json; print(nlohmann_json.get_include())"
                 OUTPUT_VARIABLE MATCH_JSON_INCLUDE ENCODING UTF-8 OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
 set(MATCH_CORE_SOURCES
-    grid.cpp grid_round.cpp grid_turn.cpp match_state.cpp tick_output.cpp round_rules.cpp begin_live.cpp economy.cpp combat.cpp objectives.cpp observation.cpp radio.cpp peer_feedback.cpp small_groups.cpp
+    grid.cpp grid_round.cpp grid_turn.cpp match_state.cpp tick_output.cpp round_rules.cpp begin_live.cpp economy.cpp combat.cpp objectives.cpp observation.cpp radio.cpp peer_feedback.cpp small_groups.cpp group_tasks.cpp group_selection.cpp group_peek.cpp
     opening.cpp defense_orders.cpp defense_opening.cpp team_ai.cpp reserves.cpp defense_review.cpp retake.cpp
     agent_turn.cpp individual_decision.cpp personal_turn.cpp agent_priority.cpp agent_survival.cpp contact.cpp spatial_intent.cpp sector.cpp postplant.cpp agent_utility.cpp crossing.cpp opening_execution.cpp tactic_execution.cpp
     navigation.cpp routes.cpp rays.cpp collision.cpp perception.cpp physical_navigation.cpp)
