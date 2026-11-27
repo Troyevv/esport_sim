@@ -250,3 +250,29 @@ def test_full_intent_resolution_on_objective_and_timer_boundaries(combat_arenas,
     ids={a["id"]:a for a in w["agents"]}
     match.resolve_intents(w,intents,[a for a in w["agents"] if a["hp"]],ids,old)
     assert_same(owner,w)
+
+
+def test_contact_memory_expiry_reacquisition_and_reports(combat_arenas):
+    old,new=combat_arenas
+    w=read_checkpoint()
+    w["phase"]="planted"
+    w["messages"]=[]
+    w["effects"]=[]
+    for a in w["agents"]:
+        a.update(hp=0,knowledge={},visible=[])
+    observer, opponent=w["agents"][5],w["agents"][0]
+    x,y,z=old.site_points["A"]
+    observer.update(hp=100,x=x,y=y,z=z,heading=0.,blind=0)
+    opponent.update(hp=100,x=x+.5,y=y,z=z,heading=0.,blind=1000)
+    w["bomb"]["carrier"]=opponent["id"]
+    observer["knowledge"]["Шум"]=dict(id="Шум",tick=w["tick"]-75,source="Слух")
+    for age, offset, blind in [(0,.5,0),(1,1.,0),(2,2.,0),(3,2.,1000),(5,2.,0)]:
+        w["tick"]=150+age
+        opponent["x"]=x+offset
+        observer["blind"]=blind
+        owner=native_match_state.restore(encode_world(w),physics=new)
+        owner.observe()
+        match_ai.observe(w,[a for a in w["agents"] if a["hp"]],old)
+        assert_same(owner,w)
+    assert "Шум" not in observer["knowledge"]
+    assert observer["knowledge"][opponent["id"]]["carryingC4"]

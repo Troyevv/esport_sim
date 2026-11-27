@@ -342,15 +342,6 @@ Json at(const Point &p) { return Json{{"x", p[0]}, {"y", p[1]}, {"z", p[2]}}; }
 bool contains_value(const Json &list, const Json &value) {
     return std::find(list.begin(), list.end(), value) != list.end();
 }
-double hundredths(double value) {
-    // Decimal tie rounding starts from the exact binary64 value (Python round).
-    char buffer[32];
-    auto out = std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::fixed, 2);
-    double rounded;
-    if (out.ec != std::errc{} || std::from_chars(buffer, out.ptr, rounded).ec != std::errc{})
-        throw std::invalid_argument("Invalid acoustic confidence");
-    return rounded;
-}
 } // namespace
 Json Combat::sound_position(const Point &p) const {
     if (auto center = planner_->nav_center(p))
@@ -391,7 +382,7 @@ void Combat::hear(Json &w, const Json &source, const std::string &kind, double r
                     {"sound", kind},
                     {"witness", a.at("id")},
                     {"repeated", repeated},
-                    {"confidence", hundredths(heard.confidence)}};
+                    {"confidence", round_decimal(heard.confidence,2)}};
         knowledge[key] = cue;
         if (!a.contains("audioCalls"))
             a["audioCalls"] = Json::object();

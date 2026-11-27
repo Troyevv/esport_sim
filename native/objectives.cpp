@@ -46,7 +46,8 @@ bool facing(const Json &a, const Json &b) {
 }
 } // namespace
 Objectives::Objectives(std::shared_ptr<const PhysicalNavigation> map, SiteData data)
-    : map_(std::move(map)), costs_(std::move(data.costs)), samples_(std::move(data.samples)) {
+    : map_(std::move(map)), costs_(std::move(data.costs)), samples_(std::move(data.samples)),
+      ingress_(std::move(data.ingress)) {
     if (!map_)
         throw std::invalid_argument("Missing physical map");
     for (const std::string site : {"A", "B"}) {
@@ -256,5 +257,19 @@ void Objectives::resolve(Json &w, const Json &cfg, const Json &order) const {
                                      }),
                       visible.end());
     }
+}
+std::optional<std::string> Objectives::reported_site(const Point &p) const {
+    auto area = map_->locate(p);
+    if (!area)
+        return std::nullopt;
+    auto cost = [&](const std::string &site) {
+        const auto &c = costs_.at(site);
+        auto it = c.find(*area);
+        return it == c.end() ? std::numeric_limits<double>::infinity() : it->second;
+    };
+    double a = cost("A"), b = cost("B");
+    if (std::min(a, b) <= 80 * map_->unit() && std::abs(b - a) > 8 * map_->unit())
+        return a < b ? "A" : "B";
+    return std::nullopt;
 }
 } // namespace esport

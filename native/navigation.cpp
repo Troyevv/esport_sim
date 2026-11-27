@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <charconv>
 #include <set>
 #include <stdexcept>
 
@@ -28,6 +29,27 @@ std::optional<double> surface_height(const std::vector<Point>& corners, double x
             return az + u * (bz - az) + v * (cz - az);
     }
     return std::nullopt;
+}
+
+double round_decimal(double value,int digits) {
+    // Decimal tie rounding starts from the exact binary64 value (Python round).
+    char buffer[32];
+    auto out = std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::fixed, digits);
+    double rounded;
+    if (out.ec != std::errc{} || std::from_chars(buffer, out.ptr, rounded).ec != std::errc{})
+        throw std::invalid_argument("Invalid acoustic confidence");
+    return rounded;
+}
+
+// CPython 3.12 sum() uses Neumaier summation of the rounded products.
+double sum3(double a, double b, double c) {
+    double total = 0, correction = 0;
+    for (double x : {a, b, c}) {
+        const double next = total + x;
+        correction += std::abs(total) >= std::abs(x) ? (total - next) + x : (x - next) + total;
+        total = next;
+    }
+    return total + correction;
 }
 
 // Compensate the rounding of each square and addition before rounding the

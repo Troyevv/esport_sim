@@ -273,16 +273,6 @@ std::optional<EscapePath> PhysicalNavigation::search(const State &start, std::op
 
 namespace esport {
 namespace {
-// CPython 3.12 sum() uses Neumaier summation of the rounded products.
-double sum3(double a, double b, double c) {
-    double total = 0, correction = 0;
-    for (double x : {a, b, c}) {
-        const double next = total + x;
-        correction += std::abs(total) >= std::abs(x) ? (total - next) + x : (x - next) + total;
-        total = next;
-    }
-    return total + correction;
-}
 bool enters_fire(const Point &start, const Point &next, const Hazard &hazard) {
     const auto &[center, radius] = hazard;
     if (distance(start, center) < radius)

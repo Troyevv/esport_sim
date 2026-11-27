@@ -6,6 +6,7 @@ namespace esport {
 class Combat {
   public:
     Combat(std::shared_ptr<const PhysicalNavigation> planner, std::vector<std::string> materials);
+    const MapSensors& sensors() const {return sensors_;}
     void effects(Json &state, const Json &cfg) const;
     void execute(Json &w, const Json &cfg, const Json &intents) const;
 

@@ -23,6 +23,7 @@ class MatchState {
     void attach_physics(const std::string &map, std::shared_ptr<const PhysicalNavigation> planner,
                         std::vector<std::string> materials);
     void apply_effects();
+    void observe();
     void attach_objectives(const std::string &map, std::shared_ptr<const Objectives> sites);
     void resolve_intents(const std::string &intents);
     void resolve_actions(const std::string &intents);
