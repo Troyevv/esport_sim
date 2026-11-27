@@ -4,11 +4,11 @@ from collections import Counter
 from random import Random
 
 from math import isfinite
-from . import cs2_economy, cs2_maps, engine
-from .match_rules import APPROACH, MAP, POSITIONS, PRICES, STAGING, UTILITY
+from . import cs2_maps, engine
+from .match_rules import SCENARIOS, APPROACH, MAP, POSITIONS, PRICES, STAGING, UTILITY
 
 LEGACY_BUYS = ("Пистолетная", "Эко", "Оружейная")
-BUYS = (*LEGACY_BUYS, *(b for b in cs2_economy.SCENARIOS if b not in LEGACY_BUYS))
+BUYS = (*LEGACY_BUYS, *(b for b in SCENARIOS if b not in LEGACY_BUYS))
 MOVES = ("move", "hold", "exit", "plant", "retreat", "wait")
 ACTIONS = (*MOVES, "face", "throw")
 LABELS = dict(

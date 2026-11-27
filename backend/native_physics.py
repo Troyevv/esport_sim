@@ -1,4 +1,4 @@
-"""Map import and differential adapter for the C++ physical world."""
+"""Import installed map geometry once and share its native owners."""
 import json
 from math import dist
 from functools import cached_property, lru_cache, partial
@@ -6,7 +6,7 @@ from weakref import proxy
 
 from . import _match_native as native
 from .cs2_collision import Collision
-from .cs2_maps import Map, UNIT, xyz
+from .cs2_maps import BUILD, Map, UNIT, xyz
 from .match_rules import BLAST_RADIUS, ROLES
 from .native_navigation import NativeNavigation
 
@@ -61,50 +61,14 @@ class NativePhysicalMap(Map):
         path = self.planner.path(area, start, zone, goal, avoided)
         return None if path is None else tuple(path)
 
-    def _physical_exit(self, area, origin, bomb):
-        result = self.planner.escape(area, origin, bomb, BLAST_RADIUS + 4)
-        if result is not None:
-            distance, path = result
-            return distance, tuple(path)
-        return None
+    def orders(self, side, site, squad, lane, style=None):
+        # Editor drafts have spawn slots but no assigned playing roles.
+        world = dict(mapId=self.name, map_version=BUILD,
+                     agents=[{"playingRole":"", **actor, "team":side} for actor in squad])
+        return json.loads(self.opening.editor_orders(json.dumps(world), side, site, lane, style or ""))
 
 
-class NativeMovementMap(NativePhysicalMap):
-    def walk(self, actor, goal, pace, hazards):
-        prior = actor["dest"]
-        destination = (prior[0], prior[1:4], set(prior[4])) if len(prior) == 5 and prior[0] is not None else None
-        current = native.MotionState(
-            xyz(actor), actor["navArea"], actor["heading"], actor.get("blockedTicks", 0),
-            actor["path"], destination,
-        )
-        updated, result = self.planner.walk(
-            current, goal, pace, [(xyz(f), f["radius"]) for f in hazards],
-        )
-        actor["blockedTicks"] = updated.blocked_ticks
-        if result.replanned:
-            zone, point, avoided = updated.destination
-            actor["dest"] = [zone, *point, sorted(avoided)]
-            actor["path"] = [list(node) for node in updated.path]
-        elif result.consumed:
-            del actor["path"][:result.consumed]
-        if result.moved:
-            actor["x"], actor["y"], actor["z"] = updated.position
-            actor["heading"] = updated.heading
-        actor["navArea"] = updated.area
-        if result.waiting:
-            actor["status"] = "Пережидает огонь за укрытием"
-        return result.moved
-
-    def grenade(self, origin, target, flight):
-        track = [tuple(p) for p in self.planner.grenade(origin, target, flight)]
-        return *track[-1], track
-
-
-class NativePerceptionMap(NativeMovementMap):
-    @cached_property
-    def sensors(self):
-        return native.MapSensors(self.planner, self.collision.materials)
-
+class NativePerceptionMap(NativePhysicalMap):
     @cached_property
     def objectives(self):
         solids = {site: [solid.faces for solid in volumes] for site, volumes in self.sites.volumes.items()}
@@ -126,26 +90,3 @@ class NativePerceptionMap(NativeMovementMap):
         orders = native.OrderData({label: list(ids) for label, ids in self.places.items()}, self.plants, self.holds, nearby, ROLES, [p for _, p in self.cover], self.attack_spawns, plant_corners)
         return native.OpeningMap(self.objectives, json.dumps(self.profile), json.dumps(self.defense),
                                  contest, stations, self.site_points, orders)
-
-    def shot_transmission(self, start, end, power):
-        return self.sensors.shot_transmission(start, end, power)
-
-
-def observed_players(space, players, now, smoke):
-    observers = [native.Observer(xyz(a), a["heading"], a["team"] == "T", a["blind"] > now)
-                 for a in players]
-    seen = space.sensors.observe(observers, [(xyz(f), f["radius"]) for f in smoke])
-    return {actor["id"]: [players[i] for i in targets]
-            for actor, targets in zip(players, seen, strict=True)}
-
-
-def hearing_estimates(w, space, source, guards, radius):
-    from .world import match_player
-
-    guards = list(guards)
-    skills = [match_player(w, a)["skills"] for a in guards]
-    listeners = [native.Listener(xyz(a), s["game_reading"], a["team"] == "CT" and bool(a["hp"])
-                                 and source.get("id") not in a["visible"])
-                 for a, s in zip(guards, skills, strict=True)]
-    for cue in space.sensors.hear(xyz(source), radius, listeners):
-        yield guards[cue.listener], skills[cue.listener], cue.estimate, cue.confidence

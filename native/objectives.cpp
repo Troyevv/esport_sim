@@ -7,7 +7,7 @@
 
 namespace esport {
 namespace {
-Point xyz(const Json &j) { return {j.at("x"), j.at("y"), j.at("z")}; }
+Point xyz(const Json &j) { return {j.at("x"), j.at("y"), j.value("z", 0.)}; }
 Point sub(const Point &a, const Point &b) { return {a[0] - b[0], a[1] - b[1], a[2] - b[2]}; }
 double dot(const Point &a, const Point &b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
 Point cross(const Point &a, const Point &b) {
@@ -72,6 +72,8 @@ Objectives::Objectives(std::shared_ptr<const PhysicalNavigation> map, SiteData d
 }
 
 std::optional<std::string> Objectives::site_at(const Point &position) const {
+    if (grid_)
+        return grid_->zone({position[0], position[1]});
     auto p = map_->world(position);
     p[2] += 1;
     for (const auto &[name, solids] : volumes_)
@@ -115,17 +117,16 @@ void Objectives::hear_plant(Json &w, const Point &source) const {
                                  {"bearing", Json::array({a.at("x"), a.at("y"), dx, dy})}};
     }
 }
-void Objectives::interact(Json &w, const Json &cfg, Json &a, const std::string &kind) const {
+void Objectives::interact(Json &w, const Json &cfg, Json &a, const std::string &kind, Json site) const {
     auto pos = xyz(a);
     auto &bomb = w.at("bomb");
-    Json site = nullptr;
     bool plant = kind == "plant";
-    if (plant) {
+    if (map_ && plant) {
         auto label = site_at(pos);
         if (!label || bomb.at("carrier") != a.at("id"))
             return;
         site = *label;
-    } else if (distance(pos, xyz(bomb)) > 6 || map_->hit(pos, xyz(bomb), 1, 64, 5))
+    } else if (map_ && (distance(pos, xyz(bomb)) > 6 || map_->hit(pos, xyz(bomb), 1, 64, 5)))
         return;
     Tick now = w.at("tick");
     const auto &rules = cfg.at("rules");
@@ -137,9 +138,9 @@ void Objectives::interact(Json &w, const Json &cfg, Json &a, const std::string &
                       {"site", site},
                       {"start", now},
                       {"end", plus_ticks(now, duration)}};
-        if (plant)
+        if (map_ && plant)
             hear_plant(w, pos);
-        else {
+        else if (map_) {
             auto p = xyz(bomb);
             for (auto &t : w.at("agents"))
                 if (t.at("hp") != 0 && t.at("team") == "T") {
@@ -157,11 +158,10 @@ void Objectives::interact(Json &w, const Json &cfg, Json &a, const std::string &
     if (action.at("player") != a.at("id") || now < action.at("end").get<Tick>())
         return;
     if (action.at("kind") == "plant") {
-        bomb.update(Json{{"carrier", nullptr},
-                         {"site", action.at("site")},
-                         {"x", a.at("x")},
-                         {"y", a.at("y")},
-                         {"z", a.at("z")}});
+        bomb.update(
+            Json{{"carrier", nullptr}, {"site", action.at("site")}, {"x", a.at("x")}, {"y", a.at("y")}});
+        if (map_)
+            bomb["z"] = a.at("z");
         w["phase"] = "planted";
         w["deadline"] = plus_ticks(now, rules.at("fuse"));
         action = nullptr;
@@ -235,7 +235,7 @@ void Objectives::resolve(Json &w, const Json &cfg, const Json &order) const {
             else if (item.at("kind") == "defuse" && w.at("phase") == "planted")
                 interact(w, cfg, a, "defuse");
             else if (item.at("kind") == "plant" && w.at("phase") == "live")
-                interact(w, cfg, a, "plant");
+                interact(w, cfg, a, "plant", item.at("target"));
             if (w.at("phase") == "result" || w.at("phase") == "finished")
                 break;
         }
@@ -248,7 +248,9 @@ void Objectives::resolve(Json &w, const Json &cfg, const Json &order) const {
                                      [&](const Json &id) {
                                          const auto &b = agent(agents, id);
                                          if (a.at("hp") == 0 || b.at("hp") == 0 || a.at("blind") > now ||
-                                             !facing(a, b) || map_->hit(xyz(a), xyz(b), 1, 64, 64))
+                                             (grid_ ? !grid_->sees(a, b)
+                                                    : (!facing(a, b) ||
+                                                       bool(map_->hit(xyz(a), xyz(b), 1, 64, 64)))))
                                              return true;
                                          return std::ranges::any_of(w.at("effects"), [&](const auto &f) {
                                              return f.at("kind") == "Дым" && f.at("land") <= now &&

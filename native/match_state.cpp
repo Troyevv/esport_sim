@@ -1,6 +1,7 @@
 #include "match_state.hpp"
 #include "agent_turn.hpp"
 #include "economy.hpp"
+#include "grid_round.hpp"
 #include "navigation.hpp"
 #include "observation.hpp"
 #include "opening.hpp"
@@ -53,11 +54,54 @@ bool has_value(const Json &v) {
         return !v.get_ref<const std::string &>().empty();
     return !v.is_null() && !v.empty();
 }
+
+// During a batch the roster can change arbitrarily. The domain and external
+// series metadata are read-only, while completed rounds and events only append.
+// Move these large values into the transaction and remember the journal cursor.
+class BatchCheckpoint {
+    Json &original;
+    std::size_t rounds, events;
+    bool committed = false;
+    static constexpr std::array borrowed{"domain", "series", "archive", "events"};
+
+  public:
+    Json world = Json::object();
+    explicit BatchCheckpoint(Json &source)
+        : original(source), rounds(source.at("archive").size()), events(source.at("events").size()) {
+        world.get_ref<Json::object_t &>().reserve(source.size() + 16);
+        for (auto &[key, value] : source.items())
+            world[key] =
+                std::find(borrowed.begin(), borrowed.end(), key) == borrowed.end() ? value : Json(nullptr);
+        for (auto key : borrowed)
+            if (source.contains(key))
+                source.at(key).swap(world.at(key));
+    }
+    BatchCheckpoint(const BatchCheckpoint &) = delete;
+    ~BatchCheckpoint() {
+        if (committed)
+            return;
+        auto &archive = world.at("archive");
+        if (archive.size() > rounds) {
+            world.at("events").swap(archive.at(rounds));
+            archive.erase(archive.begin() + rounds, archive.end());
+        }
+        auto &journal = world.at("events");
+        journal.erase(journal.begin() + events, journal.end());
+        for (auto key : borrowed)
+            if (original.contains(key))
+                original.at(key).swap(world.at(key));
+    }
+    void commit() {
+        original.swap(world);
+        committed = true;
+    }
+};
 } // namespace
 
 class MatchState::Impl {
   public:
     Json state, config, spawns;
+    std::shared_ptr<const GridMap> grid;
     std::unique_ptr<Combat> combat;
     std::shared_ptr<const Objectives> objectives;
     std::shared_ptr<const OpeningMap> opening;
@@ -80,8 +124,21 @@ class MatchState::Impl {
          std::set<std::string> commands, int freeze_ticks, int build, const std::string &rulebook)
         : state(Json::parse(checkpoint)), config(Json::parse(rulebook)), rules(std::move(current_rules)),
           calls(std::move(commands)), freeze(freeze_ticks) {
-        if (freeze <= 0 || state.at("map_version") != build || state.at("checkpointVersion") != 7 ||
-            !(state.at("rules") == rules || old_rules.contains(state.at("rules").get<std::string>())))
+        if (!state.contains("mapId") && config.contains("grid") &&
+            state.at("map_version") == config.at("grid").at("version") &&
+            state.at("checkpointVersion") == 6) {
+            auto &spec = config.at("grid");
+            rules = spec.at("rules").get<std::string>();
+            grid = std::make_shared<GridMap>(spec);
+            spawns = spec.at("spawns");
+            combat = std::make_unique<Combat>(grid);
+            objectives = std::make_shared<Objectives>(grid);
+            opening = std::make_shared<OpeningMap>(objectives);
+        }
+        if (freeze <= 0 ||
+            (!grid && (state.at("map_version") != build || state.at("checkpointVersion") != 7)) ||
+            !(state.at("rules") == rules ||
+              (!grid && old_rules.contains(state.at("rules").get<std::string>()))))
             throw std::invalid_argument("Несовместимая версия сохранения подробного матча");
         if (!state.at("agents").is_array() || state.at("agents").size() != 10 ||
             !state.at("events").is_array() || !state.at("messages").is_array() ||
@@ -191,7 +248,7 @@ class MatchState::Impl {
                 return;
             if (sight.at("source") != "Граната" && sight.at("source") != "Слух")
                 sight["source"] = "Радио";
-            if (a.at("team") == "CT" && w.at("phase") == "live") {
+            if (!grid && a.at("team") == "CT" && w.at("phase") == "live") {
                 sight["reporter"] = sender;
                 if (a.at("id") == w.at("plans").at("CT").at("captain") && sight.at("source") == "Радио" &&
                     (!old || (sight.value("carryingC4", false) && !old->value("carryingC4", false)) ||
@@ -223,8 +280,7 @@ class MatchState::Impl {
         if (std::none_of(messages.begin(), messages.end(), [&](const Json &m) { return m.at("due") <= now; }))
             return;
         auto &roster = w.at("agents");
-        // Prepare only affected recipients. A malformed report cannot consume the queue.
-        std::map<std::size_t, Json> changes;
+        // The batch owns rollback, including all previously delivered reports.
         Json pending = Json::array();
         bool live = w.at("phase") == "live" && w.at("plans").contains("CT");
         Tick review = live ? w.at("plans").at("CT").at("review").get<Tick>() : 0;
@@ -234,17 +290,14 @@ class MatchState::Impl {
                 continue;
             }
             for (std::size_t i = 0; i < roster.size(); ++i) {
-                const auto &a = roster.at(i);
+                auto &a = roster.at(i);
                 if (a.at("hp") == 0 || a.at("team") != m.at("team") || a.at("id") == m.at("sender"))
                     continue;
-                auto [it, inserted] = changes.try_emplace(i, a);
-                deliver(w, it->second, m, now, review);
+                deliver(w, a, m, now, review);
             }
         }
         if (live)
             w.at("plans").at("CT").at("review") = review;
-        for (auto &[i, a] : changes)
-            roster.at(i).swap(a);
         messages.swap(pending);
     }
     void resolve(Json &world, Json &intents) const {
@@ -275,7 +328,10 @@ class MatchState::Impl {
         }
         combat->effects(world, config);
         deliver_radio(world);
-        observe_contacts(world, combat->sensors(), *objectives);
+        if (grid)
+            grid_observe(world, *grid);
+        else
+            observe_contacts(world, combat->sensors(), *objectives);
         auto &traces = world.at("traces");
         traces.erase(
             std::remove_if(traces.begin(), traces.end(),
@@ -289,8 +345,11 @@ class MatchState::Impl {
                     squad.push_back(&a);
             if (squad.empty())
                 continue;
-            captain_review(world, config, opening_map(), side);
-            Json recovery = side == "T" ? rescue_c4(world, objectives->map(), squad) : Json(nullptr);
+            if (grid)
+                grid_review(world, squad, *grid);
+            else
+                captain_review(world, config, opening_map(), side);
+            Json recovery = !grid && side == "T" ? rescue_c4(world, objectives->map(), squad) : Json(nullptr);
             for (auto actor : squad) {
                 AgentTurn turn(world, *actor, squad, config, opening_map(), *combat, recovery);
                 turn.prepare();
@@ -331,8 +390,8 @@ int MatchState::Impl::advance(int ticks, TickSamples *output) {
     if (!combat || !opening || !objectives || spawns.is_null())
         throw std::invalid_argument("Данные карты отсутствуют");
     // Publish the entire requested batch atomically, including the journal and RNG.
-    auto staged = initial;
-    staged.get_ref<Json::object_t &>().reserve(staged.size() + 16);
+    BatchCheckpoint batch(state);
+    auto &staged = batch.world;
     if (staged.at("rules") != rules) {
         staged["rulesTransition"] = Json{{"previous", staged.at("rules")},
                                          {"tick", staged.at("tick")},
@@ -355,7 +414,7 @@ int MatchState::Impl::advance(int ticks, TickSamples *output) {
             output->after(staged);
         ++count;
     }
-    state.swap(staged);
+    batch.commit();
     return count;
 }
 int MatchState::advance(int ticks) {
@@ -424,7 +483,9 @@ void MatchState::begin_live() {
 }
 void MatchState::deliver_radio() {
     std::scoped_lock lock(impl_->mutex);
-    impl_->deliver_radio(impl_->state);
+    BatchCheckpoint batch(impl_->state);
+    impl_->deliver_radio(batch.world);
+    batch.commit();
 }
 std::string MatchState::priority_intent(const std::string &id, const std::string &input) {
     auto observation = Json::parse(input);
@@ -469,7 +530,10 @@ void MatchState::observe() {
         throw std::invalid_argument("Физика карты недоступна");
     auto staged = impl_->state;
     impl_->deliver_radio(staged);
-    observe_contacts(staged, impl_->combat->sensors(), *impl_->objectives);
+    if (impl_->grid)
+        grid_observe(staged, *impl_->grid);
+    else
+        observe_contacts(staged, impl_->combat->sensors(), *impl_->objectives);
     impl_->state.swap(staged);
 }
 void MatchState::finish_round(const std::string &side, const std::string &reason) {
@@ -628,8 +692,10 @@ void MatchState::assign_board(const std::string &input) {
         else {
             const auto call =
                 w.contains("nextBoard") && !w.at("nextBoard").empty() ? Json(nullptr) : w.at("call");
-            scenario =
-                esport::buy_decision(w, impl_->config, coach, call, nullptr, nullptr, nullptr).at("scenario");
+            scenario = impl_->grid
+                           ? Json(grid_buy(w, impl_->config, coach, call))
+                           : esport::buy_decision(w, impl_->config, coach, call, nullptr, nullptr, nullptr)
+                                 .at("scenario");
         }
         if (coach != side ||
             (scenario != buy && !(scenario != "Эко" && scenario != "Пистолетная" && buy == "Оружейная")))

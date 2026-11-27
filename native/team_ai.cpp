@@ -4,7 +4,7 @@
 #include <limits>
 
 namespace esport {
-Point actor_point(const Json &a) { return {a.at("x"), a.at("y"), a.at("z")}; }
+Point actor_point(const Json &a) { return {a.at("x"), a.at("y"), a.value("z", 0.)}; }
 int chemistry(const Json &w, const Json &a, const Json &b) {
     std::string l = a.at("playerId"), r = b.at("playerId");
     return w.at("domain").at("chemistry").value(std::min(l, r) + "|" + std::max(l, r), 0);

@@ -4,10 +4,10 @@ from copy import deepcopy
 from uuid import uuid4
 
 import pytest
-from test_server import envelope, local_server, send, snapshot
+from tests.test_server import envelope, local_server, send, snapshot
 
-from backend import match
-from backend import match_ai as ai
+from tests.reference_kernel import match
+from tests.reference_kernel import match_ai as ai
 from backend.match_rules import RULES
 from backend.store import Store
 
@@ -83,7 +83,7 @@ def test_plant_duration_interrupt_and_expiry_precedence():
     end = w["action"]["end"]
     assert end - w["tick"] == RULES["plant"]
     # A teammate can retrieve C4 from the dead carrier instead of inheriting progress.
-    from backend.match_events import damage
+    from tests.reference_kernel.match_events import damage
 
     damage(w, ct, t, 100, "USP")
     w["agents"][1].update(hp=100, x=t["x"], y=t["y"])

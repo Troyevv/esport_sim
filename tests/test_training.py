@@ -301,8 +301,7 @@ def test_study_changes_step_timing_and_survives_immutable_checkpoint(office):
         training.freeze_day(t)
         game = career.initial(pack, c, ev)
         match.assign(game, board)
-        while game["tick"] < 280:
-            match.advance(game)
+        match.advance(game, 280 - game["tick"])
         timing.append(
             [
                 (e["actor"] if "actor" in e else e.get("player"), e["tick"])

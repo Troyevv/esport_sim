@@ -14,7 +14,8 @@ from time import perf_counter_ns, process_time_ns
 
 import psutil
 
-from backend import career, cs2_maps, database, match
+from tests.reference_kernel import cs2_maps, match
+from backend import career, database
 
 
 def encode(value, *, sort_keys=True):
@@ -46,18 +47,18 @@ def run(args):
         cs2_collision.TriangleScene = TriangleScene
     if args.native_collision:
         from backend import cs2_collision
-        from backend.native_physics import NativeCollision
+        from tests.reference_kernel.native_physics import NativeCollision
         cs2_collision.Collision = NativeCollision
     if args.native_perception:
-        from backend import match_ai, native_physics
+        from tests.reference_kernel import match_ai, native_physics
         cs2_maps.Map = native_physics.NativePerceptionMap
         match_ai.observed_players = native_physics.observed_players
         match_ai.hearing_estimates = native_physics.hearing_estimates
     elif args.native_movement:
-        from backend.native_physics import NativeMovementMap
+        from tests.reference_kernel.native_physics import NativeMovementMap
         cs2_maps.Map = NativeMovementMap
     elif args.native_physics:
-        from backend.native_physics import NativePhysicalMap
+        from tests.reference_kernel.native_physics import NativePhysicalMap
         cs2_maps.Map = NativePhysicalMap
     pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
     pair = random.Random(args.seed).sample(sorted(career.roster_index(pack).values()), 2)
@@ -68,7 +69,8 @@ def run(args):
     poses = hashlib.sha256()
     started = perf_counter_ns()
     cpu = process_time_ns()
-    game = match.initial(args.seed, domain, pair, map_id=args.map, native=args.native_core)
+    from backend import match as production_match
+    game = (production_match if args.native_core else match).initial(args.seed, domain, pair, map_id=args.map)
     owner = None
     if args.native_core:
         from backend import native_match_state

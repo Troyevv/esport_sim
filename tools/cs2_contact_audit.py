@@ -8,7 +8,8 @@ from pathlib import Path
 import random
 from unittest.mock import patch
 
-from backend import career, cs2_maps, database, match_ai
+from tests.reference_kernel import cs2_maps, match_ai
+from backend import career, database
 from tools.cs2_tactical_audit import run
 
 

@@ -33,6 +33,7 @@ const Json *opening_watch(const AgentTurn &t) {
 }
 } // namespace
 Json AgentTurn::opening_decision() {
+    const auto &nav = arena.objectives().map();
     auto &op = plan.at("opening"), &jobs = op.at("jobs");
     auto id = a.at("id").get<std::string>();
     auto &job = jobs.at(id);

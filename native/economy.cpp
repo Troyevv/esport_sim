@@ -192,6 +192,32 @@ Json buy_decision(const Json &w, const Json &cfg, const std::string &side, const
                 {"expectedAfterLoss", expected}};
 }
 
+bool purchase_item(Json &w, const Json &cfg, Json &payer, const std::string &item, Json *gift) {
+    int cost = price(cfg, item);
+    if (payer.at("cash") < cost || (item == "Шлем" && (payer.at("armor") == 0 || payer.at("helmet") == true)))
+        return false;
+    auto &recipient = gift ? *gift : payer;
+    pay(w, payer, -cost, "Покупка · " + item, cfg.at("rules").at("cap"));
+    const auto &guns = cfg.at("weapons");
+    if (guns.contains(item)) {
+        int mag = guns.at(item).at("mag");
+        equip_weapon(recipient, Json{{"weapon", item}, {"ammo", mag}, {"reserve", mag * 3}}, cfg);
+    } else if (item == "Броня")
+        payer["armor"] = 100;
+    else if (item == "Шлем")
+        payer["helmet"] = true;
+    else if (item == "Набор")
+        payer["kit"] = true;
+    else
+        payer.at("utility").push_back(item);
+    auto text = payer.at("name").get<std::string>() + " · " + item;
+    if (gift)
+        text += " для " + gift->at("name").get<std::string>();
+    emit(w, "buy", text, payer.at("team"))
+        .update(Json{
+            {"player", payer.at("id")}, {"item", item}, {"recipient", recipient.at("id")}, {"price", cost}});
+    return true;
+}
 void buy_equipment(Json &w, const Json &cfg, const std::string &side, const Json &strategy,
                    const Json &board) {
     const auto &budget = strategy.at("budget");
@@ -204,33 +230,10 @@ void buy_equipment(Json &w, const Json &cfg, const std::string &side, const Json
         if (a.at("team") == side)
             squad.push_back(&a);
     auto purchase = [&](Json &payer, const std::string &item, Json *gift = nullptr) {
-        const int cost = price(cfg, item);
         auto &wallet = funds.at(payer.at("id").get<std::string>());
-        if (wallet < cost || payer.at("cash") < cost ||
-            (item == "Шлем" && (payer.at("armor") == 0 || payer.at("helmet") == true)))
+        int cost = price(cfg, item);
+        if (wallet < cost || !purchase_item(w, cfg, payer, item, gift))
             return false;
-        auto &recipient = gift ? *gift : payer;
-        pay(w, payer, -cost, "Покупка · " + item, cfg.at("rules").at("cap"));
-        const auto &guns = cfg.at("weapons");
-        if (guns.contains(item)) {
-            int mag = guns.at(item).at("mag");
-            equip_weapon(recipient, Json{{"weapon", item}, {"ammo", mag}, {"reserve", mag * 3}}, cfg);
-        } else if (item == "Броня")
-            payer["armor"] = 100;
-        else if (item == "Шлем")
-            payer["helmet"] = true;
-        else if (item == "Набор")
-            payer["kit"] = true;
-        else
-            payer.at("utility").push_back(item);
-        auto text = payer.at("name").get<std::string>() + " · " + item;
-        if (gift)
-            text += " для " + gift->at("name").get<std::string>();
-        emit(w, "buy", text, payer.at("team"))
-            .update(Json{{"player", payer.at("id")},
-                         {"item", item},
-                         {"recipient", recipient.at("id")},
-                         {"price", cost}});
         wallet -= cost;
         return true;
     };

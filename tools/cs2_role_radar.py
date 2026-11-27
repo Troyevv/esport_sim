@@ -7,7 +7,8 @@ import json
 from pathlib import Path
 import random
 
-from backend import career, cs2_maps, database, match, world
+from tests.reference_kernel import cs2_maps, match
+from backend import career, database, world
 from tools.cs2_skill_audit import lineups
 
 

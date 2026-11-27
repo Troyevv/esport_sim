@@ -4,10 +4,11 @@ from uuid import uuid4
 
 import pytest
 
-from backend import match, tactic_library, tactic_preview, tactics
-from backend.match_events import damage
+from tests.reference_kernel import match
+from backend import tactic_library, tactic_preview, tactics
+from tests.reference_kernel.match_events import damage
 from backend.store import Conflict, Store
-from test_server import envelope, local_server, send, snapshot
+from tests.test_server import envelope, local_server, send, snapshot
 
 
 def hand_plan(side="T", buy="Пистолетная"):

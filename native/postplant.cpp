@@ -7,6 +7,7 @@ bool reserved(const Point &p, const Points &taken, double radius) {
 }
 } // namespace
 Point AgentTurn::search_site(const std::string &site) {
+    const auto &nav = arena.objectives().map();
     auto pos = actor_point(a), center = arena.site_point(site);
     auto cue = a.value("beepBearing", Json(nullptr));
     auto id = a.at("id").get<std::string>();
@@ -84,6 +85,7 @@ Point AgentTurn::search_site(const std::string &site) {
 
 Json AgentTurn::postplant(std::string &site, const Json &order, const Json *latest, Point &goal,
                           Point &watch) {
+    const auto &nav = arena.objectives().map();
     const auto pos = actor_point(a);
     auto id = a.at("id").get<std::string>();
     if (side == "T") {

@@ -9,7 +9,8 @@ from pathlib import Path
 import random
 import sys
 
-from backend import career, cs2_maps, database, match, skills, world
+from tests.reference_kernel import cs2_maps, match
+from backend import career, database, skills, world
 from backend.match_rules import WEAPONS
 
 

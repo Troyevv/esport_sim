@@ -1,4 +1,5 @@
 #include "economy.hpp"
+#include "grid_round.hpp"
 #include "opening.hpp"
 #include <algorithm>
 
@@ -17,6 +18,7 @@ std::vector<std::string> categories(const std::string &buy) {
 }
 } // namespace
 void OpeningMap::begin_live(Json &w, const Json &cfg) const {
+    const auto grid = objectives_->grid();
     const auto now = w.at("tick").get<Tick>();
     for (const std::string side : {"T", "CT"}) {
         const auto is_coach = [&]() {
@@ -39,14 +41,16 @@ void OpeningMap::begin_live(Json &w, const Json &cfg) const {
             return a.at("team") == side && a.at("appointed") == true;
         });
         auto &captain = *it;
-        auto preliminary = buy_decision(w, cfg, side, coach, nullptr, nullptr, nullptr);
-        std::string buy = preliminary.at("scenario");
-        if (!board.empty() && w.contains("previewBuy") && !w.at("previewBuy").empty())
+        std::string buy = grid ? grid_buy(w, cfg, side, coach)
+                               : buy_decision(w, cfg, side, coach, nullptr, nullptr, nullptr)
+                                     .at("scenario")
+                                     .get<std::string>();
+        if (!grid && !board.empty() && w.contains("previewBuy") && !w.at("previewBuy").empty())
             buy = w.at("previewBuy");
         if (is_coach && board.empty() && (coach.is_null() || coach == "Экономить") &&
             w.contains("playbook")) {
             const auto &book = w.at("playbook");
-            for (auto &cat : categories(buy)) {
+            for (auto &cat : grid ? std::vector<std::string>{categories(buy).back()} : categories(buy)) {
                 auto key = side + "/" + cat;
                 if (book.contains(key)) {
                     board = book.at(key);
@@ -71,7 +75,8 @@ void OpeningMap::begin_live(Json &w, const Json &cfg) const {
                 auto plant = std::find_if(steps.begin(), steps.end(),
                                           [](const Json &s) { return s.at("kind") == "plant"; });
                 if (plant != steps.end()) {
-                    planted = objectives_->site_at(Point{plant->at("x"), plant->at("y"), plant->at("z")});
+                    planted =
+                        objectives_->site_at(Point{plant->at("x"), plant->at("y"), plant->value("z", 0.)});
                     if (!planted)
                         throw std::invalid_argument("Площадка назначенной тактики отсутствует");
                     site = *planted;
@@ -82,15 +87,21 @@ void OpeningMap::begin_live(Json &w, const Json &cfg) const {
         if (!board.empty())
             request = w.contains("previewBuy") && !w.at("previewBuy").empty() ? w.at("previewBuy")
                                                                               : board.at("buy");
-        auto strategy = buy_decision(w, cfg, side, coach, site, board, request);
-        buy = strategy.at("scenario");
-        auto choice = call(w, captain, buy, site, style, coach);
-        site = planted ? *planted : choice.at(0).get<std::string>();
-        style = choice.at(1);
-        int lane = choice.at(2);
+        Json strategy;
+        int lane = 0;
+        if (!grid) {
+            strategy = buy_decision(w, cfg, side, coach, site, board, request);
+            buy = strategy.at("scenario");
+            auto choice = call(w, captain, buy, site, style, coach);
+            site = planted ? *planted : choice.at(0).get<std::string>();
+            style = choice.at(1);
+            lane = choice.at(2);
+        }
         auto reinforce =
             side == "CT" && (coach == "Выход A" || coach == "Выход B") ? Json(site) : Json(nullptr);
-        auto orders = side == "T" ? attack_orders(w, site, lane, style) : defense_orders(w, site, lane);
+        auto orders = grid          ? grid->data.at("orders").at(side).at(site)
+                      : side == "T" ? attack_orders(w, site, lane, style)
+                                    : defense_orders(w, site, lane);
         Json plan = {{"site", site},
                      {"style", style},
                      {"buy", buy},
@@ -99,16 +110,17 @@ void OpeningMap::begin_live(Json &w, const Json &cfg) const {
                      {"rotated", false},
                      {"orders", std::move(orders)},
                      {"captain", captain.at("id")},
-                     {"reinforce", reinforce},
-                     {"lane", lane}};
-        if (side == "CT" && board.empty()) {
+                     {"reinforce", reinforce}};
+        if (!grid)
+            plan["lane"] = lane;
+        if (!grid && side == "CT" && board.empty()) {
             auto predicted = coach.is_null() ? defensive_read(w, captain) : Json(nullptr);
             if (!predicted.is_null())
                 site = predicted;
             plan["site"] = site;
             style = draft(w, captain, plan, predicted, reinforce);
         }
-        if (side == "T" && board.empty() && (style == "Сбор" || style == "Контроль карты"))
+        if (!grid && side == "T" && board.empty() && (style == "Сбор" || style == "Контроль карты"))
             plan["probe"] = default_probe(w, plan, cfg);
         auto name = captain.at("name").get<std::string>();
         emit(w, "plan", name + " · " + style + ", " + site + " · " + buy, side)
@@ -134,7 +146,26 @@ void OpeningMap::begin_live(Json &w, const Json &cfg) const {
                     const auto &steps = board.at("slots").at(a.at("slot").get<int>());
                     if (std::ranges::any_of(steps, [](const Json &s) { return s.at("kind") == "plant"; }))
                         w.at("bomb")["carrier"] = a.at("id");
+                    if (grid) {
+                        Json wanted = Json::object();
+                        for (auto &step : steps)
+                            if (step.at("kind") == "throw") {
+                                auto item = step.at("utility").get<std::string>();
+                                wanted[item] = wanted.value(item, 0) + 1;
+                            }
+                        for (auto &[item, qty] : wanted.items()) {
+                            int need = qty.get<int>() -
+                                       std::count(a.at("utility").begin(), a.at("utility").end(), Json(item));
+                            while (need-- > 0 && a.at("utility").size() < 2)
+                                purchase_item(w, cfg, a, item);
+                        }
+                    }
                 }
+        }
+        if (grid) {
+            grid_purchase(w, cfg, side, buy, captain);
+            w.at("plans")[side] = std::move(plan);
+            continue;
         }
         for (const auto &a : roster)
             if (a.at("team") == side) {

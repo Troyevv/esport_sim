@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from backend import cs2_defense as defense
+from tests.reference_kernel import cs2_defense as defense
 
 
 def order(site, hold, watch, lane=0):
@@ -86,7 +86,7 @@ def test_only_one_available_defender_checks_a_report_behind_the_assigned_angles(
 
 
 def test_visible_body_orientation_changes_threat_assessment_without_private_state():
-    from backend.cs2_intel import duel_priority
+    from tests.reference_kernel.cs2_intel import duel_priority
 
     actor = dict(x=0, y=0, z=0)
     skill = dict(game_reading=85, coordination=65)
@@ -117,7 +117,7 @@ def test_sound_alone_cannot_identify_a_planter_and_friendly_crossing_stops_check
 
 
 def test_shot_on_empty_map_point_records_ammo_and_no_victim():
-    from backend import match, match_ai
+    from tests.reference_kernel import match, match_ai
 
     game = match.initial(41000)
     actor = game["agents"][0]
@@ -198,7 +198,7 @@ def test_guard_reports_only_the_visible_entrance_and_reports_smoke_without_enemy
 
 
 def test_support_uses_recent_radio_and_checks_geometry_between_landing_and_friend():
-    from backend.cs2_play import assist_contact
+    from tests.reference_kernel.cs2_play import assist_contact
 
     actor = dict(team="CT", x=0, y=0, z=0, utility=["HE"])
     mate = dict(x=60, y=2, z=0, reloadAt=0, hp=100)
@@ -238,7 +238,7 @@ def test_pressure_request_expires_without_creating_an_opponent():
 
 
 def test_order_feedback_requires_physical_arrival_and_resets_on_reassignment():
-    from backend import cs2_defense
+    from tests.reference_kernel import cs2_defense
 
     p = dict(id="one", slot=0, x=20, y=0, z=0, visible=[], hp=100)
     order = dict(id="one", hold=[45, 0, 0], site="B", lane=1)

@@ -16,6 +16,7 @@ struct OrderData {
 };
 class OpeningMap {
   public:
+    explicit OpeningMap(std::shared_ptr<const Objectives> obj) : objectives_(std::move(obj)) {}
     OpeningMap(std::shared_ptr<const Objectives> objectives, const std::string &profile,
                const std::string &defense, ContestTable contest, Stations stations,
                std::map<std::string, Point> sites, OrderData orders);

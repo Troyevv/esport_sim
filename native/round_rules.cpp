@@ -133,12 +133,12 @@ void settle_round(Json &w, const Json &cfg, const std::string &side, const std::
     w.at("score").at(winner) = w.at("scoreByTeam").at(winner_id);
     emit(w, "round_end", title + " · " + reason)
         .update(Json{{"winner", winner}, {"winnerTeamId", winner_id}, {"side", side}, {"reason", reason}});
-    if (w.at("plans").contains("T")) {
+    if (w.contains("mapId") && w.at("plans").contains("T")) {
         append_limited(w["siteHistory"][teams.at("T")],
                        Json::array({w.at("plans").at("T").at("site"), side == "T"}), 6);
         append_limited(w["defensiveHistory"][teams.at("CT")], heard, 4);
     }
-    if (!w.contains("opponentEconomy"))
+    if (w.contains("mapId") && !w.contains("opponentEconomy"))
         w["opponentEconomy"] = Json::object();
     const auto &kills = w.at("kills");
     const int reward =
@@ -163,18 +163,20 @@ void settle_round(Json &w, const Json &cfg, const std::string &side, const std::
         else if (!(a.at("team") == "T" && number(a, "hp") && reason == "Время")) {
             pay(w, a, loss_income(rules, w.at("streak").at(number(a, "club"))), "Поражение", cap);
             if (a.at("team") == "T" && !w.at("bomb").at("site").is_null())
-                pay(w, a, 600, "Установка в проигранном раунде", cap);
+                pay(w, a, w.contains("mapId") ? 600 : number(rules, "plantBonus"),
+                    "Установка в проигранном раунде", cap);
         }
     }
     int bonus = 0;
     for (const auto &k : kills)
         if (k.at("enemy") == true && ct.contains(name(k, "player")))
             bonus += 50;
-    if (bonus)
+    if (w.contains("mapId") && bonus)
         for (auto &a : w.at("agents"))
             if (ct.contains(name(a, "id")))
                 pay(w, a, bonus, "Командная награда за устранения CT", cap);
-    update_accounts(w, cfg, side, reason, reward);
+    if (w.contains("mapId"))
+        update_accounts(w, cfg, side, reason, reward);
     if (w.at("clutch").contains(side))
         add(w.at("stats").at(w.at("clutch").at(side).get<std::string>()).at("clutches"), 1);
     Json economy = {{"T", 0}, {"CT", 0}};
@@ -199,8 +201,9 @@ void settle_round(Json &w, const Json &cfg, const std::string &side, const std::
         }
     w.at("history").push_back(std::move(result));
     auto &streak = w.at("streak");
-    streak.at(winner) = std::max(0, streak.at(winner).get<int>() - 1);
-    streak.at(1 - winner) = std::min(4, streak.at(1 - winner).get<int>() + 1);
+    streak.at(winner) = w.contains("mapId") ? std::max(0, streak.at(winner).get<int>() - 1) : 0;
+    streak.at(1 - winner) = w.contains("mapId") ? std::min(4, streak.at(1 - winner).get<int>() + 1)
+                                                : streak.at(1 - winner).get<int>() + 1;
     const int n = number(w, "round"), half = number(rules, "half"), ot = number(rules, "overtimeHalf");
     const int target = n <= half * 2 ? half + 1 : half + ot * (1 + (n - 2 * half - 1) / (2 * ot)) + 1;
     bool finished = w.at("scoreByTeam").at(winner_id) >= target;
@@ -246,8 +249,9 @@ void start_round(Json &w, const Json &cfg, const Json &spawns) {
                   {"clutch", obj},
                   {"roundStart", now}});
     if (reset) {
-        w["streak"] = Json::array({1, 1});
-        w["opponentEconomy"] = obj;
+        w["streak"] = w.contains("mapId") ? Json::array({1, 1}) : Json::array({0, 0});
+        if (w.contains("mapId"))
+            w["opponentEconomy"] = obj;
     }
     for (auto &a : w.at("agents")) {
         const std::string side =
@@ -259,43 +263,44 @@ void start_round(Json &w, const Json &cfg, const Json &spawns) {
         const auto size = static_cast<std::int64_t>(choices.size());
         // Reduce before adding to preserve large and negative seeds.
         const auto select = ((w.at("seed").get<std::int64_t>() % size + n + slot) % size + size) % size;
-        const auto &spawn = choices.at(select);
+        const auto &spawn = choices.at(w.contains("mapId") ? select : slot);
         const auto &p = spawn.at(0);
-        a.update(Json{{"z", p.at(2)},
-                      {"navArea", spawn.at(2)},
-                      {"waypoint", 0},
-                      {"blockedTicks", 0},
-                      {"inspectedSites", obj},
-                      {"routeReports", obj},
-                      {"lastRouteReport", -100},
-                      {"useTarget", nullptr},
-                      {"useFloor", nullptr},
-                      {"checkContact", nullptr},
-                      {"checkPosition", nullptr},
-                      {"shelter", nullptr},
-                      {"coverUntil", 0},
-                      {"coverReview", 0},
-                      {"bombSearch", nullptr},
-                      {"coveredDefuser", nullptr},
-                      {"coverPoint", nullptr},
-                      {"revisedApproach", nullptr},
-                      {"rendezvous", nullptr},
-                      {"plantCover", nullptr},
-                      {"plantCheck", nullptr},
-                      {"watchDevice", nullptr},
-                      {"heardUse", -1000},
-                      {"seenDevice", nullptr},
-                      {"beepBearing", nullptr},
-                      {"plantCue", nullptr},
-                      {"leftScreen", false},
-                      {"sectorReview", nullptr},
-                      {"incoming", nullptr},
-                      {"pressureCall", nullptr},
-                      {"nextPressureCall", 0},
-                      {"sectorCalls", obj},
-                      {"squadPressure", obj},
-                      {"screenedOpening", false},
-                      {"friendlyUtility", array}});
+        if (w.contains("mapId"))
+            a.update(Json{{"z", p.at(2)},
+                          {"navArea", spawn.at(2)},
+                          {"waypoint", 0},
+                          {"blockedTicks", 0},
+                          {"inspectedSites", obj},
+                          {"routeReports", obj},
+                          {"lastRouteReport", -100},
+                          {"useTarget", nullptr},
+                          {"useFloor", nullptr},
+                          {"checkContact", nullptr},
+                          {"checkPosition", nullptr},
+                          {"shelter", nullptr},
+                          {"coverUntil", 0},
+                          {"coverReview", 0},
+                          {"bombSearch", nullptr},
+                          {"coveredDefuser", nullptr},
+                          {"coverPoint", nullptr},
+                          {"revisedApproach", nullptr},
+                          {"rendezvous", nullptr},
+                          {"plantCover", nullptr},
+                          {"plantCheck", nullptr},
+                          {"watchDevice", nullptr},
+                          {"heardUse", -1000},
+                          {"seenDevice", nullptr},
+                          {"beepBearing", nullptr},
+                          {"plantCue", nullptr},
+                          {"leftScreen", false},
+                          {"sectorReview", nullptr},
+                          {"incoming", nullptr},
+                          {"pressureCall", nullptr},
+                          {"nextPressureCall", 0},
+                          {"sectorCalls", obj},
+                          {"squadPressure", obj},
+                          {"screenedOpening", false},
+                          {"friendlyUtility", array}});
         for (auto key : {"audioCalls", "lastDutyFeedback", "postWatch"})
             a.erase(key);
         if (reset || a.at("hp") == 0) {

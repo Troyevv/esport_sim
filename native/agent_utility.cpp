@@ -2,6 +2,7 @@
 
 namespace esport {
 Json AgentTurn::assist_contact(const Squad &partners, const Json &r) {
+    const auto &nav = arena.objectives().map();
     if (partners.empty() || !visual(r) || now < r.at("tick").get<Tick>() ||
         now - r.at("tick").get<Tick>() >= 15)
         return nullptr;
@@ -51,6 +52,7 @@ Json AgentTurn::assist_contact(const Squad &partners, const Json &r) {
     return nullptr;
 }
 Json AgentTurn::retake_utility(const std::string &site) {
+    const auto &nav = arena.objectives().map();
     if (now < std::max(a.at("throwAt").get<Tick>(), a.value("crossingReview", Tick{0})) ||
         a.at("utility").empty())
         return nullptr;
@@ -130,6 +132,7 @@ Json AgentTurn::retake_utility(const std::string &site) {
 }
 
 Json AgentTurn::plant_intercept(Point &goal, Point &watch, Json &cue) {
+    const auto &nav = arena.objectives().map();
     const auto pos = actor_point(a);
     const std::string site = cue.at("site");
     if (a.at("blind") <= now && !active(a, "reloadAt") && now >= a.at("ready") && a.at("ammo") > 1 &&

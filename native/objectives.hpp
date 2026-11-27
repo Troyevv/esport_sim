@@ -12,6 +12,7 @@ struct SiteData {
 };
 class Objectives {
   public:
+    explicit Objectives(std::shared_ptr<const GridMap> grid) : grid_(std::move(grid)) {}
     Objectives(std::shared_ptr<const PhysicalNavigation> map, SiteData sites);
     std::optional<std::string> site_at(const Point &position) const;
     std::optional<std::string> reported_site(const Point &p) const;
@@ -22,7 +23,12 @@ class Objectives {
         return found == costs.end() ? fallback : found->second;
     }
     const Ingress &ingress() const { return ingress_; }
-    const PhysicalNavigation &map() const { return *map_; }
+    const GridMap *grid() const { return grid_.get(); }
+    const PhysicalNavigation &map() const {
+        if (!map_)
+            throw std::invalid_argument("Требуется физическая карта");
+        return *map_;
+    }
     void resolve(Json &w, const Json &cfg, const Json &ordered) const;
 
   private:
@@ -31,11 +37,12 @@ class Objectives {
         std::vector<Triangle> triangles;
     };
     std::shared_ptr<const PhysicalNavigation> map_;
+    std::shared_ptr<const GridMap> grid_;
     std::map<std::string, std::vector<Solid>> volumes_;
     std::map<std::string, std::map<AreaId, double>> costs_;
     std::map<std::string, std::vector<Point>> samples_;
     Ingress ingress_;
     void hear_plant(Json &w, const Point &p) const;
-    void interact(Json &w, const Json &cfg, Json &actor, const std::string &kind) const;
+    void interact(Json &w, const Json &cfg, Json &actor, const std::string &kind, Json site = nullptr) const;
 };
 } // namespace esport

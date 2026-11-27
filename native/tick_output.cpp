@@ -4,8 +4,12 @@ namespace esport {
 namespace {
 Json preview_frame(const Json &roster) {
     auto frame = Json::array();
-    for (const auto &a : roster)
-        frame.push_back(Json::array({a.at("x"), a.at("y"), a.at("heading"), a.at("hp"), a.at("z")}));
+    for (const auto &a : roster) {
+        auto pose = Json::array({a.at("x"), a.at("y"), a.at("heading"), a.at("hp")});
+        if (a.contains("z"))
+            pose.push_back(a.at("z"));
+        frame.push_back(std::move(pose));
+    }
     return frame;
 }
 Json motion_sample(const Json &roster) {
@@ -20,7 +24,10 @@ Json motion_sample(const Json &roster) {
         for (auto side : {"T", "CT"})
             if (a.at("team") == side || visible.at(side).contains(id))
                 teams.push_back(side);
-        frame[id] = Json::array({Json::array({a.at("x"), a.at("y"), a.at("heading"), a.at("z")}), teams});
+        auto pose = Json::array({a.at("x"), a.at("y"), a.at("heading")});
+        if (a.contains("z"))
+            pose.push_back(a.at("z"));
+        frame[id] = Json::array({std::move(pose), std::move(teams)});
     }
     return frame;
 }
@@ -45,8 +52,8 @@ void TickSamples::after(const Json &world) {
     if (world.at("tick").get<Tick>() % 10 == 0) {
         auto pose = Json::array();
         for (auto &a : world.at("agents"))
-            pose.push_back(
-                Json::array({a.at("id"), a.at("x"), a.at("y"), a.at("z"), a.at("hp"), a.at("navArea")}));
+            pose.push_back(Json::array({a.at("id"), a.at("x"), a.at("y"), a.value("z", Json(nullptr)),
+                                        a.at("hp"), a.value("navArea", Json(nullptr))}));
         samples.push_back(std::move(pose));
     }
 }

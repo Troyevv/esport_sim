@@ -8,7 +8,7 @@
 
 namespace esport {
 namespace {
-Point xyz(const Json &j) { return {j.at("x"), j.at("y"), j.at("z")}; }
+Point xyz(const Json &j) { return {j.at("x"), j.at("y"), j.value("z", 0.)}; }
 const Json &skills(const Json &w, const Json &a) {
     return w.at("domain").at("players").at(a.at("playerId").get<std::string>()).at("skills");
 }
@@ -74,7 +74,9 @@ void death(Json &w, const Json &cfg, Json &shooter, Json &target, const std::str
                       {"opening", opening}});
     const auto kill_id = event.at("id").get<Tick>();
     kills.push_back(event);
-    Json gun = {{"id", kill_id}, {"x", target.at("x")}, {"y", target.at("y")}, {"z", target.at("z")}};
+    Json gun = {{"id", kill_id}, {"x", target.at("x")}, {"y", target.at("y")}};
+    if (target.contains("z"))
+        gun["z"] = target.at("z");
     const auto &other = target.at("holster");
     const auto &pistols = cfg.at("sidearms");
     if (!other.is_null() && std::find(pistols.begin(), pistols.end(), other.at("weapon")) == pistols.end())
@@ -104,8 +106,9 @@ void death(Json &w, const Json &cfg, Json &shooter, Json &target, const std::str
     for (const auto &assist : assists)
         add(stats.at(assist.get<std::string>()).at("a"), 1);
     if (w.at("bomb").at("carrier") == ident) {
-        w.at("bomb").update(
-            Json{{"carrier", nullptr}, {"x", target.at("x")}, {"y", target.at("y")}, {"z", target.at("z")}});
+        w.at("bomb").update(Json{{"carrier", nullptr}, {"x", target.at("x")}, {"y", target.at("y")}});
+        if (target.contains("z"))
+            w.at("bomb")["z"] = target.at("z");
         emit(w, "drop", target.at("name").get<std::string>() + " потерял C4", "T")
             .update(Json{{"x", target.at("x")}, {"y", target.at("y")}});
     }
@@ -169,7 +172,7 @@ void apply_impact(Json &w, const Json &cfg, Json &shooter, Json &victim, double 
 }
 
 Combat::Combat(std::shared_ptr<const PhysicalNavigation> planner, std::vector<std::string> materials)
-    : planner_(std::move(planner)), sensors_(planner_, std::move(materials)) {}
+    : planner_(std::move(planner)), sensors_(std::in_place, planner_, std::move(materials)) {}
 
 void Combat::shoot(Json &w, const Json &cfg, Json &agent, const Json &sight, Json *victim) const {
     const std::string weapon = agent.at("weapon");
@@ -192,15 +195,19 @@ void Combat::shoot(Json &w, const Json &cfg, Json &agent, const Json &sight, Jso
                   {"x", agent.at("x")},
                   {"y", agent.at("y")},
                   {"tx", sight.at("x")},
-                  {"ty", sight.at("y")},
-                  {"z", agent.at("z")},
-                  {"tz", sight.at("z")},
-                  {"accuracy", chance},
-                  {"burst", burst}});
+                  {"ty", sight.at("y")}});
+    if (planner_) {
+        e["z"] = agent.at("z");
+        e["tz"] = sight.at("z");
+    }
+    e["accuracy"] = chance;
+    e["burst"] = burst;
     w.at("traces").push_back(e);
-    bool intersects = victim && victim->at("hp") != 0 && near_segment(start, end, xyz(*victim), 3);
-    double transmission =
-        intersects ? sensors_.shot_transmission(start, xyz(*victim), spec.at("penetration")) : 1.;
+    bool intersects = victim && victim->at("hp") != 0 && (!grid_ || grid_->clear(xy(agent), xy(*victim))) &&
+                      near_segment(start, end, xyz(*victim), 3);
+    double transmission = intersects && planner_
+                              ? sensors().shot_transmission(start, xyz(*victim), spec.at("penetration"))
+                              : 1.;
     if (!transmission)
         return;
     for (int i = 0; i < spec.at("pellets").get<int>(); ++i) {
@@ -240,8 +247,13 @@ void Combat::throw_grenade(Json &w, const Json &cfg, Json &agent, const Json &ta
     const double error = std::min(1., ((100 - mastery) / 100.) * ((roll % 17) / 100.));
     Point aim{std::nearbyint(goal[0] + (pos[0] - goal[0]) * error),
               std::nearbyint(goal[1] + (pos[1] - goal[1]) * error), goal[2]};
-    auto track = planner_->grenade(pos, aim, flight);
-    const auto landing = track.back();
+    std::vector<Point> track;
+    auto landing = aim;
+    if (planner_) {
+        track = planner_->grenade(pos, aim, flight);
+        landing = track.back();
+    } else if (!grid_->clear(xy(agent), {aim[0], aim[1]}))
+        landing = pos;
     Json effect = {{"kind", type},
                    {"player", agent.at("id")},
                    {"team", agent.at("team")},
@@ -252,11 +264,17 @@ void Combat::throw_grenade(Json &w, const Json &cfg, Json &agent, const Json &ta
                    {"start", now},
                    {"land", plus_ticks(now, flight)},
                    {"end", plus_ticks(plus_ticks(now, flight), params.at(1))},
-                   {"radius", params.at(0)},
-                   {"z", landing[2]},
-                   {"sz", agent.at("z")},
-                   {"trajectory", track}};
-    if (type == "Дым" || type == "Огонь") {
+                   {"radius", params.at(0)}};
+    if (planner_) {
+        effect["z"] = landing[2];
+        effect["sz"] = agent.at("z");
+        effect["trajectory"] = track;
+    } else {
+        bool clear = grid_->clear(xy(agent), {aim[0], aim[1]});
+        effect["x"] = clear ? Json(int(aim[0])) : agent.at("x");
+        effect["y"] = clear ? Json(int(aim[1])) : agent.at("y");
+    }
+    if (planner_ && (type == "Дым" || type == "Огонь")) {
         Json cue = {{"x", target.at("x")},
                     {"y", target.at("y")},
                     {"z", target.at("z")},
@@ -314,7 +332,7 @@ void Combat::execute(Json &w, const Json &cfg, const Json &intents) const {
             Json *victim = nullptr;
             if (target.contains("id"))
                 victim = find(target.at("id"));
-            else {
+            else if (planner_) {
                 double closest = std::numeric_limits<double>::infinity();
                 for (auto &a : agents)
                     if (&a != actor && a.at("hp") != 0 && near_segment(xyz(*actor), xyz(target), xyz(a), 3)) {
@@ -344,6 +362,8 @@ bool contains_value(const Json &list, const Json &value) {
 }
 } // namespace
 Json Combat::sound_position(const Point &p) const {
+    if (grid_)
+        return grid_->sound({p[0], p[1]});
     if (auto center = planner_->nav_center(p))
         return at(*center);
     Json position = Json::object();
@@ -363,7 +383,7 @@ void Combat::hear(Json &w, const Json &source, const std::string &kind, double r
             {xyz(a), eligible ? skills(w, a).at("game_reading").get<double>() : 0., eligible});
     }
     const std::string key = "Шум · " + kind;
-    for (const auto &heard : sensors_.hear(xyz(source), radius, listeners)) {
+    for (const auto &heard : sensors().hear(xyz(source), radius, listeners)) {
         auto &a = roster.at(heard.listener);
         auto &knowledge = a.at("knowledge");
         bool repeated = false;
@@ -399,14 +419,14 @@ void Combat::hear(Json &w, const Json &source, const std::string &kind, double r
 void Combat::report_shot(Json &w, const Json &actor, const Json &target) const {
     Tick now = w.at("tick");
     bool live = w.at("phase") == "live";
-    if (actor.at("team") == "T" && live) {
+    if (planner_ && actor.at("team") == "T" && live) {
         const auto &gun = actor.at("weapon");
         hear(w, actor, "Выстрел", (gun == "USP" || gun == "M4A1-S") ? 75 : 128);
     }
     for (auto &a : w.at("agents")) {
         if (a.at("hp") == 0 || &a == &actor || contains_value(a.at("visible"), actor.at("id")))
             continue;
-        if (near_segment(xyz(actor), xyz(target), xyz(a), 6) &&
+        if (planner_ && near_segment(xyz(actor), xyz(target), xyz(a), 6) &&
             !planner_->hit(xyz(actor), xyz(a), 4, 56, 56)) {
             auto [dx, dy] = sound_direction(xyz(a), xyz(actor));
             a["incoming"] = Json{{"tick", now}, {"bearing", Json::array({a.at("x"), a.at("y"), dx, dy})}};
@@ -423,14 +443,14 @@ void Combat::report_shot(Json &w, const Json &actor, const Json &target) const {
                                     {"due", plus_ticks(now, delay)}});
             }
         }
-        if (a.at("team") != actor.at("team") && !(live && a.at("team") == "CT") &&
+        if (a.at("team") != actor.at("team") && !(planner_ && live && a.at("team") == "CT") &&
             distance(xyz(a), xyz(actor)) < 55) {
             Json cue = {{"id", "Шум"}};
             cue.update(sound_position(xyz(actor)));
             cue["tick"] = now;
             cue["source"] = "Слух";
             a.at("knowledge")["Шум"] = cue;
-            if (now >= a.value("nextSoundCall", Tick{0})) {
+            if (planner_ && now >= a.value("nextSoundCall", Tick{0})) {
                 int delay = radio_delay(w, a);
                 a["nextSoundCall"] = plus_ticks(now, 10 + delay);
                 w.at("messages")
@@ -462,10 +482,10 @@ void Combat::effects(Json &w, const Json &cfg) const {
         Tick age = now - f.at("land").get<Tick>();
         double radius = f.at("radius");
         bool decoy = kind == "Ложная", fire = kind == "Огонь";
-        if (f.at("team") == "T" && w.at("phase") == "live" &&
+        if (planner_ && f.at("team") == "T" && w.at("phase") == "live" &&
             (age == 0 || (decoy && age > 0 && age % 10 == 0)))
             hear(w, f, decoy ? "Выстрел" : "Граната", decoy || kind == "HE" || kind == "Свет" ? 108 : 54);
-        if ((kind == "Дым" || fire) && age == 0)
+        if (planner_ && (kind == "Дым" || fire) && age == 0)
             for (auto &a : roster) {
                 if (a.at("hp") == 0 || a.at("id") == f.at("player") || a.at("blind") > now ||
                     distance(xyz(a), p) >= 58)
@@ -498,7 +518,8 @@ void Combat::effects(Json &w, const Json &cfg) const {
                 auto sector = sound_position(p);
                 for (auto &a : roster)
                     if (a.at("hp") != 0 && a.at("team") != f.at("team") &&
-                        !(a.at("team") == "CT" && w.at("phase") == "live") && distance(xyz(a), p) < radius) {
+                        !(planner_ && a.at("team") == "CT" && w.at("phase") == "live") &&
+                        distance(xyz(a), p) < radius) {
                         Json cue = {{"id", "Шум"}};
                         cue.update(sector);
                         cue["tick"] = now;
@@ -517,7 +538,8 @@ void Combat::effects(Json &w, const Json &cfg) const {
         for (auto &a : roster) {
             auto pos = xyz(a);
             double d = distance(p, pos);
-            if (a.at("hp") == 0 || d > radius || planner_->hit(p, pos, 1, 5, 64))
+            if (a.at("hp") == 0 || d > radius ||
+                (grid_ ? !grid_->clear(xy(f), xy(a)) : bool(planner_->hit(p, pos, 1, 5, 64))))
                 continue;
             if (kind == "Свет") {
                 int duration = int(std::nearbyint(7 + 19 * (1 - d / radius)));

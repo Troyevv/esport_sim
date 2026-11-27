@@ -2,9 +2,10 @@
 
 from math import atan2, dist
 
-from . import cs2_defense, engine, world
+from . import cs2_defense
+from backend import engine, world
 from .cs2_maps import xyz
-from .match_rules import UTILITY
+from backend.match_rules import UTILITY
 
 
 def line(space, p, q):

@@ -253,7 +253,7 @@ def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
         domain,
         rosters,
         c["team"] if c["team"] in event["teams"] else None,
-        map_id=event.get("mapId","depo"), native=True,
+        map_id=event.get("mapId","depo"),
     )
     if event.get("pcw") and event.get("board"):
         match.assign(game, event["board"])

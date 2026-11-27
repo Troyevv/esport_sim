@@ -4,6 +4,8 @@
 
 Смежные документы: [GAME_DESIGN.md](GAME_DESIGN.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DECISIONS.md](DECISIONS.md), [SOURCES.md](SOURCES.md), [ROADMAP.md](ROADMAP.md).
 
+Тики реальных карт и Депо исполняет один C++20 MatchState. Формат checkpoint 6 хранит сеточные координаты Депо, формат 7 — позиции и поверхности NAV реальных карт.
+
 Работающий выставочный профиль и точный порядок разрешения событий описаны в [руководстве матча на «Депо»](docs/BO1.md).
 
 ## M-01. Основной контракт — согласовано

@@ -2,12 +2,13 @@
 
 from math import atan2, cos, dist, hypot, sin, tau
 from .cs2_maps import UNIT, xyz
-from . import cs2_defense, cs2_intel, cs2_openings, cs2_retake, match_performance as perf, world
-from .match_rules import BLAST_RADIUS, RULES, UTILITY, equipment_value
+from . import cs2_defense, cs2_intel, cs2_openings, cs2_retake, match_performance as perf
+from backend import world
+from backend.match_rules import BLAST_RADIUS, RULES, UTILITY, equipment_value
 
 
 def opening(space, w, squad, captain, player, buy, site, style, call):
-    from . import engine
+    from backend import engine
 
     knowledge = player["mapKnowledge"].get(space.name.removeprefix("de_"), 0)
     lane = (engine._draw(captain) >> 16) % 2

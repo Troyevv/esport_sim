@@ -8,7 +8,8 @@ from math import dist
 from pathlib import Path
 import random
 
-from backend import career, cs2_maps, database, match, match_ai
+from tests.reference_kernel import cs2_maps, match, match_ai
+from backend import career, database
 
 
 def record(name, seed, pack):

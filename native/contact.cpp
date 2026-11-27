@@ -84,6 +84,7 @@ bool AgentTurn::screen_safe(const Point &point) const {
     return true;
 }
 Json AgentTurn::seek_cover(const Json &contact) {
+    const auto &nav = arena.objectives().map();
     bool exposed = false;
     if (!contact.empty() && a.at("visible").size() > 1) {
         int engaged = 0;
@@ -206,62 +207,76 @@ Json AgentTurn::duel(const Json &contact) {
     double gap = distance(pos, target);
     if (!a.at("utility").empty() && now >= a.at("throwAt").get<Tick>() && gap > 18) {
         auto &spec = cfg.at("weapons").at(a.at("weapon").get<std::string>());
-        int flight = std::max(3, int(std::nearbyint(gap / 7)));
-        bool backup = std::ranges::any_of(
-                 squad, [&](auto m) { return m != &a && m->at("target") == contact.at("id"); }),
-             vulnerable = a.at("reloadAt") != 0 || a.at("hp") < 45;
-        auto ready =
-            std::max<Tick>(0, std::max(a.at("ready").get<Tick>(), a.at("reloadAt").get<Tick>()) - now);
-        int shots =
-            std::min(a.at("ammo").get<int>(),
-                     int(std::max(0., 1 + std::floor(double(cfg.at("throwRecovery").get<int>() - 1 - ready) /
-                                                     spec.at("interval").get<int>()))));
-        auto chance = weapon_accuracy(w, cfg, a, spec, gap, a.at("burst")) / 100.;
-        double damage = spec.at("damage"), opportunity = shots * damage * chance;
-        std::set<std::string> seen;
-        std::optional<std::pair<double, std::string>> best;
-        for (auto &g : a.at("utility")) {
-            std::string item = g;
-            if (item == "Ложная" || !seen.insert(item).second)
-                continue;
-            double radius = cfg.at("utility").at(item)[0], benefit = 0;
-            bool friends = std::ranges::any_of(squad, [&](auto m) {
-                return distance(target, actor_point(*m)) < radius &&
-                       !nav.hit(target, actor_point(*m), 1, 5, 64);
-            });
-            if (item == "Дым") {
-                if (!vulnerable || backup ||
-                    (w.at("phase") == "live" && side == "CT" && !screen_safe(target)))
+        if (grid) {
+            const auto item = a.at("utility")[0].get<std::string>();
+            double decisions = skills.at("decisions"),
+                   radius = cfg.at("utility").at(item)[0].get<double>() * decisions / 100;
+            bool unsafe =
+                (item == "HE" || item == "Огонь" || item == "Свет") &&
+                std::ranges::any_of(squad, [&](auto m) { return gap2(xy(*m), xy(contact)) < radius; });
+            bool soon = a.at("ammo") != 0 && a.at("reloadAt") == 0 && a.at("ready") < now + 5;
+            if (!unsafe &&
+                !(soon && gap <= 18 + decisions * std::min(.6, spec.at("damage").get<double>() / 75)))
+                return Json::array({"throw", contact});
+        } else {
+            const auto &nav = arena.objectives().map();
+            int flight = std::max(3, int(std::nearbyint(gap / 7)));
+            bool backup = std::ranges::any_of(
+                     squad, [&](auto m) { return m != &a && m->at("target") == contact.at("id"); }),
+                 vulnerable = a.at("reloadAt") != 0 || a.at("hp") < 45;
+            auto ready =
+                std::max<Tick>(0, std::max(a.at("ready").get<Tick>(), a.at("reloadAt").get<Tick>()) - now);
+            int shots = std::min(
+                a.at("ammo").get<int>(),
+                int(std::max(0., 1 + std::floor(double(cfg.at("throwRecovery").get<int>() - 1 - ready) /
+                                                spec.at("interval").get<int>()))));
+            auto chance = weapon_accuracy(w, cfg, a, spec, gap, a.at("burst")) / 100.;
+            double damage = spec.at("damage"), opportunity = shots * damage * chance;
+            std::set<std::string> seen;
+            std::optional<std::pair<double, std::string>> best;
+            for (auto &g : a.at("utility")) {
+                std::string item = g;
+                if (item == "Ложная" || !seen.insert(item).second)
                     continue;
-                benefit = damage;
-            } else {
-                if (friends || (item == "Свет" && !backup && !vulnerable))
-                    continue;
-                double sum = 0, error = 0;
-                for (auto &id : a.at("visible")) {
-                    double d = distance(actor_point(a.at("knowledge").at(id.get<std::string>())), target);
-                    if (d < radius) {
-                        double x = item == "Свет" ? damage : (1 - d / radius) * (item == "HE" ? 82 : 30),
-                               t = sum + x;
-                        error += std::abs(sum) >= std::abs(x) ? (sum - t) + x : (x - t) + sum;
-                        sum = t;
+                double radius = cfg.at("utility").at(item)[0], benefit = 0;
+                bool friends = std::ranges::any_of(squad, [&](auto m) {
+                    return distance(target, actor_point(*m)) < radius &&
+                           !nav.hit(target, actor_point(*m), 1, 5, 64);
+                });
+                if (item == "Дым") {
+                    if (!vulnerable || backup ||
+                        (w.at("phase") == "live" && side == "CT" && !screen_safe(target)))
+                        continue;
+                    benefit = damage;
+                } else {
+                    if (friends || (item == "Свет" && !backup && !vulnerable))
+                        continue;
+                    double sum = 0, error = 0;
+                    for (auto &id : a.at("visible")) {
+                        double d = distance(actor_point(a.at("knowledge").at(id.get<std::string>())), target);
+                        if (d < radius) {
+                            double x = item == "Свет" ? damage : (1 - d / radius) * (item == "HE" ? 82 : 30),
+                                   t = sum + x;
+                            error += std::abs(sum) >= std::abs(x) ? (sum - t) + x : (x - t) + sum;
+                            sum = t;
+                        }
                     }
+                    benefit = sum + error;
                 }
-                benefit = sum + error;
+                double mastery =
+                           skills.at(cfg.at("grenadeSkills").at(item).get<std::string>()).get<double>() / 100,
+                       exposure = std::max(0., 1 - contact.value("speed", 0.) * flight / radius);
+                auto candidate = std::pair{benefit * (1 - mastery * (1 - exposure)), item};
+                if (!best || candidate > *best)
+                    best = candidate;
             }
-            double mastery =
-                       skills.at(cfg.at("grenadeSkills").at(item).get<std::string>()).get<double>() / 100,
-                   exposure = std::max(0., 1 - contact.value("speed", 0.) * flight / radius);
-            auto candidate = std::pair{benefit * (1 - mastery * (1 - exposure)), item};
-            if (!best || candidate > *best)
-                best = candidate;
-        }
-        if (best && best->first > opportunity * skills.at("decisions").get<int>() / 100 &&
-            distance(nav.grenade(pos, target, flight).back(), target) <
-                cfg.at("utility").at(best->second)[0].get<double>()) {
-            auto result = contact;
-            result["utility"] = best->second;
-            return Json::array({"throw", result});
+            if (best && best->first > opportunity * skills.at("decisions").get<int>() / 100 &&
+                distance(nav.grenade(pos, target, flight).back(), target) <
+                    cfg.at("utility").at(best->second)[0].get<double>()) {
+                auto result = contact;
+                result["utility"] = best->second;
+                return Json::array({"throw", result});
+            }
         }
     }
     if (a.at("reloadAt") == 0 && a.at("ammo") != 0 && now >= a.at("ready").get<Tick>())
@@ -269,6 +284,7 @@ Json AgentTurn::duel(const Json &contact) {
     return Json::array({"hold", nullptr});
 }
 Json AgentTurn::last_burst() {
+    const auto &nav = arena.objectives().map();
     const auto &spec = cfg.at("weapons").at(a.at("weapon").get<std::string>());
     if (!a.at("target").is_string() || a.at("ammo").get<int>() <= spec.at("mag").get<int>() / 2 ||
         a.at("reloadAt") != 0 || now < a.at("ready").get<Tick>() || a.at("blind") > now || !action.empty())

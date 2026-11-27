@@ -5,7 +5,7 @@
 
 namespace esport {
 namespace {
-Point pos(const Json &p) { return {p.at("x"), p.at("y"), p.at("z")}; }
+Point pos(const Json &p) { return {p.at("x"), p.at("y"), p.value("z", 0.)}; }
 
 int execution_delay(const Json &w, const Json &a, const Json &player, const Json &board) {
     const auto &skills = player.at("skills");
@@ -101,8 +101,17 @@ Json board_step(Json &w, Json &a, const Json &cfg, const Objectives &objectives,
     const auto &player = w.at("domain").at("players").at(a.at("playerId").get<std::string>());
     a["status"] = cfg.at("boardLabels").at(kind).get<std::string>() + " · точка " + std::to_string(index + 1);
     if (kind != "throw" && kind != "face" && pos(a) != goal) {
-        if (!travel(a, player, objectives.map(), goal, kind == "exit" || kind == "retreat" ? 2. : 1., fire,
-                    now))
+        double pace = kind == "exit" || kind == "retreat" ? 2. : 1.;
+        bool moved;
+        if (auto grid = objectives.grid()) {
+            Json hazards = Json::array();
+            for (auto &[p, r] : fire)
+                hazards.push_back(Json{{"x", p[0]}, {"y", p[1]}, {"radius", r}});
+            moved = grid->walk(a, Json::array({step.at("x"), step.at("y")}), pace * move_speed(player),
+                               hazards, true);
+        } else
+            moved = travel(a, player, objectives.map(), goal, pace, fire, now);
+        if (!moved)
             return hold;
         if (kind == "retreat")
             a["heading"] = a.at("heading").get<double>() + std::numbers::pi;
@@ -128,7 +137,9 @@ Json board_step(Json &w, Json &a, const Json &cfg, const Objectives &objectives,
     }
     if (kind == "throw") {
         const auto &inventory = a.at("utility");
-        if (std::find(inventory.begin(), inventory.end(), step.at("utility")) != inventory.end()) {
+        if (objectives.grid() && !objectives.grid()->clear(xy(a), {goal[0], goal[1]}))
+            a["status"] = "Пропускает бросок · путь перекрыт";
+        else if (std::find(inventory.begin(), inventory.end(), step.at("utility")) != inventory.end()) {
             if (now < a.at("throwAt").get<Tick>()) {
                 a["stepIndex"] = index;
                 return hold;

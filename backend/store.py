@@ -270,7 +270,7 @@ class Store:
             samples = []
             is_match = world["version"] == 2
             owner = None
-            if is_match and world.get("mapId"):
+            if is_match:
                 from . import native_match_state
                 cached, self.match_owner = self.match_owner, None
                 owner = (cached[1] if cached and cached[0] == self.calendar_stamp()
@@ -283,14 +283,10 @@ class Store:
                 if world["phase"] in ("finished", "timeout"):
                     state["running"] = False
             else:
-                step = match.advance if is_match else engine.advance
                 for _ in range(state["speed"]):
                     if state["speed"] <= 8:
                         samples.append(engine.motion_sample(world))
-                    step(world)
-                    if is_match and world["phase"] in ("finished", "timeout"):
-                        state["running"] = False
-                        break
+                    engine.advance(world)
             map_ended = world.get("phase") == "finished"
             if map_ended and "series" in world:
                 series.finish_map(world)
@@ -422,13 +418,8 @@ class Store:
                             raise ValueError("Сначала откройте матч BO1")
                         game = state["world"]
                         board = tactic_library.resolve(self.db, value)
-                        if game.get("mapId"):
-                            from . import native_match_state
-                            owner = native_match_state.restore(json.dumps(game))
-                            native_match_state.assign(owner, board)
-                            state["world"] = json.loads(owner.snapshot())
-                        else:
-                            match.assign(game, board)
+                        from . import native_match_state
+                        state["world"] = native_match_state.assign_checkpoint(game, board)
                     else:
                         tactic_library.change(self.db, kind, value)
                         state["libraryRevision"] = state.get("libraryRevision", 0) + 1
@@ -484,13 +475,7 @@ class Store:
                 if state["world"]["version"] != 2:
                     raise ValueError("Сначала откройте матч BO1")
                 game = state["world"]
-                if game.get("mapId"):
-                    from . import native_match_state
-                    owner = native_match_state.restore(json.dumps(game))
-                    owner.command(kind, value or "")
-                    state["world"] = json.loads(owner.snapshot())
-                else:
-                    match.command(game, kind, value)
+                match.command(game, kind, value)
                 if state["world"]["phase"] == "timeout":
                     state["running"] = False
                 elif kind == "resume":
@@ -541,7 +526,7 @@ class Store:
                     )
                     if "bestOf" in value
                     else match.initial(
-                        seed, domain, value["rosters"], map_id=value.get("map", "depo"), native=True
+                        seed, domain, value["rosters"], map_id=value.get("map", "depo")
                     )
                 )
                 state.update(
@@ -570,7 +555,7 @@ class Store:
                     ]
                     game = series.initial(value, options["bestOf"], history=history)
                 else:
-                    game = match.initial(value, map_id=options.get("map", "depo"), native=True)
+                    game = match.initial(value, map_id=options.get("map", "depo"))
                 state.update(
                     world=game,
                     running=False,

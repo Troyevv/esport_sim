@@ -6,7 +6,7 @@ from collections import Counter
 import json
 from math import dist
 import numpy as np
-from backend import cs2_maps
+from tests.reference_kernel import cs2_maps
 
 
 def inspect(name):

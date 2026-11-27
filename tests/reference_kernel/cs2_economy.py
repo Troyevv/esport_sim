@@ -3,7 +3,7 @@
 from collections import Counter
 
 from . import match_inventory
-from .match_rules import PRICES, RULES, SIDEARMS, WEAPONS
+from backend.match_rules import PRICES, RULES, SIDEARMS, WEAPONS
 
 PISTOL, ECO, HALF, FORCE, FULL = "Пистолетная", "Эко", "Частичная", "Форс", "Полная"
 ANTI, BONUS = "Антиэко", "Бонусная"

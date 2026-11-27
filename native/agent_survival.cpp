@@ -13,6 +13,7 @@ double walk_length(Point origin, const WalkPath &route) {
     }
     return length;
 }
+} // namespace
 int equipment_value(const Json &a, const Json &cfg) {
     const auto &guns = cfg.at("weapons"), &prices = cfg.at("prices");
     int value = guns.at(a.at("weapon").get<std::string>()).at("price");
@@ -28,8 +29,8 @@ int equipment_value(const Json &a, const Json &cfg) {
         value += prices.at(g.get<std::string>()).get<int>();
     return value;
 }
-} // namespace
 Json AgentTurn::saved_exit() {
+    const auto &nav = arena.objectives().map();
     Json site = device.empty() ? Json(nullptr) : device.at("site");
     if (site.is_null())
         site = a.at("heardSite");
@@ -148,7 +149,7 @@ Json AgentTurn::saved_exit() {
 }
 
 Json AgentTurn::contact_decision() {
-    if (a.value("lastBlockedTick", Tick{-1000}) != now - 1)
+    if (!grid && a.value("lastBlockedTick", Tick{-1000}) != now - 1)
         a["blockedTicks"] = 0;
     auto contact = select_contact();
     service_weapon();
@@ -158,28 +159,28 @@ Json AgentTurn::contact_decision() {
             3 + skills.at("confidence").get<int>() / 10 + player.at("morale").get<int>() / 30)
         contact = nullptr;
     if (w.at("phase") == "planted" && !using_device) {
-        if (side == "CT" && !action.empty() && !device.empty() && gap(device) < 45)
+        if (!grid && side == "CT" && !action.empty() && !device.empty() && gap(device) < 45)
             a.erase("saving");
         auto goal = a.value("saving", Json(nullptr));
         if (goal.empty())
-            goal = saved_exit();
+            goal = grid ? grid_exit() : saved_exit();
         if (!goal.empty()) {
             a["saving"] = goal;
             a["status"] = side == "T" ? "Отходит от C4" : "Сохраняет оружие";
-            if (move(goal, 2))
+            if (grid ? grid->walk(a, goal, 2 * move_speed(player), grid_fire, true) : move(goal, 2))
                 return Json::array({"move", nullptr});
             if (contact.empty())
                 return Json::array({"hold", nullptr});
         }
     }
-    if (action.empty() && w.at("deadline").get<Tick>() - now > 35) {
+    if (!grid && action.empty() && w.at("deadline").get<Tick>() - now > 35) {
         auto result = seek_cover(contact);
         if (!result.is_null())
             return result;
     }
     if (!contact.empty())
         return duel(contact);
-    auto burst = last_burst();
+    auto burst = grid ? Json(nullptr) : last_burst();
     if (!burst.is_null())
         return burst;
     a["target"] = nullptr;

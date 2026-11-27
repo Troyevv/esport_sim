@@ -7,7 +7,8 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-from backend import cs2_economy, cs2_maps, cs2_openings, cs2_play, match, match_ai, native_match_state
+from tests.reference_kernel import cs2_economy, cs2_maps, cs2_openings, cs2_play, match, match_ai
+from backend import native_match_state
 
 
 def encode(world):

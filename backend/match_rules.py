@@ -141,3 +141,30 @@ BLAST_RADIUS = 80
 
 def blast_damage(distance):
     return max(0, round(370 * (1 - distance / BLAST_RADIUS)))
+
+
+WEAPON_CLASS = {
+    "Glock": "pistols",
+    "USP": "pistols",
+    "Desert Eagle": "pistols",
+    "MP9": "smgs",
+    "MAC-10": "smgs",
+    "AK-47": "rifles",
+    "M4A1-S": "rifles",
+    "AWP": "sniper_rifles",
+    "Nova": "shotguns",
+    "Negev": "machine_guns",
+}
+GRENADE_SKILL = {
+    "Дым": "smokes",
+    "Свет": "flashes",
+    "HE": "he",
+    "Огонь": "incendiaries",
+    "Ложная": "decoys",
+}
+
+
+PISTOL, ECO, HALF, FORCE, FULL = "Пистолетная", "Эко", "Частичная", "Форс", "Полная"
+ANTI, BONUS = "Антиэко", "Бонусная"
+SCENARIOS = (PISTOL, ECO, HALF, FORCE, FULL, ANTI, BONUS)
+SMG = {"T": "MAC-10", "CT": "MP9"}

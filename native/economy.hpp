@@ -1,6 +1,7 @@
 #pragma once
 #include "round_rules.hpp"
 namespace esport {
+bool purchase_item(Json &w, const Json &cfg, Json &payer, const std::string &item, Json *gift = nullptr);
 void equip_weapon(Json &actor,const Json &item,const Json &cfg);
 Json grenade_needs(const Json& w,const Json& cfg,const Json& actor,const std::string& site,const Json& board);
 Json buy_decision(const Json &w, const Json &config, const std::string &side, const Json &call,

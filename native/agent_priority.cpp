@@ -1,9 +1,13 @@
 #include "agent_helpers.hpp"
 namespace esport {
 Json AgentTurn::priority_intent() {
+
     auto intent = contact_decision();
     if (!intent.is_null())
         return intent;
+    if (grid)
+        return grid_intent();
+    const auto &nav = arena.objectives().map();
     const bool rescuing = side == "T" && !device.empty() && device.at("carrier").is_null() &&
                           device.at("site").is_null() && !recovery.empty() &&
                           recovery.at("player") == a.at("id");

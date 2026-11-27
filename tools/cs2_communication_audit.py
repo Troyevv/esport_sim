@@ -10,7 +10,8 @@ from pathlib import Path
 from random import Random
 from time import perf_counter, process_time
 
-from backend import career, cs2_defense, cs2_maps, database, match
+from tests.reference_kernel import cs2_defense, cs2_maps, match
+from backend import career, database
 
 
 def play(pack, name, index, directory):
