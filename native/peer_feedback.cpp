@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "agent_helpers.hpp"
 #include "radio.hpp"
 #include "group_tasks.hpp"
@@ -87,7 +88,15 @@ void AgentTurn::peer_feedback(const std::string &kind) {
     }
     // A request quotes a firsthand observation only. A received request or
     // a radio contact can never itself trigger another request.
-    if (now % 4 == slot % 4 && a.at("blind") <= now) {
+    if (a.value("flashLevel", 0.) >= .55 && now % 4 == slot % 4) {
+        Json latest = nullptr;
+        for (const auto &r : a.at("knowledge"))
+            if (visual(r) && now - r.at("tick").get<Tick>() < 24 &&
+                (latest.is_null() || r.at("tick") > latest.at("tick")))
+                latest = r;
+        announce(*this, "contact", "help", latest.is_null() ? actor_point(a) : actor_point(latest),
+                 latest.is_null() ? Json("Прикрытие") : latest.at("id"));
+    } else if (now % 4 == slot % 4 && a.at("blind") <= now) {
         if (!a.at("visible").empty() && (a.at("visible").size() > 1 || a.at("hp") < 65 ||
                                          a.at("reloadAt") > now || !a.at("ammo").get<int>())) {
             const auto id = a.at("visible").front().get<std::string>();
@@ -141,7 +150,7 @@ void AgentTurn::peer_feedback(const std::string &kind) {
                                : !arena.objectives().map().hit(pos, look, 1, 64, 64);
         if (clear_lane && std::ranges::none_of(w.at("effects"), [&](const Json &f) {
                 return f.at("kind") == "Дым" && f.at("land") <= now && now < f.at("end") &&
-                       near_segment(pos, look, actor_point(f), f.at("radius"));
+                       crosses_volume(f, pos, look);
             })) {
             state = "ready";
             goal = look;

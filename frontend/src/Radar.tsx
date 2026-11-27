@@ -26,6 +26,7 @@ export interface Agent extends Point {
   name: string;
   team: Team;
   heading: number;
+  flashLevel?: number;
   hp?: number; armor?: number; cash?: number; ammo?: number; reserve?: number; weapon?: string;
   primary?: string | null; secondary?: string | null;
   utility?: string[]; kit?: boolean; helmet?: boolean; equipmentValue?: number; alive?: boolean;
@@ -195,7 +196,11 @@ function marker(agent: Agent, match: boolean) {
     nick.position.y = 1.9;
     group.addChild(nick);
   }
-  return { group, tip, ring, team:agent.team };
+  const flash = new Graphics();
+  flash.position.set(0, -2.35);
+  flash.visible = false;
+  group.addChild(flash);
+  return { group, tip, ring, flash, intensity: -1, team:agent.team };
 }
 
 function setupScene(
@@ -246,7 +251,7 @@ function setupScene(
       const id = match.bomb?.carrier;
       const carrier = id && playback.has(id) ? playback.sample(id, now) : undefined;
       items.begin();
-      drawEvents(effects, match, tick, items, carrier, z => onLayer(current.frame.world.map, current.layer || "default", z));
+      drawEvents(effects, match, tick, items, carrier, z => onLayer(current.frame.world.map, current.layer || "default", z), world.scale.x);
       items.end();
       changed = true;
     }
@@ -308,6 +313,25 @@ function setupScene(
           players.addChild(m.group);
           const scale = fit * zoom;
           m.group.scale.set(limit(4.5 * scale, 6.3, 13) / scale);
+          dirty = true;
+        }
+        const strength = a.alive === false ? 0 : (a.flashLevel ?? 0);
+        if (m.intensity !== strength) {
+          m.intensity = strength;
+          m.flash.clear();
+          m.flash.visible = strength > 0;
+          if (strength > 0) {
+            // An eye and a diagonal slash stay legible against light map textures.
+            m.flash.ellipse(0, 0, 1.22, 0.78).fill({ color: 0x172029, alpha: 0.92 });
+            m.flash.moveTo(-0.97, 0).quadraticCurveTo(0, -1, 0.97, 0)
+              .quadraticCurveTo(0, 1, -0.97, 0).stroke({color: 0xffffff, width: 0.16});
+            if (strength >= 0.78) {
+              m.flash.moveTo(-0.77, 0.66).lineTo(0.77, -0.66).stroke({color: 0xffffff, width: 0.27});
+            } else {
+              m.flash.circle(0, 0, 0.23).fill(0xffffff);
+            }
+            m.flash.alpha = Math.sqrt(strength);
+          }
           dirty = true;
         }
         m.group.alpha = a.alive === false ? 0.32 : 1;

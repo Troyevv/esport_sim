@@ -1,5 +1,6 @@
-#include "radio.hpp"
 #include "agent_helpers.hpp"
+#include "grenades.hpp"
+#include "radio.hpp"
 
 namespace esport {
 Json AgentTurn::spatial_intent() {
@@ -198,8 +199,10 @@ Json AgentTurn::spatial_intent() {
         }
     }
     Tick age = latest ? now - latest->at("tick").get<Tick>() : 0;
-    int pursuit = latest && latest->at("source") == "Слух" ? 8 + (100 - skills.at("patience").get<int>()) / 3
-                                                           : 12 + skills.at("aggression").get<int>() / 2;
+    int pursuit = latest && latest->at("source") == "Слух"
+                      ? int((8 + (100 - skills.at("patience").get<int>()) / 3) *
+                            (coordinated_utility(w) ? latest->value("confidence", 1.) : 1.))
+                      : 12 + skills.at("aggression").get<int>() / 2;
     if (latest && live && (side == "CT" || !carrying) && action.empty() && age <= pursuit) {
         auto contact = actor_point(*latest);
         auto d = distance(pos, contact);

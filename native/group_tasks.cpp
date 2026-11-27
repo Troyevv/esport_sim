@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "group_tasks.hpp"
 
 namespace esport {
@@ -36,10 +37,22 @@ Json support_flash(AgentTurn &t, const Json &offer, const Point &pos) {
     const double radius = t.cfg.at("utility").at("Свет")[0];
     Point target = aim;
     for (size_t i = 0; i < 3; ++i)
-        target[i] += (aim[i] - origin[i]) * radius / reach;
+        target[i] += (aim[i] - origin[i]) * radius * (spatial_grenades(t.w) ? .45 : 1.) / reach;
     const int flight = std::max(3, int(std::nearbyint(distance(pos, target) / 7)));
     const auto land = nav.grenade(pos, target, flight).back();
+    if (coordinated_utility(t.w)) {
+        const bool reported = std::ranges::any_of(t.a.at("knowledge"), [&](const Json &r) {
+            return t.now - r.at("tick").get<Tick>() <= 20 && distance(actor_point(r), land) < radius &&
+                   (visual(r) || r.value("confidence", 0.) >= .5) && !nav.hit(land, actor_point(r), 1, 5, 64);
+        });
+        // Crossing a known empty stretch needs cover, not another flash. An
+        // unseen corner is a valid use.
+        if (t.flash_reserved(land) || (!reported && !nav.hit(origin, land, 1, 64, 5)))
+            return nullptr;
+    }
     if (distance(land, target) > 5 || std::ranges::any_of(t.squad, [&](auto m) {
+            if (spatial_grenades(t.w))
+                return t.flash_risk(*m, land, flight);
             return distance(actor_point(*m), land) < radius + 3 && !nav.hit(land, actor_point(*m), 1, 5, 64);
         }))
         return nullptr;
@@ -83,11 +96,19 @@ Json AgentTurn::execute_group_task(const Json &offer) {
     auto release = recent_call(ticket.at(0), "launch", 50);
     if (staged && release && release->at("order") == ticket && release->at("state") == "go") {
         const Json launch = *release;
-        if (!sender_alive || !can_support(*this) || now > launch.at("at").get<Tick>() + 3) {
+        const bool waiting_for_weapon = coordinated_utility(w) && initial.contains("land") &&
+                                        now < launch.at("at") && a.at("blind") <= now &&
+                                        a.at("visible").empty() && a.at("ammo") > 0 && a.at("reloadAt") == 0;
+        if (!sender_alive || (!can_support(*this) && !waiting_for_weapon) ||
+            now > launch.at("at").get<Tick>() + 3) {
             close_duty(*this, sender_alive ? "complete" : "cancel");
             return nullptr;
         }
         if (now >= launch.at("at") && launch.at("mate") == a.at("id") && initial.contains("step") && mobile) {
+            if (waiting_for_ticket_flash(*this, ticket)) {
+                a["status"] = "Ждёт срабатывания командной флешки";
+                return Json::array({"hold", nullptr});
+            }
             const Point step = initial.at("step"), angle = initial.at("angle");
             if (distance(pos, step) > 1 && move(step, 2)) {
                 heading_to(a, angle);
@@ -125,7 +146,9 @@ Json AgentTurn::execute_group_task(const Json &offer) {
         return Json::array({"move", nullptr});
     }
     auto &duty = a.at("groupDuty");
-    if (staged && sender_alive && mobile && !duty.contains("flashTried")) {
+    const bool launched =
+        coordinated_utility(w) && release && release->at("order") == ticket && release->at("state") == "go";
+    if (staged && !launched && sender_alive && mobile && !duty.contains("flashTried")) {
         duty["flashTried"] = true;
         auto cast = support_flash(*this, offer, pos);
         if (!cast.empty()) {
@@ -133,7 +156,8 @@ Json AgentTurn::execute_group_task(const Json &offer) {
             return cast;
         }
     }
-    if (staged && duty.contains("land") &&
+    const bool scheduled = coordinated_utility(w) && staged && duty.contains("land");
+    if (!scheduled && staged && duty.contains("land") &&
         now < std::max(duty.at("land").get<Tick>(), a.at("ready").get<Tick>())) {
         heading_to(a, point);
         a["status"] = "Ждёт срабатывания своей гранаты";
@@ -142,11 +166,12 @@ Json AgentTurn::execute_group_task(const Json &offer) {
     const double heading = a.at("heading");
     Point angle = staged ? wing_angle(pos, point, origin, slot) : point;
     heading_to(a, angle);
-    if (!group_lane(angle)) {
+    const Tick cover_at = scheduled ? std::max(duty.at("land").get<Tick>(), a.at("ready").get<Tick>()) : now;
+    if (!group_lane(angle, cover_at)) {
         angle = point;
         heading_to(a, angle);
     }
-    if (!group_lane(angle)) {
+    if (!group_lane(angle, cover_at)) {
         a["heading"] = heading;
         close_duty(*this, "decline");
         return nullptr;
@@ -162,7 +187,12 @@ Json AgentTurn::execute_group_task(const Json &offer) {
             duty["step"] = step;
     }
     duty["angle"] = angle;
-    announce(staged ? "set" : "executing", angle);
+    if (scheduled) {
+        duty["state"] = "set";
+        signal_group(reply_channel(ticket), "set", angle, ticket,
+                     {{"duty", true}, {"until", until}, {"wing", mobile}, {"coverAt", cover_at}});
+    } else
+        announce(staged ? "set" : "executing", angle);
     a["status"] = !sender_alive ? "Принимает сектор напарника"
                   : mobile      ? "Прикрывает направление по радио"
                                 : "Страхует группу со своей позиции";

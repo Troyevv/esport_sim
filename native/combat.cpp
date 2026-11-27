@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "radio.hpp"
 #include "combat.hpp"
 
@@ -36,7 +37,8 @@ int weapon_accuracy(const Json &w, const Json &cfg, const Json &a, const Json &s
     base -= a.at("pressure").get<double>() * (100 - s("stress_resistance")) / 10;
     base -= std::min(1., (now - a.at("liveStart").get<Tick>()) / 850.) * (100 - s("concentration")) / 12;
     base -= std::max<Tick>(0, 12 - (now - a.at("lastHurt").get<Tick>())) * (100 - s("composure")) / 110;
-    return int(std::clamp(std::nearbyint(base), 8., 96.));
+    const double level = a.value("flashLevel", 0.);
+    return int(std::max(1., std::nearbyint(std::clamp(std::nearbyint(base), 8., 96.) * (1. - .91 * level))));
 }
 
 namespace {
@@ -73,6 +75,14 @@ void death(Json &w, const Json &cfg, Json &shooter, Json &target, const std::str
                       {"trade", traded},
                       {"enemy", enemy},
                       {"opening", opening}});
+    const auto helper = target.value("flashImpairedBy", Json(nullptr));
+    if (enemy && !helper.is_null() && helper != killer && assisted_by_flash(target, w.at("tick"))) {
+        event["flashAssist"] = helper;
+        count_utility(w, helper, "flashAssists");
+        if (std::find(assists.begin(), assists.end(), helper) == assists.end())
+            assists.push_back(helper);
+        event["assists"] = assists;
+    }
     const auto kill_id = event.at("id").get<Tick>();
     kills.push_back(event);
     Json gun = {{"id", kill_id}, {"x", target.at("x")}, {"y", target.at("y")}};
@@ -165,6 +175,12 @@ void apply_impact(Json &w, const Json &cfg, Json &shooter, Json &victim, double 
     if (enemy) {
         const std::string id = shooter.at("id");
         add(w.at("stats").at(id).at("damage"), amount);
+        if (spatial_grenades(w) && (weapon == "HE" || weapon == "Огонь"))
+            count_utility(w, shooter.at("id"), weapon == "HE" ? "heDamage" : "fireDamage", amount);
+        if (spatial_grenades(w) && guns.contains(weapon) &&
+            std::find(shooter.at("visible").begin(), shooter.at("visible").end(), victim.at("id")) !=
+                shooter.at("visible").end())
+            shooter["confirmedHit"] = {{"id", victim.at("id")}, {"tick", w.at("tick")}};
         auto &hits = victim.at("attackers");
         hits[id] = hits.value(id, 0) + amount;
     }
@@ -201,6 +217,32 @@ void Combat::shoot(Json &w, const Json &cfg, Json &agent, const Json &sight, Jso
         e["z"] = agent.at("z");
         e["tz"] = sight.at("z");
     }
+    const bool smoke_in_play = std::ranges::any_of(
+        w.at("effects"), [](const Json &f) { return f.contains("lobes") && f.at("kind") == "Дым"; });
+    if (smoke_in_play) {
+        Point stop = end;
+        if (planner_) {
+            if (auto hit = planner_->hit(start, end, 4, 56, 56))
+                for (int i = 0; i < 3; ++i)
+                    stop[i] = start[i] + (end[i] - start[i]) * std::get<0>(*hit);
+        }
+        if (grid_ && !grid_->clear(xy(agent), xy(sight))) {
+            double lo = 0., hi = 1.;
+            for (int step = 0; step < 12; ++step) {
+                const double mid = (lo + hi) * .5;
+                XY p{start[0] + (end[0] - start[0]) * mid, start[1] + (end[1] - start[1]) * mid};
+                if (grid_->clear(xy(agent), p))
+                    lo = mid;
+                else
+                    hi = mid;
+            }
+            for (int i = 0; i < 3; ++i)
+                stop[i] = start[i] + (end[i] - start[i]) * lo;
+        }
+        disturb_smoke(w, start, stop, false, agent.at("id"));
+    }
+    if (agent.value("flashLevel", 0.) >= .25)
+        impaired(agent, now);
     e["accuracy"] = chance;
     e["burst"] = burst;
     w.at("traces").push_back(e);
@@ -275,13 +317,41 @@ void Combat::throw_grenade(Json &w, const Json &cfg, Json &agent, const Json &ta
         effect["x"] = clear ? Json(int(aim[0])) : agent.at("x");
         effect["y"] = clear ? Json(int(aim[1])) : agent.at("y");
     }
-    if (planner_ && (peer_radio(w) || type == "Дым" || type == "Огонь")) {
+    if (spatial_grenades(w)) {
+        const bool incendiary = agent.at("team") == "CT";
+        if (type == "Огонь") {
+            effect["variant"] = incendiary ? "Incendiary" : "Molotov";
+            effect["end"] = plus_ticks(effect.at("land"), incendiary ? 55 : 70);
+            effect["radius"] = incendiary ? 12 : 16;
+        }
+        if (type == "Ложная")
+            effect["weapon"] = agent.at("weapon");
+        static const std::map<std::string, std::string> counters{{"Свет", "flashesThrown"},
+                                                                 {"Дым", "smokesThrown"},
+                                                                 {"HE", "heThrown"},
+                                                                 {"Огонь", "fireThrown"},
+                                                                 {"Ложная", "decoysThrown"}};
+        count_utility(w, agent.at("id"), counters.at(type));
+        if (type == "Свет")
+            receive_flash_warning(agent,
+                                  {{"point", goal},
+                                   {"land", effect.at("land")},
+                                   {"ticket", target.value("groupTicket", Json(nullptr))}},
+                                  agent.at("id"), coordinated_utility(w));
+    }
+    if ((planner_ || (spatial_grenades(w) && type == "Свет")) &&
+        (peer_radio(w) || type == "Дым" || type == "Огонь")) {
         Json cue = {{"x", target.at("x")},
                     {"y", target.at("y")},
-                    {"z", target.at("z")},
+                    {"z", target.value("z", Json(0))},
                     {"end", plus_ticks(effect.at("land"), 10)}};
         if (peer_radio(w)) {
             cue["cast"] = {{"item", type}, {"point", goal}, {"end", effect.at("end")}};
+            if (spatial_grenades(w) && type == "Свет") {
+                cue["cast"]["land"] = effect.at("land");
+                if (coordinated_utility(w))
+                    cue["cast"]["end"] = plus_ticks(effect.at("land"), cfg.at("throwRecovery"));
+            }
             if (group_tasks(w) && target.contains("groupTicket")) {
                 effect["groupTicket"] = target.at("groupTicket");
                 cue["cast"]["ticket"] = target.at("groupTicket");
@@ -313,6 +383,8 @@ void Combat::throw_grenade(Json &w, const Json &cfg, Json &agent, const Json &ta
         effect["openingZone"] = job.at("zone");
         effect["supported"] = job.at("throw").at("forPlayer");
     }
+    if (coordinated_utility(w) && target.contains("supported"))
+        effect["supported"] = target.at("supported");
     w.at("effects").push_back(effect);
     w.at("recentEffects").push_back(effect);
     auto &event = emit(w, "throw", agent.at("name").get<std::string>() + " · " + type, agent.at("team"));
@@ -352,7 +424,7 @@ void Combat::execute(Json &w, const Json &cfg, const Json &intents) const {
             Json *victim = nullptr;
             if (target.contains("id"))
                 victim = find(target.at("id"));
-            else if (planner_) {
+            else if (planner_ || spatial_grenades(w)) {
                 double closest = std::numeric_limits<double>::infinity();
                 for (auto &a : agents)
                     if (&a != actor && a.at("hp") != 0 && near_segment(xyz(*actor), xyz(target), xyz(a), 3)) {
@@ -403,7 +475,21 @@ void Combat::hear(Json &w, const Json &source, const std::string &kind, double r
             {xyz(a), eligible ? skills(w, a).at("game_reading").get<double>() : 0., eligible});
     }
     const std::string key = "Шум · " + kind;
-    for (const auto &heard : sensors().hear(xyz(source), radius, listeners)) {
+    std::vector<Heard> heard_by;
+    if (planner_)
+        heard_by = sensors().hear(xyz(source), radius, listeners);
+    else {
+        for (size_t i = 0; i < listeners.size(); ++i) {
+            const auto &listener = listeners[i];
+            if (!listener.eligible)
+                continue;
+            const double reach = grid_->clear(xy(roster.at(i)), xy(source)) ? radius : .5 * radius;
+            const double d = distance(listener.position, xyz(source));
+            if (d < reach)
+                heard_by.push_back({i, xyz(sound_position(xyz(source))), .4 + .4 * (1. - d / reach)});
+        }
+    }
+    for (const auto &heard : heard_by) {
         auto &a = roster.at(heard.listener);
         auto &knowledge = a.at("knowledge");
         bool repeated = false;
@@ -416,13 +502,24 @@ void Combat::hear(Json &w, const Json &source, const std::string &kind, double r
         Json cue = {{"id", key},
                     {"x", heard.estimate[0]},
                     {"y", heard.estimate[1]},
-                    {"z", a.at("z")},
+                    {"z", a.value("z", Json(0))},
                     {"source", "Слух"},
                     {"tick", now},
                     {"sound", kind},
                     {"witness", a.at("id")},
                     {"repeated", repeated},
-                    {"confidence", round_decimal(heard.confidence,2)}};
+                    {"confidence", round_decimal(heard.confidence, 2)}};
+        if (spatial_grenades(w) && kind == "Выстрел") {
+            const bool same = repeated && knowledge.at(key).value("weapon", std::string{}) ==
+                                              source.value("weapon", std::string{});
+            const int repeats = same ? knowledge.at(key).value("sameBearing", 0) + 1 : 0;
+            cue["weapon"] = source.value("weapon", std::string{});
+            cue["sameBearing"] = repeats;
+            if (repeats >= 2 && skills(w, a).at("game_reading") >= 60)
+                cue["confidence"] = cue.at("confidence").get<double>() * .55;
+            if (source.value("kind", std::string{}) == "Ложная")
+                count_utility(w, source.at("player"), "decoyHearings");
+        }
         knowledge[key] = cue;
         if (!a.contains("audioCalls"))
             a["audioCalls"] = Json::object();
@@ -439,7 +536,8 @@ void Combat::hear(Json &w, const Json &source, const std::string &kind, double r
 void Combat::report_shot(Json &w, const Json &actor, const Json &target) const {
     Tick now = w.at("tick");
     bool live = w.at("phase") == "live";
-    const bool acoustic = planner_ && (w.contains("agentPolicy") || (actor.at("team") == "T" && live));
+    const bool acoustic =
+        spatial_grenades(w) || (planner_ && (w.contains("agentPolicy") || (actor.at("team") == "T" && live)));
     if (acoustic) {
         const auto &gun = actor.at("weapon");
         hear(w, actor, "Выстрел", (gun == "USP" || gun == "M4A1-S") ? 75 : 128);
@@ -497,12 +595,28 @@ void Combat::effects(Json &w, const Json &cfg) const {
     drop_expired("recentEffects", 42);
     drop_expired("effects", 0);
     auto &roster = w.at("agents");
+    const bool revised = spatial_grenades(w);
+    if (revised)
+        update_volumes(w, planner_.get(), grid_.get());
     for (const auto &f : w.at("effects")) {
         auto p = xyz(f);
         const std::string kind = f.at("kind");
         Tick age = now - f.at("land").get<Tick>();
         double radius = f.at("radius");
+        if (revised && age == 0) {
+            for (auto &recent : w.at("recentEffects"))
+                if (recent.at("player") == f.at("player") && recent.at("start") == f.at("start"))
+                    recent["burstTick"] = now;
+        }
         bool decoy = kind == "Ложная", fire = kind == "Огонь";
+        if (revised && decoy && age >= 0) {
+            const auto weapon = f.value("weapon", std::string{"Glock"});
+            const auto interval = cfg.at("weapons").at(weapon).at("interval").get<int>();
+            const int phase = int(age % (11 + interval * 3));
+            if (phase % interval == 0 && phase <= 2 * interval)
+                hear(w, f, "Выстрел", (weapon == "USP" || weapon == "M4A1-S") ? 75 : 128);
+            continue;
+        }
         if (planner_ && (w.contains("agentPolicy") || (f.at("team") == "T" && w.at("phase") == "live")) &&
             (age == 0 || (decoy && age > 0 && age % 10 == 0)))
             hear(w, f, decoy ? "Выстрел" : "Граната", decoy || kind == "HE" || kind == "Свет" ? 108 : 54);
@@ -550,7 +664,7 @@ void Combat::effects(Json &w, const Json &cfg) const {
             }
             continue;
         }
-        if (fire && age % 5)
+        if (fire && age % (revised ? 2 : 5))
             continue;
         const auto owner = std::find_if(roster.begin(), roster.end(),
                                         [&](const Json &a) { return a.at("id") == f.at("player"); });
@@ -559,10 +673,17 @@ void Combat::effects(Json &w, const Json &cfg) const {
         for (auto &a : roster) {
             auto pos = xyz(a);
             double d = distance(p, pos);
-            if (a.at("hp") == 0 || d > radius ||
-                (grid_ ? !grid_->clear(xy(f), xy(a)) : bool(planner_->hit(p, pos, 1, 5, 64))))
+            if (fire && revised && !crosses_volume(f, pos, pos))
+                continue;
+            if (a.at("hp") == 0 || d > radius * (fire && revised ? 1.3 : 1.) ||
+                (!(fire && revised) &&
+                 (grid_ ? !grid_->clear(xy(f), xy(a)) : bool(planner_->hit(p, pos, 1, 5, 64)))))
                 continue;
             if (kind == "Свет") {
+                if (revised) {
+                    expose_player(w, a, f, flash_exposure(pos, a.at("heading"), p, radius));
+                    continue;
+                }
                 int duration = int(std::nearbyint(7 + 19 * (1 - d / radius)));
                 a["blind"] = std::max(a.at("blind").get<Tick>(), plus_ticks(now, duration));
                 emit(w, "flash", a.at("name").get<std::string>() + " ослеплён", a.at("team"))
@@ -570,9 +691,13 @@ void Combat::effects(Json &w, const Json &cfg) const {
             } else {
                 double amount = fire ? std::min(32., 8. + 4. * (age / 5))
                                      : std::max(0., std::nearbyint(98 * (1 - d / radius)));
+                if (fire && revised)
+                    amount = std::min(8., 2. + age / 2.);
                 apply_impact(w, cfg, *owner, a, amount, kind, fire ? "fire" : "blast");
             }
         }
     }
+    if (revised)
+        recover_vision(w);
 }
 } // namespace esport

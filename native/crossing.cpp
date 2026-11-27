@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "radio.hpp"
 #include "agent_helpers.hpp"
 #include <limits>
@@ -123,6 +124,18 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
         for (auto &g : gadgets) {
             if (!member_of(a.at("utility"), g))
                 continue;
+            if (coordinated_utility(w) && g == "Свет") {
+                if (flash_reserved(p))
+                    continue;
+                // A lane approach needs a threatened angle or a teammate actually
+                // approaching it.
+                if (!pressure && !flash_support && !feint && std::ranges::none_of(squad, [&](auto m) {
+                        return m != &a && now - m->value("lastMove", Tick{-100}) <= 3 &&
+                               distance(actor_point(*m), p) < distance(pos, p) && sees_teammate(*m) &&
+                               in_range_fov(*m, p);
+                    }))
+                    continue;
+            }
             double radius = cfg.at("utility").at(g)[0];
             // plan may acquire additional keys above. Reacquire the list from its owner.
             if (std::ranges::any_of(radio_memory.at("crossingCalls"), [&](const Json &c) {
@@ -130,6 +143,8 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
                 }))
                 continue;
             if (std::ranges::any_of(squad, [&](auto m) {
+                    if (g == "Свет" && spatial_grenades(w))
+                        return flash_risk(*m, p, std::max(3, int(distance(pos, p) / 7)));
                     return distance(actor_point(*m), p) < (g == "Свет" ? radius : 18);
                 }))
                 continue;

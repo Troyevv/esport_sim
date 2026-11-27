@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "radio.hpp"
 #include "agent_helpers.hpp"
 #include "economy.hpp"
@@ -70,6 +71,21 @@ bool AgentTurn::clear(const Json &l, const Json &r) const {
 }
 bool AgentTurn::move(const Point &point, double pace) {
     const auto &nav = arena.objectives().map();
+    if (!w.at("effects").empty() && spatial_grenades(w) && a.at("visible").empty() &&
+        w.at("deadline").get<Tick>() - now > 65 && !active(a, "groupDuty") && !active(a, "groupLead") &&
+        !active(a, "saving")) {
+        const Point pos = actor_point(a);
+        for (const auto &cloud : w.at("effects")) {
+            if (cloud.at("kind") != "Дым" || !cloud.contains("lobes"))
+                continue;
+            const int wait = cloud.at("end").get<int>() - now;
+            if (wait > 0 && wait < 7 + (100 - skills.at("risk").get<int>()) / 3 && gap(cloud) <= 32 &&
+                clear(a, cloud) && !crosses_volume(cloud, pos, pos) && crosses_volume(cloud, pos, point)) {
+                a["status"] = "Ждёт рассеивания дыма";
+                return false;
+            }
+        }
+    }
     return travel(a, player, nav, point, pace, fire, now);
 }
 Json AgentTurn::movement(const Point &goal, double pace) {
@@ -135,7 +151,7 @@ void AgentTurn::prepare() {
                 return false;
             return std::ranges::none_of(w.at("effects"), [&](const Json &f) {
                 return f.at("kind") == "Дым" && f.at("land") <= now && now < f.at("end") &&
-                       near_segment(actor_point(a), actor_point(bomb), actor_point(f), f.at("radius"));
+                       crosses_volume(f, actor_point(a), actor_point(bomb));
             });
         };
         if (grid && sees_device())
@@ -156,12 +172,40 @@ void AgentTurn::prepare() {
         device = bomb;
         emit(w, "pickup", a.at("name").get<std::string>() + " поднял C4", "T")["player"] = a.at("id");
     }
-    for (auto &f : w.at("effects"))
-        if (f.at("kind") == "Огонь" && f.at("land") <= now && gap(f) < 70 && clear(a, f)) {
-            fire.emplace_back(actor_point(f), f.at("radius"));
-            if (grid)
-                grid_fire.push_back(f);
+    for (const auto &f : w.at("effects")) {
+        if (f.at("kind") != "Огонь" || f.at("land") > now || gap(f) >= 70)
+            continue;
+        if (coordinated_utility(w) && f.contains("lobes")) {
+            // A player can see fire entering a doorway while its origin stays
+            // behind a wall.
+            const auto pos = actor_point(a);
+            for (const auto &cell : f.at("lobes")) {
+                const double radius = cell.at("reach");
+                if (radius <= 0)
+                    continue;
+                const Point p = cell.at("p");
+                if (distance(pos, p) > radius &&
+                    (a.at("blind") > now || !in_range_fov(a, p) ||
+                     (grid ? !grid->clear(xy(a), {p[0], p[1]})
+                           : arena.objectives().map().hit(pos, p, 1, 64, 5).has_value())))
+                    continue;
+                fire.emplace_back(p, radius);
+                if (grid)
+                    grid_fire.push_back({{"x", p[0]}, {"y", p[1]}, {"radius", radius}});
+            }
+        } else if (clear(a, f) && (!spatial_grenades(w) || a.at("blind") <= now)) {
+            append_volume(f, fire);
+            if (grid) {
+                if (!f.contains("lobes"))
+                    grid_fire.push_back(f);
+                else
+                    for (const auto &c : f.at("lobes"))
+                        if (c.at("reach") > 0)
+                            grid_fire.push_back(
+                                {{"x", c.at("p")[0]}, {"y", c.at("p")[1]}, {"radius", c.at("reach")}});
+            }
         }
+    }
     if (!w.at("action").empty())
         for (const auto &p : w.at("agents"))
             if (p.at("team") == side && p.at("id") == w.at("action").at("player"))
@@ -170,10 +214,11 @@ void AgentTurn::prepare() {
         auto &job = plan.at("opening").at("jobs").at(a.at("id").get<std::string>());
         if (job.contains("peek") && distance(actor_point(a), job.at("peek").get<Point>()) < 6) {
             auto look = job.at("watch").get<Point>();
-            opening_sight = !arena.objectives().map().hit(actor_point(a), look, 1, 64, 5) &&
+            opening_sight = (!spatial_grenades(w) || a.at("blind") <= now) &&
+                            !arena.objectives().map().hit(actor_point(a), look, 1, 64, 5) &&
                             std::ranges::none_of(w.at("effects"), [&](const Json &f) {
                                 return f.at("kind") == "Дым" && f.at("land") <= now && now < f.at("end") &&
-                                       near_segment(actor_point(a), look, actor_point(f), f.at("radius"));
+                                       crosses_volume(f, actor_point(a), look);
                             });
         }
     }
@@ -255,7 +300,8 @@ void AgentTurn::duty_feedback() {
 void AgentTurn::finish(const Json &intent) {
     const auto kind = intent.at(0).get<std::string>();
     if (!grid) {
-        check_incoming(kind);
+        if (a.at("status") != "Отворачивается от флешки")
+            check_incoming(kind);
         if (a.value("lastBlockedTick", Tick{-1}) != now)
             a["blockedTicks"] = 0;
         if (side == "T" && w.at("phase") == "live" && a.value("blockedTicks", 0) >= 20 &&

@@ -65,12 +65,18 @@ export interface MatchView {
     kast: number;
     spent: number | null;
     clutches: number;
+    flashesThrown?: number; enemiesFlashed?: number; alliesFlashed?: number; selfFlashes?: number;
+    enemyBlindTicks?: number; flashAssists?: number; heDamage?: number; fireDamage?: number;
+    smokeScreenTicks?: number; firesQuenched?: number; decoyHearings?: number;
   }[];
   bomb: (Point & { carrier: string | null; site: string | null }) | null;
   action: { player: string; kind: string; start: number; end: number } | null;
   effects: (Point & {
     team?: Side;
     kind: string;
+    spatial?: boolean;
+    burstTick?: number;
+    volume?: [number, number, number, number][];
     trajectory?: [number, number, number][];
     sx: number;
     sy: number;
@@ -240,6 +246,7 @@ export default function MatchCenter({
   const [selected, select] = useState<string | null>(null);
   const [seed, setSeed] = useState(String(world.seed));
   const [nextCall, setNextCall] = useState(m.calls[0]);
+  const utilityStats = m.stats.find(row => row.id === selected);
   const selectedAgent = world.agents.find((a) => a.id === selected);
   const name = (id: string) => m.stats.find((p) => p.id === id)?.name ?? id;
   const finished = m.phase === "finished",
@@ -549,6 +556,15 @@ export default function MatchCenter({
                     values={m.roleRatings[selectedAgent.id]}
                     compact
                   />
+                )}
+                {utilityStats?.flashesThrown !== undefined && (
+                  <small>Флешки {utilityStats.flashesThrown} · ослеплено противников {utilityStats.enemiesFlashed},
+                    союзников {utilityStats.alliesFlashed}, себя {utilityStats.selfFlashes} ·
+                    зрение противников снижено {((utilityStats.enemyBlindTicks ?? 0) / 10).toFixed(1)} с ·
+                    флеш-ассисты {utilityStats.flashAssists}<br />
+                    Урон HE {utilityStats.heDamage} · огонь {utilityStats.fireDamage} ·
+                    потушено очагов {utilityStats.firesQuenched} · услышано ложных выстрелов {utilityStats.decoyHearings}
+                  </small>
                 )}
                 <div className="selected-loadout">
                   <WeaponSlots

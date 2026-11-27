@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "agent_turn.hpp"
 #include <algorithm>
 #include <cmath>
@@ -18,7 +19,7 @@ bool AgentTurn::sees_teammate(const Json &mate) const {
     const auto start = actor_point(a), end = actor_point(mate);
     return std::ranges::none_of(w.at("effects"), [&](const Json &f) {
         return f.at("kind") == "Дым" && f.at("land") <= now && now < f.at("end") &&
-               near_segment(start, end, actor_point(f), f.at("radius"));
+               crosses_volume(f, start, end);
     });
 }
 // Estimate a visible ally's line of fire against *our own* reports. A teammate's
@@ -186,10 +187,9 @@ Json AgentTurn::seek_cover(const Json &contact, bool requested) {
             if (length > 20)
                 continue;
             a["shelter"] = q;
-            if (side == "CT" && has(a.at("utility"), "Дым") && now >= a.at("throwAt").get<Tick>() &&
-                distance(pos, threat) > 24 && std::ranges::none_of(squad, [&](auto m) {
-                    return m != &a && ally_covers(*m, contact);
-                })) {
+            if (a.value("flashLevel", 0.) < .5 && side == "CT" && has(a.at("utility"), "Дым") &&
+                now >= a.at("throwAt").get<Tick>() && distance(pos, threat) > 24 &&
+                std::ranges::none_of(squad, [&](auto m) { return m != &a && ally_covers(*m, contact); })) {
                 Point screen;
                 for (int i = 0; i < 3; ++i)
                     screen[i] = pos[i] + (threat[i] - pos[i]) * .55;
@@ -243,6 +243,7 @@ Json AgentTurn::duel(const Json &contact) {
             delay -= s("trades") / 35.;
         if (squad.size() == 1)
             delay += (100 - s("clutch")) / 24.;
+        delay += a.value("flashLevel", 0.) * (9. - s("reaction") / 20.);
         a["target"] = contact.at("id");
         a["previousTarget"] = contact.at("id");
         a["ready"] =
@@ -257,9 +258,12 @@ Json AgentTurn::duel(const Json &contact) {
             const auto item = a.at("utility")[0].get<std::string>();
             double decisions = skills.at("decisions"),
                    radius = cfg.at("utility").at(item)[0].get<double>() * decisions / 100;
-            bool unsafe =
-                (item == "HE" || item == "Огонь" || item == "Свет") &&
-                std::ranges::any_of(squad, [&](auto m) { return gap2(xy(*m), xy(contact)) < radius; });
+            bool unsafe = (item == "HE" || item == "Огонь" || item == "Свет") &&
+                          std::ranges::any_of(squad, [&](auto m) {
+                              return item == "Свет" && spatial_grenades(w)
+                                         ? flash_risk(*m, target, 3)
+                                         : gap2(xy(*m), xy(contact)) < radius;
+                          });
             bool soon = a.at("ammo") != 0 && a.at("reloadAt") == 0 && a.at("ready") < now + 5;
             if (!unsafe &&
                 !(soon && gap <= 18 + decisions * std::min(.6, spec.at("damage").get<double>() / 75)))
@@ -272,6 +276,10 @@ Json AgentTurn::duel(const Json &contact) {
                  vulnerable = a.at("reloadAt") != 0 || a.at("hp") < 45;
             auto ready =
                 std::max<Tick>(0, std::max(a.at("ready").get<Tick>(), a.at("reloadAt").get<Tick>()) - now);
+            const bool coordination = coordinated_utility(w);
+            const Tick warn =
+                coordination ? std::max(0, 2 + (100 - skills.at("communication").get<int>()) / 12 - flight)
+                             : 0;
             int shots = std::min(
                 a.at("ammo").get<int>(),
                 int(std::max(0., 1 + std::floor(double(cfg.at("throwRecovery").get<int>() - 1 - ready) /
@@ -286,6 +294,8 @@ Json AgentTurn::duel(const Json &contact) {
                     continue;
                 double radius = cfg.at("utility").at(item)[0], benefit = 0;
                 bool friends = std::ranges::any_of(squad, [&](auto m) {
+                    if (item == "Свет" && spatial_grenades(w))
+                        return flash_risk(*m, target, flight);
                     return distance(target, actor_point(*m)) < radius &&
                            !nav.hit(target, actor_point(*m), 1, 5, 64);
                 });
@@ -295,19 +305,37 @@ Json AgentTurn::duel(const Json &contact) {
                         continue;
                     benefit = damage;
                 } else {
-                    if (friends || (item == "Свет" && !backup && !vulnerable))
+                    if (friends || (item == "Свет" &&
+                                    ((!backup && !vulnerable) || (coordination && flash_reserved(target)))))
                         continue;
                     double sum = 0, error = 0;
                     for (auto &id : a.at("visible")) {
                         double d = distance(actor_point(a.at("knowledge").at(id.get<std::string>())), target);
                         if (d < radius) {
                             double x = item == "Свет" ? damage : (1 - d / radius) * (item == "HE" ? 82 : 30),
-                                   t = sum + x;
+                                   t;
+                            if (coordination && item == "Свет") {
+                                const Json &sight = a.at("knowledge").at(id.get<std::string>());
+                                const Point eye = actor_point(sight);
+                                const double heading =
+                                    sight.contains("bodySector")
+                                        ? sight.at("bodySector").get<int>() * std::numbers::pi / 4.
+                                        : std::atan2(pos[1] - eye[1], pos[0] - eye[0]);
+                                x *= nav.hit(target, eye, 1, 5, 64)
+                                         ? 0.
+                                         : flash_exposure(eye, heading, target, radius);
+                                x *= 1. / (1. + (flight + warn) * sight.value("speed", 0.) / radius);
+                            }
+                            t = sum + x;
                             error += std::abs(sum) >= std::abs(x) ? (sum - t) + x : (x - t) + sum;
                             sum = t;
                         }
                     }
                     benefit = sum + error;
+                    if (item == "HE" && a.contains("confirmedHit") &&
+                        a.at("confirmedHit").at("id") == contact.at("id") &&
+                        now - a.at("confirmedHit").at("tick").get<Tick>() <= 16)
+                        benefit += damage * .3;
                 }
                 double mastery =
                            skills.at(cfg.at("grenadeSkills").at(item).get<std::string>()).get<double>() / 100,
@@ -321,6 +349,8 @@ Json AgentTurn::duel(const Json &contact) {
                     cfg.at("utility").at(best->second)[0].get<double>()) {
                 auto result = contact;
                 result["utility"] = best->second;
+                if (coordination)
+                    result["purpose"] = "Граната в дуэли";
                 return Json::array({"throw", result});
             }
         }
@@ -340,7 +370,12 @@ Json AgentTurn::last_burst() {
         return nullptr;
     auto sight = a.at("knowledge").at(id);
     auto age = now - sight.at("tick").get<Tick>();
-    if (sight.at("source") != "Зрение" || age <= 0 || age > 3)
+    const bool screen =
+        spatial_grenades(w) && age <= 9 && std::ranges::any_of(w.at("effects"), [&](const Json &f) {
+            return f.at("kind") == "Дым" && f.at("land") <= now &&
+                   crosses_volume(f, actor_point(a), actor_point(sight));
+        });
+    if (sight.at("source") != "Зрение" || age <= 0 || age > (screen ? 9 : 3))
         return nullptr;
     auto dir = sight.value("direction", Point{0, 0, 0}), origin = actor_point(sight), q = origin;
     double delta =
@@ -355,7 +390,9 @@ Json AgentTurn::last_burst() {
     sight["x"] = q[0];
     sight["y"] = q[1];
     sight["z"] = q[2];
-    a["status"] = "Продолжает очередь по последнему контакту";
+    if (screen)
+        sight.erase("id");
+    a["status"] = screen ? "Простреливает дым по памяти" : "Продолжает очередь по последнему контакту";
     return Json::array({"shoot", sight});
 }
 } // namespace esport

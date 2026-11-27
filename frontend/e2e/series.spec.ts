@@ -24,6 +24,10 @@ if (process.env.ESPORT_CS2_QA) {
         fullPage: true,
       });
     };
+    await page.goto("/");
+    await press("Стенд симуляции");
+    await expect(page.locator("button.database-entry")).toBeVisible();
+    // Reopening this URL later must restore the lab rather than the main menu.
     await page.goto("/?screen=lab");
     await expect(page.getByTestId("connection")).toContainText("На связи");
     if ((await (await page.request.get("/api/state")).json()).world.match) {

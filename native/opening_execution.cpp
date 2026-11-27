@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "agent_helpers.hpp"
 #include "radio.hpp"
 namespace esport {
@@ -137,6 +138,8 @@ Json AgentTurn::opening_decision() {
                     }
                     cast["skip"] = "Линия броска перекрыта";
                 } else if (std::ranges::any_of(squad, [&](auto m) {
+                               if (item == "Свет" && spatial_grenades(w))
+                                   return flash_risk(*m, target, flight);
                                return distance(actor_point(*m), target) <
                                           cfg.at("utility").at(item)[0].get<double>() + 2 &&
                                       !nav.hit(actor_point(*m), target, 1, 64, 64);

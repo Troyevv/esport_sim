@@ -65,6 +65,7 @@ export function drawEvents(
   items: RadarEquipment,
   carrier?: { x: number; y: number },
   visible: (z?: number) => boolean = () => true,
+  scale = 1,
 ) {
   g.clear();
   for (const gun of m.groundWeapons)
@@ -90,7 +91,32 @@ export function drawEvents(
         .stroke({ color, width: 0.7, alpha: 0.7 });
       items.show(f.kind, x, y, 5, 6, color, f.team);
     } else {
-      if (!visible(f.z)) continue;
+      if (!visible(f.z) && !(f.spatial && f.volume)) continue;
+      if (f.spatial) {
+        if (f.burstTick === undefined || tick < f.burstTick) continue;
+        if (f.kind === "Дым" || f.kind === "Огонь") {
+          if (tick >= f.end || !f.volume) continue;
+          for (const [x, y, z, r] of f.volume) {
+            if (visible(z)) g.circle(x, y, r);
+          }
+          g.fill({ color, alpha: f.kind === "Дым" ? 0.48 : 0.62 });
+          continue;
+        }
+        const age = tick - f.burstTick;
+        if (f.kind === "Ложная" && tick < f.end) items.show(f.kind,f.x,f.y,5,5,color,f.team);
+        if (age >= 4) continue;
+        const alpha = 1 - age / 4;
+        const burstColor = f.kind === "Свет" ? 0xffffff : color;
+        const unit = Math.max(1, 1.8 / scale);
+        g.circle(f.x, f.y, (2 + age * 2) * unit)
+          .stroke({color: burstColor, width: 1.15 * unit, alpha});
+        for (let i=0; i<8; i++) {
+          const dx=Math.cos(i*Math.PI/4), dy=Math.sin(i*Math.PI/4);
+          g.moveTo(f.x+dx*2*unit,f.y+dy*2*unit).lineTo(f.x+dx*(8+age)*unit,f.y+dy*(8+age)*unit);
+        }
+        g.stroke({color:burstColor,width:unit,alpha});
+        continue;
+      }
       const fade = Math.min(1, (f.end + 3 - tick) / 4);
       items.show(f.kind, f.x, f.y, 4.5, 5.5, color, f.team);
       const radius = f.radius * Math.min(1, 0.35 + (tick - f.land) * 0.25);

@@ -349,3 +349,20 @@ def test_academy_starter_can_be_an_unused_major_reserve():
     academy["entries"]["youth"] = "locked"
     academy["registrations"]["youth"] = [dict(players=list("fghij"), reserves=[])]
     assert registrations.player_conflict(c, major, "senior", list("abcdf")) is academy
+
+
+def test_tournament_keeps_measured_utility_when_mixing_protocols(scene):
+    c = deepcopy(scene)
+    edition = next(e for e in c["circuit"]["editions"].values() if e["series"] == "pgl-major")
+    for measured in (True, False, True):
+        fixture = next(e for e in c["queue"] if e.get("edition") == edition["id"])
+        c["queue"].remove(fixture)
+        a, b = fixture["teams"]
+        player = dict(player="p-audit", teamId=a, name="Игрок", k=1, d=0, a=0, damage=100)
+        if measured:
+            player.update(flashAssists=1, heDamage=40)
+        report = dict(winnerTeamId=a, score=[1, 0], stats=[player], rounds=[dict(winnerTeamId=a)])
+        competitions.completed(c, fixture, report)
+    stats = edition["stats"]["p-audit"]
+    assert (stats["rounds"], stats["k"], stats["flashAssists"], stats["heDamage"]) == (3, 3, 2, 80)
+    assert "decoyHearings" not in stats

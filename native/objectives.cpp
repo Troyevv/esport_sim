@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "objectives.hpp"
 #include <algorithm>
 #include <cmath>
@@ -254,7 +255,7 @@ void Objectives::resolve(Json &w, const Json &cfg, const Json &order) const {
                                              return true;
                                          return std::ranges::any_of(w.at("effects"), [&](const auto &f) {
                                              return f.at("kind") == "Дым" && f.at("land") <= now &&
-                                                    near_segment(xyz(a), xyz(b), xyz(f), f.at("radius"));
+                                                    crosses_volume(f, xyz(a), xyz(b));
                                          });
                                      }),
                       visible.end());

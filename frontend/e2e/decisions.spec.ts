@@ -60,4 +60,5 @@ test("Aurora · приоритет турнира, центр решений и 
   await expect(button("Продолжить")).toBeVisible();
   await press("← Главное меню");
   await press("Стенд симуляции");
+  await expect(page.locator("button.database-entry")).toBeVisible();
 });

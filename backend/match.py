@@ -4,7 +4,7 @@ import json
 
 from . import cs2_maps, checkpoints, engine, match_inventory, match_score, tactics, world
 from . import match_view
-from .match_rules import AGENT_POLICY, CALLS, MAP, RULES, VERSION, PREVIOUS_VERSION, equipment_value
+from .match_rules import AGENT_POLICY, UTILITY_STATS, CALLS, MAP, RULES, VERSION, PREVIOUS_VERSION, equipment_value
 
 
 def team(w, club):
@@ -252,19 +252,27 @@ def project(w, view="full"):
                     )
                 }
             )
+        if friendly and a["hp"]:
+            marker["flashLevel"] = a.get("flashLevel", float(a["blind"] > w["tick"]))
         agents.append(marker)
     bomb = w["bomb"]
     carrier = next((a for a in w["agents"] if a["id"] == bomb["carrier"]), None)
     point = carrier or bomb
     smoke = [f for f in w["effects"] if f["kind"] == "Дым" and f["land"] <= w["tick"]]
 
-    def observable(p, *, cloud=False):
+    def blocks(a, p, f):
+        if "lobes" not in f:
+            return match_view.near_line(a, p, f, f["radius"])
+        return any(c["reach"] > 0 and match_view.near_line(a, p, match_view.at(c["p"]), c["reach"])
+                   for c in f["lobes"])
+
+    def observable(p, *, exclude=None):
         return view == "full" or any(
             a["hp"]
             and a["blind"] <= w["tick"]
             and match_view.sees(space,a,p)
             and not any(
-                match_view.near_line(a, p, f, f["radius"]) for f in smoke if not cloud or f != p
+                blocks(a, p, f) for f in smoke if (f.get("player"), f.get("start")) != exclude
             )
             for a in own
         )
@@ -278,17 +286,32 @@ def project(w, view="full"):
         public_bomb = dict(
             **match_view.at(match_view.point(point)), carrier=bomb["carrier"], site=bomb["site"]
         )
-    effects = [
-        f
-        for f in w["recentEffects"]
-        if view in ("full", f["team"])
-        or (w["tick"] >= f["land"] and observable(f, cloud=f["kind"] == "Дым"))
-    ]
-    # Do not reveal an unseen thrower's origin via the trajectory of a landed grenade.
-    effects = [
-        f if view in ("full", f["team"]) else dict({k:v for k,v in f.items() if k not in ("trajectory","sz")}, sx=f["x"], sy=f["y"], player=None)
-        for f in effects
-    ]
+    effects = []
+    active_effects = {(f.get("player"), f.get("start")): f for f in w["effects"]}
+    for f in w["recentEffects"]:
+        key = f["player"], f["start"]
+        live = active_effects.get(key, {})
+        own_effect = view in ("full", f["team"])
+        exclude = key if f["kind"] == "Дым" else None
+        if not own_effect and w["tick"] < f["land"]:
+            continue
+        volume = None
+        if "lobes" in live:
+            volume = [[*c["p"], c["reach"]] for c in live["lobes"] if c["reach"] > 0 and
+                      (own_effect or observable(match_view.at(c["p"]), exclude=exclude))]
+        if not own_effect and not volume and not observable(f, exclude=exclude):
+            continue
+        item = dict(f)
+        if not own_effect:
+            item.pop("trajectory", None)
+            item.pop("sz", None)
+            item.update(sx=f["x"], sy=f["y"], player=None)
+        if w.get("agentPolicy", 0) >= 6:
+            item.pop("weapon", None)
+            item["spatial"] = True
+            if volume is not None:
+                item["volume"] = volume
+        effects.append(item)
     stats = []
     for a in w["agents"]:
         row = dict(
@@ -304,6 +327,12 @@ def project(w, view="full"):
             row["spent"] = None
         if "visual" in w["domain"]["players"][a["playerId"]]:
             row["visual"] = w["domain"]["players"][a["playerId"]]["visual"]
+        if w.get("agentPolicy", 0) >= 6:
+            for metric in UTILITY_STATS:
+                if view == "full" or w["phase"] == "finished":
+                    row.setdefault(metric, 0)
+                else:
+                    row.pop(metric, None)
         stats.append(row)
     audience = lambda e: view == "full" or e["team"] in (view, None)
     journal = [
@@ -311,6 +340,8 @@ def project(w, view="full"):
         for e in w["events"]
         if audience(e) and e["kind"] not in ("money", "buy", "shot", "damage")
     ]
+    if view != "full":
+        journal = [{k: v for k, v in e.items() if k != "owner"} if e["kind"] == "flash" else e for e in journal]
     action = w["action"]
     if action and view not in (
         "full",

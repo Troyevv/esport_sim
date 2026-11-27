@@ -14,6 +14,14 @@ inline bool terminal_reply(const Json &state) {
 inline int radio_delay(const AgentTurn &t) {
     return 1 + (100 - t.skills.at("communication").get<int>()) / 12;
 }
+// A different nominee may have confirmed cover while the thrower's radio packet
+// was in transit.
+inline bool waiting_for_ticket_flash(const AgentTurn &t, const Json &ticket) {
+    auto warnings = t.a.find("flashWarnings");
+    return warnings != t.a.end() && std::ranges::any_of(*warnings, [&](const Json &warning) {
+               return warning.at("land") > t.now && warning.value("ticket", Json(nullptr)) == ticket;
+           });
+}
 inline bool can_support(const AgentTurn &t) {
     return t.a.at("blind") <= t.now && t.a.at("reloadAt") == 0 && t.a.at("ammo") > 0 &&
            t.a.at("ready") <= t.now && t.a.at("visible").empty();

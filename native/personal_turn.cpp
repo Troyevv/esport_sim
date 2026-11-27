@@ -1,3 +1,4 @@
+#include "grenades.hpp"
 #include "radio.hpp"
 #include "agent_helpers.hpp"
 #include "individual_decision.hpp"
@@ -114,7 +115,9 @@ ExecutionContext execution_context(AgentTurn &turn, const Situation &s, const Js
     return x;
 }
 
-Json grid_cover(AgentTurn &turn, const Json &contact) {
+} // namespace
+Json AgentTurn::grid_cover(const Json &contact) {
+    auto &turn = *this;
     auto &a = turn.a;
     const auto &map = *turn.grid;
     const auto origin = xy(a), threat = xy(contact);
@@ -143,7 +146,6 @@ Json grid_cover(AgentTurn &turn, const Json &contact) {
     bool moved = map.walk(a, a.at("shelter"), 2 * move_speed(turn.player), turn.grid_fire, true);
     return Json::array({moved ? "move" : "hold", nullptr});
 }
-} // namespace
 
 Json AgentTurn::personal_decision() {
     if (!grid && a.value("lastBlockedTick", Tick{-1000}) != now - 1)
@@ -292,7 +294,7 @@ Json AgentTurn::personal_decision() {
                 }
                 intent = Json::array({moved ? "move" : "hold", nullptr});
             } else
-                intent = grid ? grid_cover(*this, contact) : seek_cover(contact, true);
+                intent = grid ? grid_cover(contact) : seek_cover(contact, true);
             if (intent.is_null()) {
                 candidate.reachable = false;
                 continue;
