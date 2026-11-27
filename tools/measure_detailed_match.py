@@ -17,8 +17,8 @@ import psutil
 from backend import career, cs2_maps, database, match
 
 
-def encode(value):
-    return json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
+def encode(value, *, sort_keys=True):
+    return json.dumps(value, sort_keys=sort_keys, ensure_ascii=False, separators=(",", ":")).encode()
 
 
 def digest(value):
@@ -61,7 +61,9 @@ def run(args):
         match.advance(game)
         durations.append(perf_counter_ns() - before)
         if game["tick"] == 150:
-            checkpoint = encode(game)
+            # Store.write preserves insertion order. Dated contacts in an event
+            # can reflect that order even when the match outcome is identical.
+            checkpoint = encode(game, sort_keys=False)
             if args.checkpoint:
                 saved = gzip.decompress(args.checkpoint.read_bytes())
                 if hashlib.sha256(saved).digest() != hashlib.sha256(checkpoint).digest():
