@@ -71,7 +71,12 @@ def run(args):
         durations.append(perf_counter_ns() - before)
         if game["tick"] == 150:
             checkpoint = encode(game)
-            if args.restore:
+            if args.checkpoint:
+                saved = gzip.decompress(args.checkpoint.read_bytes())
+                if hashlib.sha256(saved).digest() != hashlib.sha256(checkpoint).digest():
+                    raise ValueError("The stored checkpoint differs at tick 150")
+                game = json.loads(saved)
+            elif args.restore:
                 game = json.loads(checkpoint)
         if game["tick"] % 10 == 0:
             poses.update(encode([[a["id"], a["x"], a["y"], a["z"], a["hp"], a["navArea"]]
@@ -94,7 +99,7 @@ def run(args):
     args.out.mkdir(parents=True, exist_ok=True)
     stem = args.out / args.map
     stem.with_suffix(".checkpoint.json.gz").write_bytes(gzip.compress(checkpoint, mtime=0))
-    report = dict(controls=controls, nativeNav=args.native_nav, restored=args.restore, python=platform.python_version(),
+    report = dict(controls=controls, nativeNav=args.native_nav, restored=bool(args.restore or args.checkpoint), python=platform.python_version(),
                   platform=platform.platform(), numpy=version("numpy"), embreex=version("embreex"),
                   initMs=initialized / 1e6, bo1WallS=wall / 1e9, cpuS=cpu / 1e9,
                   rssBeforeMiB=rss_start, peakMiB=peak,
@@ -103,6 +108,13 @@ def run(args):
                   p99TickMs=durations[math.ceil(.99 * len(durations)) - 1] / 1e6)
     stem.with_suffix(".json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n",
                                          encoding="utf-8")
+    if args.expect:
+        expected = json.loads(args.expect.read_bytes())[args.map]
+        actual = json.loads(encode(controls))
+        differences = sorted(key for key in expected.keys() | actual.keys()
+                             if expected.get(key) != actual.get(key))
+        if differences:
+            raise ValueError(f"{args.map}: reference mismatch in {', '.join(differences)}")
     print(args.map, game["score"], game["tick"], round(wall / 1e9, 2), flush=True)
 
 
@@ -111,6 +123,8 @@ if __name__ == "__main__":
     parser.add_argument("--map", required=True, choices=cs2_maps.NAMES)
     parser.add_argument("--seed", type=int, default=41000)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--checkpoint", type=Path, help="Continue from a pinned tick-150 checkpoint")
+    parser.add_argument("--expect", type=Path, help="Compare all controls to a reference JSON by map")
     parser.add_argument("--native-nav", action="store_true", help="Substitute native NAV lookup for comparison")
     parser.add_argument("--restore", action="store_true", help="Continue from JSON at tick 150")
     run(parser.parse_args())

@@ -21,7 +21,7 @@ function Batch($name) {
     if ($LASTEXITCODE) { throw "$name.bat exited with $LASTEXITCODE" }
 }
 function Stamps {
-    foreach ($path in '.venv/.esportsim-dependencies','frontend/node_modules/.esportsim-dependencies','build/source-launcher/frontend.sha256') {
+    foreach ($path in '.venv/.esportsim-dependencies','frontend/node_modules/.esportsim-dependencies','build/source-launcher/frontend.sha256','build/source-launcher/native.sha256') {
         (Get-Item -LiteralPath $path).LastWriteTimeUtc.Ticks
     }
 }
@@ -62,7 +62,12 @@ try {
     Add-Content frontend/src/radar.css '/* acceptance */'
     Batch 'start'
     $changed = @(Stamps)
-    if ($changed[0] -ne $before[0] -or $changed[1] -ne $before[1] -or $changed[2] -eq $before[2]) { throw 'Frontend invalidation was not selective' }
+    if ($changed[3] -ne $before[3] -or $changed[0] -ne $before[0] -or $changed[1] -ne $before[1] -or $changed[2] -eq $before[2]) { throw 'Frontend invalidation was not selective' }
+    Stop-Game
+    Add-Content native/navigation.cpp '// source preparation test'
+    Batch 'start'
+    $nativeChanged = @(Stamps)
+    if ($changed[3] -eq $nativeChanged[3] -or (Compare-Object $changed[0..2] $nativeChanged[0..2])) { throw 'Native invalidation was not selective' }
     Stop-Game
     Add-Content requirements.txt '# acceptance'
     Add-Content frontend/package-lock.json ' '

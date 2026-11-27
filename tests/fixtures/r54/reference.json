@@ -1,0 +1,1590 @@
+{
+  "de_ancient": {
+    "seed": 41000,
+    "map": "de_ancient",
+    "rosterIds": [
+      "r-a7e53697fca533a02c19",
+      "r-77f51ee716b19380d99d"
+    ],
+    "inputHash": "73f649a276a45fab5649e63eb41ccf253a7c29f0a53373eddb6296b0c6605503",
+    "commands": [
+      [
+        0,
+        "timeout",
+        null
+      ],
+      [
+        0,
+        "resume",
+        null
+      ]
+    ],
+    "rules": "cs2-bo1.20",
+    "geometry": 26879581,
+    "checkpointVersion": 7,
+    "ticks": 23780,
+    "score": [
+      13,
+      16
+    ],
+    "sides": {
+      "CT": 15,
+      "T": 14
+    },
+    "eventCounts": {
+      "money": 2054,
+      "round_start": 29,
+      "timeout": 1,
+      "resume": 1,
+      "plan": 58,
+      "buy": 1302,
+      "throw": 271,
+      "contact": 751,
+      "shot": 1732,
+      "damage": 728,
+      "reload": 11,
+      "kill": 214,
+      "captain": 77,
+      "drop": 18,
+      "pickup": 12,
+      "flash": 68,
+      "rotate": 74,
+      "plant_start": 23,
+      "interrupt": 7,
+      "round_end": 29,
+      "weapon_pickup": 1,
+      "plant": 19,
+      "defuse_start": 12,
+      "defuse": 8,
+      "explode": 1,
+      "match_end": 1
+    },
+    "ledgerHash": "cbc10f8dbab4f2611c7e9c35960b9be27407380ee7b3d67e73da85c2b5ff8721",
+    "stats": {
+      "T1": {
+        "k": 15,
+        "d": 25,
+        "a": 12,
+        "hs": 13,
+        "damage": 2488,
+        "opening": 6,
+        "kast": 19,
+        "spent": 91050,
+        "clutches": 0
+      },
+      "T2": {
+        "k": 13,
+        "d": 22,
+        "a": 4,
+        "hs": 8,
+        "damage": 1485,
+        "opening": 0,
+        "kast": 18,
+        "spent": 90300,
+        "clutches": 2
+      },
+      "T3": {
+        "k": 27,
+        "d": 24,
+        "a": 7,
+        "hs": 19,
+        "damage": 2834,
+        "opening": 5,
+        "kast": 25,
+        "spent": 97100,
+        "clutches": 2
+      },
+      "T4": {
+        "k": 20,
+        "d": 21,
+        "a": 8,
+        "hs": 11,
+        "damage": 1731,
+        "opening": 1,
+        "kast": 22,
+        "spent": 91550,
+        "clutches": 2
+      },
+      "T5": {
+        "k": 22,
+        "d": 25,
+        "a": 5,
+        "hs": 12,
+        "damage": 2212,
+        "opening": 0,
+        "kast": 19,
+        "spent": 92150,
+        "clutches": 0
+      },
+      "CT1": {
+        "k": 24,
+        "d": 27,
+        "a": 9,
+        "hs": 14,
+        "damage": 3000,
+        "opening": 10,
+        "kast": 24,
+        "spent": 91350,
+        "clutches": 1
+      },
+      "CT2": {
+        "k": 29,
+        "d": 16,
+        "a": 5,
+        "hs": 12,
+        "damage": 2899,
+        "opening": 0,
+        "kast": 22,
+        "spent": 78400,
+        "clutches": 0
+      },
+      "CT3": {
+        "k": 33,
+        "d": 18,
+        "a": 6,
+        "hs": 18,
+        "damage": 3141,
+        "opening": 6,
+        "kast": 26,
+        "spent": 82150,
+        "clutches": 0
+      },
+      "CT4": {
+        "k": 16,
+        "d": 17,
+        "a": 4,
+        "hs": 11,
+        "damage": 1844,
+        "opening": 0,
+        "kast": 21,
+        "spent": 78200,
+        "clutches": 1
+      },
+      "CT5": {
+        "k": 15,
+        "d": 19,
+        "a": 5,
+        "hs": 6,
+        "damage": 1526,
+        "opening": 1,
+        "kast": 26,
+        "spent": 78750,
+        "clutches": 1
+      }
+    },
+    "posesHash": "48354224e04e8ae49f9b323df08044e32da6a31b0b5b06ca2f1fb1ece0a2b2e4",
+    "stateHash": "c81b55f6133d585ed08d8cefe79a9e5604a75cafd6d457c5f0d47e71e37be31b",
+    "checkpointHash": "8367a45c208e96f92a2cdd43aba57770cdc09fb22111f65818924b59b57023b2"
+  },
+  "de_anubis": {
+    "seed": 41000,
+    "map": "de_anubis",
+    "rosterIds": [
+      "r-a7e53697fca533a02c19",
+      "r-77f51ee716b19380d99d"
+    ],
+    "inputHash": "73f649a276a45fab5649e63eb41ccf253a7c29f0a53373eddb6296b0c6605503",
+    "commands": [
+      [
+        0,
+        "timeout",
+        null
+      ],
+      [
+        0,
+        "resume",
+        null
+      ]
+    ],
+    "rules": "cs2-bo1.20",
+    "geometry": 26879581,
+    "checkpointVersion": 7,
+    "ticks": 16633,
+    "score": [
+      3,
+      13
+    ],
+    "sides": {
+      "CT": 15,
+      "T": 1
+    },
+    "eventCounts": {
+      "money": 881,
+      "round_start": 16,
+      "timeout": 1,
+      "resume": 1,
+      "plan": 32,
+      "buy": 519,
+      "throw": 158,
+      "contact": 886,
+      "shot": 751,
+      "damage": 306,
+      "kill": 89,
+      "captain": 31,
+      "rotate": 98,
+      "flash": 49,
+      "reload": 7,
+      "drop": 18,
+      "pickup": 10,
+      "round_end": 16,
+      "plant_start": 8,
+      "interrupt": 2,
+      "plant": 4,
+      "defuse_start": 4,
+      "defuse": 4,
+      "match_end": 1
+    },
+    "ledgerHash": "31c0aca94579c834b26b81e30398dcfa2ec29097a4722df7e5585668677ade0d",
+    "stats": {
+      "T1": {
+        "k": 2,
+        "d": 12,
+        "a": 3,
+        "hs": 1,
+        "damage": 522,
+        "opening": 0,
+        "kast": 8,
+        "spent": 38750,
+        "clutches": 0
+      },
+      "T2": {
+        "k": 6,
+        "d": 9,
+        "a": 1,
+        "hs": 3,
+        "damage": 606,
+        "opening": 0,
+        "kast": 12,
+        "spent": 33000,
+        "clutches": 0
+      },
+      "T3": {
+        "k": 8,
+        "d": 13,
+        "a": 1,
+        "hs": 6,
+        "damage": 943,
+        "opening": 1,
+        "kast": 8,
+        "spent": 46000,
+        "clutches": 0
+      },
+      "T4": {
+        "k": 11,
+        "d": 13,
+        "a": 2,
+        "hs": 6,
+        "damage": 1093,
+        "opening": 1,
+        "kast": 11,
+        "spent": 41150,
+        "clutches": 0
+      },
+      "T5": {
+        "k": 7,
+        "d": 8,
+        "a": 0,
+        "hs": 4,
+        "damage": 842,
+        "opening": 2,
+        "kast": 10,
+        "spent": 27300,
+        "clutches": 0
+      },
+      "CT1": {
+        "k": 2,
+        "d": 9,
+        "a": 7,
+        "hs": 1,
+        "damage": 652,
+        "opening": 0,
+        "kast": 13,
+        "spent": 33100,
+        "clutches": 0
+      },
+      "CT2": {
+        "k": 4,
+        "d": 3,
+        "a": 1,
+        "hs": 2,
+        "damage": 283,
+        "opening": 0,
+        "kast": 15,
+        "spent": 14150,
+        "clutches": 0
+      },
+      "CT3": {
+        "k": 17,
+        "d": 8,
+        "a": 1,
+        "hs": 8,
+        "damage": 1726,
+        "opening": 5,
+        "kast": 12,
+        "spent": 35450,
+        "clutches": 0
+      },
+      "CT4": {
+        "k": 12,
+        "d": 4,
+        "a": 0,
+        "hs": 9,
+        "damage": 1033,
+        "opening": 0,
+        "kast": 14,
+        "spent": 24600,
+        "clutches": 1
+      },
+      "CT5": {
+        "k": 20,
+        "d": 10,
+        "a": 4,
+        "hs": 14,
+        "damage": 2194,
+        "opening": 7,
+        "kast": 14,
+        "spent": 38550,
+        "clutches": 0
+      }
+    },
+    "posesHash": "00f5f3ae32e39843f4f8968698054a729a0f702985ef42c2f19358c3090c7e36",
+    "stateHash": "1fb1f1cbb137eb33e6764fd4f570f92745a882c143f3c0e3f772f1010788b191",
+    "checkpointHash": "ba0dd65d28b1b890a12e132008b5c96e0227b34911973549b98d3f96f2819956"
+  },
+  "de_cache": {
+    "seed": 41000,
+    "map": "de_cache",
+    "rosterIds": [
+      "r-a7e53697fca533a02c19",
+      "r-77f51ee716b19380d99d"
+    ],
+    "inputHash": "73f649a276a45fab5649e63eb41ccf253a7c29f0a53373eddb6296b0c6605503",
+    "commands": [
+      [
+        0,
+        "timeout",
+        null
+      ],
+      [
+        0,
+        "resume",
+        null
+      ]
+    ],
+    "rules": "cs2-bo1.20",
+    "geometry": 26879581,
+    "checkpointVersion": 7,
+    "ticks": 21186,
+    "score": [
+      7,
+      13
+    ],
+    "sides": {
+      "CT": 7,
+      "T": 13
+    },
+    "eventCounts": {
+      "money": 1284,
+      "round_start": 20,
+      "timeout": 1,
+      "resume": 1,
+      "plan": 40,
+      "buy": 785,
+      "contact": 913,
+      "throw": 262,
+      "shot": 2272,
+      "reload": 40,
+      "damage": 478,
+      "rotate": 70,
+      "flash": 86,
+      "kill": 141,
+      "drop": 17,
+      "pickup": 15,
+      "plant_start": 18,
+      "plant": 18,
+      "captain": 22,
+      "defuse_start": 11,
+      "defuse": 5,
+      "round_end": 20,
+      "weapon_pickup": 1,
+      "interrupt": 6,
+      "explode": 2,
+      "match_end": 1
+    },
+    "ledgerHash": "342d4514aea44daacbbb8c3016f25c80925ddb946f7073939e6f5b7aa032b47e",
+    "stats": {
+      "T1": {
+        "k": 10,
+        "d": 14,
+        "a": 4,
+        "hs": 4,
+        "damage": 1459,
+        "opening": 0,
+        "kast": 12,
+        "spent": 45750,
+        "clutches": 1
+      },
+      "T2": {
+        "k": 18,
+        "d": 14,
+        "a": 1,
+        "hs": 12,
+        "damage": 1584,
+        "opening": 1,
+        "kast": 14,
+        "spent": 45500,
+        "clutches": 1
+      },
+      "T3": {
+        "k": 14,
+        "d": 15,
+        "a": 4,
+        "hs": 10,
+        "damage": 1523,
+        "opening": 5,
+        "kast": 16,
+        "spent": 56500,
+        "clutches": 0
+      },
+      "T4": {
+        "k": 5,
+        "d": 16,
+        "a": 5,
+        "hs": 2,
+        "damage": 692,
+        "opening": 0,
+        "kast": 13,
+        "spent": 51150,
+        "clutches": 0
+      },
+      "T5": {
+        "k": 19,
+        "d": 16,
+        "a": 4,
+        "hs": 12,
+        "damage": 2040,
+        "opening": 5,
+        "kast": 14,
+        "spent": 53600,
+        "clutches": 0
+      },
+      "CT1": {
+        "k": 16,
+        "d": 10,
+        "a": 1,
+        "hs": 11,
+        "damage": 1399,
+        "opening": 1,
+        "kast": 13,
+        "spent": 47000,
+        "clutches": 1
+      },
+      "CT2": {
+        "k": 12,
+        "d": 15,
+        "a": 7,
+        "hs": 9,
+        "damage": 1526,
+        "opening": 3,
+        "kast": 13,
+        "spent": 58050,
+        "clutches": 0
+      },
+      "CT3": {
+        "k": 20,
+        "d": 13,
+        "a": 3,
+        "hs": 10,
+        "damage": 2051,
+        "opening": 2,
+        "kast": 14,
+        "spent": 56700,
+        "clutches": 0
+      },
+      "CT4": {
+        "k": 12,
+        "d": 16,
+        "a": 5,
+        "hs": 6,
+        "damage": 1627,
+        "opening": 2,
+        "kast": 16,
+        "spent": 56200,
+        "clutches": 1
+      },
+      "CT5": {
+        "k": 15,
+        "d": 12,
+        "a": 1,
+        "hs": 8,
+        "damage": 1297,
+        "opening": 1,
+        "kast": 18,
+        "spent": 51350,
+        "clutches": 0
+      }
+    },
+    "posesHash": "11bea548469170ea8011c314c4e01d62e00e82f318ad835c3949a791cb1abac7",
+    "stateHash": "b1af523807687a6fe5a2fd97cb6351133aae1947c18ba453a4b4b2114be1b4e4",
+    "checkpointHash": "deaf055862ad65b0b737228830e60eb6676310e1a536947821dcc7d6c964a6ab"
+  },
+  "de_dust2": {
+    "seed": 41000,
+    "map": "de_dust2",
+    "rosterIds": [
+      "r-a7e53697fca533a02c19",
+      "r-77f51ee716b19380d99d"
+    ],
+    "inputHash": "73f649a276a45fab5649e63eb41ccf253a7c29f0a53373eddb6296b0c6605503",
+    "commands": [
+      [
+        0,
+        "timeout",
+        null
+      ],
+      [
+        0,
+        "resume",
+        null
+      ]
+    ],
+    "rules": "cs2-bo1.20",
+    "geometry": 26879581,
+    "checkpointVersion": 7,
+    "ticks": 20133,
+    "score": [
+      13,
+      7
+    ],
+    "sides": {
+      "CT": 11,
+      "T": 9
+    },
+    "eventCounts": {
+      "money": 1258,
+      "round_start": 20,
+      "timeout": 1,
+      "resume": 1,
+      "plan": 40,
+      "buy": 789,
+      "contact": 800,
+      "throw": 244,
+      "shot": 1771,
+      "flash": 96,
+      "damage": 503,
+      "kill": 132,
+      "reload": 24,
+      "rotate": 43,
+      "plant_start": 16,
+      "plant": 13,
+      "captain": 24,
+      "defuse_start": 8,
+      "defuse": 4,
+      "round_end": 20,
+      "drop": 22,
+      "pickup": 18,
+      "weapon_pickup": 5,
+      "interrupt": 5,
+      "explode": 5,
+      "match_end": 1
+    },
+    "ledgerHash": "c465965566eacb51acd5759d2ab570b59a4a7f22570444bd778ac3f1c1e76446",
+    "stats": {
+      "T1": {
+        "k": 11,
+        "d": 10,
+        "a": 3,
+        "hs": 5,
+        "damage": 1051,
+        "opening": 1,
+        "kast": 17,
+        "spent": 46250,
+        "clutches": 1
+      },
+      "T2": {
+        "k": 13,
+        "d": 9,
+        "a": 2,
+        "hs": 6,
+        "damage": 1378,
+        "opening": 3,
+        "kast": 14,
+        "spent": 52100,
+        "clutches": 3
+      },
+      "T3": {
+        "k": 19,
+        "d": 16,
+        "a": 5,
+        "hs": 10,
+        "damage": 1743,
+        "opening": 4,
+        "kast": 16,
+        "spent": 58500,
+        "clutches": 0
+      },
+      "T4": {
+        "k": 16,
+        "d": 13,
+        "a": 12,
+        "hs": 11,
+        "damage": 1964,
+        "opening": 3,
+        "kast": 17,
+        "spent": 55800,
+        "clutches": 0
+      },
+      "T5": {
+        "k": 8,
+        "d": 14,
+        "a": 7,
+        "hs": 7,
+        "damage": 1203,
+        "opening": 0,
+        "kast": 14,
+        "spent": 50250,
+        "clutches": 0
+      },
+      "CT1": {
+        "k": 19,
+        "d": 16,
+        "a": 3,
+        "hs": 9,
+        "damage": 2029,
+        "opening": 1,
+        "kast": 16,
+        "spent": 54950,
+        "clutches": 1
+      },
+      "CT2": {
+        "k": 16,
+        "d": 12,
+        "a": 7,
+        "hs": 9,
+        "damage": 2196,
+        "opening": 4,
+        "kast": 16,
+        "spent": 50350,
+        "clutches": 0
+      },
+      "CT3": {
+        "k": 12,
+        "d": 14,
+        "a": 4,
+        "hs": 6,
+        "damage": 1273,
+        "opening": 1,
+        "kast": 17,
+        "spent": 50700,
+        "clutches": 0
+      },
+      "CT4": {
+        "k": 8,
+        "d": 13,
+        "a": 2,
+        "hs": 5,
+        "damage": 876,
+        "opening": 2,
+        "kast": 14,
+        "spent": 46700,
+        "clutches": 0
+      },
+      "CT5": {
+        "k": 7,
+        "d": 15,
+        "a": 3,
+        "hs": 5,
+        "damage": 894,
+        "opening": 1,
+        "kast": 8,
+        "spent": 53850,
+        "clutches": 1
+      }
+    },
+    "posesHash": "7233650136cb44dd08b03823e262da13e1bb9f46162312b83489304d5f4b7306",
+    "stateHash": "9abf8e60ed4cea2ef95eda5398d38686c67e8d417a81d896dd8d2f9480fe8fd2",
+    "checkpointHash": "694744fd23b7b8260f7128bc452708b04c774e995b9ca6cb5287c3f968312771"
+  },
+  "de_inferno": {
+    "seed": 41000,
+    "map": "de_inferno",
+    "rosterIds": [
+      "r-a7e53697fca533a02c19",
+      "r-77f51ee716b19380d99d"
+    ],
+    "inputHash": "73f649a276a45fab5649e63eb41ccf253a7c29f0a53373eddb6296b0c6605503",
+    "commands": [
+      [
+        0,
+        "timeout",
+        null
+      ],
+      [
+        0,
+        "resume",
+        null
+      ]
+    ],
+    "rules": "cs2-bo1.20",
+    "geometry": 26879581,
+    "checkpointVersion": 7,
+    "ticks": 8986,
+    "score": [
+      0,
+      13
+    ],
+    "sides": {
+      "CT": 12,
+      "T": 1
+    },
+    "eventCounts": {
+      "money": 750,
+      "round_start": 13,
+      "timeout": 1,
+      "resume": 1,
+      "plan": 26,
+      "buy": 432,
+      "contact": 429,
+      "shot": 692,
+      "damage": 321,
+      "kill": 88,
+      "throw": 134,
+      "rotate": 39,
+      "flash": 55,
+      "captain": 20,
+      "reload": 2,
+      "plant_start": 3,
+      "plant": 3,
+      "defuse_start": 3,
+      "defuse": 3,
+      "round_end": 13,
+      "weapon_pickup": 3,
+      "drop": 19,
+      "pickup": 10,
+      "match_end": 1
+    },
+    "ledgerHash": "6844bf4f636be2ab2b0de6f447e9829b3248617bfb8b468788839b27ee28af20",
+    "stats": {
+      "T1": {
+        "k": 3,
+        "d": 13,
+        "a": 1,
+        "hs": 2,
+        "damage": 546,
+        "opening": 1,
+        "kast": 4,
+        "spent": 37400,
+        "clutches": 0
+      },
+      "T2": {
+        "k": 6,
+        "d": 13,
+        "a": 0,
+        "hs": 3,
+        "damage": 470,
+        "opening": 0,
+        "kast": 6,
+        "spent": 38200,
+        "clutches": 0
+      },
+      "T3": {
+        "k": 6,
+        "d": 13,
+        "a": 2,
+        "hs": 5,
+        "damage": 806,
+        "opening": 1,
+        "kast": 5,
+        "spent": 39650,
+        "clutches": 0
+      },
+      "T4": {
+        "k": 5,
+        "d": 12,
+        "a": 2,
+        "hs": 5,
+        "damage": 757,
+        "opening": 0,
+        "kast": 6,
+        "spent": 38150,
+        "clutches": 0
+      },
+      "T5": {
+        "k": 3,
+        "d": 13,
+        "a": 1,
+        "hs": 2,
+        "damage": 541,
+        "opening": 1,
+        "kast": 6,
+        "spent": 37800,
+        "clutches": 0
+      },
+      "CT1": {
+        "k": 15,
+        "d": 2,
+        "a": 1,
+        "hs": 8,
+        "damage": 1225,
+        "opening": 0,
+        "kast": 12,
+        "spent": 16800,
+        "clutches": 1
+      },
+      "CT2": {
+        "k": 13,
+        "d": 6,
+        "a": 4,
+        "hs": 5,
+        "damage": 1376,
+        "opening": 2,
+        "kast": 12,
+        "spent": 26400,
+        "clutches": 0
+      },
+      "CT3": {
+        "k": 16,
+        "d": 5,
+        "a": 1,
+        "hs": 10,
+        "damage": 1379,
+        "opening": 6,
+        "kast": 10,
+        "spent": 29500,
+        "clutches": 0
+      },
+      "CT4": {
+        "k": 12,
+        "d": 6,
+        "a": 3,
+        "hs": 7,
+        "damage": 1256,
+        "opening": 1,
+        "kast": 13,
+        "spent": 29300,
+        "clutches": 0
+      },
+      "CT5": {
+        "k": 8,
+        "d": 5,
+        "a": 6,
+        "hs": 4,
+        "damage": 1189,
+        "opening": 1,
+        "kast": 12,
+        "spent": 29700,
+        "clutches": 0
+      }
+    },
+    "posesHash": "79c147d520ad2018402f74521245584f6a874e1bfd296e5181ffb69abd9b4e24",
+    "stateHash": "55b65b02272a89f5849963c59628f71b25f5646ede55af22f2573586bace338b",
+    "checkpointHash": "3ea93a58423bee2e43a9fd15628129eee06d11bdb360e3c9632b005a71b35c55"
+  },
+  "de_mirage": {
+    "seed": 41000,
+    "map": "de_mirage",
+    "rosterIds": [
+      "r-a7e53697fca533a02c19",
+      "r-77f51ee716b19380d99d"
+    ],
+    "inputHash": "73f649a276a45fab5649e63eb41ccf253a7c29f0a53373eddb6296b0c6605503",
+    "commands": [
+      [
+        0,
+        "timeout",
+        null
+      ],
+      [
+        0,
+        "resume",
+        null
+      ]
+    ],
+    "rules": "cs2-bo1.20",
+    "geometry": 26879581,
+    "checkpointVersion": 7,
+    "ticks": 35824,
+    "score": [
+      19,
+      17
+    ],
+    "sides": {
+      "T": 13,
+      "CT": 23
+    },
+    "eventCounts": {
+      "money": 2648,
+      "round_start": 36,
+      "timeout": 1,
+      "resume": 1,
+      "plan": 72,
+      "buy": 1701,
+      "throw": 436,
+      "contact": 1110,
+      "shot": 2640,
+      "damage": 916,
+      "flash": 127,
+      "kill": 250,
+      "captain": 85,
+      "plant_start": 33,
+      "interrupt": 15,
+      "rotate": 81,
+      "plant": 27,
+      "reload": 36,
+      "explode": 10,
+      "round_end": 36,
+      "drop": 25,
+      "pickup": 19,
+      "defuse_start": 24,
+      "defuse": 14,
+      "match_end": 1
+    },
+    "ledgerHash": "a53c0e122e268e0e3e25fbaa05120b1f6ab36a16bc2f0234943b5d272a637001",
+    "stats": {
+      "T1": {
+        "k": 8,
+        "d": 26,
+        "a": 10,
+        "hs": 4,
+        "damage": 1682,
+        "opening": 3,
+        "kast": 23,
+        "spent": 108900,
+        "clutches": 1
+      },
+      "T2": {
+        "k": 32,
+        "d": 19,
+        "a": 6,
+        "hs": 14,
+        "damage": 2862,
+        "opening": 0,
+        "kast": 26,
+        "spent": 103850,
+        "clutches": 2
+      },
+      "T3": {
+        "k": 33,
+        "d": 28,
+        "a": 5,
+        "hs": 20,
+        "damage": 3107,
+        "opening": 2,
+        "kast": 27,
+        "spent": 128050,
+        "clutches": 0
+      },
+      "T4": {
+        "k": 20,
+        "d": 28,
+        "a": 15,
+        "hs": 11,
+        "damage": 2758,
+        "opening": 4,
+        "kast": 30,
+        "spent": 114150,
+        "clutches": 0
+      },
+      "T5": {
+        "k": 27,
+        "d": 25,
+        "a": 7,
+        "hs": 11,
+        "damage": 2786,
+        "opening": 7,
+        "kast": 29,
+        "spent": 116000,
+        "clutches": 1
+      },
+      "CT1": {
+        "k": 15,
+        "d": 29,
+        "a": 15,
+        "hs": 12,
+        "damage": 2945,
+        "opening": 6,
+        "kast": 30,
+        "spent": 114400,
+        "clutches": 1
+      },
+      "CT2": {
+        "k": 24,
+        "d": 19,
+        "a": 11,
+        "hs": 14,
+        "damage": 2521,
+        "opening": 1,
+        "kast": 34,
+        "spent": 102150,
+        "clutches": 2
+      },
+      "CT3": {
+        "k": 35,
+        "d": 27,
+        "a": 3,
+        "hs": 23,
+        "damage": 2531,
+        "opening": 3,
+        "kast": 32,
+        "spent": 118850,
+        "clutches": 1
+      },
+      "CT4": {
+        "k": 25,
+        "d": 25,
+        "a": 8,
+        "hs": 13,
+        "damage": 3042,
+        "opening": 4,
+        "kast": 29,
+        "spent": 108300,
+        "clutches": 0
+      },
+      "CT5": {
+        "k": 27,
+        "d": 24,
+        "a": 7,
+        "hs": 10,
+        "damage": 2700,
+        "opening": 6,
+        "kast": 28,
+        "spent": 106250,
+        "clutches": 1
+      }
+    },
+    "posesHash": "d447761d83fddb9b170a6007a33527e2c1ac82515611058b21c0ea2be969e482",
+    "stateHash": "f82eb1427bb2e5070e54a2cb73e902c362a512ac7d7ec673e03449410ce5df51",
+    "checkpointHash": "177f4e4e92632e1faa11a6bd44403df05237389d86ee5b7e4f0c04e5226a678d"
+  },
+  "de_nuke": {
+    "seed": 41000,
+    "map": "de_nuke",
+    "rosterIds": [
+      "r-a7e53697fca533a02c19",
+      "r-77f51ee716b19380d99d"
+    ],
+    "inputHash": "73f649a276a45fab5649e63eb41ccf253a7c29f0a53373eddb6296b0c6605503",
+    "commands": [
+      [
+        0,
+        "timeout",
+        null
+      ],
+      [
+        0,
+        "resume",
+        null
+      ]
+    ],
+    "rules": "cs2-bo1.20",
+    "geometry": 26879581,
+    "checkpointVersion": 7,
+    "ticks": 16032,
+    "score": [
+      5,
+      13
+    ],
+    "sides": {
+      "CT": 9,
+      "T": 9
+    },
+    "eventCounts": {
+      "money": 1189,
+      "round_start": 18,
+      "timeout": 1,
+      "resume": 1,
+      "plan": 36,
+      "buy": 726,
+      "contact": 540,
+      "shot": 1232,
+      "throw": 200,
+      "flash": 92,
+      "damage": 526,
+      "kill": 128,
+      "captain": 36,
+      "plant_start": 17,
+      "plant": 15,
+      "defuse_start": 6,
+      "defuse": 6,
+      "round_end": 18,
+      "drop": 14,
+      "pickup": 11,
+      "weapon_pickup": 1,
+      "rotate": 37,
+      "reload": 14,
+      "interrupt": 2,
+      "explode": 3,
+      "match_end": 1
+    },
+    "ledgerHash": "566cf518ffeb8bad4b22ca03b352611e2693251219e314e52c634667af3d3b4c",
+    "stats": {
+      "T1": {
+        "k": 4,
+        "d": 18,
+        "a": 1,
+        "hs": 1,
+        "damage": 811,
+        "opening": 0,
+        "kast": 8,
+        "spent": 52050,
+        "clutches": 0
+      },
+      "T2": {
+        "k": 7,
+        "d": 16,
+        "a": 4,
+        "hs": 5,
+        "damage": 1091,
+        "opening": 1,
+        "kast": 10,
+        "spent": 52400,
+        "clutches": 2
+      },
+      "T3": {
+        "k": 13,
+        "d": 14,
+        "a": 3,
+        "hs": 7,
+        "damage": 1292,
+        "opening": 5,
+        "kast": 14,
+        "spent": 49950,
+        "clutches": 0
+      },
+      "T4": {
+        "k": 17,
+        "d": 14,
+        "a": 1,
+        "hs": 10,
+        "damage": 1478,
+        "opening": 1,
+        "kast": 12,
+        "spent": 49150,
+        "clutches": 0
+      },
+      "T5": {
+        "k": 9,
+        "d": 16,
+        "a": 4,
+        "hs": 3,
+        "damage": 1121,
+        "opening": 2,
+        "kast": 12,
+        "spent": 52950,
+        "clutches": 0
+      },
+      "CT1": {
+        "k": 16,
+        "d": 13,
+        "a": 4,
+        "hs": 8,
+        "damage": 2087,
+        "opening": 3,
+        "kast": 12,
+        "spent": 49300,
+        "clutches": 0
+      },
+      "CT2": {
+        "k": 17,
+        "d": 10,
+        "a": 6,
+        "hs": 6,
+        "damage": 1828,
+        "opening": 0,
+        "kast": 15,
+        "spent": 49350,
+        "clutches": 1
+      },
+      "CT3": {
+        "k": 16,
+        "d": 7,
+        "a": 3,
+        "hs": 6,
+        "damage": 1661,
+        "opening": 2,
+        "kast": 14,
+        "spent": 35950,
+        "clutches": 0
+      },
+      "CT4": {
+        "k": 12,
+        "d": 9,
+        "a": 3,
+        "hs": 10,
+        "damage": 1127,
+        "opening": 2,
+        "kast": 13,
+        "spent": 45750,
+        "clutches": 0
+      },
+      "CT5": {
+        "k": 16,
+        "d": 11,
+        "a": 8,
+        "hs": 9,
+        "damage": 1686,
+        "opening": 2,
+        "kast": 16,
+        "spent": 46550,
+        "clutches": 0
+      }
+    },
+    "posesHash": "4b60840f52c89b08a755d70d9b8a96ee2be5289112242f1e5c3913560d82682c",
+    "stateHash": "4f14170ed54c249905126216fc9ac12147c8ad8d92ec4e262a481b12978913ff",
+    "checkpointHash": "2a5cae8856be32d45a698027407df08a156d7eab1c7eacb3dcc405a3d24c89ff"
+  },
+  "de_train": {
+    "seed": 41000,
+    "map": "de_train",
+    "rosterIds": [
+      "r-a7e53697fca533a02c19",
+      "r-77f51ee716b19380d99d"
+    ],
+    "inputHash": "73f649a276a45fab5649e63eb41ccf253a7c29f0a53373eddb6296b0c6605503",
+    "commands": [
+      [
+        0,
+        "timeout",
+        null
+      ],
+      [
+        0,
+        "resume",
+        null
+      ]
+    ],
+    "rules": "cs2-bo1.20",
+    "geometry": 26879581,
+    "checkpointVersion": 7,
+    "ticks": 24050,
+    "score": [
+      13,
+      16
+    ],
+    "sides": {
+      "CT": 15,
+      "T": 14
+    },
+    "eventCounts": {
+      "money": 2136,
+      "round_start": 29,
+      "timeout": 1,
+      "resume": 1,
+      "plan": 58,
+      "buy": 1365,
+      "throw": 392,
+      "contact": 764,
+      "shot": 1881,
+      "damage": 762,
+      "kill": 215,
+      "captain": 81,
+      "reload": 12,
+      "flash": 119,
+      "rotate": 100,
+      "drop": 20,
+      "pickup": 15,
+      "plant_start": 26,
+      "plant": 24,
+      "defuse_start": 15,
+      "interrupt": 7,
+      "defuse": 10,
+      "round_end": 29,
+      "weapon_pickup": 3,
+      "explode": 5,
+      "match_end": 1
+    },
+    "ledgerHash": "ae4c835e6f82661002920b0fb9b4b3773beacc25827589c21d76c7eb300764d8",
+    "stats": {
+      "T1": {
+        "k": 9,
+        "d": 22,
+        "a": 8,
+        "hs": 3,
+        "damage": 1452,
+        "opening": 2,
+        "kast": 16,
+        "spent": 90000,
+        "clutches": 0
+      },
+      "T2": {
+        "k": 23,
+        "d": 22,
+        "a": 7,
+        "hs": 14,
+        "damage": 2445,
+        "opening": 0,
+        "kast": 21,
+        "spent": 97200,
+        "clutches": 2
+      },
+      "T3": {
+        "k": 24,
+        "d": 26,
+        "a": 5,
+        "hs": 17,
+        "damage": 2584,
+        "opening": 6,
+        "kast": 23,
+        "spent": 96050,
+        "clutches": 0
+      },
+      "T4": {
+        "k": 19,
+        "d": 23,
+        "a": 4,
+        "hs": 8,
+        "damage": 1770,
+        "opening": 0,
+        "kast": 21,
+        "spent": 91750,
+        "clutches": 3
+      },
+      "T5": {
+        "k": 23,
+        "d": 23,
+        "a": 8,
+        "hs": 10,
+        "damage": 2539,
+        "opening": 1,
+        "kast": 23,
+        "spent": 92950,
+        "clutches": 2
+      },
+      "CT1": {
+        "k": 22,
+        "d": 26,
+        "a": 14,
+        "hs": 8,
+        "damage": 2600,
+        "opening": 10,
+        "kast": 24,
+        "spent": 95950,
+        "clutches": 0
+      },
+      "CT2": {
+        "k": 17,
+        "d": 16,
+        "a": 9,
+        "hs": 11,
+        "damage": 1931,
+        "opening": 0,
+        "kast": 23,
+        "spent": 87800,
+        "clutches": 1
+      },
+      "CT3": {
+        "k": 27,
+        "d": 21,
+        "a": 11,
+        "hs": 16,
+        "damage": 3072,
+        "opening": 8,
+        "kast": 24,
+        "spent": 96000,
+        "clutches": 0
+      },
+      "CT4": {
+        "k": 24,
+        "d": 16,
+        "a": 2,
+        "hs": 15,
+        "damage": 2027,
+        "opening": 1,
+        "kast": 23,
+        "spent": 83350,
+        "clutches": 0
+      },
+      "CT5": {
+        "k": 24,
+        "d": 20,
+        "a": 7,
+        "hs": 10,
+        "damage": 2313,
+        "opening": 1,
+        "kast": 24,
+        "spent": 84300,
+        "clutches": 0
+      }
+    },
+    "posesHash": "d5d7b928d14b1480934e85a6bb96a342105f07122c2d9d9c1fbf1b9904228a7c",
+    "stateHash": "3980dc889e758da27ff9c1f6feb1bb45d4785047af239989bcbb3d16eddbda0d",
+    "checkpointHash": "426a79f228b66feab2f336bafe4efd05e31f2be375fa76b73c5a9cd761ca51c1"
+  },
+  "de_vertigo": {
+    "seed": 41000,
+    "map": "de_vertigo",
+    "rosterIds": [
+      "r-a7e53697fca533a02c19",
+      "r-77f51ee716b19380d99d"
+    ],
+    "inputHash": "73f649a276a45fab5649e63eb41ccf253a7c29f0a53373eddb6296b0c6605503",
+    "commands": [
+      [
+        0,
+        "timeout",
+        null
+      ],
+      [
+        0,
+        "resume",
+        null
+      ]
+    ],
+    "rules": "cs2-bo1.20",
+    "geometry": 26879581,
+    "checkpointVersion": 7,
+    "ticks": 15869,
+    "score": [
+      3,
+      13
+    ],
+    "sides": {
+      "CT": 11,
+      "T": 5
+    },
+    "eventCounts": {
+      "money": 1064,
+      "round_start": 16,
+      "timeout": 1,
+      "resume": 1,
+      "plan": 32,
+      "buy": 641,
+      "contact": 575,
+      "shot": 772,
+      "damage": 442,
+      "kill": 118,
+      "captain": 42,
+      "throw": 132,
+      "flash": 23,
+      "rotate": 56,
+      "plant_start": 12,
+      "plant": 11,
+      "defuse_start": 7,
+      "defuse": 6,
+      "round_end": 16,
+      "reload": 2,
+      "weapon_pickup": 5,
+      "drop": 17,
+      "pickup": 13,
+      "interrupt": 2,
+      "explode": 1,
+      "match_end": 1
+    },
+    "ledgerHash": "f1ad4a898527ae81a06fe1c55ce0f25ba2643b919e30c921c590ef99e3c45424",
+    "stats": {
+      "T1": {
+        "k": 5,
+        "d": 15,
+        "a": 0,
+        "hs": 3,
+        "damage": 710,
+        "opening": 3,
+        "kast": 7,
+        "spent": 42350,
+        "clutches": 0
+      },
+      "T2": {
+        "k": 10,
+        "d": 13,
+        "a": 5,
+        "hs": 7,
+        "damage": 1167,
+        "opening": 1,
+        "kast": 15,
+        "spent": 46650,
+        "clutches": 1
+      },
+      "T3": {
+        "k": 12,
+        "d": 15,
+        "a": 3,
+        "hs": 9,
+        "damage": 1433,
+        "opening": 0,
+        "kast": 9,
+        "spent": 45450,
+        "clutches": 0
+      },
+      "T4": {
+        "k": 9,
+        "d": 13,
+        "a": 4,
+        "hs": 4,
+        "damage": 927,
+        "opening": 0,
+        "kast": 12,
+        "spent": 39550,
+        "clutches": 0
+      },
+      "T5": {
+        "k": 13,
+        "d": 13,
+        "a": 3,
+        "hs": 8,
+        "damage": 1247,
+        "opening": 2,
+        "kast": 13,
+        "spent": 47400,
+        "clutches": 0
+      },
+      "CT1": {
+        "k": 7,
+        "d": 13,
+        "a": 5,
+        "hs": 4,
+        "damage": 1007,
+        "opening": 1,
+        "kast": 11,
+        "spent": 47700,
+        "clutches": 0
+      },
+      "CT2": {
+        "k": 21,
+        "d": 10,
+        "a": 4,
+        "hs": 12,
+        "damage": 2026,
+        "opening": 4,
+        "kast": 16,
+        "spent": 51550,
+        "clutches": 0
+      },
+      "CT3": {
+        "k": 12,
+        "d": 9,
+        "a": 2,
+        "hs": 8,
+        "damage": 1111,
+        "opening": 0,
+        "kast": 13,
+        "spent": 39500,
+        "clutches": 0
+      },
+      "CT4": {
+        "k": 11,
+        "d": 9,
+        "a": 5,
+        "hs": 8,
+        "damage": 1211,
+        "opening": 0,
+        "kast": 16,
+        "spent": 36450,
+        "clutches": 2
+      },
+      "CT5": {
+        "k": 18,
+        "d": 8,
+        "a": 4,
+        "hs": 9,
+        "damage": 1773,
+        "opening": 5,
+        "kast": 15,
+        "spent": 35250,
+        "clutches": 1
+      }
+    },
+    "posesHash": "11873c1d8d2be82047bd9bd794720fac79f42ff40e78f320f843a1b4f071545a",
+    "stateHash": "3c2ce24f7237f25bd38c6595c08bbbd1be28fe8be6c7d0d44138f03852993617",
+    "checkpointHash": "a2c4a48dd4f4b4ec1802e4ef371af9fe42132c9d13e1bc7ecd867bb736da75ee"
+  }
+}

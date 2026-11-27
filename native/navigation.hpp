@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -24,6 +25,10 @@ private:
     std::vector<Area> areas_;
     std::map<Sector, std::vector<std::size_t>> sectors_;
     // Wide polygons are tested directly to bound index memory.
-    std::vector<std::size_t> wide_;
+    struct WideArea {
+        std::size_t index;
+        Sector low, high;
+    };
+    std::vector<WideArea> wide_;
 };
 }

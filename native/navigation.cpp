@@ -46,7 +46,7 @@ NavSurfaces::NavSurfaces(std::vector<Area> areas) : areas_(std::move(areas)) {
         const double x = sector(lo[0]), y = sector(lo[1]);
         const double width = sector(hi[0]) - x + 1, height = sector(hi[1]) - y + 1;
         if (width * height > 256) {
-            wide_.push_back(i);
+            wide_.push_back({i, {x, y}, {sector(hi[0]), sector(hi[1])}});
         } else {
             for (int dx = 0; dx < width; ++dx)
                 for (int dy = 0; dy < height; ++dy)
@@ -67,11 +67,16 @@ std::optional<std::int64_t> NavSurfaces::locate(const Point& p, double max_verti
                 best = candidate;
         }
     };
-    const auto cell = sectors_.find({sector(p[0]), sector(p[1])});
+    const Sector key{sector(p[0]), sector(p[1])};
+    const auto cell = sectors_.find(key);
     if (cell != sectors_.end()) {
         for (auto index : cell->second) consider(index);
     }
-    for (auto index : wide_) consider(index);
+    for (const auto& entry : wide_) {
+        if (entry.low.first <= key.first && key.first <= entry.high.first &&
+            entry.low.second <= key.second && key.second <= entry.high.second)
+            consider(entry.index);
+    }
     if (best) return best->second;
     return std::nullopt;
 }
