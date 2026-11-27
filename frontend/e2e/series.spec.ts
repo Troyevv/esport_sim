@@ -24,7 +24,9 @@ if (process.env.ESPORT_CS2_QA) {
         fullPage: true,
       });
     };
-    await page.goto("/?screen=lab");
+    await page.goto("/");
+    await press("Стенд симуляции");
+    await expect(page.getByText("Лаборатория симуляции", { exact: true })).toBeVisible();
     await expect(page.getByTestId("connection")).toContainText("На связи");
     if ((await (await page.request.get("/api/state")).json()).world.match) {
       await page.getByText("Новый сценарий", { exact: true }).click();
