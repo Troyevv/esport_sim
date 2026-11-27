@@ -110,6 +110,9 @@ class Navigation:
                         if target != ident:
                             self.links[ident].append(Crossing(target, tuple(leave), tuple(enter), ladder_id))
 
+        self._index_portals()
+
+    def _index_portals(self):
         self._incoming = defaultdict(list)
         self._outgoing = {}
         for here, crossings in self.links.items():

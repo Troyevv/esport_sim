@@ -37,16 +37,7 @@ def run(args):
     if args.native_nav:
         # The differential harness is the only caller that substitutes geometry.
         # Production continues to use the reference until the entire tick is accepted.
-        from backend._match_native import NavSurfaces
-        from backend.cs2_navigation import Navigation
-
-        class NativeNavigation(Navigation):
-            def __init__(self, data):
-                super().__init__(data)
-                self.surfaces = NavSurfaces([(area, desc["corners"]) for area, desc in self.areas.items()])
-
-            def locate(self, point, max_vertical):
-                return self.surfaces.locate_many([point], max_vertical)[0]
+        from backend.native_navigation import NativeNavigation
 
         cs2_maps.Navigation = NativeNavigation
     pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
