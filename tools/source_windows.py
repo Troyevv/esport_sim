@@ -14,32 +14,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from backend.instance import launcher_lock, open_browser, open_existing, ready
 from backend.paths import windows_data_dir
+from tools.source_fingerprint import fingerprint, read_stamp, stamp
 
 FRONT = ROOT / "frontend"
 VENV = ROOT / ".venv"
 CACHE = ROOT / "build" / "source-launcher"
-
-
-def fingerprint(files, base, version=""):
-    result = hashlib.sha256(version.encode())
-    for path in sorted(files):
-        if path.is_file():
-            result.update(path.relative_to(base).as_posix().encode() + b"\0")
-            result.update(hashlib.sha256(path.read_bytes()).digest())
-    return result.hexdigest()
-
-
-def read_stamp(path):
-    try:
-        return path.read_text(encoding="ascii")
-    except FileNotFoundError:
-        return ""
-
-
-def stamp(path, value):
-    temp = path.with_suffix(".tmp")
-    temp.write_text(value, encoding="ascii")
-    temp.replace(path)
 
 
 def run(description, args, cwd=ROOT):
@@ -89,18 +68,8 @@ def prepare():
         run("Установка зависимостей Python", [py, "-m", "pip", "install", "-r", requirements])
         stamp(py_stamp, deps + installed_python(requirements))
 
-    native_lock = ROOT / "requirements-native.txt"
-    native_sources = [native_lock, ROOT / "tools/build_native.py", *(ROOT / "native").rglob("*")]
-    native_key = fingerprint(native_sources, ROOT, pyversion + str(VENV))
-    extension = ROOT / "backend" / ("_match_native" + subprocess.check_output(
-        [py, "-c", "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))"], text=True).strip())
-    native_stamp = CACHE / "native.sha256"
-    if not extension.is_file() or read_stamp(native_stamp) != native_key + fingerprint([extension], ROOT):
-        run("Установка зависимостей сборки C++", [py, "-m", "pip", "install", "-r", native_lock])
-        run("Сборка матчевого модуля (требуются Visual Studio Build Tools с C++ x64)",
-            [py, "-m", "tools.build_native"])
-        run("Проверка нативного модуля", [py, "-c", "from backend import _match_native"])
-        stamp(native_stamp, native_key + fingerprint([extension], ROOT))
+    run("Проверка сборки матчевого модуля C++ x64",
+        [py, "-m", "tools.build_native", "--install-tools"])
 
     manifest = [FRONT / "package.json", FRONT / "package-lock.json"]
     js_deps = fingerprint(manifest, FRONT, version)

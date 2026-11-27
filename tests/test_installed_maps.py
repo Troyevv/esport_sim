@@ -257,7 +257,8 @@ def test_anubis_grenade_contact_includes_float32_endpoint(monkeypatch):
             faces[0] = -1
         return faces, distances, normals
 
-    monkeypatch.setattr(collision.scene, "first_many", miss_terminal_center)
+    from types import SimpleNamespace
+    monkeypatch.setattr(collision, "scene", SimpleNamespace(first_many=miss_terminal_center))
     collision.trace.cache_clear()
     try:
         t, material, normal = space.hit(

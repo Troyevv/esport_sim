@@ -85,6 +85,11 @@ def main():
                 parser.error("--origin должен содержать точный HTTPS origin без пути")
         code = secrets.token_urlsafe(20)
         print(f"Код устройства: {code}", flush=True)
+    from tools.build_native import ensure_built
+    try:
+        ensure_built()
+    except (RuntimeError, OSError) as error:
+        parser.exit(1, f"{error}\n")
     from .map_install import activate
     activate(args.data)
     uvicorn.run(
