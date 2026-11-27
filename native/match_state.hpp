@@ -9,6 +9,7 @@
 namespace esport {
 class PhysicalNavigation;
 class Objectives;
+class OpeningMap;
 // Owns a single detailed match. External snapshots are copied only at an explicit
 // boundary. No Python objects or callbacks are retained by the owner.
 class MatchState {
@@ -18,6 +19,15 @@ class MatchState {
     ~MatchState();
     std::string snapshot() const;
     std::string board_step(const std::string &id, const std::string &device, const std::vector<Hazard> &fire);
+    void attach_opening(const std::string &map, std::shared_ptr<const OpeningMap> opening);
+    std::string defense_orders(const std::string &site, int lane) const;
+    std::string attack_orders(const std::string &site, int lane, const std::string &style) const;
+    std::string opening_call(const std::string &side, const std::string &buy, const std::string &site,
+                             const std::string &style, const std::string &coach);
+    std::string select_defense(const std::string &plan, const std::string &predicted,
+                               const std::string &explicit_site);
+    std::string defensive_read() const;
+    std::string default_probe(const std::string &plan) const;
     void assign_board(const std::string &board);
     std::string buy_decision(const std::string &side, const std::string &options) const;
     void buy_equipment(const std::string &side, const std::string &strategy, const std::string &board);

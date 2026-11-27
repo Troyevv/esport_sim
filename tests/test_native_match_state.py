@@ -368,3 +368,69 @@ def test_native_editor_step_matches_agent_decision(combat_arenas, kind):
     intent = match_ai.act(observation, a, squad, w["bomb"], [])
     assert json.loads(owner.board_step(a["id"], encode_world(w["bomb"]), [])) == list(intent)
     assert_same(owner, w)
+
+
+@pytest.mark.parametrize(("budget", "style", "coach"), [
+    ("Пистолетная", "Сбор", None), ("Антиэко", "Быстро", None), ("Частичная", "Быстро", None),
+    ("Полная", "Быстро", "Выход B"), ("Эко", "Сбор", "Экономить"),
+])
+def test_captain_openings_consume_only_captain_rng(combat_arenas, budget, style, coach):
+    from backend import cs2_openings, cs2_play
+
+    arena, physics = combat_arenas
+    w = read_checkpoint()
+    for side in ("T", "CT"):
+        squad = [a for a in w["agents"] if a["team"] == side]
+        captain = next(a for a in squad if a["appointed"])
+        w.setdefault("siteHistory", {})[captain["teamId"]] = [["A", False], ["B", True]]
+        w.setdefault("defensiveHistory", {})[captain["teamId"]] = ["A", None, "A"]
+        owner = native_match_state.restore(encode_world(w), physics=physics)
+        expected = cs2_play.opening(arena, w, squad, captain, w["domain"]["players"][captain["playerId"]],
+                                    budget, "A", style, coach)
+        actual = owner.opening_call(side, budget, "A", style, encode_world(coach))
+        assert json.loads(actual) == list(expected)
+        assert_same(owner, w)
+        if side == "CT":
+            assert json.loads(owner.defensive_read()) == cs2_play.defensive_read(w, captain)
+            plan = dict(site="A", buy=budget)
+            result = cs2_openings.select(arena, plan, squad, w["domain"]["players"], captain, "B", None)
+            assert json.loads(owner.select_defense(encode_world(plan), '"B"', "null")) == json.loads(encode_world(result))
+            assert_same(owner, w)
+        else:
+            plan = w["plans"]["T"]
+            expected = cs2_play.default_probe(arena, squad, w["bomb"]["carrier"], plan, w["tick"], w["domain"])
+            assert json.loads(owner.default_probe(encode_world(plan))) == expected
+
+
+@pytest.mark.parametrize(("site", "lane"), [("A", 0), ("B", 1)])
+def test_both_sides_have_identical_role_orders_from_restored_positions(combat_arenas, site, lane):
+    arena, physics = combat_arenas
+    w = read_checkpoint()
+    owner = native_match_state.restore(encode_world(w), physics=physics)
+    for side in ("T", "CT"):
+        squad = [a for a in w["agents"] if a["team"] == side]
+        expected = arena.orders(side, site, squad, lane, "Сбор")
+        actual = owner.attack_orders(site, lane, "Сбор") if side == "T" else owner.defense_orders(site, lane)
+        assert json.loads(actual) == expected
+        assert_same(owner, w)
+
+
+@pytest.mark.parametrize("coach_call", [None, "Ускориться", "Экономить", "Выход A", "board"])
+def test_native_freeze_opens_full_round_with_roles_economy_and_calls(combat_arenas, monkeypatch, coach_call):
+    arena, physics = combat_arenas
+    monkeypatch.setattr(cs2_maps, "for_match", lambda _: arena)
+    w = read_checkpoint()
+    match.next_round(w)
+    if coach_call == "board":
+        side = next(a["team"] for a in w["agents"] if a["teamId"] == w["coachTeamId"])
+        w["nextBoard"] = dict(id="saved", revision=2, name="Пауза", side=side, map=arena.name, geometry=cs2_maps.BUILD,
+                              format=2, buy="Эко", slots=[[], [], [], [], []])
+    else:
+        w["call"] = coach_call
+    owner = native_match_state.restore(encode_world(w), arena, physics=physics)
+    ticks = w["deadline"] - w["tick"]
+    for _ in range(ticks):
+        match.advance(w)
+    assert owner.advance_intermission(ticks) == ticks
+    assert w["phase"] == "live"
+    assert_same(owner, w)

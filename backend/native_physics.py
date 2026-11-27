@@ -1,11 +1,13 @@
 """Map import and differential adapter for the C++ physical world."""
+import json
+from math import dist
 from functools import cached_property, lru_cache, partial
 from weakref import proxy
 
 from . import _match_native as native
 from .cs2_collision import Collision
 from .cs2_maps import Map, UNIT, xyz
-from .match_rules import BLAST_RADIUS
+from .match_rules import BLAST_RADIUS, ROLES
 from .native_navigation import NativeNavigation
 
 
@@ -109,6 +111,19 @@ class NativePerceptionMap(NativeMovementMap):
         ingress = {site: [self.ingress(site, lane) for lane in (0, 1)] for site in self.sites.volumes}
         data = native.SiteData(solids, self.site_costs, self.plant_surfaces, ingress)
         return native.Objectives(self.planner, data)
+
+    @cached_property
+    def opening(self):
+        # Static costs and named NAV surfaces are shared by matches on this map.
+        contest = {site: [self.contest(site, lane) for lane in (0, 1)] for site in self.site_points}
+        stations = {label: [self.centers[i] for i in sorted(ids)] for label, ids in self.places.items()}
+        stages = {i for site in self.site_points for lane in self.profile[site]
+                  for label in lane for i in self.places[label]}
+        nearby = {i: sorted(self.nearby_areas(self.centers[i], 12),
+                            key=lambda j: dist(self.centers[j], self.centers[i])) for i in stages}
+        orders = native.OrderData({label: list(ids) for label, ids in self.places.items()}, self.plants, self.holds, nearby, ROLES, [p for _, p in self.cover])
+        return native.OpeningMap(self.objectives, json.dumps(self.profile), json.dumps(self.defense),
+                                 contest, stations, self.site_points, orders)
 
     def shot_transmission(self, start, end, power):
         return self.sensors.shot_transmission(start, end, power)

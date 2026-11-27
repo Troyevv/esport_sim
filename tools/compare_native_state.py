@@ -7,17 +7,17 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-from backend import cs2_economy, cs2_maps, match, match_ai, native_match_state
+from backend import cs2_economy, cs2_maps, cs2_openings, cs2_play, match, match_ai, native_match_state
 
 
 def encode(world):
     return json.dumps(world, ensure_ascii=False, separators=(",", ":"))
 
 
-def compare(checkpoint, combat=False):
+def compare(checkpoint, combat=False, opening=False):
     world = json.loads(gzip.decompress(checkpoint.read_bytes()))
     space = cs2_maps.get(world["mapId"])
-    if combat:
+    if combat or opening:
         from backend.native_physics import NativePerceptionMap
         physics = NativePerceptionMap(space.folder)
     counts = Counter()
@@ -123,9 +123,52 @@ def compare(checkpoint, combat=False):
         ref_buy(w, squad, strategy, purchase, board)
         same(owner, "buy")
 
+    ref_orders = space.orders
+    ref_call, ref_select = cs2_play.opening, cs2_openings.select
+    ref_read, ref_probe = cs2_play.defensive_read, cs2_play.default_probe
+
+    def verify_choice(expected, actual, owner, name):
+        if encode(expected) != encode(json.loads(actual)):
+            raise ValueError(f"{name} at tick {world['tick']}: {expected!r} != {actual}")
+        same(owner, name)
+        return expected
+
+    def call(arena, w, squad, captain, player, buy, site, style, coach):
+        owner = native_match_state.restore(encode(w), physics=physics)
+        actual = owner.opening_call(captain["team"], buy, site, style, encode(coach))
+        expected = ref_call(arena, w, squad, captain, player, buy, site, style, coach)
+        return verify_choice(expected, actual, owner, "opening_call")
+
+    def select(arena, plan, squad, players, captain, predicted, explicit):
+        owner = native_match_state.restore(encode(world), physics=physics)
+        actual = owner.select_defense(encode(plan), encode(predicted), encode(explicit))
+        expected = ref_select(arena, plan, squad, players, captain, predicted, explicit)
+        return verify_choice(expected, actual, owner, "defense_choice")
+
+    def orders(side, site, squad, lane, style=None):
+        owner = native_match_state.restore(encode(world), physics=physics)
+        actual = owner.attack_orders(site, lane, style or "") if side == "T" else owner.defense_orders(site, lane)
+        expected = ref_orders(side, site, squad, lane, style)
+        return verify_choice(expected, actual, owner, "orders_" + side)
+
+    def read(w, captain):
+        owner = native_match_state.restore(encode(w))
+        return verify_choice(ref_read(w, captain), owner.defensive_read(), owner, "defensive_read")
+
+    def probe(arena, squad, carrier, plan, now, domain):
+        owner = native_match_state.restore(encode(world), physics=physics)
+        expected = ref_probe(arena, squad, carrier, plan, now, domain)
+        return verify_choice(expected, owner.default_probe(encode(plan)), owner, "default_probe")
+
     with ExitStack() as patches:
         patches.enter_context(patch.object(cs2_economy, "decision", decide))
         patches.enter_context(patch.object(cs2_economy, "buy", buy))
+        if opening:
+            patches.enter_context(patch.object(space, "orders", orders))
+            patches.enter_context(patch.object(cs2_play, "opening", call))
+            patches.enter_context(patch.object(cs2_openings, "select", select))
+            patches.enter_context(patch.object(cs2_play, "defensive_read", read))
+            patches.enter_context(patch.object(cs2_play, "default_probe", probe))
         if combat:
             patches.enter_context(patch.object(match_ai, "observe", observation))
             patches.enter_context(patch.object(match, "resolve_intents", resolve))
@@ -141,6 +184,13 @@ def compare(checkpoint, combat=False):
                 for _ in range(ticks):
                     match.advance(world)
                 same(owner, "new_round")
+            elif opening and world["phase"] == "freeze":
+                owner = native_match_state.restore(encode(world), physics=physics)
+                ticks = world["deadline"] - world["tick"]
+                assert owner.advance_intermission(ticks) == ticks
+                for _ in range(ticks):
+                    match.advance(world)
+                same(owner, "begin_live")
             else:
                 match.advance(world)
     return {"map": world["mapId"], "seed": world["seed"], "score": world["score"],
@@ -151,5 +201,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("checkpoint", type=Path)
     parser.add_argument("--combat", action="store_true", help="Also compare first observed attack/utility kinds")
+    parser.add_argument("--opening", action="store_true", help="Compare team calls and route choices after freeze time")
     args = parser.parse_args()
-    print(json.dumps(compare(args.checkpoint, args.combat), ensure_ascii=False))
+    print(json.dumps(compare(args.checkpoint, args.combat, args.opening), ensure_ascii=False))

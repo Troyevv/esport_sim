@@ -43,4 +43,5 @@ def restore(checkpoint, space=None, *, physics=None):
     if physics is not None:
         owner.attach_physics(physics.name, physics.planner, physics.collision.materials)
         owner.attach_objectives(physics.name, physics.objectives)
+        owner.attach_opening(physics.name, physics.opening)
     return owner
