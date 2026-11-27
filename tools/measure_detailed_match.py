@@ -37,16 +37,15 @@ def peak_mib():
 def run(args):
     if args.native_nav:
         # The differential harness is the only caller that substitutes geometry.
-        # Production continues to use the reference until the entire tick is accepted.
         from backend.native_navigation import NativeNavigation
 
         cs2_maps.Navigation = NativeNavigation
     if args.native_rays:
-        from backend import cs2_collision
+        from tests.reference_kernel import cs2_collision
         from backend._match_native import TriangleScene
         cs2_collision.TriangleScene = TriangleScene
     if args.native_collision:
-        from backend import cs2_collision
+        from tests.reference_kernel import cs2_collision
         from tests.reference_kernel.native_physics import NativeCollision
         cs2_collision.Collision = NativeCollision
     if args.native_perception:

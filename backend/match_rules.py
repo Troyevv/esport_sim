@@ -139,10 +139,6 @@ def equipment_value(a):
 BLAST_RADIUS = 80
 
 
-def blast_damage(distance):
-    return max(0, round(370 * (1 - distance / BLAST_RADIUS)))
-
-
 WEAPON_CLASS = {
     "Glock": "pistols",
     "USP": "pistols",

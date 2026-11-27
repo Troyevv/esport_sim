@@ -5,7 +5,7 @@
 #include <numbers>
 namespace esport {
 XY xy(const Json &a) { return {a.at("x"), a.at("y")}; }
-double gap2(XY a, XY b) { return std::hypot(a[0] - b[0], a[1] - b[1]); }
+double gap2(XY a, XY b) { return distance({a[0], a[1], 0}, {b[0], b[1], 0}); }
 namespace {
 std::array<Cell, 4> neighbors(Cell p) {
     auto [x, y] = p;

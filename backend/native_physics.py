@@ -5,16 +5,15 @@ from functools import cached_property, lru_cache, partial
 from weakref import proxy
 
 from . import _match_native as native
-from .cs2_collision import Collision
+from .cs2_collision import CollisionData
 from .cs2_maps import BUILD, Map, UNIT, xyz
 from .match_rules import BLAST_RADIUS, ROLES
 from .native_navigation import NativeNavigation
 
 
-class NativeCollision(Collision):
-    _make_scene = staticmethod(native.TriangleScene)
-
-    def _finish_geometry(self):
+class NativeCollision(CollisionData):
+    def __init__(self, folder):
+        super().__init__(folder, native.TriangleScene)
         materials = {name: i for i, name in enumerate(self.materials)}
         shapes = [native.Primitive(
             s.inv, s.translation, s.centers[0], s.centers[-1], s.axis, s.length,

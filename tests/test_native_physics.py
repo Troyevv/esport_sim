@@ -5,9 +5,9 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from backend.cs2_collision import Collision, Primitive
+from tests.reference_kernel.cs2_collision import Collision, Primitive
 from tests.reference_kernel.cs2_maps import Map
-from backend.cs2_rays import TriangleScene
+from tests.reference_kernel.cs2_rays import TriangleScene
 
 native = pytest.importorskip("backend._match_native")
 from tests.reference_kernel.native_physics import NativeCollision, NativePhysicalMap, NativeMovementMap

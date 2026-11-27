@@ -8,7 +8,7 @@ from weakref import proxy
 from math import dist
 from pathlib import Path
 
-from .cs2_navigation import Navigation, surface_height
+from .cs2_navigation import surface_height
 from .cs2_profiles import named_stages, resolve_anchors
 from .cs2_sites import BombSites
 from .match_rules import BLAST_RADIUS, ROLES, UTILITY
@@ -230,16 +230,6 @@ class Map:
                     gaps[p] = min(gaps[p],dist(p,point))
             result[site] = tuple(samples)
         return result
-
-    @staticmethod
-    def _make_navigation(data):
-        return Navigation(data)
-
-    @cached_property
-    def collision(self):
-        from .cs2_collision import Collision
-
-        return Collision(self.folder)
 
     def to_sim(self, p):
         return (

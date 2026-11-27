@@ -5,7 +5,7 @@ from functools import cached_property, lru_cache, partial
 from weakref import proxy
 
 from backend import _match_native as native
-from backend.cs2_collision import Collision
+from .cs2_collision import Collision
 from .cs2_maps import Map, UNIT, xyz
 from backend.match_rules import BLAST_RADIUS, ROLES
 from backend.native_navigation import NativeNavigation

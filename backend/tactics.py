@@ -1,6 +1,5 @@
 """Versioned role plans for the fictional Depo grid and the BO1 buy profiles."""
 
-from collections import Counter
 from random import Random
 
 from math import isfinite
@@ -199,10 +198,6 @@ def standards():
         for index, buy in enumerate(LEGACY_BUYS)
         for site in [("A", "B", "A")[index]]
     ]
-
-
-def equipment(steps):
-    return Counter(s["utility"] for s in steps if s["kind"] == "throw")
 
 
 def reference(plan):

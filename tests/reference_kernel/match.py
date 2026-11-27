@@ -10,7 +10,23 @@ from . import match_performance as perf
 from backend.world import match_player as profile
 from . import match_ai as ai
 from .match_events import impact, emit, money
-from backend.match_rules import blast_damage, equipment_value, CALLS, MAP, PRICES, RULES, VERSION, PREVIOUS_VERSION, SIDEARMS, WEAPONS, role_orders
+from backend.match_rules import BLAST_RADIUS, equipment_value, CALLS, MAP, PRICES, RULES, VERSION, PREVIOUS_VERSION, SIDEARMS, WEAPONS, role_orders
+
+
+def blast_damage(distance):
+    return max(0, round(370 * (1 - distance / BLAST_RADIUS)))
+
+
+def award(w, side):
+    winner = match_score.side_team(w, side)
+    w["scoreByTeam"][winner] += 1
+    ids = match_score.team_ids(w)
+    w["score"] = [w["scoreByTeam"][tid] for tid in ids]
+    return winner, ids.index(winner)
+
+
+def equipment(steps):
+    return Counter(s["utility"] for s in steps if s["kind"] == "throw")
 
 
 def team(w, club):
@@ -490,7 +506,7 @@ def begin_live(w):
                 if space:
                     continue
                 for item in (
-                    tactics.equipment(steps) - Counter(a["utility"])
+                    equipment(steps) - Counter(a["utility"])
                 ).elements():
                     if len(a["utility"]) < 2:
                         purchase(w, a, item)
@@ -632,7 +648,7 @@ def command(w, kind, value=None):
 def finish_round(w, side, reason):
     if w["phase"] in ("result", "finished"):
         return
-    winner_id, winner = match_score.award(w, side)
+    winner_id, winner = award(w, side)
     emit(
         w,
         "round_end",

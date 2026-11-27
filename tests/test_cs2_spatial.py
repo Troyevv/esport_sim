@@ -1,4 +1,4 @@
-from backend.cs2_navigation import Navigation, surface_height
+from tests.reference_kernel.cs2_navigation import Navigation, surface_height
 from backend.cs2_sites import BombSites, Solid
 
 
@@ -73,7 +73,7 @@ def test_floor_probe_reads_face_materials_and_transformed_primitives(tmp_path):
         ("wood", [2, 2]), ("metal", [10, 20]), ("wood", [26, 29])]
     assert rays[1]["physicalHits"] == []
 
-    from backend.cs2_collision import Collision, SIGHT, THROW
+    from tests.reference_kernel.cs2_collision import Collision, SIGHT, THROW
     runtime = Collision(tmp_path)
     segments = [((2,2,25),(2,2,31)), ((8,8,-2),(8,8,24)), ((2,2,21),(2,2,22))]
     bulk = runtime.sight_many(segments)
@@ -142,7 +142,7 @@ def test_portal_can_be_crossed_away_from_its_obstructed_midpoint():
 def test_disabled_source_entity_does_not_block_runtime_rays(tmp_path):
     import json
     import struct
-    from backend.cs2_collision import Collision, MOVEMENT
+    from tests.reference_kernel.cs2_collision import Collision, MOVEMENT
 
     raw=b"".join(struct.pack("<3f",*p) for p in ((0.,0.,0.),(10.,0.,0.),(0.,10.,0.)))
     raw+=struct.pack("<3i",0,1,2)
@@ -373,7 +373,7 @@ def test_replan_from_a_portal_between_nav_polygons():
 def test_coplanar_playerclip_cannot_hide_a_solid_wall(tmp_path):
     import json
     import struct
-    from backend.cs2_collision import Collision, SIGHT, MOVEMENT
+    from tests.reference_kernel.cs2_collision import Collision, SIGHT, MOVEMENT
 
     vertices = b"".join(struct.pack("<3f", *p) for p in ((0, 0, 0), (10, 0, 0), (0, 10, 0)))
     triangle = vertices + struct.pack("<3i", 0, 1, 2)

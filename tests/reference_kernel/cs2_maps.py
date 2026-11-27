@@ -10,7 +10,7 @@ from math import atan2, cos, dist, hypot, sin, tau
 from heapq import heappop, heappush
 from pathlib import Path
 
-from backend.cs2_navigation import Navigation, surface_height
+from .cs2_navigation import Navigation, surface_height
 from backend.cs2_profiles import named_stages, resolve_anchors
 from backend.cs2_sites import BombSites
 from backend.match_rules import BLAST_RADIUS, ROLES, UTILITY
@@ -255,7 +255,7 @@ class Map:
 
     @cached_property
     def collision(self):
-        from backend.cs2_collision import Collision
+        from .cs2_collision import Collision
 
         return Collision(self.folder)
 

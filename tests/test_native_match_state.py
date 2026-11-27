@@ -599,3 +599,21 @@ def test_failed_batch_restores_completed_round_and_archive_cursor():
     assert owner.snapshot() == before
     assert owner.advance(1) == 1
     assert json.loads(owner.snapshot())["archive"][-1] == game["events"]
+
+
+def test_depo_preserves_binary64_speed_in_visual_memory():
+    game = match.initial(197)
+    game["tick"] = 10
+    for a in game["agents"]:
+        a["hp"] = 0
+    watcher, target = game["agents"][0], game["agents"][5]
+    for actor in (watcher, target):
+        actor.update(hp=100, x=45, y=105)
+    sight = dict(id=target["id"], x=45.1, y=105.237, tick=9, source="Зрение")
+    watcher["knowledge"][target["id"]] = sight
+    watcher["visible"] = [target["id"]]
+    owner = native_match_state.open_game(game)
+    match_ai.observe(game, [watcher, target])
+    owner.observe()
+    assert watcher["knowledge"][target["id"]]["speed"] == 0.25723335709040107
+    assert_same(owner, game)
