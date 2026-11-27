@@ -7,7 +7,7 @@ import json
 import pytest
 
 from tests.reference_kernel import match
-from backend import career, career_store, match_score
+from backend import career, career_store, match as production, match_score, native_match_state
 from tests.reference_kernel import match_ai as ai
 from tests.reference_kernel.match_events import damage, impact
 from backend.match_rules import BLAST_RADIUS, POSITIONS, RULES, WEAPONS, equipment_value
@@ -197,11 +197,11 @@ def test_background_and_observer_career_reports_allow_either_fixture_order(tmp_p
         background_game = deepcopy(game)
         background_game["agents"].reverse()
         background = career.simulate(background_game)
+        observer = native_match_state.open_game(game)
         while game["phase"] != "finished":
-            match.advance(game)
-            if game["tick"] % 128 == 0:
-                match.project(game)
-        view = match.project(game)["match"]
+            observer.advance(128)
+            game = json.loads(observer.snapshot())
+            view = production.project(game)["match"]
         assert view["coachTeamId"] == user
         assert career.result(game) == background
         entry = deepcopy(c)

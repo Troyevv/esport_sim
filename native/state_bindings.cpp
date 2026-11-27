@@ -11,7 +11,7 @@ namespace py = pybind11;
 void bind_state(py::module_ &module) {
     using namespace esport;
     using Release = py::call_guard<py::gil_scoped_release>;
-    module.attr("MATCH_STATE_API_VERSION") = 4;
+    module.attr("MATCH_STATE_API_VERSION") = 5;
     module.def(
         "project_buy",
         [](const std::string &input, const std::string &side, const std::string &call,
@@ -78,6 +78,10 @@ void bind_state(py::module_ &module) {
         .def(
             "advance_preview",
             [](MatchState &owner, int ticks) { return owner.advance_recorded(ticks, TickOutput::Preview); },
+            Release())
+        .def(
+            "audit_individual_ticks",
+            [](MatchState &owner, int ticks) { return owner.advance_recorded(ticks, TickOutput::Individual); },
             Release())
         .def(
             "profile_ticks",

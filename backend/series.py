@@ -43,7 +43,7 @@ def initial(
         "coachTeamId": coach or teams[0],
     }
     if detailed:
-        w["agentPolicy"] = 1
+        w["agentPolicy"] = match.AGENT_POLICY
     match.check_coach(w)
     w["series"] = {
         "version": VERSION,

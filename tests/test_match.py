@@ -8,6 +8,7 @@ from tests.test_server import envelope, local_server, send, snapshot
 
 from tests.reference_kernel import match
 from tests.reference_kernel import match_ai as ai
+from backend import match as production
 from backend.match_rules import RULES
 from backend.store import Store
 
@@ -196,8 +197,8 @@ def test_engine_and_store_replay_share_all_events_after_midround_load(tmp_path, 
             for ref in server.pop("logs")
         ]
         server["archive"] = archive
-        headless = match.initial(17)
-        until(headless, lambda: headless["phase"] == "finished")
+        headless = production.initial(17)
+        production.play_map(headless)
         assert server == json.loads(json.dumps(headless))
     finally:
         store.db.close()

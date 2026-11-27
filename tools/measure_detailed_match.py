@@ -72,7 +72,7 @@ def run(args):
     start = domain["rosters"][pair[args.first_attack]]["team"] if args.first_attack is not None else None
     if args.native_core:
         game = production_match.initial(args.seed, domain, pair, map_id=args.map, first_attack=start,
-                                        agent_policy=1 if args.current_ai else None)
+                                        agent_policy=production_match.AGENT_POLICY if args.current_ai else None)
     else:
         game = match.initial(args.seed, domain, pair, map_id=args.map, first_attack=start)
     owner = None

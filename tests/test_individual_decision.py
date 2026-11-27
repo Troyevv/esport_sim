@@ -1,5 +1,7 @@
 """R5.5.1 on the production C++ owner. Times and radio reports use simulation ticks."""
+import hashlib
 import json
+from math import dist
 
 import pytest
 
@@ -110,7 +112,7 @@ def test_ten_private_decisions_and_checkpoint_policy_guard():
     match.advance(w, 1)
     assert len([a for a in w["agents"] if a["decision"]["tick"] == w["tick"]]) == 10
     assert all(a["decision"]["goal"] == ("attack" if a["team"] == "T" else "defend") for a in w["agents"])
-    for bad in (2, True, "1"):
+    for bad in (3, True, "1"):
         with pytest.raises(ValueError):
             native_match_state.open_game(dict(w, agentPolicy=bad))
         with pytest.raises(ValueError):
@@ -139,3 +141,126 @@ def test_style_changes_risk_choice_at_the_same_observed_contact(index):
     assert cautious["decision"]["intent"] == "cover"
     assert (cautious["x"], cautious["y"]) != (a["x"], a["y"])
     assert bold["rng"] == cautious["rng"] == a["rng"]
+
+
+@pytest.mark.parametrize(("index", "trait", "enemies", "hp", "expected"), [
+    (1, "aggression", 1, 10, ("cover", "engage")),
+    (1, "risk", 2, 10, ("cover", "engage")),
+    (1, "game_reading", 2, 20, ("engage", "cover")),
+    (1, "mapKnowledge", 2, 30, ("engage", "cover")),
+    (4, "discipline", 0, 100, ("watch", "assignment")),
+    (4, "roleMastery", 0, 100, ("assignment", "watch")),
+])
+def test_one_trait_changes_executed_movement_at_identical_information(index, trait, enemies, hp, expected):
+    w = live()
+    a = w["agents"][index]
+    a.update(x=45, y=105, hp=hp, ammo=12, reserve=20, utility=[], knowledge={}, visible=[])
+    profile = w["domain"]["players"][a["playerId"]]
+    profile["skills"].update(aggression=50, risk=50, game_reading=50, discipline=50)
+    role = a["playingRole"]
+    profile["roleMastery"][role] = profile["mapKnowledge"]["depo"] = 50
+    for i in range(max(1, enemies)):
+        ident = w["agents"][5+i]["id"]
+        a["knowledge"][ident] = dict(id=ident, source="Зрение" if enemies else "Радио",
+                                     tick=w["tick"], x=85, y=105+i)
+        if enemies:
+            a["visible"].append(ident)
+    table, key = {
+        "mapKnowledge": (profile["mapKnowledge"], "depo"),
+        "roleMastery": (profile["roleMastery"], role),
+    }.get(trait, (profile["skills"], trait))
+    for level, want in zip((0, 100), expected, strict=True):
+        table[key] = level
+        command, result = decide(w, index)
+        assert result["decision"]["intent"] == want
+        assert result["rng"] == a["rng"]
+        moved = (result["x"], result["y"]) != (a["x"], a["y"])
+        assert moved == (command[0] == "move") == (want in ("assignment", "cover"))
+
+
+@pytest.mark.parametrize("index", [4, 9])
+def test_reload_keeps_deadline_and_can_interrupt_to_fire_this_tick(index):
+    w = live()
+    a = w["agents"][index]
+    a.update(ammo=3, reserve=20, utility=[])
+    _, started = decide(w, index)
+    due = started["reloadAt"]
+    assert due > w["tick"]
+    w["tick"] += 1
+    w["agents"][index] = started
+    _, continuing = decide(w, index)
+    assert continuing["decision"]["intent"] == "reload"
+    assert continuing["decision"]["since"] == w["tick"] - 1
+    assert continuing["reloadAt"] == due
+    target = w["agents"][5 if index < 5 else 0]["id"]
+    continuing.update(target=target, visible=[target], ready=0)
+    continuing["knowledge"][target] = dict(id=target, source="Зрение", tick=w["tick"],
+                                          x=continuing["x"] + 4, y=continuing["y"])
+    w["agents"][index] = continuing
+    command, threatened = decide(w, index)
+    assert command[0] == "shoot" and threatened["reloadAt"] == 0
+    assert (threatened["ammo"], threatened["reserve"]) == (3, 20)
+    # The prioritized command has not yet been resolved by combat. If the target ducks
+    # back immediately, starting the same top-up again would repeat the interrupted action.
+    threatened.update(visible=[], knowledge={})
+    w["agents"][index] = threatened
+    w["tick"] += 1
+    assert decide(w, index)[1]["reloadAt"] == 0
+    # Without that contact the reload completes once and transfers real cartridges.
+    w["agents"][index] = started
+    w["tick"] = due
+    _, finished = decide(w, index)
+    assert finished["reloadAt"] == 0 and finished["ammo"] > 3
+    assert finished["ammo"] + finished["reserve"] == 23
+
+
+def test_voluntary_reload_requires_enough_time_and_useful_ammunition():
+    w = live()
+    a = w["agents"][4]
+    a.update(ammo=1, reserve=50)
+    w["deadline"] = w["tick"] + 2
+    assert decide(w, 4)[1]["reloadAt"] == 0
+    w["deadline"] += 500
+    a.update(weapon="Negev", ammo=50)
+    assert decide(w, 4)[1]["reloadAt"] == 0
+    a.update(ammo=1)
+    assert decide(w, 4)[1]["reloadAt"] > w["tick"]
+
+
+def test_previous_pr_checkpoint_continues_with_original_motion_and_rng():
+    owner = native_match_state.open_game(match.initial(17, agent_policy=1))
+    owner.advance(150)
+    restored = native_match_state.open_game(json.loads(owner.snapshot()))
+    restored.advance(95)
+    owner.advance(95)
+    assert restored.snapshot() == owner.snapshot()
+    actors = json.loads(restored.snapshot())["agents"]
+    sample = [[a["id"], a["x"], a["y"], a["hp"], a["rng"], a["ammo"], a["decision"]["intent"]]
+              for a in actors]
+    # Historical PR head be979a5, Depo, tick 245.
+    assert hashlib.sha256(json.dumps(sample, separators=(",", ":")).encode()).hexdigest() == (
+        "023863078a5296992ba171df964c4435a9a89176015afac6c4e3e676bea91928"
+    )
+
+
+def test_retreat_continues_to_shelter_after_breaking_line_of_sight():
+    w = live()
+    a = w["agents"][1]
+    a.update(x=45, y=105, hp=20, ammo=12, utility=[])
+    profile = w["domain"]["players"][a["playerId"]]
+    profile["skills"].update(aggression=0, risk=0, game_reading=95)
+    ident = w["agents"][5]["id"]
+    a["visible"] = [ident]
+    a["knowledge"][ident] = dict(id=ident, source="Зрение", tick=w["tick"], x=85, y=105)
+    command, retreating = decide(w, 1)
+    assert command[0] == "move" and retreating["decision"]["intent"] == "cover"
+    shelter = retreating["shelter"]
+    before = dist((retreating["x"], retreating["y"]), shelter)
+    assert before > 2.5
+    retreating.update(visible=[], lastMove=w["tick"])
+    w["agents"][1] = retreating
+    w["tick"] += 1
+    command, continuing = decide(w, 1)
+    assert command[0] == "move" and continuing["decision"]["intent"] == "cover"
+    assert continuing["decision"]["since"] == w["tick"] - 1
+    assert dist((continuing["x"], continuing["y"]), shelter) < before
