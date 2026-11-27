@@ -14,10 +14,10 @@ def encode(world):
     return json.dumps(world, ensure_ascii=False, separators=(",", ":"))
 
 
-def compare(checkpoint, combat=False, opening=False):
+def compare(checkpoint, combat=False, opening=False, captains=False):
     world = json.loads(gzip.decompress(checkpoint.read_bytes()))
     space = cs2_maps.get(world["mapId"])
-    if combat or opening:
+    if combat or opening or captains:
         from backend.native_physics import NativePerceptionMap
         physics = NativePerceptionMap(space.folder)
     counts = Counter()
@@ -160,9 +160,32 @@ def compare(checkpoint, combat=False, opening=False):
         expected = ref_probe(arena, squad, carrier, plan, now, domain)
         return verify_choice(expected, owner.default_probe(encode(plan)), owner, "default_probe")
 
+    seen_reviews = set()
+    ref_captain = match_ai.captain
+
+    def review(w, squad, arena):
+        leader = min(squad, key=lambda a: (not a["appointed"], a["slot"]))
+        side = leader["team"]
+        plan = w["plans"][side]
+        key = (side, w["phase"], len(squad), leader["id"], leader["heardSite"],
+               bool(leader["knowledge"]), bool(leader.get("routeReports")),
+               any(r.get("carryingC4") for r in leader["knowledge"].values()),
+               bool(plan.get("backup")), bool(plan.get("secondBackup")), bool(plan.get("commitments")),
+               plan.get("reinforce"), bool(plan.get("rotated")), w["tick"] >= plan["review"])
+        owner = None
+        if key not in seen_reviews:
+            seen_reviews.add(key)
+            owner = native_match_state.restore(encode(w), physics=physics)
+            owner.review_captain(side)
+        ref_captain(w, squad, arena)
+        if owner is not None:
+            same(owner, "captain_" + side)
+
     with ExitStack() as patches:
         patches.enter_context(patch.object(cs2_economy, "decision", decide))
         patches.enter_context(patch.object(cs2_economy, "buy", buy))
+        if captains:
+            patches.enter_context(patch.object(match_ai, "captain", review))
         if opening:
             patches.enter_context(patch.object(space, "orders", orders))
             patches.enter_context(patch.object(cs2_play, "opening", call))
@@ -202,5 +225,6 @@ if __name__ == "__main__":
     parser.add_argument("checkpoint", type=Path)
     parser.add_argument("--combat", action="store_true", help="Also compare first observed attack/utility kinds")
     parser.add_argument("--opening", action="store_true", help="Compare team calls and route choices after freeze time")
+    parser.add_argument("--captains", action="store_true", help="Compare active calls as reports and squad size change")
     args = parser.parse_args()
-    print(json.dumps(compare(args.checkpoint, args.combat, args.opening), ensure_ascii=False))
+    print(json.dumps(compare(args.checkpoint, args.combat, args.opening, args.captains), ensure_ascii=False))

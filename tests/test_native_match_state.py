@@ -434,3 +434,34 @@ def test_native_freeze_opens_full_round_with_roles_economy_and_calls(combat_aren
     assert owner.advance_intermission(ticks) == ticks
     assert w["phase"] == "live"
     assert_same(owner, w)
+
+
+@pytest.mark.parametrize("scenario", ["blocked", "leader-lost", "carrier", "retake", "radio-gap"])
+def test_captain_reviews_update_only_from_team_observations(combat_arenas, scenario):
+    arena, physics = combat_arenas
+    w = read_checkpoint()
+    side = "T" if scenario in ("blocked", "leader-lost") else "CT"
+    squad = [a for a in w["agents"] if a["team"] == side and a["hp"]]
+    leader = next(a for a in squad if a["appointed"])
+    plan = w["plans"][side]
+    plan.update(review=0, start=0)
+    if scenario == "blocked":
+        leader["routeReports"] = {leader["id"]: [plan["site"], w["tick"]]}
+    if scenario == "leader-lost":
+        leader["hp"] = 0
+        squad.remove(leader)
+    if scenario == "carrier":
+        opponent = next(a for a in w["agents"] if a["team"] != side)
+        leader["knowledge"][opponent["id"]] = dict(id=opponent["id"], **dict(zip(("x", "y", "z"), arena.site_points["B"])),
+                                                    tick=w["tick"], source="Радио", carryingC4=True,
+                                                    weapon="AK-47", groupSize=3)
+    if scenario == "retake":
+        w.update(phase="planted", deadline=w["tick"] + 350)
+        leader["heardSite"] = "A"
+    if scenario == "radio-gap":
+        plan["backup"] = dict(id=squad[-1]["id"], site="B", lane=1, hold=list(arena.site_points["B"]),
+                              watch=list(arena.site_points["A"]), lastEvidence=w["tick"] - 7)
+    owner = native_match_state.restore(encode_world(w), physics=physics)
+    owner.review_captain(side)
+    match_ai.captain(w, squad, arena)
+    assert_same(owner, w)

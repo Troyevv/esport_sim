@@ -5,6 +5,7 @@
 #include "opening.hpp"
 #include "round_rules.hpp"
 #include "tactic_execution.hpp"
+#include "team_ai.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -302,7 +303,7 @@ int MatchState::advance_intermission(int ticks) {
             if (current.at("pending") == true)
                 impl_->enter_timeout(current);
         } else {
-            impl_->opening_map().begin_live(current,impl_->config);
+            impl_->opening_map().begin_live(current, impl_->config);
         }
         w.swap(staged);
     }
@@ -311,6 +312,14 @@ int MatchState::advance_intermission(int ticks) {
 void MatchState::deliver_radio() {
     std::scoped_lock lock(impl_->mutex);
     impl_->deliver_radio(impl_->state);
+}
+void MatchState::review_captain(const std::string &side) {
+    if (side != "T" && side != "CT")
+        throw std::invalid_argument("Неизвестная сторона");
+    std::scoped_lock lock(impl_->mutex);
+    auto staged = impl_->state;
+    captain_review(staged, impl_->config, impl_->opening_map(), side);
+    impl_->state.swap(staged);
 }
 void MatchState::observe() {
     std::scoped_lock lock(impl_->mutex);

@@ -15,7 +15,12 @@ class Objectives {
     Objectives(std::shared_ptr<const PhysicalNavigation> map, SiteData sites);
     std::optional<std::string> site_at(const Point &position) const;
     std::optional<std::string> reported_site(const Point &p) const;
-    const std::vector<Point>& samples(const std::string& site) const {return samples_.at(site);}
+    const std::vector<Point> &samples(const std::string &site) const { return samples_.at(site); }
+    double site_cost(const std::string &site, AreaId area, double fallback) const {
+        const auto &costs = costs_.at(site);
+        auto found = costs.find(area);
+        return found == costs.end() ? fallback : found->second;
+    }
     const Ingress &ingress() const { return ingress_; }
     const PhysicalNavigation &map() const { return *map_; }
     void resolve(Json &w, const Json &cfg, const Json &ordered) const;
