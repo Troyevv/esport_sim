@@ -213,6 +213,12 @@ if (Test-Path $instancePath) { throw 'Existing launcher state found in fresh Win
 $install = Join-Path $testRoot 'first install'
 Expand-Archive -LiteralPath $Archive -DestinationPath $install
 $exe = Join-Path $install 'EsportSim\EsportSim.exe'
+$nativeReport = Join-Path $testRoot 'native-query.json'
+$native = Start-Process -FilePath $exe -ArgumentList "--verify-native `"$nativeReport`"" -PassThru
+if (!$native.WaitForExit(60000)) { $native.Kill(); throw 'Native geometry check timed out' }
+if ($native.ExitCode -ne 0) { throw (Get-Content -Raw -LiteralPath $nativeReport) }
+$hit = Get-Content -Raw -LiteralPath $nativeReport | ConvertFrom-Json
+if ($hit.face -ne 0 -or $hit.distance -ne 2) { throw 'Packaged native geometry returned an incorrect hit' }
 $first = Launch-Archive $exe
 if ($first.port -ne 8765) { throw "Unexpected default port $($first.port)" }
 $again = Launch-Archive $exe

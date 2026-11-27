@@ -19,20 +19,19 @@ RAY_HIT = np.dtype([
 
 
 @lru_cache(maxsize=1)
-def _library():
+def _library_path():
     package = Path(rtcore.__file__).resolve().parent
     folders = (package.parent / "embreex.libs", package / ".dylibs", package)
     for folder in folders:
         for path in sorted(folder.glob("*embree4*")):
             if path.name.endswith((".dll", ".dylib")) or ".so" in path.name:
-                lib = ct.CDLL(str(path))
-                break
-        else:
-            continue
-        break
-    else:
-        raise RuntimeError("Не найдена библиотека Embree 4 из пакета embreex")
+                return path
+    raise RuntimeError("Не найдена библиотека Embree 4 из пакета embreex")
 
+
+@lru_cache(maxsize=1)
+def _library():
+    lib = ct.CDLL(str(_library_path()))
     ptr, uint, size = ct.c_void_p, ct.c_uint, ct.c_size_t
     signatures = {
         "rtcNewDevice": (ptr, [ct.c_char_p]),
