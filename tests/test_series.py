@@ -215,8 +215,7 @@ def test_complete_installed_series_with_timeouts_and_map_reset(best):
     match.command(w, "timeout")
     match.command(w, "resume")
     while True:
-        while w["phase"] != "finished":
-            match.advance(w)
+        match.play_map(w)
         series.finish_map(w)
         series.validate(w)
         if w["series"]["winner"]:

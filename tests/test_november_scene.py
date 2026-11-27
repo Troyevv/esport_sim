@@ -62,8 +62,7 @@ def test_november_bo1_finishes_without_ovr(release, home, away, seed, monkeypatc
             for pid in r["players"]
         )
     w = match.initial(seed, domain, ids)
-    while w["phase"] != "finished" and w["tick"] < 100000:
-        match.advance(w)
+    match.advance(w, 100000)
     rounds = [
         e
         for batch in w["archive"] + [w["events"]]

@@ -4,7 +4,7 @@ import json
 from statistics import median
 from timeit import repeat
 
-from backend import cs2_maps
+from tests.reference_kernel import cs2_maps
 from backend._match_native import NavSurfaces
 
 

@@ -57,14 +57,18 @@ Json rescue_c4(Json &w, const PhysicalNavigation &nav, const Squad &allies) {
 AgentTurn::AgentTurn(Json &world, Json &actor, const Squad &allies, const Json &config, const OpeningMap &map,
                      const Combat &arms, const Json &rescue)
     : side(actor.at("team")), now(world.at("tick")), slot(actor.at("slot")), w(world), a(actor),
-      squad(allies), cfg(config), arena(map), nav(map.objectives().map()), combat(arms), recovery(rescue),
+      squad(allies), cfg(config), arena(map), grid(map.objectives().grid()), combat(arms), recovery(rescue),
       player(player_profile(w, a)), skills(player.at("skills")), plan(w.at("plans").at(side)),
       previous(actor.at("status")), step_index(actor.value("stepIndex", 0)),
       prior_position(actor_point(actor)) {}
 bool AgentTurn::clear(const Json &l, const Json &r) const {
-    return !nav.hit(actor_point(l), actor_point(r), 1, l.contains("hp") ? 64 : 5, r.contains("hp") ? 64 : 5);
+    if (grid)
+        return grid->clear(xy(l), xy(r));
+    return !arena.objectives().map().hit(actor_point(l), actor_point(r), 1, l.contains("hp") ? 64 : 5,
+                                         r.contains("hp") ? 64 : 5);
 }
 bool AgentTurn::move(const Point &point, double pace) {
+    const auto &nav = arena.objectives().map();
     return travel(a, player, nav, point, pace, fire, now);
 }
 Json AgentTurn::movement(const Point &goal, double pace) {
@@ -93,7 +97,9 @@ void AgentTurn::pickup() {
         auto gun = *it;
         ground.erase(it);
         if (pistol && !secondary.is_null()) {
-            Json prior = {{"id", gun.at("id")}, {"x", a.at("x")}, {"y", a.at("y")}, {"z", a.at("z")}};
+            Json prior = {{"id", gun.at("id")}, {"x", a.at("x")}, {"y", a.at("y")}};
+            if (!grid)
+                prior["z"] = a.at("z");
             prior.update(in_hand(a.at("weapon") == secondary ? a : a.at("holster")));
             ground.push_back(std::move(prior));
         }
@@ -115,11 +121,13 @@ void AgentTurn::prepare() {
                 .push_back(Json{
                     {"team", side}, {"sender", a.at("id")}, {"site", bomb.at("site")}, {"due", now + delay}});
         }
-        if (now % 10 == 0) {
+        if (!grid && now % 10 == 0) {
             auto [dx, dy] = sound_direction(actor_point(a), actor_point(bomb));
             a["beepBearing"] = Json::array({a.at("x"), a.at("y"), dx, dy});
         }
-        if (device.is_null() && gap(bomb) < 30 && clear(a, bomb) && a.at("blind") <= now &&
+        if (grid && gap(bomb) < 30 && clear(a, bomb))
+            device = bomb;
+        if (!grid && device.is_null() && gap(bomb) < 30 && clear(a, bomb) && a.at("blind") <= now &&
             std::ranges::none_of(w.at("effects"), [&](const Json &f) {
                 return f.at("kind") == "Дым" && f.at("land") <= now && now < f.at("end") &&
                        near_segment(actor_point(a), actor_point(bomb), actor_point(f), f.at("radius"));
@@ -134,14 +142,17 @@ void AgentTurn::prepare() {
         }
     }
     if (side == "T" && bomb.at("carrier").empty() && bomb.at("site").empty() && gap(bomb) <= 7 &&
-        clear(a, bomb)) {
+        (grid || clear(a, bomb))) {
         bomb["carrier"] = a.at("id");
         device = bomb;
         emit(w, "pickup", a.at("name").get<std::string>() + " поднял C4", "T")["player"] = a.at("id");
     }
     for (auto &f : w.at("effects"))
-        if (f.at("kind") == "Огонь" && f.at("land") <= now && gap(f) < 70 && clear(a, f))
+        if (f.at("kind") == "Огонь" && f.at("land") <= now && gap(f) < 70 && clear(a, f)) {
             fire.emplace_back(actor_point(f), f.at("radius"));
+            if (grid)
+                grid_fire.push_back(f);
+        }
     if (!w.at("action").empty())
         for (const auto &p : w.at("agents"))
             if (p.at("team") == side && p.at("id") == w.at("action").at("player"))
@@ -150,7 +161,7 @@ void AgentTurn::prepare() {
         auto &job = plan.at("opening").at("jobs").at(a.at("id").get<std::string>());
         if (job.contains("peek") && distance(actor_point(a), job.at("peek").get<Point>()) < 6) {
             auto look = job.at("watch").get<Point>();
-            opening_sight = !nav.hit(actor_point(a), look, 1, 64, 5) &&
+            opening_sight = !arena.objectives().map().hit(actor_point(a), look, 1, 64, 5) &&
                             std::ranges::none_of(w.at("effects"), [&](const Json &f) {
                                 return f.at("kind") == "Дым" && f.at("land") <= now && now < f.at("end") &&
                                        near_segment(actor_point(a), look, actor_point(f), f.at("radius"));
@@ -234,24 +245,26 @@ void AgentTurn::duty_feedback() {
 }
 void AgentTurn::finish(const Json &intent) {
     const auto kind = intent.at(0).get<std::string>();
-    check_incoming(kind);
-    if (a.value("lastBlockedTick", Tick{-1}) != now)
-        a["blockedTicks"] = 0;
-    if (side == "T" && w.at("phase") == "live" && a.value("blockedTicks", 0) >= 20 &&
-        now - a.value("lastRouteReport", Tick{-100}) >= 60) {
-        const auto site = plan.at("site");
-        a["lastRouteReport"] = now;
-        a["routeReports"][a.at("id").get<std::string>()] = Json::array({site, now});
-        w.at("messages")
-            .push_back(Json{{"team", side},
-                            {"sender", a.at("id")},
-                            {"blockedSite", site},
-                            {"due", now + 1 + (100 - skills.at("communication").get<int>()) / 12}});
+    if (!grid) {
+        check_incoming(kind);
+        if (a.value("lastBlockedTick", Tick{-1}) != now)
+            a["blockedTicks"] = 0;
+        if (side == "T" && w.at("phase") == "live" && a.value("blockedTicks", 0) >= 20 &&
+            now - a.value("lastRouteReport", Tick{-100}) >= 60) {
+            const auto site = plan.at("site");
+            a["lastRouteReport"] = now;
+            a["routeReports"][a.at("id").get<std::string>()] = Json::array({site, now});
+            w.at("messages")
+                .push_back(Json{{"team", side},
+                                {"sender", a.at("id")},
+                                {"blockedSite", site},
+                                {"due", now + 1 + (100 - skills.at("communication").get<int>()) / 12}});
+        }
+        if (side == "CT" && w.at("phase") == "live" && now % 5 == slot)
+            duty_feedback();
     }
-    if (side == "CT" && w.at("phase") == "live" && now % 5 == slot)
-        duty_feedback();
     if (kind == "move") {
-        if (side == "T" && w.at("phase") == "live" && now % 5 == slot &&
+        if (!grid && side == "T" && w.at("phase") == "live" && now % 5 == slot &&
             distance(prior_position, actor_point(a)) > .9)
             combat.hear(w, a, "Шаги", 88);
         a["lastMove"] = now;

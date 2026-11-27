@@ -63,6 +63,11 @@ def main():
             f"{ROOT / 'backend' / 'data'}:backend/data",
             "--hidden-import",
             "backend._match_native",
+            # Imported by the pybind11 module to locate the packaged Embree DLL.
+            "--hidden-import",
+            "backend.cs2_rays",
+            "--exclude-module",
+            "tests",
             "--collect-all",
             "embreex",
             "--add-binary",
@@ -98,6 +103,16 @@ def main():
             raise RuntimeError(f"В сборке отсутствует {file}")
     if not list((output / "_internal/backend").glob("_match_native*.pyd")):
         raise RuntimeError("В сборке отсутствует нативный матчевый модуль")
+    from PyInstaller.archive.readers import CArchiveReader
+
+    binary = CArchiveReader(str(output / "EsportSim.exe"))
+    modules = binary.open_embedded_archive("PYZ.pyz").toc
+    if "backend.cs2_rays" not in modules:
+        raise RuntimeError("В сборке отсутствует загрузчик Embree")
+    if any(name.startswith("tests.reference_kernel") for name in modules) or any(
+        name in modules for name in ("backend.match_ai", "backend.cs2_play", "backend.tactic_execution")
+    ):
+        raise RuntimeError("В ZIP обнаружена тестовая реализация матчевого ядра")
     shutil.copyfile(ROOT / "LICENSE", output / "LICENSE")
     shutil.copyfile(ROOT / "native/vendor/embree4/LICENSE.txt", output / "LICENSE-Embree.txt")
     shutil.copyfile(ROOT / "docs" / "TACTICS.md", output / "TACTICS.md")

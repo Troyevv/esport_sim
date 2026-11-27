@@ -70,6 +70,7 @@ class Store:
     def __init__(self, path: Path):
         self.badges = PersonalBadges(Path(path).with_suffix(".club-originals.sqlite"))
         self.portraits = PortraitLibrary(Path(path).with_suffix(".portraits.sqlite"))
+        self.match_owner = None
         self.motion = deque(maxlen=6)  # Recent committed poses, never part of a save.
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         migrate_profile = career_store.prepare_migration(self.db, path)
@@ -161,7 +162,7 @@ class Store:
                 pack = self.careers.pack(c["source"])
                 for event in c["history"]:
                     if event["date"] >= training.offset(c["date"], -90):
-                        scout_sources.played(c, pack, event, self.careers.report(event["result"]))
+                        scout_sources.played(c, pack, event, self.careers.historical_report(c, event))
                 scout_sources.freeze(c["scouting"])
         elif c:
             database.require(c["scouting"].get("version") == 1, "Неизвестная версия скаутинга")
@@ -244,6 +245,7 @@ class Store:
         return self.bulk.expand(from_json(self.db.execute("SELECT body FROM active WHERE id=1").fetchone()[0], cache_strings="keys"))
 
     def write(self, state):
+        self.match_owner = None
         # Completed rounds are immutable and shared by the active game and save slot.
         # Only their hashes travel with the checkpoint, including after a load/fork.
         world = state["world"]
@@ -267,14 +269,24 @@ class Store:
             start = world["tick"]
             samples = []
             is_match = world["version"] == 2
-            step = match.advance if is_match else engine.advance
-            for _ in range(state["speed"]):
+            owner = None
+            if is_match:
+                from . import native_match_state
+                cached, self.match_owner = self.match_owner, None
+                owner = (cached[1] if cached and cached[0] == self.calendar_stamp()
+                         else native_match_state.open_game(world))
                 if state["speed"] <= 8:
-                    samples.append(engine.motion_sample(world))
-                step(world)
-                if is_match and world["phase"] in ("finished", "timeout"):
+                    samples = json.loads(owner.advance_motion(state["speed"]))
+                else:
+                    owner.advance(state["speed"])
+                state["world"] = world = json.loads(owner.snapshot())
+                if world["phase"] in ("finished", "timeout"):
                     state["running"] = False
-                    break
+            else:
+                for _ in range(state["speed"]):
+                    if state["speed"] <= 8:
+                        samples.append(engine.motion_sample(world))
+                    engine.advance(world)
             map_ended = world.get("phase") == "finished"
             if map_ended and "series" in world:
                 series.finish_map(world)
@@ -290,9 +302,15 @@ class Store:
                 state["careerRevision"] += 1
                 state["revision"] += 1
             state["sequence"] += 1
+            # Archive externalization and series settlement edit the stored world.
+            # Reopen from the committed checkpoint following those transitions.
+            reusable = owner is not None and not map_ended and not world.get("archive")
             self.write(state)
             if finished:
                 self.careers.save(state, "auto")
+            stamp = self.calendar_stamp() if reusable else None
+        if reusable:
+            self.match_owner = (stamp, owner)
         self.motion.append((state["context"], start, world["tick"], samples))
         return True
 
@@ -398,9 +416,10 @@ class Store:
                     if kind == "tactic-assign":
                         if state["world"]["version"] != 2:
                             raise ValueError("Сначала откройте матч BO1")
-                        match.assign(
-                            state["world"], tactic_library.resolve(self.db, value)
-                        )
+                        game = state["world"]
+                        board = tactic_library.resolve(self.db, value)
+                        from . import native_match_state
+                        state["world"] = native_match_state.assign_checkpoint(game, board)
                     else:
                         tactic_library.change(self.db, kind, value)
                         state["libraryRevision"] = state.get("libraryRevision", 0) + 1
@@ -455,7 +474,8 @@ class Store:
             elif kind in ("timeout", "call", "resume"):
                 if state["world"]["version"] != 2:
                     raise ValueError("Сначала откройте матч BO1")
-                match.command(state["world"], kind, value)
+                game = state["world"]
+                match.command(game, kind, value)
                 if state["world"]["phase"] == "timeout":
                     state["running"] = False
                 elif kind == "resume":

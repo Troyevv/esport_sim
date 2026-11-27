@@ -9,7 +9,7 @@ import pytest
 
 from backend import checkpoints, match
 from backend.store import Conflict, Store
-from test_server import envelope
+from tests.test_server import envelope
 
 
 def restore(tmp_path, commit):
@@ -101,10 +101,7 @@ def test_upgrade_active_and_manual_and_finish_match(tmp_path, commit):
     store.apply(envelope(store.read(), "start"))
     assert store.tick()
     world = store.read()["world"]
-    for _ in range(40000):
-        if world["phase"] == "finished":
-            break
-        match.advance(world)
+    match.advance(world, 40000)
     assert world["phase"] == "finished"
     events_by_round = rounds(db, world)
     events = [e for batch in events_by_round for e in batch]
@@ -190,9 +187,8 @@ def test_r2_board_upgrade_resumes_exact_step_in_both_slots(tmp_path):
         assert current["messages"] == before["messages"]
         assert current["events"] == before["events"]
         twin = json.loads(json.dumps(current))
-        for _ in range(130):
-            match.advance(current)
-            match.advance(twin)
+        match.advance(current, 130)
+        match.advance(twin, 130)
         assert current == twin
         assert len(current["events"]) > len(before["events"])
     assert dict(db.execute("SELECT source,body FROM checkpoint_backup")) == original

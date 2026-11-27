@@ -7,7 +7,8 @@ from math import dist
 from pathlib import Path
 import random
 
-from backend import career, cs2_defense, cs2_maps, database, match
+from tests.reference_kernel import cs2_defense, cs2_maps, match
+from backend import career, database
 
 
 def prior_estimate(space, report, age, reading):

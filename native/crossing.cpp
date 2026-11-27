@@ -2,6 +2,7 @@
 #include <limits>
 namespace esport {
 bool AgentTurn::smokes_plant(const std::string &site, const Point &point) const {
+    const auto &nav = arena.objectives().map();
     for (auto id : arena.layout().plants.at(site)) {
         const auto &p = nav.center(id);
         if (distance(point, p) <= cfg.at("utility").at("Дым")[0].get<double>() &&
@@ -11,6 +12,7 @@ bool AgentTurn::smokes_plant(const std::string &site, const Point &point) const 
     return false;
 }
 Json AgentTurn::crossing(const Json &order, std::string site) {
+    const auto &nav = arena.objectives().map();
     if (a.at("utility").empty() || now < a.at("throwAt").get<Tick>() ||
         now < a.value("crossingReview", Tick{0}))
         return nullptr;
@@ -159,6 +161,7 @@ Json AgentTurn::crossing(const Json &order, std::string site) {
     return nullptr;
 }
 Json AgentTurn::hold_sector() {
+    const auto &nav = arena.objectives().map();
     if (!active(plan, "probe") || !plan.at("probe").contains("stations") ||
         active(plan.at("probe"), "released") || plan.at("rotated") == true)
         return nullptr;
@@ -207,6 +210,7 @@ Json AgentTurn::hold_sector() {
     return result.is_null() ? Json::array({"hold", nullptr}) : result;
 }
 Json AgentTurn::prepare_plant(const std::string &site) {
+    const auto &nav = arena.objectives().map();
     if (!action.empty() || w.at("deadline").get<Tick>() - now <= cfg.at("rules").at("plant").get<int>() + 10)
         return Json::array({"plant", site});
     auto pos = actor_point(a);

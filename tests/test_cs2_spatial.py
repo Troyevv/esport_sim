@@ -1,4 +1,4 @@
-from backend.cs2_navigation import Navigation, surface_height
+from tests.reference_kernel.cs2_navigation import Navigation, surface_height
 from backend.cs2_sites import BombSites, Solid
 
 
@@ -73,7 +73,7 @@ def test_floor_probe_reads_face_materials_and_transformed_primitives(tmp_path):
         ("wood", [2, 2]), ("metal", [10, 20]), ("wood", [26, 29])]
     assert rays[1]["physicalHits"] == []
 
-    from backend.cs2_collision import Collision, SIGHT, THROW
+    from tests.reference_kernel.cs2_collision import Collision, SIGHT, THROW
     runtime = Collision(tmp_path)
     segments = [((2,2,25),(2,2,31)), ((8,8,-2),(8,8,24)), ((2,2,21),(2,2,22))]
     bulk = runtime.sight_many(segments)
@@ -111,7 +111,7 @@ def test_reviewed_positions_require_the_bound_nav_version():
 
 
 def test_portal_can_be_crossed_away_from_its_obstructed_midpoint():
-    from backend.cs2_maps import Map
+    from tests.reference_kernel.cs2_maps import Map
 
     first,second = area(1,0,0,0),area(2,20,0,0)
     first["edges"][1] = [dict(to=2,edge=3)]
@@ -142,7 +142,7 @@ def test_portal_can_be_crossed_away_from_its_obstructed_midpoint():
 def test_disabled_source_entity_does_not_block_runtime_rays(tmp_path):
     import json
     import struct
-    from backend.cs2_collision import Collision, MOVEMENT
+    from tests.reference_kernel.cs2_collision import Collision, MOVEMENT
 
     raw=b"".join(struct.pack("<3f",*p) for p in ((0.,0.,0.),(10.,0.,0.),(0.,10.,0.)))
     raw+=struct.pack("<3i",0,1,2)
@@ -157,7 +157,7 @@ def test_disabled_source_entity_does_not_block_runtime_rays(tmp_path):
 
 def test_guard_selects_a_position_with_sight_of_the_approach():
     from types import SimpleNamespace
-    from backend.cs2_maps import Map
+    from tests.reference_kernel.cs2_maps import Map
 
     anchor = (0, 0, 0)
     cover = (0, 5, 0)
@@ -179,7 +179,7 @@ def test_guard_selects_a_position_with_sight_of_the_approach():
 
 def test_squad_reassigns_dropped_c4_by_accessible_route():
     from types import SimpleNamespace
-    from backend.cs2_play import rescue
+    from tests.reference_kernel.cs2_play import rescue
 
     goal = (7, 1, 0)
     bomb = dict(x=7, y=1, z=0, carrier=None, site=None)
@@ -200,7 +200,7 @@ def test_squad_reassigns_dropped_c4_by_accessible_route():
 
 def test_fifth_defender_can_reinforce_without_moving_the_anchor():
     from types import SimpleNamespace
-    from backend.cs2_play import assign_backup
+    from tests.reference_kernel.cs2_play import assign_backup
 
     pos = (7, 0, 0)
     plan = dict(lane=0, orders=dict(slots=[
@@ -234,7 +234,7 @@ def test_fifth_defender_can_reinforce_without_moving_the_anchor():
 
 def test_reserve_keeps_its_own_assignment_through_radio_silence():
     from types import SimpleNamespace
-    from backend.cs2_play import coordinate_reserves
+    from tests.reference_kernel.cs2_play import coordinate_reserves
 
     slots = [dict(site="A", hold=[0,0,0]), dict(site="B", hold=[80,0,0]),
              dict(site="B", hold=[65,0,0])]
@@ -265,7 +265,7 @@ def test_reserve_keeps_its_own_assignment_through_radio_silence():
 
 def test_visible_contact_can_trigger_a_reachable_reload_shelter():
     from types import SimpleNamespace
-    from backend.cs2_play import seek_cover
+    from tests.reference_kernel.cs2_play import seek_cover
 
     actor = dict(x=0, y=0, z=0, hp=65, reloadAt=20, visible=["x"], navArea=1)
     enemy = dict(x=20, y=0, z=0)
@@ -284,7 +284,7 @@ def test_visible_contact_can_trigger_a_reachable_reload_shelter():
 
 def test_retaker_checks_obscured_plant_surfaces_after_hearing_the_beep():
     from types import SimpleNamespace
-    from backend.cs2_play import search_site
+    from tests.reference_kernel.cs2_play import search_site
 
     center = (0, 0, 0)
     behind_cover = (8, 5, 0)
@@ -300,7 +300,7 @@ def test_retaker_checks_obscured_plant_surfaces_after_hearing_the_beep():
 
 
 def test_utility_is_selected_for_a_call_and_a_contact():
-    from backend import cs2_play, match_performance
+    from tests.reference_kernel import cs2_play, match_performance
 
     actor = dict(playingRole="support", team="T", utility=["Ложная","HE"], hp=100, reloadAt=0)
     allies = [actor, dict(utility=["Свет"], target="enemy")]
@@ -315,7 +315,7 @@ def test_utility_is_selected_for_a_call_and_a_contact():
 
 def test_only_corridor_reopens_after_fire_without_a_navigation_failure():
     from types import SimpleNamespace
-    from backend.cs2_maps import Map
+    from tests.reference_kernel.cs2_maps import Map
 
     def path(here, pos, zone, goal, avoided):
         return None if avoided else ((12, 0, 0, 3),)
@@ -332,7 +332,7 @@ def test_only_corridor_reopens_after_fire_without_a_navigation_failure():
 
 def test_support_rejoins_near_a_teammate_between_levels():
     from types import SimpleNamespace
-    from backend.cs2_play import rendezvous
+    from tests.reference_kernel.cs2_play import rendezvous
 
     teammate = dict(id="captain", x=24, y=0, z=4)
     support = dict(x=0, y=0, z=0)
@@ -347,7 +347,7 @@ def test_support_rejoins_near_a_teammate_between_levels():
 
 def test_use_sound_does_not_reveal_a_defuser_through_distant_geometry():
     from types import SimpleNamespace
-    from backend.cs2_play import hear_c4_use
+    from tests.reference_kernel.cs2_play import hear_c4_use
 
     actors = [dict(x=x, y=0, z=z, hp=100, team="T") for x,z in [(4,0),(42,0),(4,65)]]
     bomb = dict(x=0,y=0,z=0)
@@ -359,7 +359,7 @@ def test_use_sound_does_not_reveal_a_defuser_through_distant_geometry():
 
 def test_replan_from_a_portal_between_nav_polygons():
     from types import SimpleNamespace
-    from backend.cs2_maps import Map
+    from tests.reference_kernel.cs2_maps import Map
 
     start, goal = (142.32, 107.50, 988.48), (140.75, 108.04, 989.83)
     def path(area, origin, target, point, avoided):
@@ -373,7 +373,7 @@ def test_replan_from_a_portal_between_nav_polygons():
 def test_coplanar_playerclip_cannot_hide_a_solid_wall(tmp_path):
     import json
     import struct
-    from backend.cs2_collision import Collision, SIGHT, MOVEMENT
+    from tests.reference_kernel.cs2_collision import Collision, SIGHT, MOVEMENT
 
     vertices = b"".join(struct.pack("<3f", *p) for p in ((0, 0, 0), (10, 0, 0), (0, 10, 0)))
     triangle = vertices + struct.pack("<3i", 0, 1, 2)
@@ -392,7 +392,7 @@ def test_coplanar_playerclip_cannot_hide_a_solid_wall(tmp_path):
 
 def test_retaker_leaves_checked_but_occluded_floor_and_respects_partner():
     from types import SimpleNamespace
-    from backend.cs2_play import search_site
+    from tests.reference_kernel.cs2_play import search_site
 
     here, nearby, other = (0, 0, 0), (10, 0, 0), (0, 14, 0)
     actor = dict(x=0, y=0, z=0, slot=2, navArea=1, bombSearch=dict(
@@ -406,7 +406,7 @@ def test_retaker_leaves_checked_but_occluded_floor_and_respects_partner():
 
 
 def test_beep_shares_only_a_sector_and_obeys_its_interval():
-    from backend.cs2_play import hear_device, outside_bearing
+    from tests.reference_kernel.cs2_play import hear_device, outside_bearing
 
     actor = dict(x=10, y=10, z=0)
     hear_device(actor, dict(x=20, y=10, z=0), 10)
@@ -421,7 +421,7 @@ def test_beep_shares_only_a_sector_and_obeys_its_interval():
 
 def test_middle_contact_does_not_release_the_opposite_lane_scout():
     from types import SimpleNamespace
-    from backend.cs2_play import release_probe
+    from tests.reference_kernel.cs2_play import release_probe
 
     space = SimpleNamespace(reported_site=lambda p: "B" if p[0] > 10 else None)
     plan = dict(site="A", probe=dict(scout="T2", until=400))
@@ -435,7 +435,7 @@ def test_middle_contact_does_not_release_the_opposite_lane_scout():
 def test_planter_checks_exposed_angle_unless_partner_covers_it_or_clock_expires():
     from types import SimpleNamespace
     from math import pi
-    from backend.cs2_play import prepare_plant
+    from tests.reference_kernel.cs2_play import prepare_plant
 
     space = SimpleNamespace(holds={"A":[(1,(30,0,0))]}, hit=lambda *args: None)
     carrier = dict(x=0,y=0,z=0,heading=pi,knowledge={})
@@ -454,7 +454,7 @@ def test_planter_checks_exposed_angle_unless_partner_covers_it_or_clock_expires(
 
 def test_utility_denial_respects_heard_time_friendlies_and_prior_cover():
     from types import SimpleNamespace
-    from backend.cs2_play import deny_plant
+    from tests.reference_kernel.cs2_play import deny_plant
 
     target = (40, 0, 0)
     space = SimpleNamespace(grenade=lambda *_: (*target, []))

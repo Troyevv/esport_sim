@@ -5,12 +5,12 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from backend.cs2_collision import Collision, Primitive
-from backend.cs2_maps import Map
-from backend.cs2_rays import TriangleScene
+from tests.reference_kernel.cs2_collision import Collision, Primitive
+from tests.reference_kernel.cs2_maps import Map
+from tests.reference_kernel.cs2_rays import TriangleScene
 
 native = pytest.importorskip("backend._match_native")
-from backend.native_physics import NativeCollision, NativePhysicalMap, NativeMovementMap
+from tests.reference_kernel.native_physics import NativeCollision, NativePhysicalMap, NativeMovementMap
 
 
 def collision(cls, vertices, faces, masks, shapes=()):
@@ -140,7 +140,7 @@ def test_grenade_trajectory_including_terminal_mesh_contact():
 
 
 def test_sensor_frame_preserves_order_blindness_smoke_and_anonymous_hearing():
-    from backend.native_physics import NativePerceptionMap
+    from tests.reference_kernel.native_physics import NativePerceptionMap
 
     old, new = corridor(Map), corridor(NativePerceptionMap)
     points = [(0.,0.,0.),(4.,0.,0.),(4.,2.,0.),(-4.,0.,0.)]
@@ -158,7 +158,7 @@ def test_sensor_frame_preserves_order_blindness_smoke_and_anonymous_hearing():
 
 
 def test_native_transmission_through_multiple_layers():
-    from backend.native_physics import NativePerceptionMap
+    from tests.reference_kernel.native_physics import NativePerceptionMap
 
     old, new = corridor(Map), corridor(NativePerceptionMap)
     wall = [(x,y,z) for x in (12.,24.) for y,z in ((-20.,0.),(20.,0.),(20.,70.),(-20.,70.))]

@@ -2,7 +2,7 @@
 
 from math import atan2, pi, sin
 
-from . import engine, tactics
+from backend import engine, tactics
 
 
 def execute(a, steps, now, bomb, fire, walk, space=None):

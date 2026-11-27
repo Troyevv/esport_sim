@@ -6,7 +6,7 @@ from zipfile import ZipFile
 
 import pytest
 
-from backend.cs2_navigation import Navigation
+from tests.reference_kernel.cs2_navigation import Navigation
 
 native = pytest.importorskip("backend._match_native")
 

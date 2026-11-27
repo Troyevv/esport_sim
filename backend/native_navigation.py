@@ -1,8 +1,8 @@
-"""Reference adapter for paired runs while the rest of the tick is being ported."""
+"""Build native NAV indices from the installed Source 2 export."""
 from functools import cached_property
 
 from ._match_native import NavSurfaces, PortalGraph
-from .cs2_navigation import Navigation
+from .cs2_navigation import NavigationData
 
 
 class NativeStageRoutes:
@@ -22,9 +22,10 @@ class NativeStageRoutes:
         return None
 
 
-class NativeNavigation(Navigation):
+class NativeNavigation(NavigationData):
     def __init__(self, data):
         super().__init__(data)
+        self._index_portals()
         self.surfaces = NavSurfaces([(area, desc["corners"]) for area, desc in self.areas.items()])
 
     def _index_portals(self):

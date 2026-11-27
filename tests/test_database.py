@@ -123,8 +123,7 @@ def test_real_rosters_finish_by_events(home, away, seed, monkeypatch):
         skills, "role_rating", lambda *args: pytest.fail("OVR in engine")
     )
     w = match.initial(seed, data.match_input(p, rosters), rosters)
-    while w["phase"] != "finished" and w["tick"] < 100000:
-        match.advance(w)
+    match.advance(w, 100000)
     assert w["phase"] == "finished"
     ends = [
         e

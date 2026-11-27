@@ -47,7 +47,10 @@ class AgentTurn {
     const Squad &squad;
     const Json &cfg;
     const OpeningMap &arena;
-    const PhysicalNavigation &nav;
+    const GridMap *grid;
+    Json grid_intent();
+    Json grid_exit();
+    Json grid_fire;
     const Combat &combat;
     const Json &recovery;
     const Json &player;

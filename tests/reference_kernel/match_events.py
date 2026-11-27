@@ -1,7 +1,7 @@
 """The match ledger and its incremental scoreboard projection."""
 
 from . import match_inventory
-from .match_rules import RULES, WEAPONS
+from backend.match_rules import RULES, WEAPONS
 
 
 def emit(w, kind, text, audience=None, **data):

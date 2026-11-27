@@ -6,7 +6,7 @@ import pytest
 native = pytest.importorskip("backend._match_native")
 import numpy as np
 
-from backend.cs2_rays import TriangleScene
+from tests.reference_kernel.cs2_rays import TriangleScene
 
 
 def geometry():

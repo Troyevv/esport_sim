@@ -4,6 +4,7 @@
 
 #include <list>
 #include <mutex>
+#include <unordered_map>
 
 namespace esport {
 using Lane = std::pair<Point, Point>;
@@ -73,7 +74,15 @@ class PhysicalNavigation {
     mutable std::mutex mutex_;
     using SafeZones = std::pair<std::pair<Point, double>, std::shared_ptr<const StageRoutes>>;
     mutable std::list<SafeZones> safe_zones_;
-    mutable std::map<std::pair<EdgeId, Point>, std::optional<WalkPath>> gates_;
+    struct PositionedKeyHash {
+        template <class Id> std::size_t operator()(const std::pair<Id, Point> &key) const noexcept {
+            std::size_t seed = std::hash<Id>{}(key.first);
+            for (double coordinate : key.second)
+                seed ^= std::hash<double>{}(coordinate) + 0x9e3779b9u + (seed << 6) + (seed >> 2);
+            return seed;
+        }
+    };
+    mutable std::unordered_map<std::pair<EdgeId, Point>, std::optional<WalkPath>, PositionedKeyHash> gates_;
     using PathKey = std::tuple<AreaId, Point, AreaId, Point, std::set<AreaId>>;
     mutable std::map<PathKey, std::optional<WalkPath>> paths_;
     mutable std::map<std::tuple<AreaId, Point, Point, double>, std::optional<EscapePath>> escapes_;
@@ -84,7 +93,7 @@ class PhysicalNavigation {
     bool passage(Point p, Point q, bool climb) const;
     std::optional<WalkPath> inside(AreaId area, const Point &start, const Point &end,
                                    bool climb = false) const;
-    std::optional<WalkPath> gate(EdgeId edge, const Point &start) const;
+    const std::optional<WalkPath> &gate(EdgeId edge, const Point &start) const;
     std::optional<EscapePath> search(const State &start, std::optional<AreaId> zone, const Point &goal,
                                      const std::set<AreaId> &avoided, double radius) const;
 };

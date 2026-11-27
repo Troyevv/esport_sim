@@ -4,20 +4,11 @@ from collections import deque
 from functools import lru_cache
 from math import cos, dist, atan2, ceil, hypot, pi, sin
 
-from . import engine, match_inventory, tactic_execution, world
+from . import match_inventory, tactic_execution
+from backend import engine, world
 from . import match_performance as perf
 from .match_events import impact, emit
-from .match_rules import (
-    BLAST_RADIUS,
-    equipment_value,
-    MAP,
-    POSITIONS,
-    RULES,
-    UTILITY,
-    THROW_RECOVERY,
-    WEAPONS,
-    role_orders,
-)
+from backend.match_rules import BLAST_RADIUS, equipment_value, MAP, POSITIONS, RULES, UTILITY, THROW_RECOVERY, WEAPONS, role_orders
 
 
 from . import cs2_intel, cs2_play

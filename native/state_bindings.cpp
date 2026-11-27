@@ -1,3 +1,5 @@
+#include "economy.hpp"
+#include "grid_round.hpp"
 #include "match_state.hpp"
 #include "objectives.hpp"
 #include "opening.hpp"
@@ -9,7 +11,28 @@ namespace py = pybind11;
 void bind_state(py::module_ &module) {
     using namespace esport;
     using Release = py::call_guard<py::gil_scoped_release>;
-    module.attr("MATCH_STATE_API_VERSION") = 1;
+    module.attr("MATCH_STATE_API_VERSION") = 3;
+    module.def(
+        "project_buy",
+        [](const std::string &input, const std::string &side, const std::string &call,
+           const std::string &rules) {
+            auto w = Json::parse(input), cfg = Json::parse(rules);
+            if (w.contains("mapId"))
+                return buy_decision(w, cfg, side, call, nullptr, nullptr, nullptr)
+                    .at("scenario")
+                    .get<std::string>();
+            auto buy = grid_buy(w, cfg, side, call);
+            return buy == "Полная" || buy == "Форс" ? std::string("Оружейная") : buy;
+        },
+        Release());
+    module.def(
+        "round_checkpoint",
+        [](const std::string &input, const std::string &rules, const std::string &spawn_table) {
+            auto state = Json::parse(input);
+            start_round(state, Json::parse(rules), Json::parse(spawn_table));
+            return state.dump();
+        },
+        Release());
     py::class_<SiteData>(module, "SiteData")
         .def(py::init<decltype(SiteData::solids), decltype(SiteData::costs), decltype(SiteData::samples),
                       Ingress>());
@@ -23,7 +46,17 @@ void bind_state(py::module_ &module) {
     py::class_<OpeningMap, std::shared_ptr<OpeningMap>>(module, "OpeningMap")
         .def(py::init<std::shared_ptr<const Objectives>, const std::string &, const std::string &,
                       ContestTable, Stations, std::map<std::string, Point>, OrderData>(),
-             Release());
+             Release())
+        .def(
+            "editor_orders",
+            [](const OpeningMap &map, const std::string &data, const std::string &side,
+               const std::string &site, int lane, const std::string &style) {
+                auto w = Json::parse(data);
+                return (side == "T" ? map.attack_orders(w, site, lane, style)
+                                    : map.defense_orders(w, site, lane))
+                    .dump();
+            },
+            Release());
     py::class_<MatchState>(module, "MatchState")
         .def(py::init<const std::string &, std::string, std::set<std::string>, std::set<std::string>, int,
                       int, const std::string &>(),
@@ -50,6 +83,7 @@ void bind_state(py::module_ &module) {
             "profile_ticks",
             [](MatchState &owner, int ticks) { return owner.advance_recorded(ticks, TickOutput::Profile); },
             Release())
+        .def("begin_live", &MatchState::begin_live, Release())
         .def("advance", &MatchState::advance, Release())
         .def("advance_intermission", &MatchState::advance_intermission, Release())
         .def("attach_opening", &MatchState::attach_opening, Release())

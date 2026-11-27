@@ -9,7 +9,8 @@ import subprocess
 from types import ModuleType
 from unittest.mock import patch
 
-from backend import career, cs2_economy, cs2_maps, cs2_play, database
+from tests.reference_kernel import cs2_economy, cs2_maps, cs2_play
+from backend import career, database
 from tools.cs2_tactical_audit import run
 
 

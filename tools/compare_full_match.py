@@ -5,7 +5,8 @@ import json
 from pathlib import Path
 from time import perf_counter
 
-from backend import cs2_maps, match, native_match_state
+from tests.reference_kernel import cs2_maps, match
+from backend import native_match_state
 from backend.native_physics import NativePerceptionMap
 from tools.compare_native_state import encode
 

@@ -2,6 +2,7 @@
 
 namespace esport {
 Json AgentTurn::spatial_intent() {
+    const auto &nav = arena.objectives().map();
     auto &slots = plan.at("orders").at("slots");
     auto &home = slots.at(slot);
     const auto pos = actor_point(a);

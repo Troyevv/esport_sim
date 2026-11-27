@@ -9,15 +9,9 @@ from uuid import uuid4
 import psutil
 import pytest
 
-from backend import (
-    career,
-    checkpoints,
-    cs2_maps,
-    database,
-    match,
-    tactic_preview,
-    tactics,
-)
+from tests.reference_kernel import cs2_maps, match
+from backend import career, checkpoints, database, tactic_preview, tactics
+from backend import match as production
 from backend.store import Store
 
 pytestmark = pytest.mark.skipif(
@@ -46,9 +40,8 @@ def test_real_map_exhibition_save_and_board(tmp_path, name):
     state = store.read()
     game = state["world"]
     board = tactics.propose("T", "Пистолетная", 41, map_id=name)
-    match.assign(game, dict(board, id="installed-test", revision=1))
-    for _ in range(180):
-        match.advance(game)
+    production.assign(game, dict(board, id="installed-test", revision=1))
+    production.advance(game, 180)
     checkpoints.validate_current(game)
     with store.transaction():
         store.write(state)
@@ -58,11 +51,10 @@ def test_real_map_exhibition_save_and_board(tmp_path, name):
     command(store, "load")
     restored = store.read()["world"]
     assert restored["mapId"] == name
-    for _ in range(60):
-        match.advance(game)
-        match.advance(restored)
-    assert match.project(restored) == match.project(game)
-    audience = match.project(restored, "CT")
+    production.advance(game, 60)
+    production.advance(restored, 60)
+    assert production.project(restored) == production.project(game)
+    audience = production.project(restored, "CT")
     assert all(
         a["team"] == "CT"
         or a["id"]
@@ -97,8 +89,7 @@ def test_background_and_observed_share_report_across_the_map_pool(tmp_path, name
     elapsed = perf_counter() - started
     rss = psutil.Process().memory_info().rss / 2**20
     print(f"CAREER {name} init={initialized:.2f}s BO1={elapsed:.2f}s RSS_after={rss:.1f}MiB")
-    for _ in range(80):
-        match.advance(observed)
+    production.advance(observed, 80)
     saved = json.loads(json.dumps(observed))
     checkpoints.validate_current(saved)
     assert career.simulate(saved) == expected
@@ -108,11 +99,11 @@ def test_background_and_observed_share_report_across_the_map_pool(tmp_path, name
 
 @pytest.mark.parametrize("previous", ["cs2-bo1.14", "cs2-bo1.15", "cs2-bo1.16", "cs2-bo1.17", "cs2-bo1.18", "cs2-bo1.19"])
 def test_recent_checkpoints_resume_from_the_recorded_tick(previous):
-    state = match.initial(41000,map_id="de_nuke")
-    match.advance(state)
+    state = production.initial(41000,map_id="de_nuke")
+    production.advance(state)
     state["rules"] = previous
     tick, serial = state["tick"], state["serial"]
-    match.advance(state)
+    production.advance(state)
     assert state["rules"] == cs2_maps.RULES
     assert state["rulesTransition"] == dict(previous=previous,tick=tick,lastEvent=serial)
 
@@ -164,7 +155,7 @@ def test_existing_double_smoke_plan_remains_playable():
 
 def test_map_default_assigns_three_sectors_and_uses_delivered_readiness():
     from collections import Counter
-    from backend import cs2_play
+    from tests.reference_kernel import cs2_play
     state = match.initial(41000, map_id="de_dust2")
     space = cs2_maps.get("de_dust2")
     squad = [p for p in state["agents"] if p["team"] == "T"]
@@ -183,7 +174,7 @@ def test_map_default_assigns_three_sectors_and_uses_delivered_readiness():
 
 
 def test_dust_reserve_can_cover_a_legal_plant_after_anchor_loss():
-    from backend import cs2_play
+    from tests.reference_kernel import cs2_play
 
     game = match.initial(41000, map_id="de_dust2")
     match.begin_live(game)
@@ -206,7 +197,7 @@ def test_dust_reserve_can_cover_a_legal_plant_after_anchor_loss():
 
 def test_nuke_postplant_escape_time_uses_the_route_that_is_walked():
     from math import dist
-    from backend import cs2_play, match_performance
+    from tests.reference_kernel import cs2_play, match_performance
     from backend.match_rules import BLAST_RADIUS
 
     # Seed 41001, second-half pistol. The default NAV exit is across a blocked
@@ -286,7 +277,7 @@ def test_nuke_scans_legal_parts_of_nav_polygons_cut_by_the_site_trigger():
 
 
 def test_reported_carrier_redirects_living_defenders_before_plant():
-    from backend import cs2_defense, cs2_play
+    from tests.reference_kernel import cs2_defense, cs2_play
 
     game = match.initial(41000, map_id="de_dust2")
     match.begin_live(game)
@@ -317,7 +308,7 @@ def test_reported_carrier_redirects_living_defenders_before_plant():
 
 
 def test_retake_wait_ends_when_the_partner_or_time_is_lost():
-    from backend import cs2_retake
+    from tests.reference_kernel import cs2_retake
 
     a = dict(id="a", x=10, y=10, z=0)
     b = dict(id="b")
@@ -333,7 +324,7 @@ def test_retake_wait_ends_when_the_partner_or_time_is_lost():
 
 
 def test_pair_waits_for_real_flash_and_checks_before_releasing_escort():
-    from backend import cs2_openings
+    from tests.reference_kernel import cs2_openings
     from tools.cs2_opening_audit import record
     from math import dist
     from random import Random
@@ -400,7 +391,7 @@ def test_pair_waits_for_real_flash_and_checks_before_releasing_escort():
 
 
 def test_dust2_short_long_hearing_depends_on_the_actual_approach():
-    from backend import match_ai
+    from tests.reference_kernel import match_ai
 
     space = cs2_maps.get("de_dust2")
     game = match.initial(65400, map_id="de_dust2")
@@ -419,3 +410,38 @@ def test_dust2_short_long_hearing_depends_on_the_actual_approach():
     source.update(match_ai.at(space.centers[1682]))
     match_ai.heard_action(game, space, source, [listener], "Шаги", 88)
     assert not listener["knowledge"]
+
+
+def test_authoritative_native_owner_survives_batches_and_reopens_saved_game(tmp_path, monkeypatch):
+    store = Store(tmp_path / "native.sqlite")
+    command(store, "match", dict(seed=41000, map="de_nuke"))
+    state = store.read()
+    state.update(running=True, speed=8)
+    with store.transaction():
+        store.write(state)
+    reference = deepcopy(state["world"])
+    expected = []
+    for _ in range(9):
+        for _ in range(8):
+            match.advance(reference)
+        expected.append(json.dumps(reference, ensure_ascii=False))
+
+    def unexpected(*args):
+        pytest.fail("The production match called a Python tick")
+
+    monkeypatch.setattr(match, "advance", unexpected)
+    for index, snapshot in enumerate(expected):
+        store.tick()
+        assert json.dumps(store.read()["world"], ensure_ascii=False) == snapshot
+        if index == 0:
+            first_owner = store.match_owner[1]
+        elif index == 1:
+            assert store.match_owner[1] is first_owner
+        if index == 6:
+            command(store, "save")
+            command(store, "load")
+            state = store.read()
+            state.update(running=True, speed=8)
+            with store.transaction():
+                store.write(state)
+    store.db.close()

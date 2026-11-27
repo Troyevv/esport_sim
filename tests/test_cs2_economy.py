@@ -2,7 +2,8 @@ from copy import deepcopy
 
 import pytest
 
-from backend import cs2_economy as eco, match, match_inventory, tactics
+from tests.reference_kernel import cs2_economy as eco, match, match_inventory
+from backend import tactics
 
 
 def setup(money, round_number=5):

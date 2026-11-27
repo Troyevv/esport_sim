@@ -10,7 +10,8 @@ from uuid import uuid4
 
 import psutil
 
-from backend import career, database, match
+from tests.reference_kernel import match
+from backend import career, database
 from backend.store import Store
 
 

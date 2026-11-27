@@ -6,7 +6,8 @@ from pathlib import Path
 import pytest
 
 pytest.importorskip("backend._match_native")
-from backend import cs2_maps, match, match_ai, native_match_state
+from tests.reference_kernel import cs2_maps, match, match_ai
+from backend import native_match_state
 
 FIXTURES = Path(__file__).parent / "fixtures/r54"
 
@@ -281,7 +282,7 @@ def test_contact_memory_expiry_reacquisition_and_reports(combat_arenas):
 @pytest.mark.parametrize("side",["T","CT"])
 @pytest.mark.parametrize("scenario",[None,"Пистолетная","Эко","Частичная","Форс","Полная","Антиэко","Бонусная"])
 def test_budget_equipment_donations_and_purchase_ledger(side,scenario):
-    from backend import cs2_economy
+    from tests.reference_kernel import cs2_economy
     w=read_checkpoint()
     w.update(phase="freeze",round=8)
     squad=[p for p in w["agents"] if p["team"]==side]
@@ -304,6 +305,7 @@ def test_board_assignment_before_start_and_during_timeout(combat_arenas, monkeyp
 
     space, _ = combat_arenas
     monkeypatch.setattr(cs2_maps, "get", lambda name: space)
+    monkeypatch.setattr(tactics.cs2_maps, "get", lambda name: combat_arenas[1])
     w = read_checkpoint()
     w.update(tick=0, round=1, phase="freeze", started=False, remaining=match.RULES["timeouts"])
     side = next(a["team"] for a in w["agents"] if a["teamId"] == w["coachTeamId"])
@@ -375,7 +377,7 @@ def test_native_editor_step_matches_agent_decision(combat_arenas, kind):
     ("Полная", "Быстро", "Выход B"), ("Эко", "Сбор", "Экономить"),
 ])
 def test_captain_openings_consume_only_captain_rng(combat_arenas, budget, style, coach):
-    from backend import cs2_openings, cs2_play
+    from tests.reference_kernel import cs2_openings, cs2_play
 
     arena, physics = combat_arenas
     w = read_checkpoint()
@@ -542,3 +544,76 @@ def test_native_tick_batch_stops_at_timeout_without_spending_clock(combat_arenas
     with pytest.raises(ValueError):
         owner.advance(-1)
     assert owner.snapshot() == before
+
+
+def test_batch_starts_new_map_with_older_rules_and_records_exact_profile(combat_arenas, monkeypatch):
+    old, physics = combat_arenas
+    monkeypatch.setattr(cs2_maps, "get", lambda _: old)
+    w = match.initial(41000, map_id="de_nuke")
+    from backend import match as production_match, cs2_maps as installed_maps
+    monkeypatch.setattr(installed_maps,"get",lambda _:old)
+    assert encode_world(production_match.initial(41000, map_id="de_nuke")) == encode_world(w)
+    w["rules"] = cs2_maps.PREVIOUS_RULES
+    owner = native_match_state.restore(encode_world(w), old, physics=physics)
+    for call in ("timeout", "resume"):
+        match.command(w, call)
+        owner.command(call, "")
+    poses = []
+    for _ in range(75):
+        match.advance(w)
+        if w["tick"] % 10 == 0:
+            poses.append([[a[k] for k in ("id", "x", "y", "z", "hp", "navArea")] for a in w["agents"]])
+    profile = json.loads(owner.profile_ticks(75))
+    assert profile["samples"] == poses
+    assert len(profile["durations"]) == 75
+    assert_same(owner, w)
+
+
+def test_depo_owner_restores_mid_board_and_continues_exact_events():
+    from backend import match as production, tactics
+
+    game = match.initial(42)
+    assert encode_world(production.initial(42)) == encode_world(game)
+    board = dict(tactics.propose("T", "Пистолетная", 17), id="depo-regression", revision=1)
+    owner = native_match_state.open_game(game)
+    match.assign(game, board)
+    native_match_state.assign(owner, board)
+    for count in (46, 80, 240):
+        for _ in range(count):
+            match.advance(game)
+        assert owner.advance(count) == count
+        assert_same(owner, game)
+        owner = native_match_state.restore(owner.snapshot())
+
+
+def test_failed_batch_restores_completed_round_and_archive_cursor():
+    game = match.initial(27)
+    game.update(phase="result", deadline=1)
+    # A bad opening input fails after the old journal has moved into archive.
+    game["playbook"] = {"T/Эко": {"slots": []}, "T/Оружейная": {"slots": []}}
+    game["domain"]["players"][game["agents"][0]["playerId"]]["skills"].pop("aggression")
+    owner = native_match_state.open_game(game)
+    before = owner.snapshot()
+    with pytest.raises((KeyError, IndexError, RuntimeError, ValueError)):
+        owner.advance(60)
+    assert owner.snapshot() == before
+    assert owner.advance(1) == 1
+    assert json.loads(owner.snapshot())["archive"][-1] == game["events"]
+
+
+def test_depo_preserves_binary64_speed_in_visual_memory():
+    game = match.initial(197)
+    game["tick"] = 10
+    for a in game["agents"]:
+        a["hp"] = 0
+    watcher, target = game["agents"][0], game["agents"][5]
+    for actor in (watcher, target):
+        actor.update(hp=100, x=45, y=105)
+    sight = dict(id=target["id"], x=45.1, y=105.237, tick=9, source="Зрение")
+    watcher["knowledge"][target["id"]] = sight
+    watcher["visible"] = [target["id"]]
+    owner = native_match_state.open_game(game)
+    match_ai.observe(game, [watcher, target])
+    owner.observe()
+    assert watcher["knowledge"][target["id"]]["speed"] == 0.25723335709040107
+    assert_same(owner, game)

@@ -35,6 +35,7 @@ bool entry(const OpeningMap &map, const Point &p, const std::string &wanted) {
 }
 } // namespace
 Point AgentTurn::anticipated(const Json &report) const {
+    const auto &nav = arena.objectives().map();
     auto pos = actor_point(report);
     if (!visual(report) || !active(report, "direction"))
         return pos;
@@ -47,6 +48,7 @@ Point AgentTurn::anticipated(const Json &report) const {
     return nav.hit(pos, q, 1, 48, 48) ? pos : q;
 }
 Json &AgentTurn::attention(Point &focus) {
+    const auto &nav = arena.objectives().map();
     auto *order = &const_cast<Json &>(assignment(plan, a, squad));
     auto &home = plan.at("orders").at("slots").at(slot);
     auto pos = actor_point(a);
@@ -170,6 +172,7 @@ Json &AgentTurn::attention(Point &focus) {
     return *order;
 }
 std::optional<Point> AgentTurn::flank(Json &order, const Json &home) {
+    const auto &nav = arena.objectives().map();
     auto pos = actor_point(a), goal = order.at("hold").get<Point>();
     Tick timer = w.at("deadline").get<Tick>() - now;
     if (!order.contains("flank")) {

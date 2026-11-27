@@ -2,9 +2,10 @@
 
 from math import dist
 
-from . import match_performance as perf, world
+from . import match_performance as perf
+from backend import world
 from .cs2_maps import xyz
-from .match_rules import RULES, UTILITY
+from backend.match_rules import RULES, UTILITY
 
 
 def walk_length(start, path):

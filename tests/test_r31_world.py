@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from backend import match, skills, world
+from backend import native_match_state, match, skills, world
 from backend.store import Conflict, Store
 
 
@@ -20,14 +20,19 @@ def test_identity_and_authority_survive_lineup_change_and_sides():
         game = match.initial(6, data)
         match.command(game, "timeout")
         match.command(game, "resume")
-        match.begin_live(game)
+        owner = native_match_state.open_game(game)
+        owner.begin_live()
+        game = json.loads(owner.snapshot())
         captain = next(
             a for a in game["agents"] if a["id"] == game["plans"]["T"]["captain"]
         )
         assert (captain["playerId"], captain["name"]) == (ident, "Новое имя")
         game["round"] = 12
-        match.next_round(game)
-        match.begin_live(game)
+        game = native_match_state.start_round(game, None)
+        owner = native_match_state.open_game(game)
+        owner.begin_live()
+        game = json.loads(owner.snapshot())
+        captain = next(a for a in game["agents"] if a["playerId"] == ident)
         assert (
             captain["team"] == "CT" and game["plans"]["CT"]["captain"] == captain["id"]
         )
@@ -48,7 +53,7 @@ def test_ratings_and_estimates_do_not_disclose_private_truth():
     w = match.initial(7)
     d = w["domain"]
     a = w["agents"][0]
-    p = match.profile(w, a)
+    p = world.match_player(w, a)
     projection = match.project(w)
     own = world.player_report(d, a["playerId"])
     rival = w["agents"][5]["playerId"]
@@ -104,7 +109,7 @@ def test_invalid_skill_cannot_replace_active_save(tmp_path, bad):
     state["world"] = match.initial(7)
     store.write(state)
     damaged = deepcopy(state)
-    match.profile(damaged["world"], damaged["world"]["agents"][0])["skills"]["aim"] = (
+    world.match_player(damaged["world"], damaged["world"]["agents"][0])["skills"]["aim"] = (
         bad
     )
     store.db.execute("INSERT INTO slot VALUES(1,?)", (json.dumps(damaged),))

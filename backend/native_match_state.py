@@ -1,14 +1,31 @@
 """Checkpoint boundary for the C++ owner of a detailed match."""
 from dataclasses import asdict
+from functools import lru_cache
 import json
+from math import pi
+from . import engine, match_rules
 
 from . import _match_native, cs2_maps, tactics
 from .match_rules import BLAST_RADIUS, CALLS, PRICES, RULES, SIDEARMS, THROW_RECOVERY, UTILITY, WEAPONS
-from .match_performance import WEAPON_CLASS, GRENADE_SKILL
+from .match_rules import WEAPON_CLASS, GRENADE_SKILL
 
+if _match_native.MATCH_STATE_API_VERSION != 3:
+    raise ImportError("Несовместимая версия нативного ядра. Пересоберите модуль для текущих исходников.")
+
+_GRID_SPAWNS = {
+    side: [[engine._center(cell), 0 if side == "T" else pi] for cell in cells]
+    for side, cells in engine._SPAWN_CELLS.items()
+}
 _RULEBOOK = json.dumps(
     dict(
         rules=RULES,
+        grid=dict(
+            version=match_rules.MAP["version"], rules=match_rules.VERSION,
+            cell=engine.CELL, vision=engine.VISION_RADIUS, floor=engine._FLOOR,
+            zones=match_rules.MAP["zones"], positions=match_rules.POSITIONS, spawns=_GRID_SPAWNS,
+            orders={side: {site: match_rules.role_orders(side, site) for site in ("A", "B")}
+                    for side in ("T", "CT")},
+        ),
         prices=PRICES,
         boardLabels=tactics.LABELS,
         longApproaches={
@@ -27,21 +44,79 @@ _RULEBOOK = json.dumps(
 )
 
 
+_ECONOMY = json.dumps({"rules":RULES, "prices":PRICES, "sidearms":sorted(SIDEARMS),
+                       "weapons":{name:{"price":spec.price} for name,spec in WEAPONS.items()}})
+
+
 def assign(owner, board):
     """Validate editable map data at the boundary, then commit the call on the native owner."""
     validated = tactics.validate(board) | tactics.reference(board)
     owner.assign_board(json.dumps(validated, ensure_ascii=False))
 
 
+def assign_checkpoint(world, board):
+    owner = restore(json.dumps(world, ensure_ascii=False))
+    assign(owner, board)
+    return json.loads(owner.snapshot())
+
+
+def _spawns(space):
+    if space is None:
+        return json.dumps(_GRID_SPAWNS)
+    return json.dumps({side: [space.spawn(side, 0, i) for i in range(len(space.spawns[side]))]
+                       for side in ("T", "CT")})
+
+
+def start_round(world, space):
+    return json.loads(_match_native.round_checkpoint(json.dumps(world), _RULEBOOK, _spawns(space)))
+
+
 def restore(checkpoint, space=None, *, physics=None):
     owner = _match_native.MatchState(checkpoint, cs2_maps.RULES, set(cs2_maps.SUPPORTED_RULES[1:]),
                                     set(CALLS), RULES["freeze"], cs2_maps.BUILD, _RULEBOOK)
     if space is not None:
-        table = {side: [space.spawn(side, 0, i) for i in range(len(space.spawns[side]))]
-                 for side in ("T", "CT")}
-        owner.attach_spawns(space.name, json.dumps(table))
+        owner.attach_spawns(space.name, _spawns(space))
     if physics is not None:
         owner.attach_physics(physics.name, physics.planner, physics.collision.materials)
         owner.attach_objectives(physics.name, physics.objectives)
         owner.attach_opening(physics.name, physics.opening)
     return owner
+
+
+@lru_cache(maxsize=2)
+def physical_map(folder):
+    """Share the immutable installed geometry across matches on this map."""
+    from .native_physics import NativePerceptionMap
+    return NativePerceptionMap(folder)
+
+
+def open_game(world):
+    if "mapId" not in world:
+        return restore(json.dumps(world, ensure_ascii=False, separators=(",", ":")))
+    name = world["mapId"]
+    if name not in cs2_maps.NAMES:
+        raise ValueError("Неизвестная карта CS2")
+    space = cs2_maps.get(name)
+    return restore(json.dumps(world, ensure_ascii=False, separators=(",", ":")), space, physics=space)
+
+
+def play_map(world):
+    owner = open_game(world)
+    while owner.advance(2048) == 2048:
+        pass
+    final = json.loads(owner.snapshot())
+    if final["phase"] == "timeout":
+        raise ValueError("Для продолжения матча требуется завершить тактический тайм-аут")
+    world.clear()
+    world.update(final)
+
+
+def next_buy(world, side):
+    board = world.get("nextBoard")
+    if board and board["buy"] == "Эко":
+        return "Эко"
+    keys = ("team", "club", "id", "slot", "playingRole", "armor", "helmet", "kit",
+            "weapon", "holster", "utility", "cash")
+    state = {k:world[k] for k in ("round", "score", "streak", "mapId", "opponentEconomy") if k in world}
+    state["agents"] = [{k:a[k] for k in keys} for a in world["agents"] if a["team"] == side]
+    return _match_native.project_buy(json.dumps(state), side, "" if board else world.get("call") or "", _ECONOMY)

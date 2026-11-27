@@ -8,7 +8,8 @@ from collections import Counter
 
 import psutil
 
-from backend import engine, match, skills, world
+from tests.reference_kernel import match
+from backend import engine, skills, world
 from backend.match_rules import WEAPONS
 
 # Equal point budgets: four attributes at 90 instead of 65 on every player.

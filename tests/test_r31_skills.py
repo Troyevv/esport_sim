@@ -5,7 +5,8 @@ from math import pi
 
 import pytest
 
-from backend import match, match_ai as ai, match_performance as perf, skills
+from tests.reference_kernel import match, match_ai as ai, match_performance as perf
+from backend import skills
 from backend.match_rules import POSITIONS
 from backend.tactics import standards
 

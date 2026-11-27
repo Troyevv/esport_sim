@@ -134,7 +134,7 @@ std::optional<WalkPath> PhysicalNavigation::inside(AreaId area, const Point &sta
     }
     return std::nullopt;
 }
-std::optional<WalkPath> PhysicalNavigation::gate(EdgeId id, const Point &start) const {
+const std::optional<WalkPath> &PhysicalNavigation::gate(EdgeId id, const Point &start) const {
     const auto key = std::pair{id, start};
     if (const auto it = gates_.find(key); it != gates_.end())
         return it->second;
@@ -161,8 +161,7 @@ std::optional<WalkPath> PhysicalNavigation::gate(EdgeId id, const Point &start) 
     }
     if (gates_.size() >= 32768)
         gates_.clear();
-    gates_.emplace(key, best);
-    return best;
+    return gates_.emplace(key, std::move(best)).first->second;
 }
 
 std::optional<WalkPath> PhysicalNavigation::path(AreaId area, const Point &start, AreaId zone,
@@ -187,7 +186,7 @@ std::optional<WalkPath> PhysicalNavigation::find_path(AreaId area, const Point &
     Point pos = start;
     bool complete = true;
     for (const auto edge : *route) {
-        auto leg = gate(edge, pos);
+        const auto &leg = gate(edge, pos);
         if (!leg) {
             complete = false;
             break;
@@ -229,14 +228,21 @@ std::optional<EscapePath> PhysicalNavigation::search(const State &start, std::op
         double d = distance(pos, goal);
         return zone ? d : std::max(0., radius - d);
     };
-    std::map<State, double> costs{{start, 0}};
-    std::map<State, std::pair<State, WalkPath>> parents;
+    // The priority queue and exported edge order determine all tie breaks.
+    // This table is accessed by key only.
+    struct SearchNode {
+        double cost;
+        State previous;
+        WalkPath path;
+    };
+    std::unordered_map<State, SearchNode, PositionedKeyHash> reached;
+    reached.emplace(start, SearchNode{0, start, {}});
     Queue<std::tuple<double, double, State>> queue;
     queue.emplace(estimate(start.second), 0, start);
     while (!queue.empty()) {
         const auto [rank, length, state] = queue.top();
         queue.pop();
-        if (length != costs.at(state))
+        if (length != reached.at(state).cost)
             continue;
         const auto &[here, pos] = state;
         std::optional<WalkPath> end;
@@ -247,7 +253,7 @@ std::optional<EscapePath> PhysicalNavigation::search(const State &start, std::op
         if (end) {
             WalkPath result;
             for (auto step = state; step != start;) {
-                const auto &[prev, leg] = parents.at(step);
+                const auto &[cost, prev, leg] = reached.at(step);
                 result.insert(result.end(), leg.rbegin(), leg.rend());
                 step = prev;
             }
@@ -266,15 +272,15 @@ std::optional<EscapePath> PhysicalNavigation::search(const State &start, std::op
                 traveled += distance(prev, q);
                 prev = q;
             }
-            if (!improves(costs, target, traveled))
+            auto [it, inserted] = reached.try_emplace(target);
+            if (!inserted && traveled >= it->second.cost)
                 return;
-            costs[target] = traveled;
-            parents[target] = {state, leg};
+            it->second = {traveled, state, leg};
             queue.emplace(traveled + estimate(target.second), traveled, target);
         };
         if (auto it = outgoing_.find(here); it != outgoing_.end())
             for (auto id : it->second)
-                if (auto leg = gate(id, pos))
+                if (const auto &leg = gate(id, pos))
                     visit(*leg);
         if (!zone) {
             const auto &center = centers_.at(here);
