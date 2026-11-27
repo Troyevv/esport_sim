@@ -52,6 +52,7 @@ void bind_state(py::module_ &module) {
         .def("attach_objectives", &MatchState::attach_objectives, Release())
         .def("resolve_intents", &MatchState::resolve_intents, Release())
         .def("attach_physics", &MatchState::attach_physics, Release())
+        .def("review_captain", &MatchState::review_captain, Release())
         .def("observe", &MatchState::observe, Release())
         .def("apply_effects", &MatchState::apply_effects, Release())
         .def("resolve_actions", &MatchState::resolve_actions, Release())

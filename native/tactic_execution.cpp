@@ -35,6 +35,12 @@ int execution_delay(const Json &w, const Json &a, const Json &player, const Json
 }
 } // namespace
 
+double move_speed(const Json &player) {
+    const auto &s = player.at("skills");
+    return .82 + s.at("movement").get<double>() * .003 -
+           player.at("fatigue").get<double>() * (110 - s.at("fatigue_resistance").get<double>()) / 35000;
+}
+
 bool travel(Json &a, const Json &player, const PhysicalNavigation &map, const Point &goal, double pace,
             const std::vector<Hazard> &fire, Tick now) {
     const auto &dest = a.at("dest");
@@ -48,11 +54,7 @@ bool travel(Json &a, const Json &player, const PhysicalNavigation &map, const Po
                        a.value("blockedTicks", 0),
                        a.at("path").get<WalkPath>(),
                        destination};
-    const auto &s = player.at("skills");
-    double speed =
-        .82 + s.at("movement").get<double>() * .003 -
-        player.at("fatigue").get<double>() * (110 - s.at("fatigue_resistance").get<double>()) / 35000;
-    auto result = map.walk(motion, goal, pace * speed, fire);
+    auto result = map.walk(motion, goal, pace * move_speed(player), fire);
     a["blockedTicks"] = motion.blocked_ticks;
     if (result.replanned) {
         const auto &[zone, p, avoided] = motion.destination.value();

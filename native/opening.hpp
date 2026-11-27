@@ -27,6 +27,10 @@ class OpeningMap {
     Json positions(const std::string &zone, const Point &origin, bool cautious) const;
     Json lineup(const Point &origin, const Point &gate, const Point &peek, const Point &watch,
                 const std::string &item, double radius) const;
+    const Objectives &objectives() const { return *objectives_; }
+    const Json &profile() const { return profile_; }
+    const OrderData &layout() const { return orders_; }
+    const Point &site_point(const std::string &site) const { return sites_.at(site); }
     void begin_live(Json &w, const Json &cfg) const;
     Json defense_orders(const Json &w, const std::string &site, int lane) const;
     using Angles = std::vector<std::pair<Point, Point>>;
