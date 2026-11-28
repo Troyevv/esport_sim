@@ -672,7 +672,8 @@ export function EntityProfile({
             <p>Нагрузка на {date(c.date)} · {c.office.jobs.filter(j=>j.person===id && j.date===c.date).reduce((n,j)=>n+j.cost,0)} / {c.office.people[id].capacity}</p>
             {c.office.jobs.filter(j=>j.person===id).map((j,i)=><div className="staff-line" key={i}><time>{date(j.date)}</time><strong>{c.office.duties[j.duty]?.title || j.duty}</strong><span>Срок · {date(j.due)}</span></div>)}
           </section>}
-          <StaffSkills p={staff.professional} roles={c.office.roles} groups={c.office.groups}/>
+          {staff.professional ? <StaffSkills p={staff.professional} roles={c.office.roles} groups={c.office.groups}/>
+            : <p className="surface panel-body muted">Оценки компетенций доступны для собственного штаба.</p>}
         </div>
       )}
     </>

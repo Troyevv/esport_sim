@@ -393,7 +393,8 @@ def create_app(
         if not active or active["id"] != career_id:
             raise HTTPException(404, "Карьера уже сменилась")
         pack = store.careers.pack(active["source"])
-        return career_scene.directory(pack, store.badges.index(pack), store.portraits, active.get("office", {}).get("positions"))
+        return career_scene.directory(pack, store.badges.index(pack), store.portraits,
+                                      active["team"], active.get("office", {}).get("positions"))
 
     @app.get("/api/career/options/{key}/{revision}")
     async def career_options(key: str, revision: int):

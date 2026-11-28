@@ -113,6 +113,7 @@ test("Тренировочная неделя, профиль развития, 
   await capture("reports");
   await press("Протокол пракка");
   await expect(dialog.getByText("Протокол матча")).toBeVisible();
+  await dialog.getByRole("button",{name:"Статистика",exact:true}).click();
   await expect(dialog.locator("table").first()).toBeVisible();
   await capture("pcw-report");
   await dialog.getByRole("button", { name: "Закрыть", exact: true }).click();

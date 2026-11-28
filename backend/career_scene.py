@@ -3,7 +3,7 @@
 from . import lineup_photos, club_art, scene_portraits, staff
 
 
-def directory(pack, badges, portraits, positions=None):
+def directory(pack, badges, portraits, own_team=None, positions=None):
     media = f"/api/database/{pack['id']}/{pack['revision']}/media/"
 
     def identity(group, key, row):
@@ -59,9 +59,11 @@ def directory(pack, badges, portraits, positions=None):
     for sid,row in pack["staff"].items():
         person = identity("staff", sid, row)
         tid = row["team"]
-        role = (positions or {}).get(sid, staff.position(row["role"]))
-        person.update(team=tid, role=staff.ROLES[role], realName=row["realName"],
-                      professional=staff.profile(sid, row))
+        role = staff.position(row["role"])
+        if own_team and tid == own_team:
+            role = (positions or {}).get(sid, role)
+            person["professional"] = staff.profile(sid, row)
+        person.update(team=tid, role=staff.ROLES[role], realName=row["realName"])
         person["visual"].update(player=True, staff=True, head=heads.get(sid, {}).get("image"), photo=row.get("photo"))
         if tid:
             t = teams[tid]
