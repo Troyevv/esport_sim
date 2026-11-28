@@ -1,3 +1,5 @@
+import { useCareerViewTab } from "./CareerViewTab";
+import { EntityName, PlayerRole } from "./CareerIdentity";
 import { useState } from "react";
 import {
   date,
@@ -75,7 +77,7 @@ type Athlete = {
   roles: Record<string, number>;
   tactics: Record<string, number>;
 };
-type Center = {
+export type TrainingState = {
   initial: Record<string, Record<string, number>>;
   days: Day[];
   players: Record<string, Athlete>;
@@ -104,7 +106,7 @@ const mapName = (s: string) =>
 const boardKey = (b: Board) => b.id + "@" + b.revision;
 type Shared = {
   c: Career;
-  data: Center;
+  data: TrainingState;
   enabled: boolean;
   submit: (v: object) => Promise<boolean>;
 };
@@ -356,7 +358,7 @@ function PlayerProgram({
   };
   return (
     <section className="surface panel-body">
-      <h2>Программа · {player.name}</h2>
+      <h2>Программа · <EntityName group="players" id={pid} fallback={player.name}/></h2>
       <form
         className="training-form"
         onSubmit={(e) => {
@@ -651,7 +653,7 @@ function PracticeRow({
       )}
       {open && (
         <Dialog title="Отчёт по пракку" close={() => setOpen(false)}>
-          <MatchReport event={p} teams={c.teams} close={() => setOpen(false)} />
+          <MatchReport careerId={c.id} event={p} teams={c.teams} close={() => setOpen(false)} />
         </Dialog>
       )}
     </article>
@@ -674,7 +676,8 @@ export function TrainingCenter({
   reports?: boolean;
 }) {
   const [week, setWeek] = useState(monday(initial || c.date)),
-    [tab, setTab] = useState(reports ? "Отчёты" : screens[0]);
+    [tab, setTab] = useCareerViewTab(reports ? "Отчёты" : screens[0]);
+  const [day, setDay] = useState(initial || c.date);
   const [pid, setPid] = useState(c.roster[0].id),
     [edit, setEdit] = useState<Edit | null>(null);
   const [name, setName] = useState(""),
@@ -683,7 +686,7 @@ export function TrainingCenter({
   const [pending, setPending] = useState(false),
     [fault, setFault] = useState(false),
     [focus, setFocus] = useState("aim");
-  const response = useData<Center>(
+  const response = useData<TrainingState>(
     "/api/career/" + c.id + "/training?week=" + week,
     revision,
   );
@@ -724,6 +727,7 @@ export function TrainingCenter({
       </select>
     </label>
   );
+  const activeDay = data.days.find(d=>d.date===day) || data.days[0];
   const changeWeek = (d: number) => setWeek(isoDay(dayAt(week, d)));
   const navigator = (
     <div className="training-week">
@@ -751,7 +755,10 @@ export function TrainingCenter({
   );
   return (
     <div className="training-center">
-      <Heading title="Тренировочный центр" sub={c.club} />
+      <Heading title="Тренировки" eyebrow={c.club+" / Подготовка"} sub="Расписание, индивидуальная подготовка и пракки">
+        <button className="btn primary" disabled={!allowed || !activeDay || activeDay.date<c.date || activeDay.sessions.length+activeDay.practices.filter(p=>!p.cancelled).length>=3}
+          onClick={()=>activeDay && setEdit({day:activeDay,index:activeDay.sessions.length})}>Добавить тренировку</button></Heading>
+      {activeDay && <div className="training-brief"><strong>{date(activeDay.date)}</strong><span>{activeDay.official?"Матч / турнир":"Тренировочный день"} · занятий {activeDay.sessions.length}</span></div>}
       <div className="training-nav">
         <Tabs
           items={screens}
@@ -764,6 +771,7 @@ export function TrainingCenter({
         <label>
           Раздел центра
           <select
+            aria-label="Раздел центра"
             value={tab}
             onChange={(e) => {
               setTab(e.target.value);
@@ -787,12 +795,17 @@ export function TrainingCenter({
       {tab === "Расписание" && (
         <>
           {navigator}
+          <nav className="training-day-picker" aria-label="Выбор дня тренировки">
+            {data.days.map((d,i) => <button key={d.date} aria-pressed={d.date===activeDay?.date}
+              aria-label={date(d.date)} onClick={()=>setDay(d.date)}><span>{weekdays[i].slice(0,2)}</span><b>{d.date.slice(8)}</b></button>)}
+          </nav>
           <div className="training-week-grid">
             {data.days.map((d, i) => (
               <section
                 className="surface training-day"
                 key={d.date}
                 data-today={d.date === c.date}
+                data-selected={d.date === activeDay?.date}
               >
                 <header>
                   <h2>{weekdays[i]}</h2>
@@ -940,13 +953,17 @@ export function TrainingCenter({
               С начала карьеры · {player.skills[focus] > 0 ? "+" : ""}
               {player.skills[focus]}
             </p>
+            {!Object.values(data.history).some(rows => rows[pid]?.[focus] != null) &&
+              <p className="muted">Пока нет недельных измерений этой характеристики.</p>}
             {Object.entries(data.history)
+              .filter(([, rows]) => rows[pid]?.[focus] != null)
+              .sort(([a], [b]) => a.localeCompare(b))
               .slice(-12)
               .map(([d, rows]) => (
                 <div className="staff-line" key={d}>
                   <time>{date(d)}</time>
                   <Scale
-                    value={rows[pid]?.[focus] ?? data.initial[pid][focus]}
+                    value={rows[pid][focus]}
                   />
                 </div>
               ))}
@@ -960,20 +977,22 @@ export function TrainingCenter({
               trend = a.trend,
               prev = trend.at(-2)?.[1];
             return (
-              <section className="surface panel-body" key={p.id}>
-                <h2>{p.name}</h2>
-                <div className="staff-line">
+              <section className="surface panel-body workload-card" key={p.id}>
+                <header><h2><EntityName group="players" id={p.id} fallback={p.name}/></h2><PlayerRole role={p.role}/></header>
+                <div className="staff-line" data-recovery={a.fatigue >= 60}>
                   Усталость <Scale value={a.fatigue} />
                 </div>
-                <p>Плановая нагрузка сегодня · {a.plannedLoad}</p>
-                <p>Игровая практика · {a.practice.toFixed(1)} / 40</p>
+                <dl className="workload-metrics">
+                  <div><dt>Нагрузка сегодня</dt><dd>{a.plannedLoad}</dd></div>
+                  <div><dt>Игровая практика</dt><dd>{a.practice.toFixed(1)} <small>/ 40</small></dd></div>
+                </dl>
                 {a.metrics.load !== undefined && (
                   <p>
                     Последний день · нагрузка {a.metrics.load.toFixed(1)} ·
                     восстановлено {a.metrics.recovery?.toFixed(1)}
                   </p>
                 )}
-                <p>
+                <p className="workload-advice">
                   {a.fatigue >= 60
                     ? "Рекомендация штаба · назначить восстановление"
                     : a.practice < 3

@@ -318,3 +318,11 @@ def test_shot_targets_only_the_position_available_at_decision_time():
     shot = w["traces"][-1]
     assert (shot["tx"], shot["ty"]) == (35, 55)
     assert a["ammo"] == before - 1 and b["hp"] == 100
+
+
+def test_projection_accepts_empty_native_radio_state():
+    game = production.initial(21)
+    game["agentPolicy"] = 12
+    for agent in game["agents"]:
+        agent["sentFeedback"] = None
+    assert production.project(game, "full")["match"]["radio"] == []

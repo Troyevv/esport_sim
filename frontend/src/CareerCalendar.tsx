@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useCareerViewTab } from "./CareerViewTab";
+import { useEffect, useState } from "react";
+import { FixtureTeams, EditionLink } from "./CareerIdentity";
 import { MatchReport } from "./CareerForms";
 import {
   date,
@@ -13,11 +15,19 @@ import {
   type Fixture,
 } from "./careerData";
 import { Dialog, Glyph, Heading, Tabs } from "./GameUI";
-export function Calendar({ c, initial,tournament, revision, training }: { revision:number; training:(day:string)=>void; c: Career; initial: string; tournament:(edition:string)=>void }) {
-  const [selected, select] = useState(initial),
-    [mode, setMode] = useState("Месяц"),
-    [filter, setFilter] = useState("club"),
-    [report, setReport] = useState<Fixture | null>(null);
+export function Calendar({ c, selected, select, filter, setFilter, tournament, prepare, revision, training }: {
+  c: Career; selected: string; select:(day:string)=>void; filter:string; setFilter:(scope:string)=>void;
+  prepare:(id:string)=>void; revision:number; tournament:(edition:string)=>void; training:(day:string)=>void;
+}) {
+  const [mode, setMode] = useCareerViewTab(matchMedia("(max-width:700px)").matches ? "Повестка" : "Месяц");
+  const [report,setReport] = useState<Fixture | null>(null);
+  const [jumpTo, setJumpTo] = useState("");
+  useEffect(() => {
+    if (!jumpTo || mode !== "Повестка") return;
+    document.getElementById("agenda-fixture-"+jumpTo)?.focus();
+    setJumpTo("");
+  }, [jumpTo,mode,selected]);
+  const next = c.queue.find(f=>f.kind==="match" && !f.pcw && f.teams.includes(c.team) && f.date>=c.date);
   const month = selected.slice(0, 7),
     first = month + "-01";
   const end = dayAt(first);
@@ -43,14 +53,15 @@ export function Calendar({ c, initial,tournament, revision, training }: { revisi
   };
   const buttons = (rows: Fixture[]) =>
     rows.map((e) => (
-      <div className="day-agenda-item" key={e.id}>
+      <div className="day-agenda-item" key={e.id} id={mode==="Повестка" ? "agenda-fixture-"+e.id : undefined} tabIndex={-1}>
         <small className="event-time">
-          {date(e.date)} · {e.kind === "match" ? "BO"+(e.bestOf ?? 1) : "Клуб"}
+          <Glyph name={e.kind === "match" ? "crosshair" : "calendar"}/>{date(e.date)} · {e.kind === "match" ? "BO"+(e.bestOf ?? 1) : "Клуб"}
         </small>
-        <h3>{fixtureName(c, e)}</h3>
-        {e.edition && <button className="link-button" onClick={()=>tournament(e.edition!)}>{e.title}</button>}
+        <h3>{e.kind === "match" ? <>{e.pcw && "Пракк · "}<FixtureTeams teams={e.teams} names={c.teams}/></> : fixtureName(c,e)}</h3>
+        {e.edition && <EditionLink id={e.edition}>{e.title}</EditionLink>}
         {e.agenda?.map(a=><p key={a.edition+a.title}><button className="link-button" onClick={()=>tournament(a.edition)}>{a.tournament}</button> · {a.title}</p>)}
-        {e.score && (
+        {!fixtureScore(e) && !e.pcw && e.kind === "match" && <button className="btn sm" onClick={()=>prepare(e.id)}>Предматчевая подготовка и линия</button>}
+        {fixtureScore(e) && (
           <button
             className="btn sm"
             aria-label={"Протокол " + fixtureScore(e)}
@@ -66,10 +77,10 @@ export function Calendar({ c, initial,tournament, revision, training }: { revisi
     notes = c.milestones.filter((m) => m.date === selected);
   return (
     <>
-      <Heading title="Календарь" sub={c.club + " · матчи и события клуба"}>
-        <Tabs items={["Месяц", "Неделя"]} value={mode} change={setMode} />
+      <Heading title="Календарь" eyebrow={c.club+" / Сезон "+c.date.slice(0,4)} sub="Матчи, турниры и подготовка команды">
+        <Tabs items={["Месяц", "Неделя", "Повестка"]} value={mode} change={setMode} />
       </Heading>
-      <div className="filter-bar">
+      <div className="filter-bar calendar-filters">
         <label>
           Показать{" "}
           <select value={filter} onChange={(e) => setFilter(e.target.value)}>
@@ -80,6 +91,9 @@ export function Calendar({ c, initial,tournament, revision, training }: { revisi
         <button className="btn sm" onClick={() => select(c.date)}>
           Сегодня
         </button>
+        {next && <button className="btn sm" onClick={()=>{select(next.date);setMode("Повестка");setJumpTo(next.id)}}>
+          <Glyph name="crosshair"/> Ближайший матч клуба · {date(next.date)}
+        </button>}
       </div>
       <div className="calendar-layout">
         <section className="surface">
@@ -106,7 +120,14 @@ export function Calendar({ c, initial,tournament, revision, training }: { revisi
               <Glyph name="chevron-right" />
             </button>
           </div>
-          <div className="calendar-weekdays">
+          {mode === "Повестка" ? <div className="calendar-agenda">{Array.from({length:end.getUTCDate()},(_,i)=>{
+            const d=isoDay(dayAt(first,i)), games=events.filter(e=>e.date===d), notes=c.milestones.filter(m=>m.date===d), sessions=preparation.data?.[d] || [];
+            if(!games.length && !notes.length && !sessions.length && d!==selected)return null;
+            return <article key={d} data-selected={d===selected}><button className="agenda-date" onClick={()=>select(d)}><b>{d.slice(-2)}</b><small>{date(d)}</small></button><div>
+              {buttons(games)}{notes.map((m,i)=><p key={i}>{m.title}</p>)}{sessions.length>0 && <button onClick={()=>training(d)}>Тренировки · {sessions.length}</button>}
+              {!games.length && !notes.length && !sessions.length && <small>Событий нет</small>}
+            </div></article>;
+          })}</div> : <><div className="calendar-weekdays">
             {weekdays.map((w) => (
               <span key={w}>{w}</span>
             ))}
@@ -143,9 +164,9 @@ export function Calendar({ c, initial,tournament, revision, training }: { revisi
                 </button>
               );
             })}
-          </div>
+          </div></>}
         </section>
-        <section className="surface day-details mobile-open">
+        {mode!=="Повестка" && <section className="surface day-details mobile-open">
           <div className="panel-head">
             <h2>{date(selected)}</h2>
           </div>
@@ -160,21 +181,21 @@ export function Calendar({ c, initial,tournament, revision, training }: { revisi
           {!today.length && !notes.length && !sessions.length && (
             <p className="panel-body muted">Событий нет.</p>
           )}
-        </section>
+        </section>}
       </div>
-      {events.some((e) => e.score && e.date.startsWith(month)) && (
+      {mode!=="Повестка" && events.some((e) => fixtureScore(e) && e.date.startsWith(month)) && (
         <section className="surface completed-fixtures">
           <div className="panel-head">
             <h2>Результаты месяца</h2>
           </div>
           {buttons(
-            events.filter((e) => e.score && e.date.startsWith(month)).reverse(),
+            events.filter((e) => fixtureScore(e) && e.date.startsWith(month)).reverse(),
           )}
         </section>
       )}
       {report && (
         <Dialog title="Результат встречи" close={() => setReport(null)}>
-          <MatchReport
+          <MatchReport careerId={c.id}
             event={report}
             teams={c.teams}
             close={() => setReport(null)}

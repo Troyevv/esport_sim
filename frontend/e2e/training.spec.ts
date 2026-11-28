@@ -35,7 +35,7 @@ test("Тренировочная неделя, профиль развития, 
   async function capture(name: string) {
     if (!(await page.getByRole("dialog").count()))
       await page
-        .locator(".training-center h2")
+        .locator(".training-center h2:visible")
         .first()
         .scrollIntoViewIfNeeded();
     expect(
@@ -51,13 +51,14 @@ test("Тренировочная неделя, профиль развития, 
   await page.goto("/");
   await press("Новая карьера");
   await page.getByLabel("Редакция базы").selectOption("austin-registration/1");
+  await page.getByRole("button",{name:"Настроить карьеру",exact:true}).click();
   await page.getByLabel("Имя персонажа").fill("Подготовка");
   await page
     .getByLabel("Команда", { exact: true })
     .selectOption({ label: "Vitality" });
   await press("Создать карьеру");
   await expect(
-    page.getByRole("heading", { name: "Кабинет менеджера" }),
+    page.getByRole("heading", { name: /^(Кабинет команды|День матча)$/ }),
   ).toBeVisible();
   await press("Тренировочный центр");
   await capture("week");
@@ -106,6 +107,10 @@ test("Тренировочная неделя, профиль развития, 
   await press("Нагрузка");
   await expect(page.getByText("Усталость по дням").first()).toBeVisible();
   await capture("workload");
+  await page.locator(".workload-card .profile-action").first().click();
+  await expect(page.locator(".club-profile-hero")).toBeVisible();
+  await page.getByRole("button",{name:"Назад",exact:true}).first().click();
+  await expect(page.locator(".workload-card").first()).toBeVisible();
   await press("Карты и тактики");
   await capture("mastery");
   await press("Отчёты");
@@ -113,14 +118,17 @@ test("Тренировочная неделя, профиль развития, 
   await capture("reports");
   await press("Протокол пракка");
   await expect(dialog.getByText("Протокол матча")).toBeVisible();
+  await dialog.getByRole("button",{name:"Статистика",exact:true}).click();
   await expect(dialog.locator("table").first()).toBeVisible();
   await capture("pcw-report");
   await dialog.getByRole("button", { name: "Закрыть", exact: true }).click();
   await press("Календарь");
-  await expect(button("Открыть расписание")).toBeVisible();
-  await press("Открыть расписание");
+  await page.locator(".calendar-grid, .calendar-agenda").first().waitFor();
+  const daySchedule = page.getByRole("button", {name: /^Тренировки · [0-9]+$/}).first();
+  if (await page.locator(".calendar-agenda").isVisible()) await daySchedule.click();
+  else await press("Открыть расписание");
   await expect(
-    page.getByRole("heading", { name: "Тренировочный центр" }),
+    page.getByRole("heading", { name: "Тренировки" }),
   ).toBeVisible();
   await press("← Главное меню");
   await press("Стенд симуляции");

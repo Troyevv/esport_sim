@@ -1,9 +1,10 @@
+import { openLab } from "./openLab";
 import { expect, test } from "@playwright/test";
 
 test("Scorebot показывает установленную C4, обе пятёрки и счёт их команд", async ({
   page,
 }, info) => {
-  await page.goto("/?screen=lab");
+  await openLab(page);
   const command = async (kind: string, value?: unknown) => {
     const response = await page.evaluate(
       async ({ kind, value }) => {
@@ -38,30 +39,26 @@ test("Scorebot показывает установленную C4, обе пят
     rosters,
     seed: 4,
   });
-  await expect(page.locator(".hud-team")).toHaveCount(2);
-  await expect(page.locator(".player-card")).toHaveCount(10);
+  await expect(page.locator(".mx-live-roster")).toHaveCount(2);
+  await expect(page.locator(".mx-live-player")).toHaveCount(10);
   await expect(page.getByTestId("radar")).toHaveAttribute("data-ready", "true");
-  await expect(page.locator(".secondary [data-item=Glock]")).toHaveCount(5);
-  await expect(page.locator(".secondary [data-item=USP]")).toHaveCount(5);
-  await expect(page.locator(".primary-gun img")).toHaveCount(0);
+  await expect(page.locator(".mx-live-weapon [data-item=Glock]")).toHaveCount(5);
+  await expect(page.locator(".mx-live-weapon [data-item=USP]")).toHaveCount(5);
+  await expect(page.locator(".mx-live-weapon [data-item=AK-47]")).toHaveCount(0);
   await expect(page.locator(".carried-c4")).toHaveCount(1);
   await command("speed", 8);
   await command("start");
-  await expect(page.locator(".hud-history")).toBeVisible({ timeout: 25000 });
+  await expect(page.locator(".mx-round-timeline")).toBeVisible({ timeout: 25000 });
   await expect(page.locator(".hud-bomb")).toBeVisible({ timeout: 25000 });
   await command("speed", 1);
   const planted = await (await page.request.get("/api/state")).json();
   expect(planted.running).toBe(true);
   for (const club of planted.world.match.clubs) {
-    if (await page.locator(".touch-lineup").isVisible())
-      await page.locator(".touch-lineup").getByRole("button",{name:club.name,exact:true}).tap();
-    const team = page.locator(".hud-team").filter({
-      has: page.getByRole("heading", { name: new RegExp(club.name) }),
-    });
+    const team=page.locator('.mx-live-roster[data-team="'+club.id+'"]');
     await expect(team.getByRole("meter")).toHaveCount(5);
     await expect(team).toHaveAttribute("data-side", club.side);
     await expect(
-      page.locator('.scoreboard [data-team="' + club.id + '"] > b'),
+      page.locator('.mx-broadcast-score [data-team="' + club.id + '"] > b'),
     ).toHaveText(String(club.score));
   }
   expect(
@@ -69,8 +66,7 @@ test("Scorebot показывает установленную C4, обе пят
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  if (await page.locator(".touch-lineup").isVisible()) await page.locator(".touch-lineup").getByText("Радар").tap();
-  await page.locator(".scoreboard").scrollIntoViewIfNeeded();
+  await page.locator(".mx-broadcast-score").scrollIntoViewIfNeeded();
   await page.screenshot({
     path: info.outputPath("r33-scorebot-" + info.project.name + ".png"),
     fullPage: true,
@@ -79,14 +75,16 @@ test("Scorebot показывает установленную C4, обе пят
   const paused = (await (await page.request.get("/api/state")).json()).world;
   for (const player of paused.agents) {
     const card = page.locator('[data-player="' + player.id + '"]');
+    await card.click();
     for (const [slot, model] of [
       ["primary-gun", player.primary],
       ["secondary", player.secondary],
     ]) {
-      const img = card.locator("." + slot + " img");
+      const img = page.locator(".selected-loadout ." + slot + " img");
       if (model) await expect(img).toHaveAttribute("data-item", model);
       else await expect(img).toHaveCount(0);
     }
+    await page.locator(".mx-match-tabs").getByRole("button",{name:"Радар",exact:true}).click();
     if (player.alive) {
       for (const utility of new Set<string>(player.utility)) {
         const count = player.utility.filter(
@@ -124,19 +122,15 @@ test("Scorebot показывает установленную C4, обе пят
     (a: { alive: boolean; primary: string }) => a.alive && a.primary,
   );
   const card = page.locator('[data-player="' + selected.id + '"]');
-  if (await page.locator(".touch-lineup").isVisible()) {
-    const club=paused.match.clubs.find((c:{side:string})=>c.side===selected.team);
-    await page.locator(".touch-lineup").getByRole("button",{name:club.name,exact:true}).tap();
-  }
   if (info.project.use.hasTouch) await card.tap();
   else await card.click();
   await expect(
     page.locator(".selected-loadout .primary-gun img"),
   ).toHaveAttribute("data-item", selected.primary);
-  if (await page.locator(".touch-lineup").isVisible()) await page.locator(".touch-lineup").getByText("Радар").tap();
+  await page.locator(".mx-match-tabs").getByRole("button",{name:"Радар",exact:true}).click();
   await page.getByLabel("Режим обзора").selectOption("T");
-  await expect(page.locator('.hud-team[data-side="CT"] .hud-kit')).toHaveText(
-    Array(5).fill("Снаряжение —"),
+  await expect(page.locator('.mx-live-roster[data-side="CT"] .mx-knowledge-hint')).toHaveText(
+    Array(5).fill(/Экипировка неизвестна|Устранение подтверждено/),
   );
   await page.getByLabel("Режим обзора").selectOption("full");
   await command("speed", 128);
@@ -145,7 +139,7 @@ test("Scorebot показывает установленную C4, обе пят
     (c: { side: string }) => c.side === "T",
   );
   await expect(
-    page.locator('.scoreboard [data-team="' + firstAttack.id + '"]'),
+    page.locator('.mx-broadcast-score [data-team="' + firstAttack.id + '"]'),
   ).toHaveAttribute("data-side", "CT");
   await expect(page.locator(".match-result")).toBeVisible({ timeout: 30000 });
   const final = (await (await page.request.get("/api/state")).json()).world
@@ -153,13 +147,13 @@ test("Scorebot показывает установленную C4, обе пят
   const winner = final.clubs.find(
     (club: { id: string }) => club.id === final.winnerTeamId,
   );
-  await expect(page.locator(".match-result strong")).toHaveText(winner.name);
+  await expect(page.locator(".match-result strong").first()).toHaveText(winner.name);
   for (const club of final.clubs) {
     const wins = final.history.filter(
       (r: { winnerTeamId: string }) => r.winnerTeamId === club.id,
     ).length;
     await expect(
-      page.locator('.scoreboard [data-team="' + club.id + '"] > b'),
+      page.locator('.mx-broadcast-score [data-team="' + club.id + '"] > b'),
     ).toHaveText(String(wins));
   }
   await command("reset", 42);

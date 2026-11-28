@@ -1,4 +1,6 @@
 import { badgeSurface, GamePortrait, type ClubKit } from "./GamePortrait";
+import { serverURL } from "./session";
+import { useGarment } from "./wardrobe";
 import { useState } from "react";
 import { resolvePortrait, type PhotoRef } from "./portraits";
 
@@ -68,8 +70,28 @@ export type Visual = {
   player?: boolean;
   staff?: boolean;
   head?: string | null;
+  lineupPhoto?: {team:string; url:string};
   kit?: ClubKit | null;
 };
+const rosterPhotos: Record<string,string> = {
+  "steam-76561198018303780": "donk", "p-f53da391aede75af17d6": "sh1ro", "steam-76561198995880877": "zont1x"
+};
+export function LineupPortrait({id,name,visual}: {id:string;name:string;visual:Visual}) {
+  const bundled = rosterPhotos[id];
+  const lineupPhoto = visual.lineupPhoto || (bundled ? {team:"t-686f34552cee3bc3c46d",url:"/interface/menu/"+bundled+".png"} : undefined);
+  return <Avatar {...visual} lineupPhoto={lineupPhoto} name={name}/>;
+}
+
+function FullPortrait({name, head, kit, lineupPhoto}: {name:string} & Visual) {
+  const personal = useGarment(kit?.id);
+  const [failed,setFailed] = useState("");
+  const path = lineupPhoto?.url;
+  if (path && path !== failed && kit?.id === lineupPhoto?.team && kit && !kit.design && !personal) {
+    const source = path.startsWith("/api/") ? serverURL(path).href : path;
+    return <img className="scene-avatar roster-photo" src={source} alt={name+" в форме "+kit.name} loading="lazy" onError={()=>setFailed(path)}/>;
+  }
+  return <GamePortrait name={name} head={head} kit={kit}/>;
+}
 export function Avatar({
   name,
   photo,
@@ -81,10 +103,12 @@ export function Avatar({
   staff = false,
   head,
   kit,
+  lineupPhoto,
 }: { name: string } & Visual) {
   const asset = resolvePortrait(photo);
   const [failed, setFailed] = useState("");
   const src = url || asset?.image;
+  if (player && lineupPhoto && !photo && head?.includes("/generated/")) return <FullPortrait {...{name,head,kit,lineupPhoto}}/>;
   if (player) return <GamePortrait name={name} head={head} kit={kit} staff={staff} />;
   if (src && failed !== src)
     return (

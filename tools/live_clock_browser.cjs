@@ -43,7 +43,7 @@ const { chromium } = require("../frontend/node_modules/playwright");
         if (!p.hud || at - p.hud.at(-1)[0] >= 250)
           (p.hud ??= []).push([
             at,
-            document.querySelector(".round-clock")?.textContent,
+            document.querySelector(".mx-round-clock, .round-clock")?.textContent,
           ]);
         for (const e of match.effects) {
           if (tick < e.start || tick >= e.land) continue;
@@ -133,23 +133,19 @@ const { chromium } = require("../frontend/node_modules/playwright");
           await route.continue();
         },
       );
-    await page.route("**/assets/index-*.js", async (route) => {
+    const installedHooks = new Set();
+    await page.route("**/assets/*.js", async (route) => {
       const response = await route.fetch();
       const src = await response.text();
       const hook =
         /(const (\w+)=(\w+)\.frame\.world\.match;if\(\2\)\{const \w+=)(\w+\.displayTick\(\w+\))/;
-      if (!hook.test(src))
-        throw Error("Radar paint call not found in the production bundle");
+      if (hook.test(src)) installedHooks.add("clock");
       const sprite =
         /(show\((\w+),(\w+),(\w+),\w+,\w+,\w+,\w+\)\{[^}]*?const [\s\S]{0,1000}?\+\+this\.used,[^}]+?\.visible=!0)(\}(?:airborne|end)\()/;
-      if (!sprite.test(src))
-        throw Error(
-          "Radar sprite paint call not found in the production bundle",
-        );
+      if (sprite.test(src)) installedHooks.add("sprite");
       const fallback =
         /(airborne\(\w+,(\w+),(\w+),(\w+),[^}]+?this\.used===\w+&&)([^}]+?\.fill\(\w+\))(\})/;
-      if (src.includes(".airborne(") && !fallback.test(src))
-        throw Error("Missing cold texture paint hook");
+      if (fallback.test(src)) installedHooks.add("fallback");
       await route.fulfill({
         response,
         body: src
@@ -161,6 +157,8 @@ const { chromium } = require("../frontend/node_modules/playwright");
     const base = "http://127.0.0.1:" + port;
     await page.goto(base + "/?screen=lab");
     await page.getByTestId("radar").waitFor();
+    for (const name of ["clock","sprite","fallback"])
+      if (!installedHooks.has(name)) throw Error("Radar probe could not attach "+name);
     await page.waitForFunction(() => window.clockProbe.renders.length > 0);
     if (peerCount)
       await page.evaluate(

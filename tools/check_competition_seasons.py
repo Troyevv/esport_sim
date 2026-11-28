@@ -1,5 +1,6 @@
 """Extended calendar regression with test reports. For the actual engine run check_competition_lifecycle."""
 
+import argparse
 import gzip
 import json
 from time import monotonic
@@ -7,17 +8,33 @@ from time import monotonic
 from backend import career, competition_scene, competitions, database
 
 
-def check():
+def check(verify_formats=False):
     start = monotonic()
     pack = competition_scene.extend(
         json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
     )
     team = next(t for t, v in pack["teams"].items() if v["name"] == "SINNERS Esports")
     c = career.create(pack, dict(team=team, name="Тренер", scope="full", mode="owner"))
+    verified_stages = {}
+    core_series = 0
     ids = set()
     played = {}
     while c["queue"][0]["date"] < "2028-01-01":
-        fixture = c["queue"].pop(0)
+        fixture = c["queue"][0]
+        if fixture.get("edition") and competitions.fixture_conflicts(c, fixture):
+            c["date"] = fixture["date"]
+            competitions.settle_fixture_conflicts(c, fixture, pack)
+            if c.get("error"):
+                # This unattended acceptance career chooses the higher-priority
+                # tournament when production asks its manager for a decision.
+                others = competitions.fixture_conflicts(c, fixture)
+                competing = [c["circuit"]["editions"][f["edition"]] for f in [fixture,*others] if team in f["teams"]]
+                assert len(competing) >= 2, c["error"]
+                lost = max(competing, key=lambda e: competitions.priority_for(e, team))
+                competitions.leave(c, lost, team, pack, "Приоритет календаря в контрольном сезоне")
+                c.pop("error", None)
+            continue
+        c["queue"].pop(0)
         assert fixture["date"] >= c["date"] and fixture["id"] not in ids
         ids.add(fixture["id"])
         c["date"] = fixture["date"]
@@ -39,19 +56,18 @@ def check():
                 edition["id"],
             )
             versions[t] = registered["version"]
-        c["history"].append(
-            dict(**fixture, rosterVersions=versions, winnerTeamId=winner)
-        )
-        competitions.completed(
-            c,
-            fixture,
-            dict(
-                winnerTeamId=winner,
-                score=[int(t == winner) for t in teams],
-                stats=[],
-                rounds=[],
-            ),
-        )
+        stage = edition["stages"][fixture["stage"]]["format"]
+        checkpoint = (edition["id"], fixture["stage"])
+        if verify_formats and verified_stages.setdefault(stage, checkpoint) == checkpoint:
+            game = career.initial(pack, c, fixture, detailed=False)
+            report = career.simulate(game)
+            assert report["rounds"] and report["stats"], fixture["id"]
+            core_series += 1
+        else:
+            report = dict(winnerTeamId=winner, score=[int(t == winner) for t in teams],
+                          stats=[], rounds=[])
+        c["history"].append(dict(**fixture, rosterVersions=versions, winnerTeamId=report["winnerTeamId"]))
+        competitions.completed(c, fixture, report)
         if edition["status"] == "finished":
             competitions.publish(c, pack)
     calendar = c["circuit"]["editions"]
@@ -65,16 +81,30 @@ def check():
         "fire-major-2027",
         "pw-major-2027",
     ]:
-        assert calendar[eid]["status"] == "finished", (eid, calendar[eid].get("reason"))
+        edition = calendar[eid]
+        if verify_formats and edition["status"] == "cancelled":
+            # Actual qualifier results can leave a later edition below its entry minimum.
+            assert edition.get("reason")
+        else:
+            assert edition["status"] == "finished", (eid, edition.get("reason"))
     for e in completed:
         assert len(e["placements"]) == len(set(e["placements"]))
         if e.get("payouts"):
             assert e["payouts"] == c["circuit"]["awards"][e["id"]]
     assert len(c["circuit"]["snapshots"]) == 13
+    if verify_formats:
+        assert verified_stages.keys() == {"swiss","single","double","gsl","roundRobin","doubleGroups"}
+        for fmt, (eid, index) in sorted(verified_stages.items()):
+            groups = calendar[eid]["draws"][index]
+            assert all(competitions.stages.finish_round(draw) is not None for draw in groups)
+            print(f"{fmt}: {eid}, stage {index + 1}, {len(groups)} group(s)")
+        print(f"{core_series} series simulated with the round engine across six formats")
     print(
         f"{len(c['history'])} test series, {len(completed)} completed events, 13 monthly snapshots in {monotonic() - start:.1f}s"
     )
 
 
 if __name__ == "__main__":
-    check()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--verify-formats", action="store_true", help="Play the first stage of each format using the round engine")
+    check(parser.parse_args().verify_formats)

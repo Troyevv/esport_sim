@@ -2,11 +2,11 @@ import { defineConfig } from '@playwright/test';
 
 const baseURL = 'http://127.0.0.1:8766';
 const devices = [
-  { name: 'desktop', width: 1440, height: 960, touch: false },
+  { name: 'desktop', width: 1440, height: 1000, touch: false },
   { name: 'phone-portrait', width: 390, height: 844, touch: true },
   { name: 'phone-landscape', width: 844, height: 390, touch: true },
-  { name: 'tablet-portrait', width: 820, height: 1180, touch: true },
-  { name: 'tablet-landscape', width: 1180, height: 820, touch: true },
+  { name: 'tablet-portrait', width: 834, height: 1194, touch: true },
+  { name: 'tablet-landscape', width: 1194, height: 834, touch: true },
 ];
 
 export default defineConfig({

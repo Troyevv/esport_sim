@@ -1,9 +1,16 @@
-import { useState } from "react";
-import { date, useData, type Act, type Career, type Scene } from "./careerData";
-import { Dialog, Heading, Tabs } from "./GameUI";
+import { useCareerViewTab } from "./CareerViewTab";
+import {Icon,Badge,Button,Panel,Stat,Field,Tabs as ApprovedTabs} from "./approved/Shared";
+import {TeamLogo} from "./approved/Identity";
+import {Mark} from "./approved/EventMark";
+import {serverURL} from "./session";
+import "./approved/Competition.css";
+import { useEffect, useState } from "react";
+import { date, fixtureScore, useData, type Act, type Career, type Profile, type Scene } from "./careerData";
+import { Dialog, Heading, MetricStrip, Tabs } from "./GameUI";
 import { Load, MatchReport } from "./CareerForms";
-import { Avatar } from "./SceneIdentity";
+import { Avatar, Flag } from "./SceneIdentity";
 import "./competitions.css";
+import { EntityName, FixtureTeams } from "./CareerIdentity";
 import { CompetitionMark, eventMark } from "./CompetitionMark";
 
 type Entry = {
@@ -29,6 +36,8 @@ type Game = {
   bye?: boolean;
 };
 type Draw = {
+  advance:number;
+  outputs?:Game["slots"];
   standings: {
     team: string;
     wins: number;
@@ -129,7 +138,7 @@ type PastEdition = {
   pool: number;
   lan: boolean;
 };
-type Directory = {
+export type Directory = {
   archive: PastEdition[];
   editions: Edition[];
   available: string[];
@@ -137,6 +146,9 @@ type Directory = {
   live?: { date: string; rows: Ranking[]; completeWindow: boolean };
 };
 type Props = {
+  open:(p:Profile)=>void;
+  onEdition?:(id:string)=>void;
+  prepare:(id:string)=>void;
   initialEdition?: string;
   initialEntry?: boolean;
   initialConflict?: boolean;
@@ -165,6 +177,11 @@ const status: Record<string, string> = {
   notSelected: "Вне списка участников",
   qualifiedElsewhere: "Уже квалифицировались",
 };
+function statusTone(state: string) {
+  if (["playing","qualified","confirmed","accepted","locked"].includes(state)) return "green";
+  if (["offered","invited","waiting","registration"].includes(state)) return "orange";
+  return "neutral";
+}
 const formats: Record<string, string> = {
   swiss: "Швейцарская система",
   single: "Single elimination",
@@ -258,19 +275,27 @@ function Archive({ editions }: { editions: PastEdition[] }) {
   );
 }
 
-function Rankings({ data }: { data: Directory }) {
+function Rankings({ data, c, scene }: { data: Directory; c:Career; scene:Scene }) {
   const dates = Object.keys(data.snapshots).sort().reverse();
   const [publication, pick] = useState(dates[0]),
     [region, setRegion] = useState("Global"),
     [query, search] = useState("");
+  const [selected,setSelected] = useState(c.team);
   const rows =
     publication === "live"
       ? data.live?.rows || []
       : data.snapshots[publication];
+  const identity = (r:Ranking) => r.team || Object.keys(c.teams).find(t=>c.teams[t]===r.name) || r.name;
+  const selectedRow = rows?.find(r=>identity(r)===selected);
+  const past = dates.filter(d=>publication==="live" || d<=publication).flatMap(d=>{
+    const row=data.snapshots[d].find(r=>identity(r)===selected);
+    return row?[{date:d,points:row.points,rank:row.rank}]:[];
+  });
+  const maxPoints = past.reduce((max, row) => Math.max(max, row.points), 0);
   return (
     <>
       <Heading
-        title="Valve Regional Standings"
+        title="Рейтинг VRS" eyebrow="Соревновательная сцена"
         sub="Составы, очки и даты приглашений"
       />
       <div className="filter-bar">
@@ -318,7 +343,7 @@ function Rankings({ data }: { data: Directory }) {
           за 180 дней неполна.
         </p>
       )}
-      <section className="surface table-wrap">
+      <div className="vrs-layout"><section className="surface table-wrap">
         <table className="simple-table">
           <thead>
             <tr>
@@ -329,26 +354,32 @@ function Rankings({ data }: { data: Directory }) {
             </tr>
           </thead>
           <tbody>
-            {rows
+            {(rows || [])
               .filter(
                 (r) =>
                   (region === "Global" || r.region === region) &&
                   r.name.toLowerCase().includes(query.toLowerCase()),
               )
               .map((r) => (
-                <tr key={r.rank}>
+                <tr key={r.rank} data-selected={identity(r)===selected}>
                   <td>{region === "Global" ? r.rank : r.regional}</td>
                   <td>
-                    <strong>{r.name}</strong>
+                    <button className="vrs-team" onClick={()=>setSelected(identity(r))}><Avatar club name={r.name} {...scene.teams[identity(r)]?.visual}/>{r.name}</button>
                     <small className="tc-sub">{r.nicks.join(" · ")}</small>
                   </td>
-                  <td>{r.region}</td>
+                  <td><span className="vrs-region"><Flag value={r.region}/>{r.region}</span></td>
                   <td className="mono accent">{r.points}</td>
                 </tr>
               ))}
           </tbody>
         </table>
-      </section>
+      </section><aside className="surface vrs-trend"><h2>Динамика публикаций</h2>
+        <h3><EntityName group="teams" id={selected} recordedName={selectedRow?.name} fallback={c.teams[selected]}/></h3>
+        {selectedRow && <><p>Место #{selectedRow.rank} · {selectedRow.points} очков</p><small>Пятёрка на дату публикации</small><p>{selectedRow.nicks.join(" · ")}</p></>}
+        {past.length ? <ol>{past.map(p=><li key={p.date}><time>{date(p.date)}</time><strong>#{p.rank}</strong><span>{p.points}</span>
+          {past.length>1 && maxPoints>0 && <meter min={0} max={maxPoints} value={p.points} aria-label={"Очки VRS на "+date(p.date)}/>}</li>)}</ol>
+          : <p>В доступных публикациях нет истории этой команды.</p>}
+      </aside></div>
     </>
   );
 }
@@ -554,62 +585,99 @@ function Registration({
   );
 }
 
-function GameDraw({ draw, c }: { draw: Draw; c: Career }) {
-  const slot = (s: Game["slots"][number]) => {
-    if (s === null) return "Свободный слот";
-    if (typeof s === "string") return c.teams[s] || s;
-    const parent = draw.games[s[1]],
-      t = s[0] === "winner" ? parent.winner : parent.loser;
-    return t
-      ? c.teams[t]
-      : (s[0] === "winner" ? "Победитель" : "Проигравший") +
-          " матча " +
-          (s[1] + 1);
-  };
-  const rounds = Array.from(new Set(draw.games.map((g) => g.round))).sort(
-    (a, b) => a - b,
-  );
-  return (
-    <div
-      className="tc-bracket"
-      role="region"
-      aria-label="Сетка по раундам"
-      tabIndex={0}
-    >
-      {rounds.map((round) => (
-        <section key={round} className="tc-round">
-          <h3>Раунд {round + 1}</h3>
-          {draw.games.map(
-            (g, n) =>
-              g.round === round &&
-              !g.bye && (
-                <article className="tc-pair" key={n}>
-                  <small>
-                    {g.label} · № {n + 1}
-                    {g.date && " · " + date(g.date)}
-                  </small>
-                  {g.slots.map((s, i) => (
-                    <div
-                      className={
-                        g.winner && c.teams[g.winner] === slot(s)
-                          ? "tc-winner"
-                          : ""
-                      }
-                      key={i}
-                    >
-                      <b>{slot(s)}</b>
-                      <span>{g.score?.[i] ?? "—"}</span>
-                    </div>
-                  ))}
-                  {g.administrative && <small>{g.reason}</small>}
-                  {g.historical && <small>До начала карьеры</small>}
-                </article>
-              ),
-          )}
-        </section>
-      ))}
+type DrawProps = Pick<Props, "c" | "scene"> & { onFixture: (id: string) => void };
+
+function resolveSlot(draw: Draw, slot: Game["slots"][number]) {
+  if (!Array.isArray(slot)) return slot;
+  const parent = draw.games[slot[1]];
+  return slot[0] === "winner" ? parent?.winner : parent?.loser;
+}
+
+function GameDraw({ draw, c, scene, onFixture }: DrawProps & { draw: Draw }) {
+  const [focusTeam, setFocusTeam] = useState(draw.teams.includes(c.team) ? c.team : "");
+  const [branch, setBranch] = useState("Верхняя сетка");
+  const [filter, setFilter] = useState("all");
+  function slotName(slot: Game["slots"][number]) {
+    const id = resolveSlot(draw,slot);
+    if (id) return c.teams[id] || scene.teams[id]?.name || id;
+    if (!Array.isArray(slot)) return "Свободный слот";
+    return (slot[0] === "winner" ? "Победитель" : "Проигравший") + " № " + (slot[1] + 1);
+  }
+  const indexed = draw.games.map((game, index) => ({ game, index }));
+  const branches = draw.format === "double" ? [...new Set(draw.games.map(g => g.label))] : [];
+  const activeBranch = branches.includes(branch) ? branch : branches[0];
+  const games = indexed.filter(({game}) => !activeBranch || game.label === activeBranch);
+  const rounds = [...new Set(games.map(({game}) => game.round))].sort((a,b) => a-b);
+  const next = new Map<number,string[]>();
+  for (const { game, index } of indexed) {
+    for (const slot of game.slots) {
+      if (!Array.isArray(slot)) continue;
+      const destinations = next.get(slot[1]) || [];
+      destinations.push((slot[0] === "winner" ? "Победа" : "Поражение") + " → № " + (index+1));
+      next.set(slot[1], destinations);
+    }
+  }
+  const fixtures = new Set([...c.history, ...c.queue].map(f => f.id));
+  return <section className="tournament-draw">
+    <div className="draw-toolbar">
+      <label>Выделить путь<select value={focusTeam} onChange={e => setFocusTeam(e.target.value)}>
+        <option value="">Все команды</option>
+        {draw.teams.map(id => <option key={id} value={id}>{c.teams[id] || id}</option>)}
+      </select></label>
+      <label>Раунды<select value={filter} onChange={e => setFilter(e.target.value)}>
+        <option value="all">Вся сетка</option>
+        {rounds.map(r => <option key={r} value={r}>Раунд {r + 1}</option>)}
+      </select></label>
     </div>
-  );
+    <div className="draw-context"><b>{draw.teams.length} команд</b><span>Проходят дальше · {draw.advance}</span>
+      {draw.teams.includes(c.team) && <span>Ваша команда · {c.club}</span>}</div>
+    {!!branches.length && <Tabs items={branches} value={activeBranch} change={value => {setBranch(value); setFilter("all");}}/>}
+    {(draw.format === "swiss" || draw.format === "roundRobin") && <div className="tc-standings" tabIndex={0} role="region" aria-label="Таблица группы">
+      <table className="simple-table"><thead><tr><th>Место</th><th>Команда</th><th>В</th><th>П</th>
+        <th>{draw.format === "swiss" ? "Бухгольц" : "± раундов"}</th></tr></thead>
+        <tbody>{draw.standings.map((row,index) => <tr key={row.team} data-focused={row.team === focusTeam}>
+          <td>{index + 1}</td><td><EntityName group="teams" id={row.team} fallback={c.teams[row.team]}/></td>
+          <td>{row.wins}</td><td>{row.losses}</td><td>{draw.format === "swiss" ? row.buchholz : row.roundDiff}</td>
+        </tr>)}</tbody></table>
+    </div>}
+    <div className="tc-bracket" role="region" aria-label="Сетка по раундам" tabIndex={0}>
+      {rounds.filter(r => filter === "all" || String(r) === filter).map(r => <section key={r} className="tc-round">
+        <h3>Раунд {r + 1}</h3>
+        {games.filter(({game}) => game.round === r).map(({ game, index }) =>
+          <article className="tc-pair" key={index} data-focused={!!focusTeam && game.slots.some(s => resolveSlot(draw,s) === focusTeam)}>
+            <small>{game.label} · № {index + 1}{game.date && " · " + date(game.date)}</small>
+            {game.slots.map((slot,i) => {
+              const id = resolveSlot(draw,slot);
+              return <div key={i} className={id && id === game.winner ? "tc-winner" : ""}>
+                {id ? <EntityName group="teams" id={id} fallback={slotName(slot)}/> : <b>{slotName(slot)}</b>}<span>{game.score?.[i] ?? "—"}</span>
+              </div>;
+            })}
+            {game.bye && <small>Проход без игры</small>}
+            {game.administrative && <small>{game.reason || "Технический результат"}</small>}
+            {game.historical && <small>До начала карьеры</small>}
+            {next.has(index) && <small className="draw-path">{next.get(index)!.join(" · ")}</small>}
+            {game.fixture && fixtures.has(game.fixture) && <button className="link-button" onClick={() => onFixture(game.fixture!)}>
+              {game.score ? "Протокол встречи" : "Подготовка и линия"}
+            </button>}
+          </article>)}
+      </section>)}
+    </div>
+    {draw.outputs && <p>Выход из стадии · {draw.outputs.map(slotName).join(" · ")}</p>}
+  </section>;
+}
+
+function TournamentStage({ phase, draws, ...props }: DrawProps & { phase: Phase; draws: Draw[] }) {
+  const [group, setGroup] = useState(Math.max(0, draws.findIndex(draw => draw.teams.includes(props.c.team))));
+  const active = draws[group] || draws[0];
+  if (!active) return null;
+  return <section className="surface panel-body tc-stage">
+    <h2>{phase.name}</h2>
+    <p>{formats[phase.format]} · BO{phase.bestOf} · {date(phase.start)} — {date(phase.end)}</p>
+    {draws.length > 1 && <label className="draw-group">Группа<select value={draws.indexOf(active)} onChange={e => setGroup(Number(e.target.value))}>
+      {draws.map((draw,index) => <option key={index} value={index}>Группа {index + 1} · {draw.teams.length} команд</option>)}
+    </select></label>}
+    <GameDraw key={group} draw={active} {...props}/>
+  </section>;
 }
 
 export function CompetitionCenter(props: Props) {
@@ -619,9 +687,18 @@ export function CompetitionCenter(props: Props) {
     revision,
   );
   const [picked, select] = useState(props.initialEdition || ""),
-    [tab, show] = useState(props.initialEntry ? "Моя заявка" : "Обзор"),
+    [tab, show] = useCareerViewTab(props.initialEntry ? "Моя заявка" : "Обзор"),
     [archive, setArchive] = useState(false);
   const [report, openReport] = useState("");
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [mapDetail, setMapDetail] = useState("");
+  const [requestedStage, setRequestedStage] = useState<number | null>(null);
+  useEffect(() => {
+    if (requestedStage === null) return;
+    document.getElementById("edition-stage-"+requestedStage)?.focus();
+    setRequestedStage(null);
+  }, [requestedStage, tab]);
+  const [participantQuery, setParticipantQuery] = useState("");
   const [region, filterRegion] = useState("Все регионы"),
     [search, filterName] = useState(""),
     [period, setPeriod] = useState(""),
@@ -629,11 +706,45 @@ export function CompetitionCenter(props: Props) {
   if (res.error || !res.data) return <Load {...res} />;
   const data = res.data,
     event = data.editions.find((e) => e.id === picked);
-  if (rankings) return <Rankings data={data} />;
+  if (rankings) return <Rankings {...{ data, c, scene }} />;
   if (!event)
     return (
       <>
-        <Heading title="Соревнования" sub="Календарь профессиональной сцены" />
+        <Heading
+          title="Соревнования"
+          eyebrow={"Сезон " + c.date.slice(0, 4)}
+          sub="Календарь, турнирные этапы и участие команды"
+        />
+        <MetricStrip
+          items={[
+            ["Соревнования", data.editions.length, "В календаре карьеры"],
+            [
+              "Участие команды",
+              data.editions.filter((e) =>
+                [
+                  "confirmed",
+                  "locked",
+                  "accepted",
+                  "playing",
+                  "qualified",
+                ].includes(e.entries[c.team]),
+              ).length,
+              c.club,
+            ],
+            [
+              "Регистрация",
+              data.editions.filter((e) => e.status === "registration").length,
+              "Открытые соревнования",
+            ],
+            [
+              "Форматы",
+              new Set(
+                data.editions.flatMap((e) => e.stages.map((s) => s.format)),
+              ).size,
+              "Включены в календарь",
+            ],
+          ]}
+        />
         <Tabs
           items={["Календарь турниров", "Архив"]}
           value={archive ? "Архив" : "Календарь турниров"}
@@ -716,7 +827,7 @@ export function CompetitionCenter(props: Props) {
                 className="surface tc-card"
                 key={e.id}
                 onClick={() => {
-                  select(e.id);
+                  (props.onEdition || select)(e.id);
                   show("Обзор");
                 }}
               >
@@ -730,7 +841,7 @@ export function CompetitionCenter(props: Props) {
                   />
                   <small>
                     {e.organizer} · {e.region}
-                    <span className="tc-state">{status[e.status]}</span>
+                    <span className="tc-state" data-tone={statusTone(e.status)}>{status[e.status] || e.status}</span>
                   </small>
                 </span>
                 <strong>{e.title}</strong>
@@ -742,11 +853,11 @@ export function CompetitionCenter(props: Props) {
                 {e.feeds && !!e.advanced?.length && (
                   <b>
                     Прошли отбор ·{" "}
-                    {e.advanced.map((t) => c.teams[t]).join(", ")}
+                    <span className="qualification-teams">{e.advanced.map(t=><EntityName key={t} group="teams" id={t} fallback={c.teams[t]} link={false}/>)}</span>
                   </b>
                 )}
                 {!e.feeds && e.placements?.[0] && (
-                  <b>Победитель · {c.teams[e.placements[0]]}</b>
+                  <b>Победитель · <EntityName group="teams" id={e.placements[0]} fallback={c.teams[e.placements[0]]} link={false}/></b>
                 )}
               </button>
             ))}
@@ -766,159 +877,308 @@ export function CompetitionCenter(props: Props) {
     t.damage += r.damage;
   }
   const fixture = c.history.find((e) => e.id === report);
+  const lastDrawn = event.draws.reduce((last, draws, index) => draws.length ? index : last, -1);
+  const stage = event.stages[Math.max(0,lastDrawn)];
+  const upcoming = c.queue.find(
+    (e) => e.edition === picked && e.teams.includes(c.team),
+  );
+  const record = event.draws[lastDrawn]
+    ?.flatMap((draw) => draw.standings)
+    .find((row) => row.team === c.team);
+  const matchDay =
+    upcoming &&
+    new Date(upcoming.date + "T12:00:00Z").toLocaleDateString("ru", {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    });
+  const mark = eventMark(event.id, event.organizer);
+  const groupStage = (format: string) =>
+    ["roundRobin", "swiss", "gsl", "doubleGroups"].includes(format);
   return (
-    <>
-      <button className="link-button" onClick={() => select("")}>
-        ← Все соревнования
+    <div className="cp-module">
+      <button
+        className="cp-back"
+        onClick={() => (props.onEdition || select)("")}
+      >
+        <Icon name="back" />
+        Все соревнования
       </button>
-      <div className="tc-title">
-        <CompetitionMark
-          mark={eventMark(event.id, event.organizer)}
-          name={event.title}
-          cycle={event.id}
-          year={event.year}
-          size={75}
-        />
-        <Heading
-          title={event.title}
-          sub={event.place + " · " + span(event.start, event.end)}
-        />
-      </div>
-      <div className="tc-facts surface">
-        {[
-          [event.organizer, "Организатор"],
-          [purse(event), "Призовой фонд"],
-          [event.capacity, "Команд"],
-          ["Тир " + event.prestige, "Игровой престиж"],
-        ].map(([a, b]) => (
-          <div key={b}>
-            <small>{b}</small>
-            <b>
-              {b === "Организатор" && (
-                <CompetitionMark
-                  mark={"org-" + event.organizer.toLowerCase()}
-                  name={event.organizer}
-                  size={27}
-                />
-              )}
-              {a}
-            </b>
+      <div className="cp-tournament-hero">
+        {["major", "contenders", "eu14", "blast"].includes(mark) ? (
+          <Mark mark={mark as "major"} size={112} />
+        ) : (
+          <CompetitionMark
+            mark={mark}
+            name={event.title}
+            cycle={event.id}
+            year={event.year}
+            size={112}
+          />
+        )}
+        <div>
+          <p className="cp-eyebrow">
+            СЕЗОН {event.year} · {event.organizer}
+          </p>
+          <h1>{event.title}</h1>
+          <p>
+            {span(event.start, event.end)} · {event.place}
+          </p>
+          <div className="cp-inline">
+            <Badge tone={statusTone(event.status)}>{status[event.status] || event.status}</Badge>
+            <Badge>
+              {event.stages
+                .map((s) => formats[s.format] || s.format)
+                .filter((f, i, a) => a.indexOf(f) === i)
+                .join(" / ")}
+            </Badge>
           </div>
-        ))}
+        </div>
+        <div className="cp-prize">
+          <span>Призовой фонд</span>
+          <b>{purse(event)}</b>
+          <span>{event.capacity} команд</span>
+        </div>
       </div>
-      <Tabs
+      <ApprovedTabs
         items={[
           "Обзор",
           "Участники",
-          "Сетки",
-          "Матчи",
+          "Группы",
+          "Сетка",
+          "Расписание",
+          "Результаты",
           "Статистика",
+          "История",
           "Моя заявка",
         ]}
         value={tab}
-        change={show}
+        onChange={show}
       />
       {tab === "Обзор" && (
-        <section className="surface panel-body">
-          <h2>Регламент</h2>
-          <p>
-            {status[event.status]} · {admission[event.admission]} ·{" "}
-            {event.simulated ? "Игровой сезон" : "Календарь организатора"}.
-          </p>
-          <p>
-            Фиксация состава {date(event.lock)}. Запасных до{" "}
-            {event.rules.reserves}. Тактических тайм-аутов на карту:{" "}
-            {event.rules.timeouts}.
-          </p>
-          <details>
-            <summary>Пул карт, veto и стартовые стороны</summary>
-            <p>{event.rules.pool.map((m) => m.slice(3)).join(" · ")}</p>
-            <p>
-              Первый ход получает{" "}
-              {event.rules.first === "draw"
-                ? "победитель жеребьёвки"
-                : event.rules.first === "home"
-                  ? "команда A"
-                  : "команда B"}
-              . На выбранной карте стартовую сторону определяет{" "}
-              {event.rules.pickSide === "opponent" ? "соперник" : "автор пика"}.
-              На решающей карте выбирает{" "}
-              {event.rules.deciderSide === "first" ? "первая" : "вторая"}{" "}
-              сторона veto.
-            </p>
-            {Object.entries(event.rules.formats).map(([bo, steps]) => (
-              <p key={bo}>
-                <b>BO{bo}</b> ·{" "}
-                {steps
-                  .map((s, i) => {
-                    const actor = typeof s === "string" ? i % 2 : s.actor;
-                    const kind = typeof s === "string" ? s : s.kind;
-                    return (
-                      (actor ? "B" : "A") +
-                      " " +
-                      (kind === "pick" ? "пик" : "бан")
-                    );
-                  })
-                  .join(" → ")}
+        <>
+          {event.status==="finished" && !event.feeds && event.placements?.[0] && <section className="honours-strip" aria-label="Победитель турнира">
+            <Icon name="trophy" size={30}/><div><small>Чемпион турнира</small><strong><EntityName group="teams" id={event.placements[0]} fallback={c.teams[event.placements[0]]}/></strong></div>
+            {event.mvp && event.stats[event.mvp] && <div className="honours-award"><div><small>MVP турнира</small><EntityName group="players" id={event.mvp} historicalTeam={event.stats[event.mvp].team} recordedName={event.stats[event.mvp].name}/></div></div>}
+          </section>}
+          {event.feeds && event.status==="finished" && !!event.advanced?.length && <section className="honours-strip qualification-strip" aria-label="Прошли отбор">
+            <Icon name="flag" size={25}/><div><small>Прошли отбор</small><div className="qualification-teams">{event.advanced.map(team=>
+              <EntityName key={team} group="teams" id={team} fallback={c.teams[team]}/>)}</div></div>
+            <Button onClick={()=>(props.onEdition || select)(event.feeds!)}>Открыть основной турнир</Button>
+          </section>}
+          <ol className="edition-course" aria-label="Ход соревнования">{event.stages.map((phase,index)=>{
+            const drawReady = !!event.draws[index]?.length;
+            const current = event.status === "playing" && drawReady && stage === phase;
+            const done = drawReady && (index < lastDrawn || event.status === "finished");
+            const state = current ? "Идёт сейчас" : done ? "Завершена" : event.status==="cancelled" ? "Отменена" : event.status==="finished" ? "Нет сыгранной сетки" : "Ожидает сетку";
+            const content = <><small>{state}</small><strong>{phase.name}</strong>
+              <span>{formats[phase.format] || phase.format} · BO{phase.bestOf}</span><time>{span(phase.start,phase.end)}</time></>;
+            return <li key={index} data-state={current ? "live" : done ? "done" : "upcoming"}>{drawReady
+              ? <button aria-label={phase.name+" · "+state+" · открыть сетку"} onClick={()=>{
+                  setRequestedStage(index);show(groupStage(phase.format) ? "Группы" : "Сетка");
+                }}>{content}<Icon name="arrow" size={15}/></button> : <div>{content}</div>}</li>;
+          })}</ol>
+          <div className="cp-two-col">
+            <Panel title="На повестке тренера">
+              <div className="cp-callout">
+                <Icon name="calendar" />
+                <div>
+                  <strong>
+                    {upcoming
+                      ? "Встреча с " +
+                        c.teams[upcoming.teams.find((t) => t !== c.team)!]
+                      : "Положение команды"}
+                  </strong>
+                  <p>
+                    {upcoming
+                      ? "Подготовка к серии: состав, маппул и анализ соперника."
+                      : status[event.entries[c.team]] || "Команда не заявлена."}
+                  </p>
+                  <Button
+                    variant="primary"
+                    onClick={() =>
+                      upcoming ? props.prepare(upcoming.id) : show("Моя заявка")
+                    }
+                  >
+                    {upcoming ? "Подготовить команду" : "Открыть заявку"}
+                  </Button>
+                </div>
+              </div>
+              <div className="cp-metrics">
+                <Stat
+                  label={record ? "Счёт этапа" : "Стадия"}
+                  value={
+                    record
+                      ? record.wins + "–" + record.losses
+                      : stage?.name || status[event.status]
+                  }
+                />
+                <Stat label="Встреча" value={matchDay || "—"} />
+                <Stat label="Проходят" value={stage?.advance || "—"} />
+              </div>
+            </Panel>
+            <Panel title="Регламент издания">
+              <dl className="cp-definition">
+                {[
+                  ["Формат встречи", "BO" + (stage?.bestOf || 1) + " · MR12"],
+                  ["Тайм-ауты", event.rules.timeouts + " на карту"],
+                  ["Команды тренера", "Только в разрешённое окно"],
+                  ["Резерв", event.rules.reserves + " игроков"],
+                  ["Фиксация состава", date(event.lock)],
+                ].map(([k, v]) => (
+                  <div key={k}>
+                    <dt>{k}</dt>
+                    <dd>{v}</dd>
+                  </div>
+                ))}
+              </dl>
+              <Button onClick={() => setRulesOpen(true)}>
+                Развернуть правила
+              </Button>
+            </Panel>
+          </div>
+          <Panel title="Пул карт">
+            <div className="cp-map-chips">
+              {event.rules.pool.map((m) => (
+                <button key={m} onClick={() => setMapDetail(m)}>
+                  <img
+                    src={serverURL("/api/maps/" + m + "/radar.png").href}
+                    alt=""
+                  />
+                  <span>{m.replace(/^de_/, "")}</span>
+                </button>
+              ))}
+            </div>
+          </Panel>
+          {mapDetail && (
+            <Dialog title={mapDetail} close={() => setMapDetail("")}>
+              <img
+                src={serverURL("/api/maps/" + mapDetail + "/radar.png").href}
+                alt={"Радар " + mapDetail}
+              />
+            </Dialog>
+          )}
+          {rulesOpen && (
+            <Dialog title="Правила издания" close={() => setRulesOpen(false)}>
+              <p>
+                {status[event.status]} · {admission[event.admission]} ·{" "}
+                {event.simulated ? "Игровой сезон" : "Календарь организатора"}.
               </p>
-            ))}
-          </details>
-          {event.snapshot && (
-            <p>Снимок для приглашений · {date(event.snapshot)}</p>
-          )}
-          {event.seedSnapshot && (
-            <p>Снимок для посева · {date(event.seedSnapshot)}</p>
-          )}
-          {event.stages.map((s) => (
-            <p key={s.name}>
-              <b>{s.name}</b> · {formats[s.format]} · BO{s.bestOf}
-              {s.format === "swiss" && s.bestOf === 1 ? " / BO3" : ""}
-              {s.finalBO ? " · финал BO" + s.finalBO : ""}
-              {s.secondPlaceBO ? " · решающий BO" + s.secondPlaceBO : ""} ·{" "}
-              {span(s.start, s.end)}
-            </p>
-          ))}
-          <p>
-            <a href={event.source} target="_blank" rel="noreferrer">
-              Источник регламента ↗
-            </a>
-          </p>
-          {event.bookingFee && (
-            <p>
-              Взнос по регламенту {event.bookingFee}. Одна команда от
-              организации. Фонд зависит от числа допущенных составов.
-            </p>
-          )}
-          {event.modelStages && (
-            <p>
-              Окна стадий, регламент матчей и распределение выплат следуют
-              игровой проекции Major.
-            </p>
-          )}
-          {event.modelDeadlines && (
-            <p>Дедлайн регистрации задан календарём карьеры.</p>
-          )}
-          {event.modelDates && (
-            <p>
-              Окно отбора, размер сетки и дедлайн заданы календарём карьеры.
-            </p>
-          )}
-          {event.reason && <p>{event.reason}</p>}
-          {!!event.prizes.length && (
-            <details>
-              <summary>Распределение призовых</summary>
-              {event.prizes.map((n, i) => (
-                <p key={i}>
-                  {i + 1} место · {money(n)}
-                  {event.clubRewards &&
-                    " + " + money(event.clubRewards[i]) + " клубу"}{" "}
-                  {event.placements?.[i] &&
-                    " · " + c.teams[event.placements[i]]}
+              <p>
+                Фиксация состава {date(event.lock)}. Запасных до{" "}
+                {event.rules.reserves}. Тактических тайм-аутов на карту:{" "}
+                {event.rules.timeouts}.
+              </p>
+              <details>
+                <summary>Пул карт, veto и стартовые стороны</summary>
+                <p>{event.rules.pool.map((m) => m.slice(3)).join(" · ")}</p>
+                <p>
+                  Первый ход получает{" "}
+                  {event.rules.first === "draw"
+                    ? "победитель жеребьёвки"
+                    : event.rules.first === "home"
+                      ? "команда A"
+                      : "команда B"}
+                  . На выбранной карте стартовую сторону определяет{" "}
+                  {event.rules.pickSide === "opponent"
+                    ? "соперник"
+                    : "автор пика"}
+                  . На решающей карте выбирает{" "}
+                  {event.rules.deciderSide === "first" ? "первая" : "вторая"}{" "}
+                  сторона veto.
+                </p>
+                {Object.entries(event.rules.formats).map(([bo, steps]) => (
+                  <p key={bo}>
+                    <b>BO{bo}</b> ·{" "}
+                    {steps
+                      .map((s, i) => {
+                        const actor = typeof s === "string" ? i % 2 : s.actor;
+                        const kind = typeof s === "string" ? s : s.kind;
+                        return (
+                          (actor ? "B" : "A") +
+                          " " +
+                          (kind === "pick" ? "пик" : "бан")
+                        );
+                      })
+                      .join(" → ")}
+                  </p>
+                ))}
+              </details>
+              {event.snapshot && (
+                <p>Снимок для приглашений · {date(event.snapshot)}</p>
+              )}
+              {event.seedSnapshot && (
+                <p>Снимок для посева · {date(event.seedSnapshot)}</p>
+              )}
+              {event.stages.map((s) => (
+                <p key={s.name}>
+                  <b>{s.name}</b> · {formats[s.format]} · BO{s.bestOf}
+                  {s.format === "swiss" && s.bestOf === 1 ? " / BO3" : ""}
+                  {s.finalBO ? " · финал BO" + s.finalBO : ""}
+                  {s.secondPlaceBO
+                    ? " · решающий BO" + s.secondPlaceBO
+                    : ""} · {span(s.start, s.end)}
                 </p>
               ))}
-            </details>
+              <p>
+                <a href={event.source} target="_blank" rel="noreferrer">
+                  Источник регламента ↗
+                </a>
+              </p>
+              {event.bookingFee && (
+                <p>
+                  Взнос по регламенту {event.bookingFee}. Одна команда от
+                  организации. Фонд зависит от числа допущенных составов.
+                </p>
+              )}
+              {event.modelStages && (
+                <p>
+                  Окна стадий, регламент матчей и распределение выплат следуют
+                  игровой проекции Major.
+                </p>
+              )}
+              {event.modelDeadlines && (
+                <p>Дедлайн регистрации задан календарём карьеры.</p>
+              )}
+              {event.modelDates && (
+                <p>
+                  Окно отбора, размер сетки и дедлайн заданы календарём карьеры.
+                </p>
+              )}
+              {event.reason && <p>{event.reason}</p>}
+              {!!event.prizes.length && (
+                <details>
+                  <summary>Распределение призовых</summary>
+                  {event.prizes.map((n, i) => (
+                    <p key={i}>
+                      {i + 1} место · {money(n)}
+                      {event.clubRewards &&
+                        " + " + money(event.clubRewards[i]) + " клубу"}{" "}
+                      {event.placements?.[i] &&
+                        " · " + c.teams[event.placements[i]]}
+                    </p>
+                  ))}
+                </details>
+              )}
+            </Dialog>
           )}
-        </section>
+        </>
+      )}
+      {tab === "История" && (
+        <Panel title="История издания">
+          <p>
+            {span(event.start, event.end)} · {event.title}
+          </p>
+          {event.placements?.length ? (
+            event.placements.map((t, i) => (
+              <p key={t}>
+                {i + 1}. <EntityName group="teams" id={t} fallback={c.teams[t]}/>
+              </p>
+            ))
+          ) : (
+            <p>Итоговые места ещё не определены.</p>
+          )}
+        </Panel>
       )}
       {tab === "Моя заявка" && (
         <Registration
@@ -936,107 +1196,150 @@ export function CompetitionCenter(props: Props) {
         />
       )}
       {tab === "Участники" && (
-        <section className="surface panel-body">
-          {Object.keys(event.entries).length === 0 && <p>Заявок пока нет.</p>}
-          {Object.entries(event.entries).map(([t, state]) => {
-            const entry = event.registrations[t]?.at(-1);
-            return (
-              <details key={t} className="tc-team">
-                <summary>
-                  <Avatar name={c.teams[t]} {...scene.teams[t]?.visual} />
-                  <b>{c.teams[t]}</b> · {status[state]}
-                </summary>
-                {entry && (
-                  <>
-                    <p>
-                      {entry.players
-                        .map((p) => scene.players[p]?.name)
-                        .join(" · ")}
-                    </p>
-                    <p>
-                      Запасные:{" "}
-                      {entry.reserves
-                        .map((p) => scene.players[p]?.name)
-                        .join(", ") || "нет"}{" "}
-                      · Тренер:{" "}
-                      {entry.coach
-                        ? scene.staff[entry.coach]?.name
-                        : "не заявлен"}{" "}
-                      · Версия {entry.version}
-                    </p>
-                  </>
-                )}
-              </details>
-            );
-          })}
-        </section>
-      )}
-      {tab === "Сетки" && (
         <>
-          {!event.draws.length && (
-            <p>Жеребьёвка после фиксации составов {date(event.lock)}.</p>
-          )}
-          {event.draws.map((draws, i) => (
-            <section key={i}>
-              <h2>{event.stages[i].name}</h2>
-              {draws.map((d, j) => (
-                <details
-                  className="surface panel-body"
-                  key={j}
-                  open={i === event.draws.length - 1}
-                >
-                  <summary>
-                    {draws.length > 1 ? "Группа " + (j + 1) : formats[d.format]}{" "}
-                    · {d.teams.length} команд
-                  </summary>
-                  {(d.format === "swiss" ||
-                    d.format === "roundRobin" ||
-                    draws.length > 1) && (
-                    <table className="simple-table">
-                      <thead>
-                        <tr>
-                          <th>Команда</th>
-                          <th>В</th>
-                          <th>П</th>
-                          {d.format === "roundRobin" && <th>± раундов</th>}
-                          {d.format === "swiss" && <th>Бухгольц</th>}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {d.standings.map((r) => (
-                          <tr key={r.team}>
-                            <td>{c.teams[r.team]}</td>
-                            <td>{r.wins}</td>
-                            <td>{r.losses}</td>
-                            {d.format === "roundRobin" && (
-                              <td>{r.roundDiff}</td>
-                            )}
-                            {d.format === "swiss" && <td>{r.buchholz}</td>}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                  <GameDraw draw={d} c={c} />
-                </details>
-              ))}
-            </section>
-          ))}
+          <div className="cp-filters">
+            <Field label="Команда или игрок">
+              <input
+                type="search"
+                placeholder="Поиск по заявкам"
+                value={participantQuery}
+                onChange={(e) => setParticipantQuery(e.target.value)}
+              />
+            </Field>
+            <Badge>
+              {Object.keys(event.entries).length} команд в списке заявок
+            </Badge>
+          </div>
+          <div className="cp-participants">
+            {Object.entries(event.entries)
+              .filter(([t]) => {
+                const entry = event.registrations[t]?.at(-1);
+                return [
+                  c.teams[t] || t,
+                  ...(entry?.players || []).map(
+                    (id) => scene.players[id]?.name || id,
+                  ),
+                ]
+                  .join(" ")
+                  .toLowerCase()
+                  .includes(participantQuery.toLowerCase().trim());
+              })
+              .map(([t, state]) => {
+                const entry = event.registrations[t]?.at(-1);
+                const view = () => props.open({ group: "teams", id: t });
+                return (
+                  <article key={t}>
+                    <div className="cp-split">
+                      <button className="cp-team-link" onClick={view}>
+                        <TeamLogo
+                          name={c.teams[t] || t}
+                          visual={scene.teams[t]?.visual}
+                          size={44}
+                        />
+                        {c.teams[t] || t}
+                      </button>
+                      <Badge
+                        tone={
+                          ["locked", "confirmed", "playing"].includes(state)
+                            ? "green"
+                            : "neutral"
+                        }
+                      >
+                        {status[state] || state}
+                      </Badge>
+                    </div>
+                    <div className="cp-roster-links">
+                      {entry ? (
+                        entry.players.map((id) => (
+                          <button
+                            className="cp-person-link"
+                            key={id}
+                            onClick={() => props.open({ group: "players", id })}
+                          >
+                            {scene.players[id]?.name || id}
+                          </button>
+                        ))
+                      ) : (
+                        <span className="cp-muted">
+                          Пятёрка ещё не зарегистрирована
+                        </span>
+                      )}
+                    </div>
+                    {entry && (
+                      <details>
+                        <summary>
+                          Версия {entry.version} · {date(entry.date)}
+                        </summary>
+                        <p>
+                          Запасные ·{" "}
+                          {entry.reserves
+                            .map((id) => scene.players[id]?.name || id)
+                            .join(", ") || "нет"}
+                        </p>
+                        <p>
+                          Тренер ·{" "}
+                          {entry.coach
+                            ? scene.staff[entry.coach]?.name
+                            : "не заявлен"}
+                        </p>
+                      </details>
+                    )}
+                    <div className="cp-split">
+                      <span className="cp-muted">
+                        {t === c.team ? "Ваша команда" : scene.teams[t]?.region}
+                      </span>
+                      <Button onClick={view}>Полная карточка</Button>
+                    </div>
+                  </article>
+                );
+              })}
+          </div>
+          {!Object.keys(event.entries).length && <p>Заявок пока нет.</p>}
         </>
       )}
-      {tab === "Матчи" && (
+      {["Группы", "Сетка"].includes(tab) && (
+        <>
+          {!event.draws.some(
+            (d, i) =>
+              d.length &&
+              groupStage(event.stages[i].format) === (tab === "Группы"),
+          ) && <p>Для выбранного раздела сетка ещё не сформирована.</p>}
+          {event.draws.map(
+            (draws, i) =>
+              groupStage(event.stages[i].format) === (tab === "Группы") && (
+                <div key={event.id+"-"+i} id={"edition-stage-"+i} className="edition-stage-target" tabIndex={-1}><TournamentStage
+                  phase={event.stages[i]}
+                  draws={draws}
+                  c={c}
+                  scene={scene}
+                  onFixture={(id) => {
+                    if (c.history.some((f) => f.id === id)) {
+                      openReport(id);
+                      show("Результаты");
+                    } else props.prepare(id);
+                  }}
+                /></div>
+              ),
+          )}
+        </>
+      )}
+      {["Расписание", "Результаты"].includes(tab) && (
         <section className="surface panel-body">
-          {event.draws
-            .flat()
-            .flatMap((d) => d.games.filter((g) => g.historical))
-            .map((g, i) => (
-              <div className="tc-result" key={"history" + i}>
-                <small>{date(g.date!)} · до начала карьеры</small>
-                <b>{g.slots.map((t) => c.teams[t as string]).join(" — ")}</b>
-                <span>{g.score?.join(" : ")}</span>
-              </div>
-            ))}
-          {[...c.history, ...c.queue]
+          {tab === "Результаты" &&
+            event.draws
+              .flat()
+              .flatMap((draw) => draw.games.filter((g) => g.historical).map(game=>({draw,game})))
+              .map(({draw,game:g}, i) => (
+                <div className="tc-result" key={"history" + i}>
+                  <small>{date(g.date!)} · до начала карьеры</small>
+                  <b>{g.slots.map((slot,index)=>{
+                    const id = resolveSlot(draw,slot);
+                    return <span key={index}>{index>0 && " — "}{id ? <EntityName group="teams" id={id} fallback={c.teams[id]}/> : "Участник не определён"}</span>;
+                  })}</b>
+                  <span>{g.score?.join(" : ")}</span>
+                </div>
+              ))}
+          {(tab === "Результаты" ? c.history : c.queue)
             .filter((e) => e.edition === picked)
             .map((e) => (
               <div key={e.id} className="tc-result">
@@ -1052,8 +1355,16 @@ export function CompetitionCenter(props: Props) {
                     {date(e.date)} · BO{e.bestOf}
                   </small>
                 </span>
-                <b>{e.teams.map((t) => c.teams[t]).join(" — ")}</b>
-                {!e.score && !e.teams.includes(c.team) && (
+                <b><FixtureTeams teams={e.teams} names={c.teams}/></b>
+                {!fixtureScore(e) && (
+                  <button
+                    className="btn sm"
+                    onClick={() => props.prepare(e.id)}
+                  >
+                    Подготовка и линия
+                  </button>
+                )}
+                {!fixtureScore(e) && !e.teams.includes(c.team) && (
                   <button
                     className="btn sm"
                     disabled={!enabled || !!c.progress}
@@ -1068,9 +1379,9 @@ export function CompetitionCenter(props: Props) {
                       : "Остановиться перед матчем"}
                   </button>
                 )}
-                {e.score && (
+                {fixtureScore(e) && (
                   <button className="btn sm" onClick={() => openReport(e.id)}>
-                    {e.score.join(" : ")} · Протокол
+                    {fixtureScore(e)} · Протокол
                   </button>
                 )}
               </div>
@@ -1078,6 +1389,7 @@ export function CompetitionCenter(props: Props) {
           {!event.draws.length && <p>Расписание появится после жеребьёвки.</p>}
           {fixture && (
             <MatchReport
+              careerId={c.id}
               event={fixture}
               teams={c.teams}
               close={() => openReport("")}
@@ -1094,12 +1406,9 @@ export function CompetitionCenter(props: Props) {
             </p>
           ) : (
             <>
-              {event.mvp && (
-                <p>
-                  MVP турнира · <b>{event.stats[event.mvp].name}</b> ·
-                  максимальный ADR
-                </p>
-              )}
+              {event.mvp && event.stats[event.mvp] && <div className="honours-strip"><Icon name="trophy"/>
+                <div><small>MVP турнира · максимальный ADR</small><EntityName group="players" id={event.mvp} recordedName={event.stats[event.mvp].name} historicalTeam={event.stats[event.mvp].team}/></div>
+              </div>}
               <div className="table-wrap">
                 <table className="simple-table">
                   <thead>
@@ -1115,8 +1424,8 @@ export function CompetitionCenter(props: Props) {
                   <tbody>
                     {rows.map(([p, r]) => (
                       <tr key={p}>
-                        <td>{r.name}</td>
-                        <td>{c.teams[r.team]}</td>
+                        <td><EntityName group="players" id={p} recordedName={r.name} historicalTeam={r.team}/></td>
+                        <td><EntityName group="teams" id={r.team} fallback={c.teams[r.team]}/></td>
                         <td>{r.k}</td>
                         <td>{r.d}</td>
                         <td>{r.a}</td>
@@ -1129,7 +1438,7 @@ export function CompetitionCenter(props: Props) {
               <h2>Команды</h2>
               {Object.entries(teamStats).map(([t, r]) => (
                 <p key={t}>
-                  {c.teams[t]} · {r.k} убийств · {r.d} смертей · {r.damage}{" "}
+                  <EntityName group="teams" id={t} fallback={c.teams[t]}/> · {r.k} убийств · {r.d} смертей · {r.damage}{" "}
                   урона
                 </p>
               ))}
@@ -1137,6 +1446,6 @@ export function CompetitionCenter(props: Props) {
           )}
         </section>
       )}
-    </>
+    </div>
   );
 }

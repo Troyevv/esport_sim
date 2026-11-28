@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic_core import to_json
 from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
-from . import training, training_center, competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
+from . import forecast, staff, career_store, performance, training, training_center, competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
@@ -271,7 +271,7 @@ def create_app(
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
         if request.url.path.startswith("/api/"):
-            response.headers["Cache-Control"] = "no-store"
+            response.headers.setdefault("Cache-Control", "no-store")
         return response
 
     @app.get("/api/capabilities")
@@ -393,25 +393,74 @@ def create_app(
         if not active or active["id"] != career_id:
             raise HTTPException(404, "Карьера уже сменилась")
         pack = store.careers.pack(active["source"])
-        return career_scene.directory(pack, store.badges.index(pack), store.portraits, active.get("office", {}).get("positions"))
+        return career_scene.directory(pack, store.badges.index(pack), store.portraits,
+                                      active["team"], active.get("office", {}).get("positions"))
 
     @app.get("/api/career/options/{key}/{revision}")
     async def career_options(key: str, revision: int):
         try:
-            return career.choices(app.state.store.careers.pack(competition_scene.source(key, revision)))
+            store = app.state.store
+            pack = store.careers.pack(competition_scene.source(key, revision))
+            options = career.choices(pack)
+            badges = store.badges.index(pack)
+            for team in options["teams"]:
+                tid = team["id"]
+                team["visual"] = career_scene.identity(pack, badges, "teams", tid, pack["teams"][tid])["visual"]
+            return options
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
 
+    @app.get("/api/career/{career_id}/prematch/{fixture}")
+    async def prematch(career_id: str, fixture: str):
+        c, pack = scouting_career(career_id)
+        event = next((e for e in c["queue"] if e["id"] == fixture and e["kind"] == "match" and not e.get("pcw")), None)
+        if event is None:
+            raise HTTPException(404, "Встреча отсутствует в текущем календаре")
+        def prepare():
+            public, quote = forecast.opening(c, pack, event, min(c["date"],event["date"]))
+            quotes = list(event.get("forecasts", []))
+            forecast.remember(quotes,quote)
+            assigned = []
+            if c["team"] in event["teams"]:
+                assigned = [j for j in staff.day_plan(c,pack,c["team"],event["date"]) if j["event"] == event["id"]]
+            specialist = next((j for j in assigned if j["duty"] == "opponent"),None)
+            advice = None
+            if specialist:
+                rival = next(t for t in event["teams"] if t != c["team"])
+                evidence = public["evidence"][rival]
+                minimum = max(2, 6-specialist["quality"]//20)
+                known = [m for m,r in evidence.items() if r["games"] >= minimum]
+                order = sorted(known, key=lambda m: (evidence[m]["weightedWins"]+3)/(evidence[m]["weight"]+6))
+                advice = dict(author=specialist["name"], minimum=minimum,
+                              strongest=order[-1] if order else None, weakest=order[0] if len(order)>1 else None)
+            return dict(**public, forecasts=quotes, advice=advice,
+                        staff=[{k:j[k] for k in ("duty","name","due")} for j in assigned],
+                        calibration=forecast.calibration(c["history"]))
+        return await asyncio.to_thread(prepare)
+
+    @app.get("/api/career/{career_id}/performance/{group}/{subject}")
+    async def career_performance(career_id: str, group: Literal["teams", "players"], subject: str,
+                                 since: str = "", edition: str = "", map_id: str = ""):
+        c, pack = scouting_career(career_id)
+        if subject not in pack[group]:
+            raise HTTPException(404, "Запись отсутствует в редакции карьеры")
+        # Pin the active career at request time. Read its immutable reports off the match clock thread.
+        path = app.state.store.db.execute("PRAGMA database_list").fetchone()[2]
+
+        return await asyncio.to_thread(career_store.profile_performance, path, c, pack, group, subject,
+                                       since, edition, map_id)
+
+    @app.get("/api/career/{career_id}/report/{event_id}")
     @app.get("/api/career/report/{event_id}")
-    async def career_report(event_id: str):
+    async def career_report(event_id: str, career_id: str | None = None):
         store = app.state.store
         c = store.read().get("career")
-        if not c:
+        if not c or (career_id is not None and career_id != c["id"]):
             raise HTTPException(404, "Отчёт не найден")
         practices = (e for e in c["training"]["practice"] if e.get("result") and c["team"] in e["teams"])
         for event in reversed([*c["history"], *practices]):
             if event["id"] == event_id:
-                return store.careers.historical_report(c, event)
+                return performance.annotate(store.careers.historical_report(c, event), c["team"])
         raise HTTPException(404, "Отчёт не найден")
 
     @app.get("/api/maps")
@@ -426,7 +475,7 @@ def create_app(
         path=cs2_maps.root()/name/(name+("_lower" if layer=="lower" else "")+".png")
         if not path.is_file():
             raise HTTPException(404,"Радар выбранного этажа отсутствует")
-        return FileResponse(path,media_type="image/png")
+        return FileResponse(path, media_type="image/png", headers={"Cache-Control":"private, max-age=3600"})
 
     @app.post("/api/maps/{name}/surface")
     def surface_points(name: str, body: dict):

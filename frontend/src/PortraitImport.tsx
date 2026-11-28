@@ -4,6 +4,7 @@ import { refreshWardrobe } from "./wardrobe";
 import { refKey, type Pack } from "./databaseModel";
 type Status = {
   state: string;
+  lineupCount?:number;
   pack?: string;
   revision?: number;
   message?: string;
@@ -31,15 +32,16 @@ async function api(path: string, body?: object) {
 }
 export function PortraitImport({
   pack,
-  onRefresh,
+  onRefresh, initiallyOpen=false,
 }: {
+  initiallyOpen?:boolean;
   pack: Pack;
   onRefresh: () => Promise<void>;
 }) {
   const [status, setStatus] = useState<Status | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [open, setOpen] = useState(false);
+    [open, setOpen] = useState(initiallyOpen);
   const refreshing = useRef(onRefresh);
   refreshing.current = onRefresh;
   const previous = useRef(-1);
@@ -78,14 +80,15 @@ export function PortraitImport({
     };
   }, [open, pack.id, pack.revision]);
   const [installed, setInstalled] = useState<number | null>(null);
+  const [hasLineup,setHasLineup] = useState(false);
   const [kitCount, setKitCount] = useState(0);
-  async function installFile(file: File) {
+  async function installFile(file: File, lineup=false) {
     setError("");
     setInstalled(null);
     setBusy(true);
     try {
       const response = await fetch(
-        serverURL("/api/portraits/" + refKey(pack) + "/offline"),
+        serverURL(lineup ? "/api/portraits/lineup-photos" : "/api/portraits/" + refKey(pack) + "/offline"),
         {
           method: "POST",
           credentials: "include",
@@ -97,6 +100,7 @@ export function PortraitImport({
         throw Error(result.detail || "Не удалось установить личные портреты");
       await onRefresh();
       await refreshWardrobe();
+      if (lineup) setHasLineup(true);
       setKitCount(result.kits || 0);
       setInstalled(result.installed);
     } catch (e) {
@@ -127,7 +131,7 @@ export function PortraitImport({
   const total = Object.values(c).reduce((a, b) => a + b, 0);
   return (
     <details
-      className="db-import-studio"
+      className="db-import-studio" open={open}
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >
       <summary>Студийные портреты</summary>
@@ -150,6 +154,14 @@ export function PortraitImport({
             }}
           />
         </label>
+        <label>Личные фотографии составов R5.7 (.zip)
+          <input type="file" accept=".zip" disabled={busy || running} onChange={e=>{
+            const file=e.currentTarget.files?.[0];
+            e.currentTarget.value="";
+            if (file) void installFile(file,true);
+          }}/></label>
+        <small>Подходит ZIP утверждённого макета или отдельный ZIP с 11 фотографиями из его папки players.</small>
+        {(hasLineup || (status?.lineupCount ?? 0) > 0) && <a href={serverURL("/api/portraits/lineup-photos.zip").href} download>Скачать отдельный личный ZIP</a>}
         {kitCount > 0 && (
           <p role="status">Подключено комплектов формы: {kitCount}</p>
         )}

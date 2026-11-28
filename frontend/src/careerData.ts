@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { createContext, useState, useEffect } from "react";
 import { serverURL } from "./session";
 import type { Office } from "./StaffOffice";
 import type { Visual } from "./SceneIdentity";
@@ -19,6 +19,7 @@ export type Summary = {
 export const fixtureMap = (e: Fixture) => e.bestOf ? "Map Veto" : ({de_dust2: "Dust II", depo: "Депо"}[e.mapId || "depo"] || e.mapId!.slice(3,4).toUpperCase() + e.mapId!.slice(4));
 type Simulation = { mode: "detailed" | "round"; version: number };
 export type Fixture = {
+  maps?: {map:string}[];
   pcw?: boolean;
   simulation?: Simulation;
   mapId?: string;
@@ -39,6 +40,13 @@ export const fixtureScore = (e: Fixture) =>
     " : ",
   );
 
+export function fixtureOutcome(fixture: Fixture, team: string): "win" | "loss" | null {
+  if (fixture.kind !== "match" || fixture.teams.length !== 2 || !fixture.teams.includes(team)) return null;
+  const scored = (id: string) => fixture.scoreByTeam?.[id] ?? fixture.score?.[fixture.teams.indexOf(id)];
+  const own = scored(team), other = scored(fixture.teams.find(id=>id!==team)!);
+  return own == null || other == null || own === other ? null : own > other ? "win" : "loss";
+}
+
 export type Player = {
   id: string;
   name: string;
@@ -53,6 +61,8 @@ export type Player = {
   skills: Record<string, number>;
   ratings: Record<string, number>;
 };
+export const CareerRoster = createContext<Player[]>([]);
+
 export type Career = Summary & {
   office: Office;
   attention: Decision[];
@@ -77,6 +87,7 @@ export type Career = Summary & {
   slots: (Summary & { slot: string })[];
 };
 type Team = {
+  visual?: Visual;
   id: string;
   name: string;
   region: string | null;
@@ -84,22 +95,23 @@ type Team = {
 };
 export type Options = { circuit?:boolean; date: string; teams: Team[] };
 export type Catalog = { id: string; title: string; revision: number }[];
-export type RoundSummary = { round: number; winnerTeamId: string | null; side: string; score: number[]; buys?: string[] };
+export type RoundSummary = {
+  round: number; winnerTeamId: string | null; side: string; score?: number[]; buys?: string[]; reason?: string;
+};
+export type Performance = {
+  version: string; rounds: number; maps: number; mvp: string | null;
+  players: { player: string; name: string; teamId: string | null; rounds: number; maps: number;
+    impact: number | null; adr: number | null; kastPercent: number | null }[];
+};
 export type Report = {
-  simulation?: Simulation;
-  maps?: { mapId: string; scoreByTeam: Record<string, number>; rounds: RoundSummary[] }[];
+  forecasts?: import("./ForecastLine").Quote[];
+  teams?: string[]; scoreByTeam?: Record<string, number>; winnerTeamId?: string | null;
+  mapId?: string; simulation?: Simulation; maps?: Report[]; performance: Performance;
   stats: {
-    player: string;
-    name: string;
-    club: number;
-    teamId: string | null;
-    k: number;
-    d: number;
-    a: number;
-    damage: number;
-    kast: number;
-    opening: number;
-    openingDeaths?: number;
+    player: string; name: string; club?: number; teamId: string | null;
+    k?: number; d?: number; a?: number; damage?: number; kast?: number;
+    opening?: number; openingDeaths?: number; clutches?: number; spent?: number;
+    flashesThrown?: number; enemiesFlashed?: number; flashAssists?: number; heDamage?: number; fireDamage?: number; smokesThrown?: number;
   }[];
   rounds: RoundSummary[];
 };
@@ -206,7 +218,7 @@ export type Scene = {
       team: string | null;
       role: string;
       realName: string | null;
-      professional: Pick<Office["people"][string], "attributes" | "ratings" | "philosophy">;
+      professional?: Pick<Office["people"][string], "attributes" | "ratings" | "philosophy">;
     }
   >;
 };
@@ -232,3 +244,10 @@ export const age = (born: string | null, now: string) =>
       Number(born.slice(0, 4)) -
       Number(now.slice(5) < born.slice(5))
     : null;
+
+export function useDirectoryView() {
+  const [group, setGroup] = useState<Group>("teams");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
+  return { group, setGroup, query, setQuery, page, setPage };
+}

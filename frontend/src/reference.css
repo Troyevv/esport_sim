@@ -1,3 +1,4 @@
+@font-face { font-family: Oswald; src: url('/interface/fonts/Oswald-Variable.ttf') format('truetype'); font-weight: 200 700; font-display: swap }
 /* Presentation rules from the approved interactive reference. */
 @font-face {
   font-family: Manrope;
@@ -12,21 +13,23 @@
   font-weight: 400;
 }
 :root {
-  --bg: #101317;
-  --surface: #181c21;
-  --surface-2: #20252b;
+  --bg: #0d0f12;
+  --surface: #15181d;
+  --surface-2: #1b1f25;
   --surface-3: #272d34;
-  --border: #2c323a;
-  --text: #eef1f5;
-  --muted: #939da9;
-  --accent: #c7f36b;
-  --green: #8cdb9a;
-  --red: #ee7d82;
-  --blue: #70b8eb;
+  --border: #30343c;
+  --text: #f1f0eb;
+  --muted: #a4a9b2;
+  --accent: #ef8b42;
+  --green: #b6df7c;
+  --red: #f08880;
+  --blue: #8bbce8;
   --amber: #e5bb69;
+  --orange: var(--accent);
+  --line: var(--border);
   --mono: "IBM Plex Mono", Consolas, monospace;
-  --sidebar: 214px;
-  --radius: 7px;
+  --sidebar: 212px;
+  --radius: 5px;
   color-scheme: dark;
   font-family:
     Manrope,
@@ -137,8 +140,8 @@ img {
   max-width: 100%;
 }
 ::selection {
-  background: #c7f36b;
-  color: #101317;
+  background: #ef8b42;
+  color: #0d0f12;
 }
 ::-webkit-scrollbar {
   width: 7px;
@@ -272,13 +275,13 @@ img {
 }
 .pill.info {
   color: var(--blue);
-  background: #70b8eb0c;
-  border-color: #70b8eb20;
+  background: #8bbce80c;
+  border-color: #8bbce820;
 }
 .pill.accented {
   color: var(--accent);
-  border-color: #c7f36b25;
-  background: #c7f36b09;
+  border-color: #ef8b4225;
+  background: #ef8b4209;
 }
 .surface {
   background: var(--surface);
@@ -332,8 +335,8 @@ img {
   font-size: 15px;
   color: var(--accent);
   font-weight: 700;
-  background: #c7f36b0c;
-  border: 1px solid #c7f36b20;
+  background: #ef8b420c;
+  border: 1px solid #ef8b4220;
   min-width: 35px;
   min-height: 33px;
   display: inline-flex;
@@ -465,7 +468,7 @@ img {
 }
 .nav-item.active {
   color: var(--accent);
-  background: #c7f36b0b;
+  background: #ef8b420b;
 }
 .nav-item.active:before {
   content: "";
@@ -817,7 +820,7 @@ img {
   border-right: 0;
 }
 .week-day.today {
-  background: #c7f36b08;
+  background: #ef8b4208;
   box-shadow: inset 0 2px 0 var(--accent);
 }
 .week-day:hover {
@@ -847,7 +850,7 @@ img {
   align-items: flex-start;
   gap: 12px;
   padding: 14px 20px;
-  border-bottom: 1px solid #2c323a80;
+  border-bottom: 1px solid #30343c80;
   width: 100%;
   text-align: left;
 }
@@ -900,7 +903,7 @@ img {
 }
 .simple-table td {
   padding: 10px 16px;
-  border-bottom: 1px solid #2c323a85;
+  border-bottom: 1px solid #30343c85;
   font-size: 13px;
   vertical-align: middle;
 }
@@ -1112,8 +1115,8 @@ img {
 }
 .calendar-day {
   min-height: 103px;
-  border-right: 1px solid #2c323a85;
-  border-bottom: 1px solid #2c323a85;
+  border-right: 1px solid #30343c85;
+  border-bottom: 1px solid #30343c85;
   text-align: left;
   position: relative;
   padding: 10px 9px;
@@ -1133,8 +1136,8 @@ img {
   opacity: 0.25;
 }
 .calendar-day.selected {
-  box-shadow: inset 0 0 0 1px #c7f36b77;
-  background: #c7f36b06;
+  box-shadow: inset 0 0 0 1px #ef8b4277;
+  background: #ef8b4206;
   z-index: 1;
 }
 .calendar-day.current .date-number {
@@ -1165,7 +1168,7 @@ img {
 }
 .cal-event.match {
   border-color: var(--accent);
-  background: #c7f36b06;
+  background: #ef8b4206;
   color: #c5d5b0;
 }
 .cal-event.rest {
@@ -1236,7 +1239,7 @@ img {
   background: #ffffff03;
 }
 .inbox-item.active {
-  background: #c7f36b07;
+  background: #ef8b4207;
   box-shadow: inset 3px 0 0 var(--accent);
 }
 .inbox-item strong {

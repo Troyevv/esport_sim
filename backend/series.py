@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 
-from . import staff, cs2_maps, engine, match, match_score, veto, world
+from . import performance, staff, cs2_maps, engine, match, match_score, veto, world
 from .database import require
 
 VERSION = 1
@@ -238,6 +238,7 @@ def result(w):
         "winnerTeamId": s["winner"],
         "maps": s["results"],
         "veto": s["actions"],
+        **({"forecasts": s["forecasts"]} if "forecasts" in s else {}),
         **({"preparation": {t:{d:{k:j[k] for k in ("person","quality")} for d,j in jobs.items()}
                              for t,jobs in s["work"].items()}} if "work" in s else {}),
         "order": s["order"],
@@ -303,6 +304,8 @@ def project(w, view="full"):
     public["specialists"] = {team: jobs["veto"].get("name", jobs["veto"]["person"])
                              for team, jobs in s.get("work", {}).items() if "veto" in jobs}
     if s["stage"] in ("veto", "ready"):
+        if "forecasts" in s:
+            public["forecasts"] = s["forecasts"]
         public["evidence"] = {
             t: {
                 m: {k: row[k] for k in ("wins", "games", "picks", "bans", "weight")}
@@ -343,6 +346,8 @@ def project(w, view="full"):
                     row.pop(metric, None)
                 if row["teamId"] != own:
                     row["spent"] = None
+    if s["stage"] == "finished":
+        public["award"] = performance.award(s["results"], s["winner"])
     return public
 
 

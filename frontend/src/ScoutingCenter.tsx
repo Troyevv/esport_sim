@@ -1,6 +1,8 @@
+import { useCareerViewTab } from "./CareerViewTab";
 import { useState, type ReactNode } from "react";
 import { useData, date, type Act, type Career, type Scene } from "./careerData";
-import { Avatar } from "./SceneIdentity";
+import { Flag, LineupPortrait } from "./SceneIdentity";
+import { EntityName, PlayerRole } from "./CareerIdentity";
 import { Heading, Dialog } from "./GameUI";
 import { Load } from "./CareerForms";
 import { roles, regions, skillLabels } from "./databaseModel";
@@ -198,7 +200,7 @@ function Comparison({
             <th scope="col">Показатель</th>
             {players.map((p) => (
               <th scope="col" key={p.id}>
-                {p.name}
+                <EntityName group="players" id={p.id} fallback={p.name}/>
                 <button
                   className="btn"
                   aria-label={"Убрать " + p.name}
@@ -237,7 +239,7 @@ function ReportBody({ url }: { url: string }) {
       {r.trialObservations && (
         <p>Итоги просмотра · изучено занятий и пракков {r.trialObservations}</p>
       )}
-      <p>Уверенность автора · {r.confidence}/100</p>
+      <p className="confidence-row">Уверенность автора <meter aria-label="Уверенность автора" min={0} max={100} value={r.confidence}/> {r.confidence}/100</p>
       <p>
         {r.level} · {r.score}/100 · наблюдений {r.count}
       </p>
@@ -320,7 +322,7 @@ function CenterView({
   data: Center;
   open: (p: string) => void;
 }) {
-  const [tab, setTab] = useState(sections[0]),
+  const [tab, setTab] = useCareerViewTab(sections[0]),
     [query, setQuery] = useState(""),
     [criteria, setCriteria] = useState<Filters>({}),
     [sort, setSort] = useState("name"),
@@ -523,11 +525,11 @@ function CenterView({
     return (
       <div className="scout-row" key={id}>
         <button className="entity-button" onClick={() => open(id)}>
-          <Avatar name={row.name} {...scene.players[id]?.visual} />
+          <LineupPortrait id={id} name={row.name} visual={scene.players[id]?.visual || {}}/>
           <span>
-            <strong>{row.name}</strong>
+            <strong>{row.name} {row.country && <Flag value={row.country}/>}</strong>
             <small>
-              {roles[row.role || ""] || "Роль неизвестна"} ·{" "}
+              {row.role ? <PlayerRole role={row.role}/> : "Роль неизвестна"} ·{" "}
               {scene.teams[row.team || ""]?.name || "Клуб неизвестен"}
             </small>
           </span>
@@ -563,7 +565,7 @@ function CenterView({
           onClick={() => setReport(v)}
         >
           <strong>
-            {name(v.player)} · версия {v.version}
+            <EntityName group="players" id={v.player} fallback={name(v.player)} link={false}/> · версия {v.version}
           </strong>
           <span>
             {date(v.date)} · {v.author} · наблюдений {v.count}
@@ -1060,10 +1062,10 @@ function CenterView({
           <div className="scout-columns">
             {d.regionNames.map((region) => (
               <article className="scout-item" key={region}>
-                <h3>{regions[region] || region}</h3>
+                <h3><Flag value={region}/> {regions[region] || region}</h3>
                 {d.observers.map((s) => (
                   <p key={s.id}>
-                    {s.name} ·{" "}
+                    <EntityName group="staff" id={s.id} fallback={s.name}/> ·{" "}
                     {s.region === region
                       ? "профильный регион"
                       : "выездной регион"}
@@ -1116,9 +1118,9 @@ function CenterView({
           <Panel title="Нагрузка отдела">
             {d.observers.map((s) => (
               <div className="scout-item" key={s.id}>
-                <strong>{s.name}</strong>
+                <strong><EntityName group="staff" id={s.id} fallback={s.name}/></strong>
                 <p>
-                  {regions[s.region]} ·{" "}
+                  <Flag value={s.region}/> {regions[s.region]} ·{" "}
                   {s.languages.join(", ") || "язык неизвестен"} · пригодность{" "}
                   {s.quality}/100
                 </p>

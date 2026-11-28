@@ -1,18 +1,30 @@
-import { FormatSelect, VetoCenter } from "./SeriesCenter";
 import MapSelect from "./MapSelect";
 import { Brand } from "./GameUI";
-import { useEffect, useState } from "react";
+import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import TacticEditor from "./TacticEditor";
-import DatabaseEditor from "./DatabaseEditor";
-import CareerScreen from "./Career";
-import MatchCenter from "./MatchCenter";
-import Radar from "./Radar";
-import HostSettings from "./HostSettings";
+import HostSettings, {HostPage} from "./HostSettings";
 import { useSession, type View } from "./session";
 import "./style.css";
 import "./reference.css";
 import "./manager.css";
+
+const FormatSelect = lazy(() => import("./SeriesCenter").then(module => ({default:module.FormatSelect})));
+const VetoCenter = lazy(() => import("./SeriesCenter").then(module => ({default:module.VetoCenter})));
+const CareerScreen = lazy(() => import("./Career"));
+const DatabaseEditor = lazy(() => import("./DatabaseEditor"));
+const TacticEditor = lazy(() => import("./TacticEditor"));
+const MatchCenter = lazy(() => import("./MatchCenter"));
+const Radar = lazy(() => import("./Radar"));
+
+class RouteBoundary extends Component<{children:ReactNode},{failed:boolean}> {
+  state = {failed:false};
+  static getDerivedStateFromError() { return {failed:true}; }
+  render() {
+    if (this.state.failed) return <section className="surface panel-body" role="alert">
+      <h2>Не удалось открыть экран</h2><button onClick={()=>location.reload()}>Загрузить игру повторно</button></section>;
+    return <Suspense fallback={<p className="panel-body" role="status">Загружаем экран…</p>}>{this.props.children}</Suspense>;
+  }
+}
 
 const formatTime = (seconds: number) =>
   [
@@ -82,8 +94,9 @@ function App() {
       ? "lab"
       : "menu",
   );
-  const [database, showDatabase] = useState(false);
-  const [board, showBoard] = useState(false);
+  const [database, showDatabase] = useState<false|"editor"|"exhibition"|"appearance">(false);
+  const [host, showHost] = useState(false);
+  const [board, showBoard] = useState<boolean | {map:string;side:"CT"|"T"}>(false);
   const [view, setView] = useState<View>("full");
   const [selected, setSelected] = useState<string | null>(null);
   const [seed, setSeed] = useState("42");
@@ -109,7 +122,7 @@ function App() {
   }, [connection]);
   const world = frame?.world;
   const playingLab = screen === "lab" && !frame?.careerId;
-  const workspace = !board && !database;
+  const workspace = !board && !database && !host;
   const showMatch = playingLab || (screen === "match" && !!frame?.careerId);
   const agent = world?.agents.find((item) => item.id === selected);
   const enabled = !!frame && connection === "На связи" && !busy;
@@ -119,7 +132,7 @@ function App() {
   }, [world?.seed]);
   const inCareer = !!frame?.careerId && screen !== "menu" && !playingLab;
   const showManager =
-    !!frame && !playingLab && ((!database && !board) || inCareer);
+    !!frame && !playingLab && (host ? !!frame.careerId : ((!database && !board) || inCareer));
   const status = (
     <span
       className={"connection " + (connection === "На связи" ? "up" : "")}
@@ -129,8 +142,9 @@ function App() {
       {connection}
     </span>
   );
-  const settings = <HostSettings connected={connection === "На связи"} />;
+  const settings = <HostSettings connected={connection === "На связи"} open={()=>showHost(true)} />;
   const leaveTool = () => {
+    showHost(false);
     clearNotice();
     showBoard(false);
     showDatabase(false);
@@ -138,6 +152,7 @@ function App() {
   };
   const tactics = board && frame && (
     <TacticEditor
+      initialSetup={typeof board==="object"?board:undefined}
       frame={frame}
       enabled={enabled}
       act={act}
@@ -163,7 +178,7 @@ function App() {
     />
   );
   const editor = database && world && (
-    <DatabaseEditor
+    <DatabaseEditor initial={database}
       onClose={() => showDatabase(false)}
       enabled={enabled}
       start={async (value) => {
@@ -180,16 +195,16 @@ function App() {
     />
   );
   const tool =
-    editor ||
+    (host && <HostPage close={()=>showHost(false)}/>) || editor ||
     tactics ||
     (match && (
       <>
-        <button
+        {(!frame?.careerId || !world?.match) && <button
           className="cr-return"
           onClick={() => go(frame?.careerId ? "hub" : "menu")}
         >
           {frame?.careerId ? "← Карьера" : "← Главное меню"}
-        </button>
+        </button>}
         {world?.match?.phase === "finished" && (!world.series || world.series.winner) && frame?.careerId && (
           <button
             className="primary"
@@ -205,7 +220,7 @@ function App() {
       </>
     ));
   return (
-    <>
+    <RouteBoundary>
       {!showManager && (
         <header className="mast">
           <Brand />
@@ -214,7 +229,7 @@ function App() {
             {playingLab ? "Лаборатория симуляции" : "База сцены"}
           </span>
           {status}
-          {settings}
+          {!host && settings}
         </header>
       )}
       <main className={showManager ? "manager-root" : ""}>
@@ -225,15 +240,16 @@ function App() {
             enabled={enabled}
             screen={screen === "menu" ? "menu" : "hub"}
             go={go}
-            database={async () => { if (!frame.careerId || await act("career-lab")) showDatabase(true) }}
+            database={async (page="editor") => { if (!frame.careerId || await act("career-lab")) showDatabase(page) }}
             board={() => showBoard(true)}
+            prepareBoard={(map,side)=>showBoard({map,side})}
             status={status}
             settings={settings}
             leaveTool={leaveTool}
             tool={tool}
             toolName={
               tool
-                ? board
+                ? host ? "Домашний сервер" : board
                   ? "Тактики"
                   : database
                     ? "Редактор базы"
@@ -242,18 +258,18 @@ function App() {
             }
           />
         )}
-        {!showManager && tool}
+        {!showManager && (world?.match ? <div className="r571">{tool}</div> : tool)}
         {playingLab && workspace && !match && (
           <button className="cr-return" onClick={() => go("menu")}>
             ← Главное меню
           </button>
         )}
-        {world && playingLab && !database && !board && (
-          <button className="database-entry" onClick={() => showDatabase(true)}>
+        {world && playingLab && workspace && (
+          <button className="database-entry" onClick={() => showDatabase("editor")}>
             База сцены
           </button>
         )}
-        {playingLab && !database && !board && !world?.match && !world?.series && (
+        {playingLab && workspace && !world?.match && !world?.series && (
           <div className="intro">
             <div>
               <div className="eyebrow">
@@ -550,7 +566,7 @@ function App() {
             </div>
           )}
       </main>
-    </>
+    </RouteBoundary>
   );
 }
 createRoot(document.getElementById("root")!).render(<App />);

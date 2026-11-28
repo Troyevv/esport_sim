@@ -1,26 +1,25 @@
-import { fixtureMap } from "./careerData";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useState } from "react";
+import { Avatar } from "./SceneIdentity";
+import { Glyph, Heading, Tabs } from "./GameUI";
 import { regions } from "./databaseModel";
 import {
   useData,
   date,
   scopes,
   slotName,
-  fixtureScore,
   type Act,
   type Career,
   type Catalog,
   type Options,
   type Fixture,
-  type Report,
 } from "./careerData";
 export function Load({ error, reload }: { error: string; reload: () => void }) {
   return error ? (
-    <div role="alert">
-      {error} <button onClick={reload}>Повторить</button>
+    <div className="game-request" role="alert">
+      <Glyph name="report-analytics"/><span>{error}</span><button className="btn" onClick={reload}>Повторить</button>
     </div>
   ) : (
-    <p role="status">Загружаем данные…</p>
+    <p className="game-request" role="status"><span className="request-spinner" aria-hidden="true"/>Загружаем данные…</p>
   );
 }
 
@@ -46,6 +45,10 @@ export function NewCareer({
     source ? "/api/career/options/" + source : null,
   );
   const [team, setTeam] = useState("");
+  const [step,setStep] = useState("Клуб");
+  const [query,setQuery] = useState("");
+  const [region,setRegion] = useState("");
+  const [limit,setLimit] = useState(16);
   const [name, setName] = useState("");
   const [mode, setMode] = useState("manager");
   const [scope, setScope] = useState("standard");
@@ -54,6 +57,7 @@ export function NewCareer({
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name, "ru"));
   const club = teams.find((t) => t.id === team) || teams[0];
+  const visible = teams.filter(t=>(!region || t.region===region) && t.name.toLowerCase().includes(query.toLowerCase().trim()));
   const submit = async () => {
     const [id, rev] = source.split("/");
     if (
@@ -71,22 +75,12 @@ export function NewCareer({
       opened();
   };
   return (
-    <section className="career">
-      <button onClick={back}>← Главное меню</button>
-      <header className="cr-title">
-        <small>Карьера</small>
-        <h1>Новая карьера</h1>
-      </header>
-      <form
-        className="cr-grid"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void submit();
-        }}
-      >
-        <div className="cr-card cr-form">
-          <h2>Стартовый мир</h2>
-          {(!catalog.data || catalog.error) && <Load {...catalog} />}
+    <section className="career career-create">
+      <Heading title={step==="Клуб"?"Клуб и стартовый сценарий":"Ваш первый сезон"} eyebrow="Новая карьера" sub="Выберите редакцию сцены и клуб для старта карьеры">
+        <button onClick={back}>← Главное меню</button></Heading>
+      <Tabs items={["Клуб","Менеджер"]} value={step} change={setStep}/>
+      {step==="Клуб" ? <>
+        <div className="filter-bar">          {(!catalog.data || catalog.error) && <Load {...catalog} />}
           <label>
             Редакция базы
             <select
@@ -104,6 +98,20 @@ export function NewCareer({
             </select>
           </label>
           {(!options.data || options.error) && <Load {...options} />}
+
+        <label>Найти клуб<input type="search" value={query} onChange={e=>{setQuery(e.target.value);setLimit(16)}}/></label>
+        <label>Регион клуба<select value={region} onChange={e=>{setRegion(e.target.value);setLimit(16)}}><option value="">Все регионы</option>
+          {Object.entries(regions).map(([id,title])=><option key={id} value={id}>{title}</option>)}</select></label></div>
+        {options.data && <div className="club-filter-result"><span role="status">Клубов · {visible.length} из {teams.length}</span>
+          {(query || region) && <button type="button" onClick={()=>{setQuery("");setRegion("");setLimit(16)}}>Сбросить фильтры</button>}</div>}
+        <div className="create-club-grid">{visible.slice(0,limit).map(t=><button key={t.id} className="create-club-card" aria-pressed={club?.id===t.id} onClick={()=>setTeam(t.id)}>
+          <Avatar name={t.name} club {...t.visual}/><strong>{t.name}</strong><small>{regions[t.region||""] || "Регион неизвестен"}{t.tier?" · Тир "+t.tier:""}</small>
+          {club?.id===t.id && <b>Выбрано</b>}</button>)}</div>
+        {visible.length>limit && <button onClick={()=>setLimit(limit+16)}>Показать ещё клубы</button>}
+        {!visible.length && options.data && <p>Клубов по этим условиям нет.</p>}
+        <div className="create-next">{club && <span className="create-selected"><Avatar name={club.name} club {...club.visual}/><strong>{club.name}</strong></span>}<button className="btn primary" disabled={!club || !options.data || !!options.error} onClick={()=>setStep("Менеджер")}>Настроить карьеру</button></div>
+      </> : <form className="cr-grid" onSubmit={e=>{e.preventDefault();void submit()}}>
+        <div className="cr-card cr-form"><h2>Стартовый мир</h2>
           <label>
             Команда
             <select
@@ -186,7 +194,7 @@ export function NewCareer({
           {club && (
             <div className="cr-selection">
               <small>Стартовая команда</small>
-              <strong>{club.name}</strong>
+              <div className="create-selected"><Avatar name={club.name} club {...club.visual}/><strong>{club.name}</strong></div>
               <span>
                 {regions[club.region || ""] || "Регион неизвестен"}
                 {club.tier && " · Тир " + club.tier}
@@ -206,96 +214,16 @@ export function NewCareer({
             Создать карьеру
           </button>
         </div>
-      </form>
+      </form>}
     </section>
   );
 }
 
-const buyName: Record<string,string> = {pistol:"пистолетный", full:"полная закупка", force:"форс", eco:"эко"};
-
-export function MatchReport({
-  event,
-  teams,
-  close,
-}: {
-  event: Fixture;
-  teams: Record<string, string>;
-  close: () => void;
-}) {
-  const data = useData<Report>("/api/career/report/" + event.id);
-  const title = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    title.current?.focus();
-  }, [event.id]);
-  const rounds = data.data?.rounds.length || 0;
-  return (
-    <section className="cr-card cr-report">
-      <div className="cr-line">
-        <h2 ref={title} tabIndex={-1}>
-          Протокол матча
-        </h2>
-        <button onClick={close}>Закрыть протокол</button>
-      </div>
-      <h3 className="cr-result-title">
-        {teams[event.teams[0]]} <strong>{fixtureScore(event)}</strong>{" "}
-        {teams[event.teams[1]]}
-      </h3>
-      {!data.data || data.error ? (
-        <Load {...data} />
-      ) : (
-        <>
-          <p>
-            {date(event.date)} · {fixtureMap(event)} · Раунды: {rounds} · {data.data.simulation?.mode === "round" ? "Быстрый расчёт по раундам" : "Подробная симуляция"}
-          </p>
-          {data.data.maps && <ol className="series-order" aria-label="Итоги карт">
-            {data.data.maps.map((m,i) => <li key={m.mapId}><small>Карта {i+1}</small>
-              <strong>{fixtureMap({...event,bestOf:undefined,mapId:m.mapId})}</strong>
-              <span>{event.teams.map(t => m.scoreByTeam[t]).join(" : ")}</span></li>)}
-          </ol>}
-          {data.data.simulation?.mode === "round" && (data.data.maps || [{mapId:event.mapId || "depo", rounds:data.data.rounds}]).map(m=>(
-            <details className="cr-rounds" key={m.mapId}>
-              <summary>Раунды · {fixtureMap({...event,bestOf:undefined,mapId:m.mapId})}</summary>
-              <ol>{m.rounds.map(r=><li key={r.round}>
-                <strong>{r.score.join(" : ")}</strong> {r.winnerTeamId ? teams[r.winnerTeamId] : "Победитель неизвестен"} · {r.side}
-                <small>{r.buys?.map((b,i)=>teams[event.teams[i]]+" · "+(buyName[b] || b)).join(" / ")}</small>
-              </li>)}</ol>
-            </details>
-          ))}
-          {[...event.teams, ...(data.data.stats.some(p => p.teamId === null) ? [null] : [])].map(tid => (
-            <table key={tid ?? "unassigned"}>
-              <caption>{tid === null ? "Команда не установлена по протоколу" : teams[tid]}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Игрок</th>
-                  <th scope="col">K</th>
-                  <th scope="col">D</th>
-                  <th scope="col">A</th>
-                  <th scope="col">ADR</th>
-                  <th scope="col">KAST</th>
-                  <th scope="col" title="Первые убийства / первые смерти">FK / FD</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data
-                  .data!.stats.filter((p) => p.teamId === tid)
-                  .map((p) => (
-                    <tr key={p.player}>
-                      <th scope="row">{p.name}</th>
-                      <td>{p.k}</td>
-                      <td>{p.d}</td>
-                      <td>{p.a}</td>
-                      <td>{(p.damage / rounds).toFixed(1)}</td>
-                      <td>{Number.isFinite(p.kast) ? Math.round(100*p.kast/rounds)+"%" : "—"}</td>
-                      <td>{p.opening ?? "—"} / {p.openingDeaths ?? "—"}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          ))}
-        </>
-      )}
-    </section>
-  );
+const ReportScreen = lazy(() => import("./MatchReport"));
+export function MatchReport(props: { event: Fixture; teams: Career["teams"]; careerId: string; close: () => void }) {
+  return <Suspense fallback={<p role="status">Загружаем протокол…</p>}>
+    <ReportScreen key={props.careerId + "/" + props.event.id} {...props} />
+  </Suspense>;
 }
 
 export function Saves({

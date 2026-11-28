@@ -1,0 +1,110 @@
+.cp-module{min-width:0;--cp-gap:22px}
+.cp-module>section,.cp-module>.cp-two-col{margin-bottom:24px}
+.cp-module h2{line-height:1.3}
+.cp-module h3{font-size:17px}
+.cp-module .panel>p{margin-bottom:14px}
+.cp-module .panel>.field+.field{margin-top:18px}
+.cp-module .panel>.field+.btn{margin-top:20px}
+.cp-module .badge{font-size:12px}
+.cp-module .page-heading p{font-size:15px}
+.cp-module .stat>span,.cp-module .stat small{font-size:13px}
+.cp-module .section-heading h2{font-size:18px}
+.cp-module .tabs{scroll-padding:16px}
+.cp-module .field{min-width:0}
+.cp-back{display:inline-flex;gap:10px;align-items:center;background:transparent;border:0;color:var(--muted);min-height:44px;padding:0;margin:-10px 0 20px;font-size:14px}
+.cp-back:hover{color:var(--orange)}
+.cp-two-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin:24px 0}
+.cp-prematch-hero{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px;padding:24px 0 35px;border-bottom:1px solid var(--line)}
+.cp-prematch-team{display:flex;gap:24px;align-items:center}
+.cp-prematch-team h1{font-size:40px;letter-spacing:.8px;margin:6px 0 8px}
+.cp-prematch-team p{color:var(--muted);font-size:13px}
+.cp-prematch-team span{font-size:11px;letter-spacing:1.5px;color:var(--green)}
+.cp-prematch-team.cp-opponent{justify-content:flex-end;text-align:right}
+.cp-opponent span{color:var(--muted)}
+.cp-versus{display:flex;flex-direction:column;gap:13px;align-items:center}
+.cp-versus>b{font-family:Plex;font-size:30px;font-weight:400}
+.cp-versus>span:not(.badge){color:var(--muted);font-size:12px}
+.cp-prematch-toolbar{display:flex;justify-content:space-between;align-items:center;gap:22px;margin:20px 0 28px}
+.cp-prematch-toolbar>div{display:flex;align-items:center;gap:12px;max-width:600px;font-size:13px;line-height:1.6;color:var(--muted)}
+.cp-prematch-toolbar>.btn{flex:none}
+.cp-map-rate>span{display:flex;justify-content:space-between;margin-bottom:12px}
+.cp-map-rate>span>b{font-family:Plex;color:var(--text);font-weight:400}
+.cp-map-rate>.meter>b{display:none}
+.cp-map-rate small{display:block;color:var(--muted);margin-top:10px;font-size:12px}
+
+@media(min-width:1500px){.cp-prematch-team h1{font-size:46px}
+.cp-prematch-team>.team-logo{width:110px;height:110px}
+}
+
+@media(max-width:1200px){.cp-prematch-team{gap:14px}
+.cp-prematch-team h1{font-size:31px}
+.cp-prematch-team>.team-logo{width:65px;height:65px}
+.cp-prematch-toolbar{align-items:flex-start}
+.cp-prematch-toolbar>div{flex-wrap:wrap;gap:7px}
+}
+
+@media(max-width:1000px){.cp-two-col{grid-template-columns:1fr}
+.cp-two-col>.panel{min-width:0}
+.cp-prematch-hero{gap:16px}
+.cp-prematch-team{flex-direction:column;text-align:center}
+.cp-prematch-team.cp-opponent{flex-direction:column-reverse;text-align:center}
+.cp-prematch-team h1{font-size:32px}
+.cp-prematch-team>.team-logo{width:80px;height:80px}
+}
+
+@media(max-width:700px){.cp-module .page-heading{display:block}
+.cp-module .heading-actions{margin-top:20px}
+.cp-module h1{font-size:33px}
+.cp-module .page-heading p{font-size:14px}
+.cp-module .stat small{font-size:12px}
+.cp-module .panel{padding:17px}
+.cp-two-col{gap:18px;margin:20px 0}
+.cp-module .tabs button{font-size:13px;padding-inline:12px}
+.cp-prematch-hero{grid-template-columns:1fr 90px 1fr;gap:12px;padding:14px 0 24px}
+.cp-prematch-team{gap:8px}
+.cp-prematch-team h1{font-size:24px;letter-spacing:0;line-height:1.25;margin:8px 0}
+.cp-prematch-team>.team-logo{width:64px;height:64px}
+.cp-prematch-team span{font-size:9px;letter-spacing:1px}
+.cp-prematch-team p{font-size:10px}
+.cp-versus>b{font-size:23px}
+.cp-versus{gap:10px}
+.cp-versus>span:not(.badge){font-size:10px;text-align:center;line-height:1.5}
+.cp-versus .badge{font-size:10px}
+.cp-prematch-toolbar{flex-direction:column;gap:18px}
+.cp-prematch-toolbar>.btn{width:100%;font-size:14px}
+.cp-prematch-toolbar>div{font-size:12px}
+.cp-map-rate small{font-size:11px}
+.cp-map-rate:nth-last-child(2){padding-right:12px;border-right:1px solid var(--line)}
+}
+
+@media(max-width:420px){.cp-prematch-hero{grid-template-columns:1fr 76px 1fr;gap:8px}
+.cp-prematch-team h1{font-size:21px}
+.cp-prematch-team>.team-logo{width:52px;height:52px}
+.cp-versus>b{font-size:21px}
+}
+
+@media(orientation:landscape) and (max-height:500px){.cp-module .page-heading{margin-bottom:18px}
+.cp-prematch-hero{padding:10px 0 18px}
+.cp-prematch-team{flex-direction:row}
+.cp-prematch-team.cp-opponent{flex-direction:row}
+.cp-prematch-team>.team-logo{width:55px;height:55px}
+.cp-prematch-team h1{font-size:26px}
+.cp-prematch-toolbar{margin:14px 0 18px}
+}
+
+@media(prefers-reduced-motion:reduce){.cp-module *{scroll-behavior:auto!important;transition:none!important}
+}
+
+
+/* Browser QA corrections: preserve bracket joins and show actionable validation. */
+.cp-prematch-team .scene-avatar {width:clamp(42px,7vw,90px); height:auto; aspect-ratio:1; object-fit:contain}
+.cp-prematch-hero>.cp-opponent {order:3}
+.cp-prematch-hero>.cp-versus {order:2}
+.cp-prematch-team.cp-opponent .scene-avatar {order:2}
+.cp-module .entity-button>span {display:grid;gap:4px}
+.forecast-side {display:grid;gap:6px;padding:16px;border:1px solid var(--line)}
+.forecast-side strong {font:500 32px Oswald,sans-serif;color:var(--green)}
+.forecast-line details {margin:14px 0}
+@media(max-width:700px){.cp-module .cp-prematch-team {min-width:0}.cp-prematch-team h1 {overflow-wrap:anywhere}}
+.cp-prematch-team h1 {font-family:Oswald,sans-serif;font-weight:500;text-transform:uppercase}
+.cp-versus>b {font-family:var(--mono)}
