@@ -14,6 +14,7 @@ import { RoleRatings } from "./SceneProfiles";
 type Side = "CT" | "T";
 type Point = { x: number; y: number; z?: number };
 export interface MatchView {
+  award?: { name: string } | null;
   rules: string;
   clubs: {
     id: string;
@@ -348,6 +349,7 @@ export default function MatchCenter({
       {finished && (
         <p className="match-result">
           Победитель {world.series ? "карты" : "матча"} — <strong>{clubName(m.winnerTeamId!)}</strong>
+          {m.award && <> · MVP карты <strong>{m.award.name}</strong></>}
         </p>
       )}
       {rounds > 0 && (

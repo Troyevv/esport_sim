@@ -62,3 +62,23 @@ def test_profile_filters_use_historical_team_and_played_maps():
     assert [r["fixture"] for r in rows("players", "a0", "2026-11-01", "final", "de_mirage")] == ["new"]
     assert rows("teams", "a")[0]["counts"]["k"] == 70
     assert not rows("players", "missing")
+
+
+def test_mixed_archive_metrics_require_all_played_maps():
+    first, second = played(20), played(20)
+    del first["stats"][0]["openingDeaths"]
+    report = dict(maps=[first, second], stats=[dict(second["stats"][0])], winnerTeamId="a")
+    view = annotate(report, "a")
+    assert view["stats"][0]["openingDeaths"] is None
+    assert view["performance"]["mvp"] is None
+
+
+def test_native_map_records_paired_opening_contacts():
+    from backend import match, series
+    game = match.initial(37)
+    match.play_map(game)
+    stats = series.map_stats(game)
+    assert sum(p["opening"] for p in stats) == sum(p["openingDeaths"] for p in stats) > 0
+    assert all(p["openingDeaths"] <= p["d"] for p in stats)
+    projected = match.project(game)["match"]["award"]
+    assert projected["player"] == summarize([series.map_result(game)], game["winnerTeamId"])["mvp"]

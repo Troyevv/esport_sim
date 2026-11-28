@@ -75,7 +75,7 @@ type Athlete = {
   roles: Record<string, number>;
   tactics: Record<string, number>;
 };
-type Center = {
+export type TrainingState = {
   initial: Record<string, Record<string, number>>;
   days: Day[];
   players: Record<string, Athlete>;
@@ -104,7 +104,7 @@ const mapName = (s: string) =>
 const boardKey = (b: Board) => b.id + "@" + b.revision;
 type Shared = {
   c: Career;
-  data: Center;
+  data: TrainingState;
   enabled: boolean;
   submit: (v: object) => Promise<boolean>;
 };
@@ -683,7 +683,7 @@ export function TrainingCenter({
   const [pending, setPending] = useState(false),
     [fault, setFault] = useState(false),
     [focus, setFocus] = useState("aim");
-  const response = useData<Center>(
+  const response = useData<TrainingState>(
     "/api/career/" + c.id + "/training?week=" + week,
     revision,
   );

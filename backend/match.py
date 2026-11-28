@@ -92,8 +92,10 @@ def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, 
             club=0 if a["team"] == "T" else 1, slot=slot, cash=0, hp=0, evidence=None
         )
         w["stats"][a["id"]] = dict(
-            k=0, d=0, a=0, hs=0, damage=0, opening=0, openingDeaths=0, kast=0, spent=0, clutches=0
+            k=0, d=0, a=0, hs=0, damage=0, opening=0, kast=0, spent=0, clutches=0
         )
+        if agent_policy and agent_policy >= 12:
+            w["stats"][a["id"]]["openingDeaths"] = 0
     bind_rosters(
         w,
         world.exhibition(w["agents"]) if domain is None else deepcopy(domain),
@@ -369,6 +371,10 @@ def project(w, view="full"):
                 ratings[a["id"]] = world.player_report(w["domain"], a["playerId"])[
                     "ratings"
                 ]
+    completed = {}
+    if w["phase"] == "finished":
+        from . import performance, series
+        completed["award"] = performance.award([series.map_result(w)], w["winnerTeamId"])
     return dict(
         seed=w["seed"],
         tick=w["tick"],
@@ -413,6 +419,7 @@ def project(w, view="full"):
             ],
             coachTeamId=w["coachTeamId"],
             winnerTeamId=w["winnerTeamId"],
+            **completed,
             history=[
                 dict(
                     {

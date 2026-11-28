@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 
-from . import staff, cs2_maps, engine, match, match_score, veto, world
+from . import performance, staff, cs2_maps, engine, match, match_score, veto, world
 from .database import require
 
 VERSION = 1
@@ -343,6 +343,8 @@ def project(w, view="full"):
                     row.pop(metric, None)
                 if row["teamId"] != own:
                     row["spent"] = None
+    if s["stage"] == "finished":
+        public["award"] = performance.award(s["results"], s["winner"])
     return public
 
 

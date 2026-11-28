@@ -99,7 +99,8 @@ export type Report = {
   stats: {
     player: string; name: string; club?: number; teamId: string | null;
     k?: number; d?: number; a?: number; damage?: number; kast?: number;
-    opening?: number; openingDeaths?: number; clutches?: number; spent?: number; utilityDamage?: number;
+    opening?: number; openingDeaths?: number; clutches?: number; spent?: number;
+    flashesThrown?: number; enemiesFlashed?: number; flashAssists?: number; heDamage?: number; fireDamage?: number; smokesThrown?: number;
   }[];
   rounds: RoundSummary[];
 };

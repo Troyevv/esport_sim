@@ -13,6 +13,7 @@ type Evidence = {
 };
 export interface SeriesView {
   bestOf: number;
+  award?: { name: string } | null;
   tournament?:string;
   spectator?:boolean;
   stage: "veto" | "ready" | "playing" | "interval" | "finished";
@@ -133,6 +134,7 @@ export function SeriesScore({ frame, enabled, act }: Props) {
               : "До " + (Math.floor(s.bestOf / 2) + 1) + " побед"}
         </span>
       </div>
+      {s.award && <p>MVP серии · <strong>{s.award.name}</strong></p>}
       <MapOrder s={s} />
       <details
         className="series-totals"

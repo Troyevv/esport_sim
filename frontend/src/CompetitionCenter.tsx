@@ -129,7 +129,7 @@ type PastEdition = {
   pool: number;
   lan: boolean;
 };
-type Directory = {
+export type Directory = {
   archive: PastEdition[];
   editions: Edition[];
   available: string[];

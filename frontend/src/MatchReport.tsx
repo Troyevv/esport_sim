@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Avatar } from "./SceneIdentity";
+import { Avatar, LineupPortrait } from "./SceneIdentity";
 import { Tabs } from "./GameUI";
 import { date, fixtureMap, fixtureScore, useData, type Career, type Fixture, type Report, type Scene } from "./careerData";
 import { serverURL } from "./session";
@@ -29,6 +29,7 @@ export default function MatchReport({ careerId, event, teams, close }: Props) {
   const teamName = (id: string | null | undefined) => id ? teams[id] || directory.data?.teams[id]?.name || id : "Команда неизвестна";
   const groups = [...event.teams, ...(current?.stats.some(p => p.teamId === null) ? [null] : [])];
   const round = current?.rounds[roundIndex];
+  const utilityRecorded = current?.stats.some(p => [p.flashesThrown,p.enemiesFlashed,p.flashAssists,p.heDamage,p.fireDamage,p.smokesThrown].some(n => n != null));
 
   const chooseMap = (index: number) => { setMapIndex(index); setRoundIndex(0); };
   const choosePage = (next: string) => { setPage(next); setRoundIndex(0); };
@@ -65,7 +66,7 @@ export default function MatchReport({ careerId, event, teams, close }: Props) {
         </select></label>}
       {page === pages[0] && <div className="report-panel">
         <h3>MVP {selection < 0 && report.maps ? "серии" : "карты"}</h3>
-        {award ? <div className="report-award"><div><Avatar name={award.name} {...visual(award.player,award.teamId)}/></div>
+        {award ? <div className="report-award"><div><LineupPortrait id={award.player} name={award.name} visual={visual(award.player,award.teamId)}/></div>
           <div><small>{teamName(award.teamId)}</small><h4>{award.name}</h4>
             <p>{award.rounds} раундов · {metrics.version}</p><dl>
               <div><dt>Impact</dt><dd>{award.impact?.toFixed(2)}</dd></div>
@@ -86,6 +87,17 @@ export default function MatchReport({ careerId, event, teams, close }: Props) {
             <td>{count && p.damage != null ? (p.damage/count).toFixed(1) : "—"}</td><td>{count && p.kast != null ? (100*p.kast/count).toFixed(1)+"%" : "—"}</td>
             <td>{p.opening ?? "—"} / {p.openingDeaths ?? "—"}</td><td>{p.clutches ?? "—"}</td><td>{p.spent ?? "—"}</td><td>{summary?.impact?.toFixed(2) ?? "—"}</td></tr>;
         })}</tbody></table></div>)}
+      {page === "Статистика" && <section className="report-panel"><h3>Раунды по сторонам</h3>
+        {groups.filter(t => t !== null).map(t => {
+          const played = current.rounds.filter(r => r.winnerTeamId === t);
+          const known = current.rounds.length > 0 && current.rounds.every(r => r.winnerTeamId && ["T","CT"].includes(r.side));
+          return <p key={t}>{teamName(t)} · T {known ? played.filter(r => r.side === "T").length : "—"} / CT {known ? played.filter(r => r.side === "CT").length : "—"}</p>;
+        })}</section>}
+      {page === "Статистика" && !utilityRecorded && <p className="report-panel">Эффективность гранат в этом протоколе не записана.</p>}
+      {page === "Статистика" && utilityRecorded && <div className="report-table" role="region" tabIndex={0} aria-label="Эффективность гранат"><table>
+        <caption>Эффективность гранат</caption><thead><tr>{["Игрок","Световые","Ослепления соперника","Флеш-ассисты","Урон HE","Урон огнём","Дымовые"].map(h => <th scope="col" key={h}>{h}</th>)}</tr></thead>
+        <tbody>{current.stats.map(p => <tr key={p.player}><th scope="row">{p.name || p.player}</th>
+          {[p.flashesThrown,p.enemiesFlashed,p.flashAssists,p.heDamage,p.fireDamage,p.smokesThrown].map((v,i) => <td key={i}>{v ?? "—"}</td>)}</tr>)}</tbody></table></div>}
       {page === "Раунды" && <section className="report-panel"><h3>История раундов</h3>
         <div className="report-rounds">{current.rounds.map((r,i)=><button aria-pressed={i===roundIndex} key={i} onClick={()=>setRoundIndex(i)}>{r.round ?? i+1}</button>)}</div>
         {round ? <><h4>Раунд {round.round ?? roundIndex+1} · {round.score?.join(" : ") || "Счёт неизвестен"}</h4>

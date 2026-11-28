@@ -11,7 +11,7 @@ type Row = {
   score: Record<string, number> | null; won: boolean | null; rounds: number; playerRounds: number;
   counts: Record<string, number | null>; impact: number | null; mapMvp: string | null; seriesMvp: string | null;
 };
-type Result = {version: string; asOf: string; rows: Row[]};
+export type Result = {version: string; asOf: string; rows: Row[]};
 type Props = {c: Career; scene: Scene; group: Subject; id: string; revision: number};
 
 const labelMap = (key: string | null) => key ? fixtureMap({ mapId:key, kind:"match", id:"", date:"", teams:[] }) : "Карта неизвестна";
@@ -29,6 +29,43 @@ function Summary({result, name}: {result: Result; name: string}) {
       <div><dt>ADR</dt><dd>{rate(result.rows,"damage")}</dd></div>
       <div><dt>KAST</dt><dd>{rate(result.rows,"kast",100)}{result.rows.some(r=>r.counts.kast!=null && r.playerRounds>0) ? "%" : ""}</dd></div></dl>
     <small>ADR и KAST учитывают только карты с записанным показателем.</small></article>;
+}
+
+export function PlayerRecord({c,id,scene,revision,tab}: Omit<Props,"group"> & {tab:string}) {
+  const response = useData<Result>("/api/career/"+c.id+"/performance/players/"+encodeURIComponent(id),revision);
+  const [selected,setSelected] = useState("");
+  const fixture = c.history.find(f => f.id === selected);
+  if (response.error) return <p role="alert">{response.error} <button onClick={response.reload}>Повторить</button></p>;
+  if (!response.data) return <p role="status">Загружаем историю игрока…</p>;
+  const rows = response.data.rows;
+  if (tab === "Обзор") {
+    const recent = [...rows].sort((a,b) => b.date.localeCompare(a.date) || (a.fixture === b.fixture ? b.index-a.index : 0)).slice(0,6);
+    const own = c.roster.find(p => p.id === id);
+    const ranked = recent.filter(r => r.impact != null);
+    const rounds = ranked.reduce((n,r) => n+r.rounds,0);
+    const impact = rounds ? (ranked.reduce((n,r) => n+r.impact!*r.rounds,0)/rounds).toFixed(2) : "—";
+    return <div className="club-roster-summary">{[
+      ["Impact",impact,"Среднее по раундам · карт "+ranked.length],["ADR",rate(recent,"damage"),"Завершённых карт "+recent.length],
+      ["Форма",own?.form ?? "—","Оценка штаба"],["Готовность",own ? (100-own.fatigue)+"%" : "—","Оценка штаба"]
+    ].map(([label,value,note])=><div className="stat" key={label}><span>{label}</span><strong>{value}</strong><small>{note}</small></div>)}</div>;
+  }
+  const awards = tab === "Достижения";
+  const entries = rows.filter(r => !awards || r.mapMvp === id || r.seriesMvp === id);
+  const series = new Set<string>();
+  return <section className="surface panel-body"><h2>{awards ? "Индивидуальные награды" : "История выступлений"}</h2>
+    <p>Официальные протоколы карьеры · по {date(response.data.asOf)}</p>
+    {entries.map(r => {
+      const awardedSeries = r.seriesMvp === id && !series.has(r.fixture);
+      series.add(r.fixture);
+      if (awards && r.mapMvp !== id && !awardedSeries) return null;
+      return <div key={r.fixture+"/"+r.index} className="staff-line"><time>{date(r.date)}</time>
+        <span>{r.team ? scene.teams[r.team]?.name || r.team : "Команда неизвестна"} · {labelMap(r.mapId)}
+        {awards && [r.mapMvp === id && "MVP карты",awardedSeries && "MVP встречи"].filter(Boolean).map(text => <b key={String(text)}> · {text}</b>)}</span>
+        <button onClick={()=>setSelected(r.fixture)}>Протокол</button></div>;
+    })}
+    {!entries.length && <p>{awards ? "Подтверждённых индивидуальных наград в протоколах карьеры пока нет." : "В истории карьеры пока нет завершённых официальных карт этого игрока."}</p>}
+    {fixture && <Dialog title="Результат встречи" close={()=>setSelected("")}><MatchReport event={fixture} careerId={c.id} teams={c.teams} close={()=>setSelected("")}/></Dialog>}
+  </section>;
 }
 
 export default function ProfileHistory({c,scene,group,id,revision}: Props) {

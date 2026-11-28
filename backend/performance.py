@@ -62,12 +62,30 @@ def summarize(maps, winner):
                 mvp=eligible[0]["player"] if eligible and complete else None)
 
 
+def award(maps, winner):
+    summary = summarize(maps, winner)
+    return next((dict(version=VERSION, **p) for p in summary["players"] if p["player"] == summary["mvp"]), None)
+
+
 def annotate(report, own_team):
     """Add derived fields to the observer's copy, preserving the content-addressed blob."""
     maps = report.get("maps")
     if maps is not None:
+        # A cumulative counter is complete only when every map the player played recorded it.
+        recorded_on_every_map = {}
         for game in maps:
+            for row in game["stats"]:
+                pid = row["player"]
+                recorded = {k for k, value in row.items() if type(value) is int}
+                if pid in recorded_on_every_map:
+                    recorded_on_every_map[pid].intersection_update(recorded)
+                else:
+                    recorded_on_every_map[pid] = recorded
             game["performance"] = summarize([game], game.get("winnerTeamId"))
+        for row in report.get("stats", []):
+            for field in set(row) - {"player", "name", "teamId", "club"}:
+                if field not in recorded_on_every_map.get(row["player"], set()):
+                    row[field] = None
     report["performance"] = summarize(maps if maps is not None else [report], report.get("winnerTeamId"))
     if "preparation" in report:
         report["preparation"] = {tid: jobs for tid, jobs in report["preparation"].items() if tid == own_team}

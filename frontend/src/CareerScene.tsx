@@ -23,6 +23,9 @@ import {
   type Scene,
 } from "./careerData";
 
+const TeamRecord = lazy(() => import("./TeamRecord"));
+const ProfileDevelopment = lazy(() => import("./ProfileDevelopment"));
+const PlayerRecord = lazy(() => import("./ProfileHistory").then(m => ({default:m.PlayerRecord})));
 const ProfileHistory = lazy(() => import("./ProfileHistory"));
 
 type Props = { scene: Scene; c: Career; open: (p: Profile) => void };
@@ -363,6 +366,7 @@ export function EntityProfile({
   revision=0,
 }: Props & { profile: Profile; back: () => void; revision?:number }) {
   const [tab, setTab] = useState("Обзор");
+  const [skillQuery,setSkillQuery] = useState("");
   const [chosenRole, setRole] = useState("");
   const { group, id } = profile,
     item = scene[group][id];
@@ -489,22 +493,30 @@ export function EntityProfile({
           <small>{own?"Внутренние данные клуба":assessment?.level || "Нет доступной оценки"}</small>
         </div>}
       </header>
-      {player && <section className="surface panel-body"><h2>Знания организации</h2>{scouting.error?<p role="alert">{scouting.error}</p>:assessment?<><p>{assessment.inSquad?"Текущие навыки известны штабу":assessment.level} · Изученность {assessment.score}/100 · наблюдений {assessment.count}</p><p>Оценка потенциала · {range(assessment.potential)}{assessment.last && " · последнее наблюдение "+date(assessment.last)}</p></>:<p>Загрузка оценок…</p>}</section>}
+      {player && (tab === "Скаутинг" || (!own && tab === "Обзор")) && <section className="surface panel-body"><h2>Знания организации</h2>{scouting.error?<p role="alert">{scouting.error}</p>:assessment?<><p>{assessment.inSquad?"Текущие навыки известны штабу":assessment.level} · Изученность {assessment.score}/100 · наблюдений {assessment.count}</p><p>Оценка потенциала · {range(assessment.potential)}{assessment.last && " · последнее наблюдение "+date(assessment.last)}</p></>:<p>Загрузка оценок…</p>}</section>}
       {player && (
         <Tabs
-          items={["Обзор", "Характеристики · 58", "Статистика", "Контракт"]}
+          items={["Обзор", "Характеристики · 58", "Развитие", "Статистика", "История", "Достижения", "Скаутинг", "Контракт"]}
           value={tab}
           change={setTab}
         />
       )}
-      {team && <Tabs items={["Обзор","Статистика"]} value={tab} change={setTab}/>}
+      {player && ["Обзор","История","Достижения"].includes(tab) && <Suspense fallback={<p role="status">Загружаем профиль…</p>}>
+        <PlayerRecord {...{c,id,scene,revision,tab}}/></Suspense>}
+      {player && tab === "Развитие" && <Suspense fallback={<p role="status">Загружаем развитие…</p>}><ProfileDevelopment {...{c,id,revision}}/></Suspense>}
+      {team && <Tabs items={["Обзор","Статистика","VRS","Календарь и результаты","История составов","Достижения"]} value={tab} change={setTab}/>}
+      {team && !["Обзор","Статистика"].includes(tab) && <Suspense fallback={<p role="status">Загружаем историю…</p>}>
+        <TeamRecord {...{c,id,scene,revision,tab}}/></Suspense>}
       {tab === "Статистика" && (group === "teams" || group === "players") &&
         <Suspense fallback={<p role="status">Загружаем статистику…</p>}>
           <ProfileHistory key={group+id} c={c} scene={scene} group={group} id={id} revision={revision}/>
         </Suspense>}
       {tab === "Характеристики · 58" ? (
+        <><label className="club-filter">Найти характеристику<input type="search" value={skillQuery} onChange={e=>setSkillQuery(e.target.value)}/></label>
         <div className="attribute-groups">
-          {Object.entries(skillGroups).map(([g, keys]) => (
+          {Object.entries(skillGroups).map(([g, all]) => {
+            const keys = all.filter(k => skillLabels[k].toLocaleLowerCase("ru").includes(skillQuery.trim().toLocaleLowerCase("ru")));
+            return keys.length > 0 && (
             <section className="surface" key={g}>
               <div className="panel-head">
                 <h2>{g}</h2>
@@ -527,9 +539,10 @@ export function EntityProfile({
                 ))}
               </div>
             </section>
-          ))}
-        </div>
-      ) : tab === "Статистика" && team ? null : tab === "Статистика" ? (
+          );})}
+          {!Object.values(skillLabels).some(name=>name.toLocaleLowerCase("ru").includes(skillQuery.trim().toLocaleLowerCase("ru"))) && <p>Характеристик с таким названием нет.</p>}
+        </div></>
+      ) : ["История","Достижения","Развитие","Скаутинг","VRS","Календарь и результаты","История составов"].includes(tab) ? null : tab === "Статистика" && team ? null : tab === "Статистика" ? (
         panel(
           "Статистика игрока",
           player?.statistics ? (
@@ -654,6 +667,11 @@ export function EntityProfile({
       {staff && (
         <div className="staff-office">
           {staff.visual.head?.includes("/generated/") && <small>Синтетический портрет · OpenAI ImageGen</small>}
+          {c.office.people[id] && <section className="surface panel-body"><h2>Обязанности и нагрузка</h2>
+            <p>{Object.entries(c.office.owners).filter(([,person])=>person===id).map(([d])=>c.office.duties[d]?.title || d).join(" · ") || "Постоянные обязанности не назначены"}</p>
+            <p>Нагрузка на {date(c.date)} · {c.office.jobs.filter(j=>j.person===id && j.date===c.date).reduce((n,j)=>n+j.cost,0)} / {c.office.people[id].capacity}</p>
+            {c.office.jobs.filter(j=>j.person===id).map((j,i)=><div className="staff-line" key={i}><time>{date(j.date)}</time><strong>{c.office.duties[j.duty]?.title || j.duty}</strong><span>Срок · {date(j.due)}</span></div>)}
+          </section>}
           <StaffSkills p={staff.professional} roles={c.office.roles} groups={c.office.groups}/>
         </div>
       )}
