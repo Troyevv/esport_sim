@@ -1,6 +1,6 @@
 """Public directory of the edition pinned to the active career."""
 
-from . import lineup_photos, club_art, scene_portraits, staff
+from . import club_art, scene_portraits, staff
 
 
 def media_path(pack):
@@ -37,7 +37,6 @@ def directory(pack, badges, portraits, own_team=None, positions=None):
         for pid in team["members"]:
             membership.setdefault(pid, []).append(tid)
     players = {}
-    full_photos = lineup_photos.index(portraits)
     heads = scene_portraits.index(pack, portraits)
     for pid, row in pack["players"].items():
         p = identity(pack, badges, "players", pid, row)
@@ -48,10 +47,11 @@ def directory(pack, badges, portraits, own_team=None, positions=None):
             latest = max(teams[club]["rosterDate"] for club in clubs)
             clubs = [club for club in clubs if teams[club]["rosterDate"] == latest]
         tid = clubs[0] if len(clubs) == 1 else None
-        if pid in full_photos:
-            p["visual"]["lineupPhoto"] = full_photos[pid]
+        head = heads.get(pid, {})
+        if head.get("lineupPhoto"):
+            p["visual"]["lineupPhoto"] = head["lineupPhoto"]
         p["visual"].update(player=True, head=media_path(pack) + "appearance/" + pid if row.get("appearance")
-                           else heads.get(pid, {}).get("image"))
+                           else head.get("image"))
         if tid:
             t = teams[tid]
             p["visual"]["kit"] = dict(id=tid, name=t["name"], design=pack["teams"][tid].get("kit"),

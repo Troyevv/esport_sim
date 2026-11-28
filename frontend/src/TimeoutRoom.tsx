@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { MatchView } from "./MatchCenter";
+import { LineupPortrait } from "./SceneIdentity";
 import { GamePortrait } from "./GamePortrait";
 import "./timeout.css";
 
@@ -150,12 +151,12 @@ export default function TimeoutRoom({
               aria-pressed={p.id === target}
               onClick={() => select(p.id)}
             >
-              <GamePortrait
+              {p.visual?.lineupPhoto ? <LineupPortrait id={p.id} name={p.name} visual={{...p.visual,player:true}}/> : <GamePortrait
                 name={p.name}
                 head={p.visual?.head || state.head}
                 kit={p.visual?.kit || { id: club.id, name: club.name }}
                 showShoulders
-              />
+              />}
               <span className="bench-identity">
                 <small>{p.role}</small>
                 <strong>{p.name}</strong>

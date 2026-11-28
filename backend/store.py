@@ -74,6 +74,7 @@ class Store:
         self.match_owner = None
         self.playback_epoch = monotonic()
         self.published_state = None
+        self.paused_stamp = None
         self.motion = deque(maxlen=6)  # Recent committed poses, never part of a save.
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         migrate_profile = career_store.prepare_migration(self.db, path)
@@ -265,10 +266,15 @@ class Store:
         )
 
     def tick(self, periods=1):
+        # An unchanged paused checkpoint needs no decoding, even after a long series.
+        if self.paused_stamp is not None and self.calendar_stamp() == self.paused_stamp:
+            return False
         with self.transaction():
             state = self.read()
             if not state["running"]:
+                self.paused_stamp = self.calendar_stamp()
                 return False
+            self.paused_stamp = None
             world = state["world"]
             start = world["tick"]
             samples = []
@@ -509,14 +515,8 @@ class Store:
                 )
                 pack = database.get(self.db, value["id"], value["revision"])
                 domain = database.match_input(
-                    pack, value["rosters"], self.badges.index(pack)
+                    pack, value["rosters"], self.badges.index(pack), self.portraits
                 )
-                cached = self.portraits.index(
-                    {pid: pack["players"][pid] for pid in domain["players"]}
-                )
-                for pid, portrait in cached.items():
-                    if not pack["players"][pid].get("appearance"):
-                        domain["players"][pid]["visual"]["head"] = portrait["image"]
                 history = [
                     e
                     for e in state.get("exhibitions", [])

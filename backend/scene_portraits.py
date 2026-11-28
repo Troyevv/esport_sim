@@ -4,6 +4,8 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
+from . import lineup_photos
+
 ROOT = Path(__file__).with_name("data")
 
 
@@ -34,6 +36,9 @@ def index(pack, library):
             for pid, asset in library.index(records).items()
         }
     )
+    for pid, photo in lineup_photos.index(library).items():
+        if pid in result:
+            result[pid]["lineupPhoto"] = photo
     return result
 
 

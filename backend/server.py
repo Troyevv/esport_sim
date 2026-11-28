@@ -271,7 +271,7 @@ def create_app(
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
         if request.url.path.startswith("/api/"):
-            response.headers["Cache-Control"] = "no-store"
+            response.headers.setdefault("Cache-Control", "no-store")
         return response
 
     @app.get("/api/capabilities")
@@ -475,7 +475,7 @@ def create_app(
         path=cs2_maps.root()/name/(name+("_lower" if layer=="lower" else "")+".png")
         if not path.is_file():
             raise HTTPException(404,"Радар выбранного этажа отсутствует")
-        return FileResponse(path,media_type="image/png")
+        return FileResponse(path, media_type="image/png", headers={"Cache-Control":"private, max-age=3600"})
 
     @app.post("/api/maps/{name}/surface")
     def surface_points(name: str, body: dict):

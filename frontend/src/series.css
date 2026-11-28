@@ -474,3 +474,11 @@
  .veto-club {padding:10px 5px;flex-direction:column;text-align:center}
  .veto-club:last-child {flex-direction:column;text-align:center}
 }
+.series-order[data-results=true] {gap:12px;margin-block:18px}
+.series-order[data-results=true] li {isolation:isolate;position:relative;overflow:hidden;min-height:116px;padding:16px;text-align:left;border-radius:4px;background:#191e23}
+.series-order[data-results=true] li .series-map-preview {position:absolute;z-index:-1;inset:0 0 0 auto;width:62%;height:100%;object-fit:cover;opacity:.36;mask-image:linear-gradient(90deg,transparent,#000 35%)}
+.series-order[data-results=true] li[data-won=true] {border-bottom:3px solid #609a71}
+.series-order[data-results=true] li[data-won=false] {border-bottom:3px solid #a55a50}
+.series-order[data-results=true] li strong {font:550 24px Oswald,sans-serif}
+.series-order[data-results=true] li span {font:600 16px var(--mono);color:var(--text)}
+@media (max-width:700px) {.series-order[data-results=true] li {flex-basis:calc(50% - 12px);min-height:96px}}

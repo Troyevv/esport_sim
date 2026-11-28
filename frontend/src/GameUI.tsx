@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 export function Glyph({ name }: { name: string }) {
   return (
     <img
@@ -60,10 +60,16 @@ export function Dialog({
   children: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = dialog.current!;
+    const trigger = document.activeElement;
     el.showModal();
-    return () => el.close();
+    return () => {
+      el.close();
+      if (trigger instanceof HTMLElement && trigger.isConnected && !el.contains(trigger)) {
+        trigger.focus({preventScroll:true});
+      }
+    };
   }, []);
   return (
     <dialog
@@ -71,6 +77,15 @@ export function Dialog({
       className="ui-dialog"
       aria-label={title}
       onCancel={close}
+      onKeyDown={e=>{
+        if(e.key!=="Tab")return;
+        const focusable=Array.from(e.currentTarget.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"]), summary'
+        )).filter(el=>el.tabIndex>=0 && el.getClientRects().length>0);
+        const first=focusable[0],last=focusable[focusable.length-1];
+        if(e.shiftKey && document.activeElement===first){e.preventDefault();last?.focus();}
+        else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first?.focus();}
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) close();
       }}

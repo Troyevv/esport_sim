@@ -45,6 +45,18 @@ test("Карьера от выбора базы до общей сохранён
     page.getByRole("heading", { name: "Кабинет менеджера", exact: true }),
   ).toBeVisible();
   await capture("career");
+  const searchTrigger = page.locator(".search-trigger");
+  await searchTrigger.focus();
+  await page.keyboard.press("Control+k");
+  const search = page.getByRole("dialog", {name:"Глобальный поиск"});
+  await search.getByRole("textbox").fill("ZywOo");
+  await expect(search.locator(".search-result").first()).toBeVisible();
+  for (const key of ["Tab","Tab","Shift+Tab"]) {
+    await page.keyboard.press(key);
+    expect(await search.evaluate(el=>el.contains(document.activeElement))).toBe(true);
+  }
+  await page.keyboard.press("Escape");
+  await expect(searchTrigger).toBeFocused();
   await press("Состав");
   await capture("roster");
   await press("Действия · ZywOo");

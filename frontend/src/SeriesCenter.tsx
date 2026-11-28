@@ -89,13 +89,14 @@ export function FormatSelect({
 
 function MapOrder({ s }: { s: SeriesView }) {
   return (
-    <ol className="series-order" aria-label="Порядок карт серии">
+    <ol className="series-order" data-results={s.stage==="finished" || s.stage==="interval"} aria-label="Порядок карт серии">
       {s.order.map((item, i) => {
         const result = s.results[i];
         const current =
           !result && i === s.results.length && s.stage === "playing";
         return (
-          <li key={item.map} data-current={current}>
+          <li key={item.map} data-current={current} data-won={result ? result.score[s.coach] > result.score[s.teams.find(t=>t!==s.coach)!] : undefined}>
+            {(s.stage==="finished" || s.stage==="interval") && <img className="series-map-preview" alt="" src={serverURL("/api/maps/"+item.map+"/radar.png").href}/>}
             <small>
               Карта {i + 1} ·{" "}
               {item.picker ? s.clubs[item.picker].name : "Решающая"}
