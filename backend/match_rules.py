@@ -24,6 +24,7 @@ RULES = dict(
     kitDefuse=50,
     result=35,
     timeouts=3,
+    timeoutSeconds=60,
     startMoney=800,
     overtimeMoney=10000,
     cap=16000,

@@ -4,7 +4,7 @@ import argparse
 from collections import Counter
 import gzip
 import json
-from math import atan2, dist
+from math import atan2, cos, dist, pi, sin
 from random import Random
 
 from backend import cs2_maps, database, match, native_match_state
@@ -19,7 +19,49 @@ def place(a, point, area):
     a.update(navArea=area, visible=[], knowledge={}, path=[], utility=[], waypoint=0)
 
 
-def scenario(name, seed, policy, domain=None, rosters=None, wounded=False):
+def ingress_pair(space, site):
+    """Two walkable observations straddling a real plant boundary, seen by the same witness."""
+    center = space.site_points[site]
+    for _, origin in sorted(
+        space.centers.items(), key=lambda item: dist(item[1], center)
+    ):
+        if space.site_at(origin) != site:
+            continue
+        for heading in range(16):
+            dx, dy = cos(heading * pi / 8), sin(heading * pi / 8)
+            for step in range(1, 35):
+                start = (origin[0] + step * dx, origin[1] + step * dy, origin[2])
+                if space.site_at(start) == site:
+                    continue
+                end = (start[0] - 1.7 * dx, start[1] - 1.7 * dy, start[2])
+                if (
+                    space.site_at(end) == site
+                    and space._locate(start)
+                    and space._locate(end)
+                    and not space.hit(start, end, 1, 64, 64)
+                ):
+                    witnesses = (
+                        area
+                        for area, p in space.centers.items()
+                        if 8 < dist(p, end) < 24
+                        and abs(p[2] - end[2]) < 4
+                        and not space.hit(p, start, 1, 64, 64)
+                        and not space.hit(p, end, 1, 64, 64)
+                    )
+                    witness = min(
+                        witnesses,
+                        key=lambda area: dist(space.centers[area], origin),
+                        default=None,
+                    )
+                    if witness is not None:
+                        return start, end, witness
+                break
+    raise AssertionError("No traversable site boundary in the witness sightline")
+
+
+def scenario(
+    name, seed, policy, domain=None, rosters=None, wounded=False, moving=False
+):
     space = cs2_maps.get(name)
     w = (
         match.initial(seed, domain, rosters, map_id=name, agent_policy=policy)
@@ -44,6 +86,9 @@ def scenario(name, seed, policy, domain=None, rosters=None, wounded=False):
         ),
         key=lambda a: abs(dist(q, centers[a]) - 14),
     )
+    if moving:
+        approach, q, witness = ingress_pair(space, "A")
+        site = space._locate(q)
     b = min(centers, key=lambda a: dist(centers[a], space.site_points["B"]))
     ct = [a for a in w["agents"] if a["team"] == "CT"]
     attackers = [a for a in w["agents"] if a["team"] == "T"]
@@ -59,10 +104,26 @@ def scenario(name, seed, policy, domain=None, rosters=None, wounded=False):
         for a in witnesses:
             a["hp"] = 19
     for a in attackers:
-        place(a, q, site)
+        place(a, approach if moving else q, space._locate(approach) if moving else site)
     owner = native_match_state.open_game(w)
     owner.observe()
     seen = json.loads(owner.snapshot())
+    if moving:
+        # Between consecutive sensory frames the group crosses the actual objective boundary.
+        seen["tick"] += 1
+        for a in seen["agents"]:
+            if a["team"] == "T":
+                a.update(zip("xyz", q))
+                a["navArea"] = site
+        owner = native_match_state.open_game(seen)
+        owner.observe()
+        seen = json.loads(owner.snapshot())
+        assert any(
+            m.get("sight", {}).get("carryingC4")
+            and m["sight"].get("direction")
+            and m["sight"]["tick"] == seen["tick"]
+            for m in seen["messages"]
+        ), "carrier movement was not relayed"
     packets = [m for m in seen["messages"] if m["team"] == "CT" and "sight" in m]
     ids = {m["sight"]["id"] for m in packets}
     assert len(ids) == 5 and len({m["sender"] for m in packets}) >= 2
@@ -75,6 +136,11 @@ def scenario(name, seed, policy, domain=None, rosters=None, wounded=False):
     received = json.loads(owner.snapshot())
     reports = next(a["knowledge"] for a in received["agents"] if a["id"] == captain["id"])
     assert ids <= reports.keys()
+    if moving:
+        assert any(
+            r.get("carryingC4") and r.get("direction") and r.get("entrySite") == "A"
+            for r in reports.values()
+        )
     review = max(arrival, received["plans"]["CT"]["review"])
     owner = native_match_state.open_game(dict(received, tick=review))
     owner.review_captain("CT")
@@ -122,6 +188,7 @@ def scenario(name, seed, policy, domain=None, rosters=None, wounded=False):
         map=name,
         policy=policy,
         wounded=wounded,
+        moving=moving,
         acted=acted,
         final=samples,
         idleWithoutTask=unassigned_idle,
@@ -138,7 +205,12 @@ def scenario(name, seed, policy, domain=None, rosters=None, wounded=False):
         ack=ack,
         conflictingDuties=conflicts,
         observations={
-            key: [r["source"], r["tick"], r.get("carryingC4", False), r.get("groupSize")]
+            key: [
+                r["source"],
+                r["tick"],
+                r.get("carryingC4", False),
+                r.get("groupSize"),
+            ]
             for key, r in reports.items()
         },
     )
@@ -233,6 +305,7 @@ if __name__ == "__main__":
     parser.add_argument("--policy", type=int, default=12)
     parser.add_argument("--wounded", action="store_true")
     parser.add_argument("--attack", action="store_true")
+    parser.add_argument("--moving", action="store_true")
     parser.add_argument("--field", action="store_true")
     args = parser.parse_args()
     pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
@@ -241,9 +314,20 @@ if __name__ == "__main__":
         rosters = Random(seed).sample(sorted(pack["rosters"]), 2)
         domain = database.match_input(pack, rosters)
         result = (
-            field_sample(name, seed, domain, rosters) if args.field else
-            attack_scenario(name, seed, domain, rosters)
-            if args.attack
-            else scenario(name, seed, args.policy, domain, rosters, wounded=args.wounded)
+            field_sample(name, seed, domain, rosters)
+            if args.field
+            else (
+                attack_scenario(name, seed, domain, rosters)
+                if args.attack
+                else scenario(
+                    name,
+                    seed,
+                    args.policy,
+                    domain,
+                    rosters,
+                    wounded=args.wounded,
+                    moving=args.moving,
+                )
+            )
         )
         print(json.dumps(result, ensure_ascii=False), flush=True)

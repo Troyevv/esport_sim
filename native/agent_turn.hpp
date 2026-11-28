@@ -10,6 +10,7 @@ class AgentTurn {
   public:
     AgentTurn(Json &w, Json &actor, const Squad &squad, const Json &cfg, const OpeningMap &map,
               const Combat &combat, const Json &recovery);
+    Json *requested_goal = nullptr; // Optional manual-review output.
     void prepare();
     void finish(const Json &intent);
     Json priority_intent();

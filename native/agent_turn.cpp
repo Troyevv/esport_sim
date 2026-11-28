@@ -70,6 +70,8 @@ bool AgentTurn::clear(const Json &l, const Json &r) const {
                                          r.contains("hp") ? 64 : 5);
 }
 bool AgentTurn::move(const Point &point, double pace) {
+    if (requested_goal)
+        *requested_goal = point;
     const auto &nav = arena.objectives().map();
     if (!w.at("effects").empty() && spatial_grenades(w) && a.at("visible").empty() &&
         w.at("deadline").get<Tick>() - now > 65 && !active(a, "groupDuty") && !active(a, "groupLead") &&

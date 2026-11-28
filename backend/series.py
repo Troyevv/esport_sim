@@ -25,6 +25,11 @@ def initial(
     profile = deepcopy(profile or veto.REGULATION)
     budget=profile.get("timeouts",match.RULES["timeouts"])
     require(type(budget) is int and 0 <= budget <= 6 and profile.get("timeoutScope","series") in ("map","series"), "Неверный лимит тайм-аутов")
+    duration = profile.get("timeoutSeconds", match.RULES["timeoutSeconds"])
+    require(
+        type(duration) is int and 0 < duration <= (2**31 - 1) // 10,
+        "Неверная продолжительность тайм-аута",
+    )
     if detailed:
         missing = set(profile["pool"]) - set(cs2_maps.installed())
         require(

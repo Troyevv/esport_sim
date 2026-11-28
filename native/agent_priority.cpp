@@ -63,7 +63,7 @@ Json AgentTurn::priority_intent() {
         plan.contains("commandJobs")) {
         const auto &jobs = plan.at("commandJobs");
         const auto it = jobs.find(a.at("id").get<std::string>());
-        if (it != jobs.end()) {
+        if (it != jobs.end() && a.value("unreachableJob",Tick{-1}) != plan.value("issued",Tick{-2})) {
             const auto &duty = *it;
             const auto &kind = plan.at("commandKind");
             const Point goal = duty.at("point");
@@ -85,8 +85,15 @@ Json AgentTurn::priority_intent() {
                 a["status"] = "Сохраняет оружие до конца раунда";
             else
                 a["status"] = "Занимает дополнительный рубеж";
-            if (distance(pos, goal) > 5)
-                return movement(goal, kind == "space" ? 1.65 : 2.);
+            if (distance(pos, goal) > 5) {
+                auto intent=movement(goal,kind=="space" ? 1.65 : 2.);
+                if (w.value("agentPolicy",0)>=12 && a.value("lastBlockedTick",Tick{-1})==now &&
+                    a.value("blockedTicks",0)>0 && a.at("blockedGoal")==goal) {
+                    a["unreachableJob"]=plan.at("issued");
+                    return nullptr; // Continue with the player's ordinary route this turn.
+                }
+                return intent;
+            }
             heading_to(a, duty.at("watch"));
             return Json::array({"hold", nullptr});
         }

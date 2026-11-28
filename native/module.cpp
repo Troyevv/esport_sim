@@ -33,6 +33,7 @@ PYBIND11_MODULE(_match_native, module) {
              py::call_guard<py::gil_scoped_release>());
     using namespace esport;
     module.def("timeout_need", &timeout_need);
+    module.def("timeout_repeat_cost", &repeat_cost);
     module.attr("PHYSICAL_NAV_API_VERSION") = 1;
     py::class_<Crossing>(module, "PhysicalCrossing").def(py::init<AreaId, AreaId, bool, std::vector<Lane>>());
     py::class_<MotionState>(module, "MotionState")

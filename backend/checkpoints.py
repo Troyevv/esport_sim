@@ -103,9 +103,19 @@ def validate_current(world):
     if "agentPolicy" in world and (type(world["agentPolicy"]) is not int or world["agentPolicy"] not in range(1, AGENT_POLICY + 1)):
         raise CheckpointError("Неизвестная версия индивидуального ИИ")
     if world.get("agentPolicy") == 12:
-        limit = world.get("series", {}).get("profile", {}).get("timeouts", 3)
-        if any(type(world.get(k)) is not int or not 0 <= world[k] <= ceiling
-               for k, ceiling in (("remaining", limit), ("rivalRemaining", limit), ("talkSeconds", 60))):
+        from .match_rules import RULES
+
+        profile = world.get("series", {}).get("profile", {})
+        limit = profile.get("timeouts", RULES["timeouts"])
+        duration = profile.get("timeoutSeconds", RULES["timeoutSeconds"])
+        if any(
+            type(world.get(k)) is not int or not 0 <= world[k] <= ceiling
+            for k, ceiling in (
+                ("remaining", limit),
+                ("rivalRemaining", limit),
+                ("talkSeconds", duration),
+            )
+        ):
             raise CheckpointError("Повреждён бюджет перерыва")
         if world.get("breakOwner", world["coachTeamId"]) not in world["domain"]["teams"] or (
                 world["phase"] == "timeout" and world.get("breakOwner") != world["coachTeamId"]):

@@ -26,13 +26,18 @@ void report_contact(Json &world, Json &actor, const Json &sight) {
         auto &last = actor["sentContacts"][id];
         Json details = Json::array({sight.value("weapon", ""), sight.value("carryingC4", false),
                                     sight.value("interaction", ""), sight.value("groupSize", 1)});
-        if (!last.is_null()) {
+        const bool entered =
+            sight.contains("entrySite") &&
+            (last.is_null() || last.value("entrySite", Json(nullptr)) != sight.at("entrySite"));
+        if (!last.is_null() && !entered) {
             auto age = now - last.at("tick").get<Tick>();
             if (age < 4 || (age < 24 && last.at("details") == details &&
                             distance(last.at("point").get<Point>(), actor_point(sight)) < 8))
                 return;
         }
         last = {{"tick", now}, {"point", actor_point(sight)}, {"details", std::move(details)}};
+        if (sight.contains("entrySite"))
+            last["entrySite"] = sight.at("entrySite");
         packet.erase("motionHistory");
     }
     world.at("messages").push_back({{"team", actor.at("team")}, {"sender", actor.at("id")},

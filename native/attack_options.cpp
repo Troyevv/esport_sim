@@ -131,6 +131,7 @@ void compare_attack(Json &w, const Json &cfg, const OpeningMap &arena, Json &pla
     const double slack = remaining - plant - travel;
     const double progress = std::clamp(1. - travel / 85., 0., 1.);
     const double urgency = std::clamp((110. - slack) / 100., 0., 1.);
+    bool refused_job=false;
     int unsupported = 0, supplies = 0, guns = 0, acknowledged = 0;
     double spread = 0, teamFit = 0;
     for (auto a : squad) {
@@ -151,6 +152,7 @@ void compare_attack(Json &w, const Json &cfg, const OpeningMap &arena, Json &pla
             const auto &order = msg->at("order");
             if (order.is_array() && order.size() >= 4 && order.back() == plan.value("revision", 0)) {
                 unsupported += msg->at("state") == "unavailable" || msg->at("state") == "refused";
+                refused_job |= msg->at("state")=="refused" && msg->value("unreachable",false);
                 ++acknowledged;
             }
         }
@@ -196,7 +198,17 @@ void compare_attack(Json &w, const Json &cfg, const OpeningMap &arena, Json &pla
     const bool disruption = rally.empty() || n < rally.at("alive") || blocked[site] > rally.at("blocked") ||
                             disorder > rally.at("disorder").get<double>() + .65 ||
                             (rally.at("hasC4") == true && !carrier);
-    const bool rallyWindow = prior == "regroup" ? now - since < 45 : disruption;
+    bool rallyWindow = prior == "regroup" ? now - since < 45 : disruption;
+    if (prior == "regroup" && rallyWindow && w.value("agentPolicy", 0) >= 12 &&
+        plan.contains("commandJobs")) {
+        // The captain can see living teammates on radar. A finished rendezvous no longer needs a gather
+        // order.
+        const auto &jobs = plan.at("commandJobs");
+        rallyWindow = std::ranges::any_of(squad, [&](const auto *mate) {
+            auto task = jobs.find(mate->at("id").template get<std::string>());
+            return task != jobs.end() && distance(actor_point(*mate), task->at("point")) > 5;
+        });
+    }
     const bool intendedSpread = prior == "feint" && paired && now - since < 68 && !blocked[site] && carrier;
     const bool spaceWindow = probing && timeToPlay && n >= 3 && now < plan.at("probe").at("until") &&
                              (prior != "space" || now - since < 45);
@@ -227,7 +239,7 @@ void compare_attack(Json &w, const Json &cfg, const OpeningMap &arena, Json &pla
     double value = -1e9;
     Json scores = Json::object();
     for (const auto &c : candidates) {
-        if (!c.possible)
+        if (!c.possible || (refused_job && prior==c.name))
             continue;
         const bool keepsRoute = prior == c.name || (prior == "rotate" && std::string_view(c.name) == "continue");
         double net = c.benefit - c.risk - (keepsRoute ? 0. : switchCost);

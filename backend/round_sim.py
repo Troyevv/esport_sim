@@ -14,6 +14,10 @@ CT_EDGE = {"de_nuke": 2, "de_train": 2, "de_mirage": 0.8, "de_anubis": -1.5}
 FIELDS = "k d a hs damage opening openingDeaths kast spent clutches".split()
 
 
+# Derived modifiers for the bounded fast-kernel pressure scale.
+_STRAIN_EFFECTS = tuple((min(10, s // 5), 1 - s / 320, 1 - s / 400) for s in range(66))
+
+
 def round_rules(n):
     half, ot = RULES["half"], RULES["overtimeHalf"]
     if n <= half * 2:
@@ -232,7 +236,8 @@ def play_map(game, map_id, first_attack, seed, strain=None):
     )
     active_coaching = game.get("simulation") != LEGACY_MODE
     if active_coaching:
-        from ._match_native import timeout_need
+        from ._match_native import timeout_need, timeout_repeat_cost
+
         bench = coaching.bench(domain)
         series = game.get("series", {})
         regulation = series.get("profile", {})
@@ -240,16 +245,23 @@ def play_map(game, map_id, first_attack, seed, strain=None):
         budgets = dict.fromkeys(teams, limit)
         if regulation.get("timeoutScope", "series") == "series" and series.get("results"):
             budgets.update(series["results"][-1].get("remainingTimeouts", {}))
-        last_break = [-10, -10]
+        last_break = [None, None]
+        last_load = [0, 0]
         pressure = [0, 0]
         setbacks = [0, 0]
         recent = [0, 0]
         for row in players:
             for player in row:
                 profile = domain["players"][player["player"]]
-                player.update(strainOfPlay=0, stability=profile["skills"]["stress_resistance"],
-                              usualRisk=player["risk"], usualOpening=player["openingWeight"],
-                              usualAssist=player["assist"])
+                stability = profile["skills"]["stress_resistance"]
+                # The four outcome loads depend only on the player's resilience and round result.
+                player.update(
+                    strainOfPlay=0,
+                    loads=tuple(v * (145 - stability) // 75 for v in (-9, 3, 1, 13)),
+                    usualRisk=player["risk"],
+                    usualOpening=player["openingWeight"],
+                    usualAssist=player["assist"],
+                )
     board = game.get("practiceBoard")
     if board:
         club = teams.index(game["practiceTeam"])
@@ -282,23 +294,57 @@ def play_map(game, map_id, first_attack, seed, strain=None):
             ]
             saved, losses = [[0] * 5 for _ in teams], [0, 0]
         called_break = None
-        if active_coaching and n >= 3:
+        if active_coaching and rounds:
             best = 0
             for side, team in enumerate(teams):
-                if n-last_break[side] < 3 or not budgets[team]:
+                if not budgets[team]:
                     continue
                 poor_buy = rounds[-1]["buys"][side] in ("eco", "force")
-                need = timeout_need(pressure[side] // 5, setbacks[side], scores[1-side]-scores[side], recent[side],
-                                    4 if poor_buy else 0, domain.get("matchImportance", 0)//3 +
-                                    (6 if max(scores) >= target-1 else 0), n, budgets[team], bench[team]["analysis"])
+                stakes = (
+                    domain.get("matchImportance", 0) // 3
+                    + 8 * (max(scores) >= target - 1)
+                    + 4 * (n > 2 * RULES["half"])
+                    + 3
+                    * (
+                        series.get("bestOf", 1) > 1
+                        and series.get("score", {}).get(team, 0)
+                        == series["bestOf"] // 2
+                    )
+                )
+                load = pressure[side] // 5
+                need = timeout_need(
+                    load,
+                    setbacks[side],
+                    scores[1 - side] - scores[side],
+                    recent[side],
+                    4 if poor_buy else 0,
+                    stakes,
+                    target - max(scores),
+                    budgets[team],
+                    bench[team]["analysis"],
+                )
+                if last_break[side] is not None:
+                    need -= timeout_repeat_cost(
+                        n - last_break[side],
+                        last_load[side],
+                        load,
+                        rounds[-1]["winnerTeamId"] == team,
+                        stakes,
+                    )
                 if need > best:
                     best, called_break = need, team
             if called_break:
                 side = teams.index(called_break)
                 budgets[called_break] -= 1
                 last_break[side] = n
+                last_load[side] = pressure[side] // 5
+                duration = regulation.get("timeoutSeconds", RULES["timeoutSeconds"])
                 for p in players[side]:
+                    if duration < 10:
+                        continue
                     p["strainOfPlay"] = max(0, p["strainOfPlay"] - bench[called_break]["support"]//10)
+                    if duration < 25 or (setbacks[side] == 0 and recent[side] < 2):
+                        continue
                     # Reassign first contact to the readiest player and adjust the risk of a force buy.
                     p["openingWeight"] = p["usualOpening"] * (1.12 if p["strainOfPlay"] < 20 else .83)
                     p["risk"] = max(0, min(100, p["usualRisk"] + (10 if bench[called_break]["bold"] else -15)))
@@ -339,6 +385,7 @@ def play_map(game, map_id, first_attack, seed, strain=None):
         for side in (0, 1):
             if active_coaching:
                 pressure[side] = setbacks[side] = 0
+                outcome = 2 * (side != winner)
                 recent[side] += int(side != winner)
                 if len(rounds) >= 3:
                     recent[side] -= int(rounds[-3]["winnerTeamId"] != teams[side])
@@ -346,6 +393,14 @@ def play_map(game, map_id, first_attack, seed, strain=None):
             for _ in alive[side ^ 1]:
                 if rng.random() < 0.80:
                     stats[side][rng.randrange(5)]["damage"] += rng.randint(12, 65)
+            reward = (
+                RULES["win"]
+                if side == winner
+                else min(
+                    RULES["lossMax"],
+                    RULES["lossBase"] + losses[side] * RULES["lossStep"],
+                )
+            )
             for i in range(5):
                 player = players[side][i]
                 pid = player["player"]
@@ -355,26 +410,19 @@ def play_map(game, map_id, first_attack, seed, strain=None):
                 survived = i in alive[side]
                 if active_coaching:
                     stress = player["strainOfPlay"]
-                    load = (8 if not survived else -4) + (5 if side != winner else -5)
-                    stress = max(0, min(65, stress * 4//5 + load*(145-player["stability"])//75
-                                        - (3 if i in contributed[side] else 0)))
+                    load = player["loads"][outcome + (not survived)]
+                    stress = stress * 4 // 5 + load - 3 * (i in contributed[side])
+                    stress = 0 if stress < 0 else 65 if stress > 65 else stress
                     pressure[side] += stress
                     setbacks[side] += stress > 24
                     player["strainOfPlay"] = stress
-                    player["risk"] = player["usualRisk"] + min(10, stress//5)
-                    player["openingWeight"] = player["usualOpening"] * (1 - stress / 320)
-                    player["assist"] = player["usualAssist"] * (1 - stress / 400)
+                    risk, opening, assist = _STRAIN_EFFECTS[stress]
+                    player["risk"] = player["usualRisk"] + risk
+                    player["openingWeight"] = player["usualOpening"] * opening
+                    player["assist"] = player["usualAssist"] * assist
                 stats[side][i]["kast"] += int(survived or i in contributed[side])
                 if not survived:
                     saved[side][i] = 0
-                reward = (
-                    RULES["win"]
-                    if side == winner
-                    else min(
-                        RULES["lossMax"],
-                        RULES["lossBase"] + losses[side] * RULES["lossStep"],
-                    )
-                )
                 cash[side][i] = min(RULES["cap"], cash[side][i] + reward)
             losses[side] = (
                 max(0, losses[side] - 1) if side == winner else min(4, losses[side] + 1)

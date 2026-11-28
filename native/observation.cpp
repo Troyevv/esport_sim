@@ -192,11 +192,15 @@ void observe_contacts(Json &w, const MapSensors &sensors, const Objectives &site
                 sight["interaction"] = w.at("action").at("kind");
             if (detail && b.at("team") == "T" && w.at("bomb").at("carrier") == id)
                 sight["carryingC4"] = true;
+            if (w.value("agentPolicy", 0) >= 12 && nearby >= 3 && sight.value("carryingC4", false)) {
+                if (auto site = sites.site_at(xyz(b)))
+                    sight["entrySite"] = *site;
+            }
             a.at("visible").push_back(id);
             a.at("knowledge")[id] = sight;
             bool changed = false;
             if (!prior.empty()) {
-                for (const auto key : {"weapon", "carryingC4", "interaction", "groupSize"})
+                for (const auto key : {"weapon", "carryingC4", "interaction", "groupSize", "entrySite"})
                     if (prior.value(key, Json(nullptr)) != sight.value(key, Json(nullptr)))
                         changed = true;
                 if (sight.contains("direction") && !prior.contains("direction"))

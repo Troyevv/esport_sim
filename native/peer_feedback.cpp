@@ -24,8 +24,12 @@ void announce(AgentTurn &turn, const char *channel, const char *state, const Poi
     }
     last = {{"state", state}, {"order", std::move(order)}, {"point", point}, {"origin", actor_point(a)},
             {"tick", turn.now}, {"channel", channel}, {"waypoint", a.value("waypoint", 0)}};
-    if (std::string_view(state) == "refused")
-        last["reason"] = a.at("lastRefusal").at("reason");
+    if (std::string_view(state) == "refused") {
+        if (turn.plan.contains("issued") && a.value("unreachableJob",Tick{-1})==turn.plan.at("issued")) {
+            last["unreachable"]=true;
+            last["reason"]="Нет доступного маршрута к назначенной позиции";
+        } else last["reason"]=a.at("lastRefusal").at("reason");
+    }
     if (small_groups(turn.w)) {
         if (last.at("channel") == "contact" || last.at("state") == "refused" || last.at("state") == "unavailable")
         {
@@ -123,8 +127,10 @@ void AgentTurn::peer_feedback(const std::string &kind) {
         }
     }
     const bool refused = a.contains("lastRefusal") && a.at("lastRefusal").at("tick") == now;
+    const bool unreachable = side=="T" && w.at("phase")=="live" && plan.contains("issued") &&
+                             a.value("unreachableJob",Tick{-1})==plan.at("issued");
     const bool completed = a.value("stepIndex", 0) != step_index;
-    if (!refused && !completed && now % 8 != slot)
+    if (!refused && !(unreachable && a.value("lastBlockedTick",Tick{-1})==now) && !completed && now % 8 != slot)
         return;
     const auto &slot_order = plan.at("orders").at("slots").at(slot);
     const auto &order = !grid && side == "CT" ? assignment(plan, a, squad) : slot_order;
@@ -151,7 +157,7 @@ void AgentTurn::peer_feedback(const std::string &kind) {
         task = Json::array({"live", plan.at("site"), goal, plan.at("revision")});
     }
     const char *state = "ack";
-    if (refused)
+    if (refused || unreachable)
         state = "refused";
     else if (completed)
         state = (kind == "throw" || kind == "plant") ? "ack" : "completed";

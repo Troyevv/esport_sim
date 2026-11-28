@@ -176,7 +176,7 @@ class MatchState::Impl {
             }
         if (w.contains("talkSeconds")) {
             w["breakOwner"] = coach;
-            w.at("talkSeconds") = 60;
+            w.at("talkSeconds") = break_seconds(w, config.at("rules"));
             timeout_recovery(w, coach);
         }
         w["phase"] = "timeout";
@@ -321,8 +321,12 @@ class MatchState::Impl {
                 sight["source"] = "Радио";
             if (!grid && (a.at("team") == "CT" || w.value("agentPolicy",0)>=12) && w.at("phase") == "live") {
                 sight["reporter"] = sender;
-                if (a.at("id") == w.at("plans").at(a.at("team").get<std::string>()).at("captain") && sight.at("source") == "Радио" &&
-                    (!old || (sight.value("carryingC4", false) && !old->value("carryingC4", false)) ||
+                if (a.at("id") == w.at("plans").at(a.at("team").get<std::string>()).at("captain") &&
+                    sight.at("source") == "Радио" &&
+                    (!old ||
+                     (sight.contains("entrySite") &&
+                      sight.at("entrySite") != old->value("entrySite", Json(nullptr))) ||
+                     (sight.value("carryingC4", false) && !old->value("carryingC4", false)) ||
                      sight.value("groupSize", 1) > old->value("groupSize", 1))) {
                     const auto player = a.at("playerId").get<std::string>();
                     const auto &domain = w.at("domain");
@@ -393,7 +397,7 @@ class MatchState::Impl {
         objectives->resolve(world, config, intents);
     }
     int advance(int ticks, TickSamples *output);
-    void tick(Json &world) const {
+    void tick(Json &world, TickSamples *output) const {
         auto &roster = world.at("agents");
         world.at("tick") = plus_ticks(world.at("tick"), 1);
         const Tick now = world.at("tick");
@@ -404,7 +408,8 @@ class MatchState::Impl {
                     start_round(world, config, spawns);
                     if (world.at("pending") == true)
                         enter_timeout(world);
-                    else consider_break(world);
+                    else
+                        consider_break(world, config.at("rules"));
                 } else
                     opening_map().begin_live(world, config);
             }
@@ -446,12 +451,17 @@ class MatchState::Impl {
             Json recovery = !grid && side == "T" ? rescue_c4(world, objectives->map(), squad) : Json(nullptr);
             for (auto actor : squad) {
                 AgentTurn turn(world, *actor, squad, config, opening_map(), *combat, recovery);
+                Json goal;
+                if (output && output->traces_actions(now))
+                    turn.requested_goal = &goal;
                 turn.prepare();
                 auto intent = turn.priority_intent();
                 if (intent.is_null())
                     intent = turn.spatial_intent();
                 intent = turn.prepare_flash(std::move(intent));
                 turn.finish(intent);
+                if (turn.requested_goal)
+                    output->actions[actor->at("id").get<std::string>()] = {intent.at(0), std::move(goal)};
                 intents.push_back(
                     Json{{"actor", actor->at("id")}, {"kind", intent[0]}, {"target", std::move(intent[1])}});
             }
@@ -504,9 +514,9 @@ int MatchState::Impl::advance(int ticks, TickSamples *output) {
            (!output || !output->end_of_preview(staged))) {
         if (output)
             output->before(staged);
-        tick(staged);
+        tick(staged, output);
         if (output)
-            output->after(staged);
+            output->after(staged, opening.get());
         ++count;
     }
     batch.commit();
@@ -562,7 +572,8 @@ int MatchState::advance_intermission(int ticks) {
             start_round(current, impl_->config, impl_->spawns);
             if (current.at("pending") == true)
                 impl_->enter_timeout(current);
-            else consider_break(current);
+            else
+                consider_break(current, impl_->config.at("rules"));
         } else {
             impl_->opening_map().begin_live(current, impl_->config);
         }

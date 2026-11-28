@@ -3,7 +3,7 @@ import type { MatchView } from "./MatchCenter";
 import { GamePortrait } from "./GamePortrait";
 import "./timeout.css";
 
-type Topic = { id: number; round: number; kind: string; text: string };
+type Topic = { id: number; round: number; kind: string; text: string; observation?: string; inference?: string; proposal?: string };
 export interface Room {
   seconds: number;
   players: Record<
@@ -183,7 +183,11 @@ export default function TimeoutRoom({
                     <b>
                       {p.name} · R{t.round}
                     </b>
-                    {t.text}
+                    {"observation" in t && t.observation ? <>
+                      <span>{t.observation}</span>
+                      {t.inference && <span><em>Моя версия</em> {t.inference}</span>}
+                      {t.proposal && <span><em>Предлагаю</em> {t.proposal}</span>}
+                    </> : t.text}
                   </blockquote>
                 )
               );
@@ -198,7 +202,7 @@ export default function TimeoutRoom({
               <option value="">Состояние перед раундом</option>
               {subjects.map((t) => (
                 <option key={t.key} value={t.key}>
-                  {t.name} · R{t.round} · {t.text}
+                  {t.name} · R{t.round} · {t.observation ?? t.text}
                 </option>
               ))}
             </select>
