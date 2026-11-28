@@ -454,3 +454,57 @@ def test_sansio_disconnect_stops_idle_and_live_streams(tmp_path, caplog):
             with connect(url, origin=origin, proxy=None) as device:
                 assert json.loads(device.recv(timeout=4)) == snapshot(client)
     assert not [r for r in caplog.records if r.name == "uvicorn.error" and r.levelno >= 40]
+
+
+def test_match_clock_accounts_for_overruns_and_resets_on_playback_commands(monkeypatch):
+    from backend import server
+
+    class Clock:
+        def __init__(self):
+            self.now = self.playback_epoch = 0.0
+            self.batches = []
+
+        async def sleep(self, delay):
+            self.now += delay
+
+        def tick(self, periods):
+            self.batches.append(periods)
+            if len(self.batches) == 1:
+                self.now += 0.35
+            elif len(self.batches) == 2:
+                self.now += 1.5
+                self.playback_epoch = self.now  # a fresh start, seek or speed
+            else:
+                raise StopAsyncIteration
+            return True
+
+    clock = Clock()
+    monkeypatch.setattr(server, "monotonic", lambda: clock.now)
+    monkeypatch.setattr(asyncio, "sleep", clock.sleep)
+    with pytest.raises(StopAsyncIteration):
+        asyncio.run(server.match_clock(clock, asyncio.Condition()))
+    assert clock.batches == [1, 3, 1]
+
+
+def test_variable_publish_batches_preserve_poses_and_committed_ticks(tmp_path):
+    from backend.store import Store
+
+    store = Store(tmp_path / "batch.sqlite")
+    try:
+        state = store.read()
+        state.update(speed=2, running=True)
+        store.write(state)
+        store.tick(1)
+        store.tick(3)
+        combined = store.snapshot("T", (state["context"], 0))
+        assert combined["world"]["tick"] == 8
+        track = combined["world"]["motion"]
+        assert track["startTick"] == 0
+        assert all(len(poses) == 8 for poses in track["tracks"].values())
+        final = store.read()["world"]
+        store.write(state)
+        for _ in range(4):
+            store.tick()
+        assert store.read()["world"] == final
+    finally:
+        store.db.close()

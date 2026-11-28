@@ -5,7 +5,7 @@ test("полный BO1, колл, сохранение и итог матча", 
   page,
   hasTouch,
 }, info) => {
-  test.setTimeout(100_000);
+  test.setTimeout(150_000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const button = (name: string) =>
@@ -45,6 +45,16 @@ test("полный BO1, колл, сохранение и итог матча", 
     timeout: 25_000,
   });
   await expect(page.locator(".coaching blockquote").first()).toBeVisible();
+  const room = page.getByRole("region", { name: "Тактический перерыв" });
+  await expect(room.locator(".bench-five button")).toHaveCount(5);
+  await room.locator(".bench-five button").nth(1).click();
+  await room.getByLabel("Обращение", {exact:true}).selectOption("opinion");
+  await press("Обратиться · 10 с");
+  await expect(room.locator(".round-clock")).toContainText("50 с");
+  await expect(room.locator("details[open] blockquote")).toHaveCount(1);
+  await expect(room.locator("svg.game-portrait")).toHaveCount(5);
+  await page.screenshot({path: info.outputPath("timeout-" + info.project.name + ".png"),fullPage:true});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   await page.getByLabel("План на ближайший раунд").selectOption("Выход B");
   await press("Передать колл");
   await expect(
@@ -82,7 +92,7 @@ test("полный BO1, колл, сохранение и итог матча", 
   await press("Быстро");
   await press("Запустить");
   await expect(page.locator(".match-result")).toContainText("Победитель", {
-    timeout: 40_000,
+    timeout: 85_000,
   });
   await press("Раунды");
   const final = await (await page.request.get("/api/state")).json();

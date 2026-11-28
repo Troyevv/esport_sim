@@ -3,7 +3,7 @@ from copy import deepcopy
 import json
 
 from . import cs2_maps, checkpoints, engine, match_inventory, match_score, tactics, world
-from . import match_view
+from . import match_view, coaching
 from .match_rules import AGENT_POLICY, UTILITY_STATS, CALLS, MAP, RULES, VERSION, PREVIOUS_VERSION, equipment_value
 
 
@@ -100,6 +100,10 @@ def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, 
         roster_ids,
         coach_id,
     )
+    if agent_policy and agent_policy >= 12:
+        from .coaching import bench
+        w.update(coaches=bench(w["domain"]), talkHistory=[], talkSeconds=0, lastBreak={},
+                 rivalRemaining=RULES["timeouts"], matchImportance=w["domain"].get("matchImportance", 0))
     match_score.initialize(w)
     if first_attack is not None:
         if first_attack not in match_score.team_ids(w):
@@ -170,6 +174,10 @@ def validate_bindings(w):
 def command(w, kind, value=None):
     from . import native_match_state
     owner = native_match_state.restore(json.dumps(w))
+    if kind == "address":
+        from .coaching import validate_address
+        validate_address(value)
+        value = json.dumps(value, ensure_ascii=False)
     owner.command(kind, value or "")
     result = json.loads(owner.snapshot())
     w.clear()
@@ -354,7 +362,7 @@ def project(w, view="full"):
     ratings = {}
     known = w["domain"].get("managerPlayers")
     coached = [a for a in w["agents"] if a["teamId"] == w["coachTeamId"]]
-    coach_view = coach_view and not w.get("series", {}).get("spectator")
+    coach_view = coach_view and not w.get("autonomous") and not w.get("series", {}).get("spectator")
     if coach_view:
         for a in w["agents"]:
             if a["teamId"] == w["coachTeamId"] and (known is None or a["playerId"] in known):
@@ -388,7 +396,7 @@ def project(w, view="full"):
             ),
             round=w["round"],
             phase=w["phase"],
-            clock=max(0, w["deadline"] - w["tick"]),
+            clock=max(0, w.get("breakEnds",w["deadline"]) - w["tick"]),
             teams=[team(w, i)["name"] for i in (0, 1)],
             teamVisuals=[team(w, i).get("visual") for i in (0, 1)],
             score=w["score"],
@@ -469,6 +477,9 @@ def project(w, view="full"):
                 if coach_view and (known is None or all(a["playerId"] in known for a in coached))
                 else None
             ),
+            room=coaching.room(w, coach_view, coached),
+            breakOwner=w.get("breakOwner"),
+            rivalRemaining=w.get("rivalRemaining"),
             remaining=w["remaining"],
             timeoutLimit=w.get("series",{}).get("profile",{}).get("timeouts",RULES["timeouts"]),
             pending=w["pending"],

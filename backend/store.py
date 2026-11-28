@@ -7,6 +7,7 @@ from collections import deque
 from contextlib import contextmanager
 from pathlib import Path
 from uuid import uuid4
+from time import monotonic
 
 from pydantic_core import from_json, to_json
 
@@ -71,6 +72,8 @@ class Store:
         self.badges = PersonalBadges(Path(path).with_suffix(".club-originals.sqlite"))
         self.portraits = PortraitLibrary(Path(path).with_suffix(".portraits.sqlite"))
         self.match_owner = None
+        self.playback_epoch = monotonic()
+        self.published_state = None
         self.motion = deque(maxlen=6)  # Recent committed poses, never part of a save.
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         migrate_profile = career_store.prepare_migration(self.db, path)
@@ -246,6 +249,7 @@ class Store:
 
     def write(self, state):
         self.match_owner = None
+        self.published_state = None
         # Completed rounds are immutable and shared by the active game and save slot.
         # Only their hashes travel with the checkpoint, including after a load/fork.
         world = state["world"]
@@ -260,7 +264,7 @@ class Store:
             "INSERT OR REPLACE INTO active VALUES(1,?)", (to_json(state, inf_nan_mode="constants").decode(),)
         )
 
-    def tick(self):
+    def tick(self, periods=1):
         with self.transaction():
             state = self.read()
             if not state["running"]:
@@ -268,6 +272,7 @@ class Store:
             world = state["world"]
             start = world["tick"]
             samples = []
+            ticks = state["speed"] * periods
             is_match = world["version"] == 2
             owner = None
             if is_match:
@@ -276,14 +281,14 @@ class Store:
                 owner = (cached[1] if cached and cached[0] == self.calendar_stamp()
                          else native_match_state.open_game(world))
                 if state["speed"] <= 8:
-                    samples = json.loads(owner.advance_motion(state["speed"]))
+                    samples = from_json(owner.advance_motion(ticks), cache_strings="keys")
                 else:
-                    owner.advance(state["speed"])
-                state["world"] = world = json.loads(owner.snapshot())
+                    owner.advance(ticks)
+                state["world"] = world = from_json(owner.snapshot(), cache_strings="keys")
                 if world["phase"] in ("finished", "timeout"):
                     state["running"] = False
             else:
-                for _ in range(state["speed"]):
+                for _ in range(ticks):
                     if state["speed"] <= 8:
                         samples.append(engine.motion_sample(world))
                     engine.advance(world)
@@ -308,14 +313,16 @@ class Store:
             self.write(state)
             if finished:
                 self.careers.save(state, "auto")
-            stamp = self.calendar_stamp() if reusable else None
+            stamp = self.calendar_stamp()
         if reusable:
             self.match_owner = (stamp, owner)
-        self.motion.append((state["context"], start, world["tick"], samples))
+        self.published_state = (stamp, state)
+        self.motion.append((state["context"], start, world["tick"], samples, state["speed"]))
         return True
 
     def snapshot(self, view, previous=None):
-        state = self.read()
+        cached = self.published_state
+        state = cached[1].copy() if cached and cached[0] == self.calendar_stamp() else self.read()
         state.pop("exhibitions", None)
         c = state.pop("career", None)
         if c:
@@ -332,20 +339,19 @@ class Store:
             state["world"]["series"] = series.project(game, view)
         world = state["world"]
         if self.motion and state["running"]:
-            context, start, end, samples = self.motion[-1]
+            context, start, end, samples, speed = self.motion[-1]
             if context != state["context"] or end != world["tick"]:
                 return state
             if previous and previous[0] == context and previous[1] < start:
                 # Backfill a slow subscriber only across contiguous batches of
                 # the same playback speed. Otherwise send a fresh projection.
-                batch_size = end - start
-                for prior_context, left, right, batch in reversed(
+                for prior_context, left, right, batch, prior_speed in reversed(
                     list(self.motion)[:-1]
                 ):
                     if (
                         prior_context != context
                         or right != start
-                        or right - left != batch_size
+                        or prior_speed != speed
                     ):
                         break
                     start, samples = left, batch + samples
@@ -380,6 +386,7 @@ class Store:
                     raise Conflict("Идентификатор уже использован для другой команды")
                 return json.loads(previous[1])
             state = self.read()
+            playback = state["context"], state["running"], state["speed"]
             progress = (state.get("career") or {}).get("progress")
             value = command.get("value")
             same_run_pause = (
@@ -395,7 +402,7 @@ class Store:
                 )
             kind, value = command["kind"], command.get("value")
             c = state.get("career")
-            if state["world"].get("series",{}).get("spectator") and kind in ("timeout","call","resume","tactic-assign","series-veto"):
+            if state["world"].get("series",{}).get("spectator") and kind in ("address","timeout","call","resume","tactic-assign","series-veto"):
                 raise ValueError("В режиме наблюдения решения принимают команды")
             if kind == "career-exhibition":
                 # Switching away and validating the editor selection are one command.
@@ -471,7 +478,7 @@ class Store:
                 state.pop("exhibitions", None)
                 state.update(saved)
                 state["context"] = str(uuid4())
-            elif kind in ("timeout", "call", "resume"):
+            elif kind in ("address", "timeout", "call", "resume"):
                 if state["world"]["version"] != 2:
                     raise ValueError("Сначала откройте матч BO1")
                 game = state["world"]
@@ -582,4 +589,6 @@ class Store:
                 "INSERT INTO receipt VALUES(?,?,?)",
                 (command["id"], request, json.dumps(result)),
             )
-            return result
+        if playback != (state["context"], state["running"], state["speed"]):
+            self.playback_epoch = monotonic()
+        return result

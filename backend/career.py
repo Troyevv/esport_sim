@@ -220,6 +220,20 @@ def match_domain(pack, c, event, badges=None, portraits=None):
     domain["authority"]["mode"] = c["mode"]
     if c["team"] in domain["teams"]:
         domain["authority"]["organization"] = domain["teams"][c["team"]]["organization"]
+    domain["matchImportance"] = 0
+    if event.get("edition"):
+        final_stage = event.get("stage") == len(edition["stages"]) - 1
+        domain["matchImportance"] = 18 if final_stage else 12
+    published = c.get("circuit", {}).get("live", {}).get("rows", ())
+    ranks = {r["team"]: r["rank"] for r in published if r["team"] in event["teams"]}
+    if len(ranks) == 2:
+        domain["oppositionPressure"] = {
+            team: min(8, max(0, rank - ranks[other]) // 4)
+            for team, rank in ranks.items() for other in ranks if team != other
+        }
+    for sid, role in c.get("office", {}).get("positions", {}).items():
+        if sid in domain["staff"]:
+            domain["staff"][sid] = dict(domain["staff"][sid], matchRole=role)
     domain["managerPlayers"] = list(manager_players)
     if portraits:
         for pid, portrait in portraits.index(
@@ -240,6 +254,8 @@ def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
                               profile=(c["circuit"]["editions"][event["edition"]]["rules"] if event.get("edition") else c["seriesProfile"]), history=c["history"], today=event["date"], jobs=jobs, detailed=detailed)
         if event.get("edition"):
             game["series"]["tournament"]=c["circuit"]["editions"][event["edition"]]["title"]
+        if c["team"] not in event["teams"] and detailed:
+            game["autonomous"] = True
         if not detailed:
             game["simulation"] = round_sim.MODE
         return game
@@ -255,13 +271,15 @@ def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
         c["team"] if c["team"] in event["teams"] else None,
         map_id=event.get("mapId","depo"),
     )
+    if c["team"] not in event["teams"]:
+        game["autonomous"] = True
     if event.get("pcw") and event.get("board"):
         match.assign(game, event["board"])
     return game
 
 
 def simulate(game):
-    if game.get("simulation") == round_sim.MODE:
+    if game.get("simulation") in (round_sim.MODE, round_sim.LEGACY_MODE):
         if "series" not in game:
             first = game["domain"]["rosters"][game["rosterIds"][0]]["team"]
             return round_sim.play_map(game, game["mapId"], first, game["seed"])

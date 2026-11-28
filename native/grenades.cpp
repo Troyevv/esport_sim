@@ -1,4 +1,5 @@
 #include "grenades.hpp"
+#include "coaching.hpp"
 #include <algorithm>
 #include <cmath>
 #include <queue>
@@ -46,6 +47,8 @@ void expose_player(Json &w, Json &a, const Json &f, double peak) {
                       {"end", now + duration}});
     auto &event = emit(w, "flash", a.at("name").get<std::string>() + " ослеплён", a.at("team"));
     event.update({{"player", a.at("id")}, {"owner", f.at("player")}, {"duration", duration}, {"peak", peak}});
+    if (a.contains("mind") && f.at("player")==a.at("id") && peak >= .55)
+        self_flash_emotion(w,a,event.at("id"));
     count_utility(w, f.at("player"),
                   f.at("team") != a.at("team")   ? "enemiesFlashed"
                   : f.at("player") == a.at("id") ? "selfFlashes"

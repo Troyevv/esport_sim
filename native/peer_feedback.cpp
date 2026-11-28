@@ -5,7 +5,7 @@
 
 namespace esport {
 namespace {
-void announce(AgentTurn &turn, const char *channel, const char *state, const Point &point, Json order) {
+void announce(AgentTurn &turn, const char *channel, const char *state, const Point &point, Json order, bool advancing = false) {
     auto &a = turn.a;
     auto &last = a["sentFeedback"][channel];
     const bool urgent = std::string_view(state) == "refused" || std::string_view(state) == "completed";
@@ -16,15 +16,20 @@ void announce(AgentTurn &turn, const char *channel, const char *state, const Poi
         const bool changed_load = small_groups(turn.w) && std::string_view(channel) == "order" &&
             (last.value("armed", false) != (a.at("ammo") > 0 && a.at("reloadAt") == 0 && a.at("blind") <= turn.now) ||
              last.value("hasUtility", false) != !a.at("utility").empty());
-        if (!changed_load && last.at("state") == state && last.at("order") == order && last.value("waypoint", 0) == a.value("waypoint", 0) &&
+        const bool motion_changed = turn.w.value("agentPolicy",0)>=12 && std::string_view(channel)=="order" && last.value("advancing",false)!=advancing;
+        if (!motion_changed && !changed_load && last.at("state") == state && last.at("order") == order && last.value("waypoint", 0) == a.value("waypoint", 0) &&
             distance(last.at("point").get<Point>(), point) < 10 &&
             (age < 30 || std::string_view(state) == "ack"))
             return;
     }
     last = {{"state", state}, {"order", std::move(order)}, {"point", point}, {"origin", actor_point(a)},
             {"tick", turn.now}, {"channel", channel}, {"waypoint", a.value("waypoint", 0)}};
-    if (std::string_view(state) == "refused")
-        last["reason"] = a.at("lastRefusal").at("reason");
+    if (std::string_view(state) == "refused") {
+        if (turn.plan.contains("issued") && a.value("unreachableJob",Tick{-1})==turn.plan.at("issued")) {
+            last["unreachable"]=true;
+            last["reason"]="Нет доступного маршрута к назначенной позиции";
+        } else last["reason"]=a.at("lastRefusal").at("reason");
+    }
     if (small_groups(turn.w)) {
         if (last.at("channel") == "contact" || last.at("state") == "refused" || last.at("state") == "unavailable")
         {
@@ -37,6 +42,7 @@ void announce(AgentTurn &turn, const char *channel, const char *state, const Poi
                 last["members"] = turn.group_members(actor_point(a));
         }
         if (last.at("channel") == "order") {
+            if (turn.w.value("agentPolicy",0)>=12) last["advancing"] = advancing;
             last["armed"] = a.at("ammo") > 0 && a.at("reloadAt") == 0 && a.at("blind") <= turn.now;
             last["hasUtility"] = !a.at("utility").empty();
         }
@@ -121,8 +127,10 @@ void AgentTurn::peer_feedback(const std::string &kind) {
         }
     }
     const bool refused = a.contains("lastRefusal") && a.at("lastRefusal").at("tick") == now;
+    const bool unreachable = side=="T" && w.at("phase")=="live" && plan.contains("issued") &&
+                             a.value("unreachableJob",Tick{-1})==plan.at("issued");
     const bool completed = a.value("stepIndex", 0) != step_index;
-    if (!refused && !completed && now % 8 != slot)
+    if (!refused && !(unreachable && a.value("lastBlockedTick",Tick{-1})==now) && !completed && now % 8 != slot)
         return;
     const auto &slot_order = plan.at("orders").at("slots").at(slot);
     const auto &order = !grid && side == "CT" ? assignment(plan, a, squad) : slot_order;
@@ -149,7 +157,7 @@ void AgentTurn::peer_feedback(const std::string &kind) {
         task = Json::array({"live", plan.at("site"), goal, plan.at("revision")});
     }
     const char *state = "ack";
-    if (refused)
+    if (refused || unreachable)
         state = "refused";
     else if (completed)
         state = (kind == "throw" || kind == "plant") ? "ack" : "completed";
@@ -171,7 +179,7 @@ void AgentTurn::peer_feedback(const std::string &kind) {
             goal = look;
         }
     }
-    announce(*this, "order", state, goal, task);
+    announce(*this, "order", state, goal, task, kind == "move" && distance(prior_position, actor_point(a)) > .01);
 }
 
 const Json *AgentTurn::peer_request(int &benefit) const {

@@ -17,6 +17,7 @@ void assemble_retake(Json &w, const Json &cfg, const OpeningMap &arena, const Sq
                      const Json &captain, const std::string &site);
 void review_attack(Json &w, const Json &cfg, const OpeningMap &arena, Json &plan, const Squad &squad,
                    const Json &captain, const Reports &reports);
+std::optional<std::string> site_for(const OpeningMap &arena, const Point &point, bool &approach);
 Pressure site_pressure(const OpeningMap &arena, const Reports &reports, Tick now);
 void sector_pressure(const OpeningMap &arena, const Reports &reports, const Reports &calls, Tick now,
                      Pressure &counts);

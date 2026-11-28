@@ -31,6 +31,10 @@ int execution_delay(const Json &w, const Json &a, const Json &player, const Json
                                .15 * pairs / std::max(1, count);
         delay += static_cast<int>(std::nearbyint((50 - understanding) / 13));
     }
+    if (a.contains("mind")) {
+        delay += std::max(0,-a.at("mind").at("focus").get<int>())/8;
+        if (a.contains("coachOrder") && a.at("coachOrder").at("kind")=="tempo") delay-=2;
+    }
     return std::max(1, delay);
 }
 } // namespace
@@ -122,6 +126,7 @@ Json board_step(Json &w, Json &a, const Json &cfg, const Objectives &objectives,
             a["lastRefusal"] = {{"tick", now}, {"step", index}, {"reason", reason}};
             emit(w, "order_refused", a.at("name").get<std::string>() + " · " + a.at("status").get<std::string>(), a.at("team"))
                 .update(Json{{"player", a.at("id")}, {"step", index}, {"reason", reason}});
+            if (a.contains("mind")) a.at("lastRefusal")["event"] = w.at("serial");
             return hold;
         }
     }

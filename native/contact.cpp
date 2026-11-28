@@ -243,6 +243,7 @@ Json AgentTurn::duel(const Json &contact) {
             delay -= s("trades") / 35.;
         if (squad.size() == 1)
             delay += (100 - s("clutch")) / 24.;
+        if (a.contains("mind")) delay -= a.at("mind").at("focus").get<int>() / 10.;
         delay += a.value("flashLevel", 0.) * (9. - s("reaction") / 20.);
         a["target"] = contact.at("id");
         a["previousTarget"] = contact.at("id");
@@ -252,6 +253,7 @@ Json AgentTurn::duel(const Json &contact) {
     a["observedSpeed"] = contact.value("speed", Json(0));
     a["status"] = a.at("reloadAt") != 0 ? "Перезаряжается" : "Держит контакт";
     double gap = distance(pos, target);
+    const bool prefer_utility=a.contains("coachOrder") && a.at("coachOrder").at("kind")=="utility";
     if (!a.at("utility").empty() && now >= a.at("throwAt").get<Tick>() && gap > 18) {
         auto &spec = cfg.at("weapons").at(a.at("weapon").get<std::string>());
         if (grid) {
@@ -266,7 +268,7 @@ Json AgentTurn::duel(const Json &contact) {
                           });
             bool soon = a.at("ammo") != 0 && a.at("reloadAt") == 0 && a.at("ready") < now + 5;
             if (!unsafe &&
-                !(soon && gap <= 18 + decisions * std::min(.6, spec.at("damage").get<double>() / 75)))
+                !(soon && !prefer_utility && gap <= 18 + decisions * std::min(.6, spec.at("damage").get<double>() / 75)))
                 return Json::array({"throw", contact});
         } else {
             const auto &nav = arena.objectives().map();
@@ -285,7 +287,7 @@ Json AgentTurn::duel(const Json &contact) {
                 int(std::max(0., 1 + std::floor(double(cfg.at("throwRecovery").get<int>() - 1 - ready) /
                                                 spec.at("interval").get<int>()))));
             auto chance = weapon_accuracy(w, cfg, a, spec, gap, a.at("burst")) / 100.;
-            double damage = spec.at("damage"), opportunity = shots * damage * chance;
+            double damage = spec.at("damage"), opportunity = shots * damage * chance * (prefer_utility ? .8 : 1.);
             std::set<std::string> seen;
             std::optional<std::pair<double, std::string>> best;
             for (auto &g : a.at("utility")) {

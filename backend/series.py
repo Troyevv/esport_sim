@@ -25,6 +25,11 @@ def initial(
     profile = deepcopy(profile or veto.REGULATION)
     budget=profile.get("timeouts",match.RULES["timeouts"])
     require(type(budget) is int and 0 <= budget <= 6 and profile.get("timeoutScope","series") in ("map","series"), "Неверный лимит тайм-аутов")
+    duration = profile.get("timeoutSeconds", match.RULES["timeoutSeconds"])
+    require(
+        type(duration) is int and 0 < duration <= (2**31 - 1) // 10,
+        "Неверная продолжительность тайм-аута",
+    )
     if detailed:
         missing = set(profile["pool"]) - set(cs2_maps.installed())
         require(
@@ -119,6 +124,10 @@ def next_map(w):
     )
     budget = s["profile"].get("timeouts",game["remaining"])
     game["remaining"] = budget if s["profile"].get("timeoutScope")=="map" else w.get("remaining",budget)
+    if "rivalRemaining" in game:
+        game["rivalRemaining"] = budget if s["profile"].get("timeoutScope")=="map" else w.get("rivalRemaining",budget)
+    if w.get("autonomous"):
+        game["autonomous"] = True
     game["openingTimeouts"] = game["remaining"]
     s["stage"] = "playing"
     game["series"] = s
@@ -161,8 +170,8 @@ def verify_map(report, teams, expected, seed, map_id):
     from . import round_sim
 
     mode = report.get("simulation", DETAILED)
-    require(mode in (round_sim.MODE, DETAILED), "Неизвестная версия симуляции")
-    if mode == round_sim.MODE:
+    require(mode in (round_sim.MODE, round_sim.LEGACY_MODE, DETAILED), "Неизвестная версия симуляции")
+    if mode in (round_sim.MODE, round_sim.LEGACY_MODE):
         round_sim.validate(report, teams)
     else:
         require(

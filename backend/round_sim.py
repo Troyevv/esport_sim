@@ -4,13 +4,18 @@ from itertools import combinations
 from math import exp
 from random import Random
 
-from . import skills, tactics, world
+from . import coaching, skills, tactics, world
 from .match_rules import RULES
 
-MODE = {"mode": "round", "version": 1}
+LEGACY_MODE = {"mode": "round", "version": 1}
+MODE = {"mode": "round", "version": 2}
 # Small side priors in skill points, modulated by the actual lineups and purchases.
 CT_EDGE = {"de_nuke": 2, "de_train": 2, "de_mirage": 0.8, "de_anubis": -1.5}
 FIELDS = "k d a hs damage opening openingDeaths kast spent clutches".split()
+
+
+# Derived modifiers for the bounded fast-kernel pressure scale.
+_STRAIN_EFFECTS = tuple((min(10, s // 5), 1 - s / 320, 1 - s / 400) for s in range(66))
 
 
 def round_rules(n):
@@ -229,11 +234,53 @@ def play_map(game, map_id, first_attack, seed, strain=None):
     players, teamwork = zip(
         *(lineup(domain, rid, map_id or "depo", i) for i, rid in enumerate(rids))
     )
+    active_coaching = game.get("simulation") != LEGACY_MODE
+    if active_coaching:
+        from ._match_native import timeout_need, timeout_repeat_cost
+
+        bench = coaching.bench(domain)
+        series = game.get("series", {})
+        regulation = series.get("profile", {})
+        limit = regulation.get("timeouts", RULES["timeouts"])
+        budgets = dict.fromkeys(teams, limit)
+        if regulation.get("timeoutScope", "series") == "series" and series.get(
+            "results"
+        ):
+            budgets.update(series["results"][-1].get("remainingTimeouts", {}))
+        duration = regulation.get("timeoutSeconds", RULES["timeoutSeconds"])
+        series_stakes = [
+            domain.get("matchImportance", 0) // 3
+            + 3
+            * (
+                series.get("bestOf", 1) > 1
+                and series.get("score", {}).get(team, 0) == series["bestOf"] // 2
+            )
+            for team in teams
+        ]
+        last_break = [None, None]
+        last_load = [0, 0]
+        pressure = [0, 0]
+        setbacks = [0, 0]
+        recent = [0, 0]
+        for row in players:
+            for player in row:
+                profile = domain["players"][player["player"]]
+                stability = profile["skills"]["stress_resistance"]
+                # The four outcome loads depend only on the player's resilience and round result.
+                player.update(
+                    strainOfPlay=0,
+                    loads=tuple(v * (145 - stability) // 75 for v in (-9, 3, 1, 13)),
+                    usualRisk=player["risk"],
+                    usualOpening=player["openingWeight"],
+                    usualAssist=player["assist"],
+                )
     board = game.get("practiceBoard")
     if board:
         club = teams.index(game["practiceTeam"])
         prepared = list(players)
         prepared[club] = board_lineup(board, players[club], domain)
+        if active_coaching:
+            rehearsed = [p["openingWeight"] / p["usualOpening"] for p in prepared[club]]
     # Correlated map-to-map execution varies with the consistency of the five.
     execution = [
         rng.gauss(0, 3 + (100 - sum(p["consistency"] for p in row) / 5) * 0.07)
@@ -260,6 +307,63 @@ def play_map(game, map_id, first_attack, seed, strain=None):
                 for _ in teams
             ]
             saved, losses = [[0] * 5 for _ in teams], [0, 0]
+        called_break = None
+        if active_coaching and rounds:
+            rounds_left = target - max(scores)
+            round_stakes = 8 * (rounds_left <= 1) + 4 * (n > 2 * RULES["half"])
+            best = 0
+            for side, team in enumerate(teams):
+                if not budgets[team]:
+                    continue
+                poor_buy = rounds[-1]["buys"][side] in ("eco", "force")
+                stakes = series_stakes[side] + round_stakes
+                load = pressure[side] // 5
+                need = timeout_need(
+                    load,
+                    setbacks[side],
+                    scores[1 - side] - scores[side],
+                    recent[side],
+                    4 if poor_buy else 0,
+                    stakes,
+                    rounds_left,
+                    budgets[team],
+                    bench[team]["analysis"],
+                )
+                if last_break[side] is not None:
+                    need -= timeout_repeat_cost(
+                        n - last_break[side],
+                        last_load[side],
+                        load,
+                        rounds[-1]["winnerTeamId"] == team,
+                        stakes,
+                    )
+                if need > best:
+                    best, called_break = need, team
+            if called_break:
+                side = teams.index(called_break)
+                budgets[called_break] -= 1
+                last_break[side] = n
+                last_load[side] = pressure[side] // 5
+                for p in players[side]:
+                    if duration < 10:
+                        continue
+                    p["strainOfPlay"] = max(
+                        0, p["strainOfPlay"] - bench[called_break]["support"] // 10
+                    )
+                    if duration < 25 or (setbacks[side] == 0 and recent[side] < 2):
+                        continue
+                    # Reassign first contact to the readiest player and adjust the risk of a force buy.
+                    p["openingWeight"] = p["usualOpening"] * (
+                        1.12 if p["strainOfPlay"] < 20 else 0.83
+                    )
+                    p["risk"] = max(
+                        0,
+                        min(
+                            100,
+                            p["usualRisk"]
+                            + (10 if bench[called_break]["bold"] else -15),
+                        ),
+                    )
         if board:
             carried = sum(0 < value < 3000 for value in saved[club])
         powers, buys = [], []
@@ -290,15 +394,36 @@ def play_map(game, map_id, first_attack, seed, strain=None):
             teams,
             carried,
         )
+        if called and active_coaching:
+            for planned, current, factor in zip(
+                prepared[club], players[club], rehearsed
+            ):
+                planned["openingWeight"] = current["openingWeight"] * factor
+                planned["assist"] = current["assist"]
         winner, alive, contributed = resolve_round(
             rng, powers, prepared if called else players, cash, stats
         )
         scores[winner] += 1
         for side in (0, 1):
+            if active_coaching:
+                pressure[side] = setbacks[side] = 0
+                coached = called_break == teams[side]
+                outcome = 2 * (side != winner)
+                recent[side] += int(side != winner)
+                if len(rounds) >= 3:
+                    recent[side] -= int(rounds[-3]["winnerTeamId"] != teams[side])
             # Surviving opponents may also have taken non-lethal damage.
             for _ in alive[side ^ 1]:
                 if rng.random() < 0.80:
                     stats[side][rng.randrange(5)]["damage"] += rng.randint(12, 65)
+            reward = (
+                RULES["win"]
+                if side == winner
+                else min(
+                    RULES["lossMax"],
+                    RULES["lossBase"] + losses[side] * RULES["lossStep"],
+                )
+            )
             for i in range(5):
                 player = players[side][i]
                 pid = player["player"]
@@ -306,17 +431,23 @@ def play_map(game, map_id, first_attack, seed, strain=None):
                     player["capacity"], strain.get(pid, 0) + player["wear"]
                 )
                 survived = i in alive[side]
-                stats[side][i]["kast"] += int(survived or i in contributed[side])
+                helped = i in contributed[side]
+                if active_coaching:
+                    previous = player["strainOfPlay"]
+                    load = player["loads"][outcome + (not survived)]
+                    stress = previous * 4 // 5 + load - 3 * helped
+                    stress = 0 if stress < 0 else 65 if stress > 65 else stress
+                    pressure[side] += stress
+                    setbacks[side] += stress > 24
+                    if stress != previous or coached:
+                        player["strainOfPlay"] = stress
+                        risk, opening, assist = _STRAIN_EFFECTS[stress]
+                        player["risk"] = player["usualRisk"] + risk
+                        player["openingWeight"] = player["usualOpening"] * opening
+                        player["assist"] = player["usualAssist"] * assist
+                stats[side][i]["kast"] += int(survived or helped)
                 if not survived:
                     saved[side][i] = 0
-                reward = (
-                    RULES["win"]
-                    if side == winner
-                    else min(
-                        RULES["lossMax"],
-                        RULES["lossBase"] + losses[side] * RULES["lossStep"],
-                    )
-                )
                 cash[side][i] = min(RULES["cap"], cash[side][i] + reward)
             losses[side] = (
                 max(0, losses[side] - 1) if side == winner else min(4, losses[side] + 1)
@@ -331,6 +462,8 @@ def play_map(game, map_id, first_attack, seed, strain=None):
                 reason="objective" if all(alive) else "elimination",
             )
         )
+        if called_break:
+            rounds[-1]["timeoutTeam"] = called_break
         if called:
             rounds[-1]["tactic"] = tactics.reference(board)
         if scores[winner] == target:
@@ -339,8 +472,9 @@ def play_map(game, map_id, first_attack, seed, strain=None):
         for p in row:
             strain[p["player"]] *= 1 - p["recovery"] / 160
     return dict(
-        simulation=MODE,
-        rules="round-mr12.1",
+        simulation=MODE if active_coaching else LEGACY_MODE,
+        rules="round-mr12.2" if active_coaching else "round-mr12.1",
+        **({"remainingTimeouts": budgets} if active_coaching else {}),
         mapId=map_id,
         seed=seed,
         teams=teams,
@@ -356,7 +490,7 @@ def play_map(game, map_id, first_attack, seed, strain=None):
 def validate(report, teams):
     from .database import require
 
-    ok = report["rules"] == "round-mr12.1" and report["firstAttackTeamId"] in teams
+    ok = report["rules"] == ("round-mr12.2" if report.get("simulation") == MODE else "round-mr12.1") and report["firstAttackTeamId"] in teams
     points = dict.fromkeys(teams, 0)
     rows = report["rounds"]
     for n, r in enumerate(rows, 1):

@@ -10,5 +10,6 @@ Tick plus_ticks(Tick tick, Tick offset);
 Json &emit(Json &state, const std::string &kind, const std::string &text, Json side = nullptr);
 void pay(Json &w, Json &a, int delta, const std::string &reason, int cap);
 void start_round(Json &state, const Json &cfg, const Json &spawns);
+int round_target(int round, const Json &rules);
 void settle_round(Json &state, const Json &config, const std::string &side, const std::string &reason);
 } // namespace esport

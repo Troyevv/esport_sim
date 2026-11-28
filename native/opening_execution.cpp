@@ -77,7 +77,8 @@ Json AgentTurn::opening_decision() {
                 return nullptr;
             }
         }
-    if (!small_groups(w) && support && active(jobs.at(support->at("id").get<std::string>()), "withdrawn"))
+    if (support && ((!small_groups(w) && active(jobs.at(support->at("id").get<std::string>()), "withdrawn")) ||
+                    (w.value("agentPolicy",0)>=12 && active(job,"replacement"))))
         support = nullptr;
     auto gate_ready = [&]() {
         if (!support)
@@ -142,8 +143,8 @@ Json AgentTurn::opening_decision() {
                 int flight = std::max(3, int(std::nearbyint(distance(pos, target) / 7)));
                 if (distance(nav.grenade(pos, target, flight).back(), target) >= 6) {
                     if (distance(pos, launch) > .5) {
-                        move(launch, 1);
-                        return Json::array({"move", nullptr});
+                        const bool moved = move(launch, 1);
+                        return Json::array({moved ? "move" : "hold", nullptr});
                     }
                     cast["skip"] = "Линия броска перекрыта";
                 } else if (std::ranges::any_of(squad, [&](auto m) {

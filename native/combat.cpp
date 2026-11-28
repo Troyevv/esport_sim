@@ -1,3 +1,4 @@
+#include "coaching.hpp"
 #include "grenades.hpp"
 #include "radio.hpp"
 #include "combat.hpp"
@@ -102,6 +103,9 @@ void death(Json &w, const Json &cfg, Json &shooter, Json &target, const std::str
                 mate["tradeTarget"] = killer;
                 mate["tradeUntil"] = plus_ticks(w.at("tick"), 50);
             }
+    encounter_emotion(w, target, false, false, kill_id, weapon);
+    if (&shooter != &target)
+        encounter_emotion(w, shooter, enemy, !enemy, kill_id, weapon);
     target.update(Json{{"status", "Выбыл"}, {"visible", Json::array()}, {"path", Json::array()}});
     auto &stats = w.at("stats");
     add(stats.at(ident).at("d"), 1);
@@ -123,10 +127,13 @@ void death(Json &w, const Json &cfg, Json &shooter, Json &target, const std::str
         emit(w, "drop", target.at("name").get<std::string>() + " потерял C4", "T")
             .update(Json{{"x", target.at("x")}, {"y", target.at("y")}});
     }
-    target["evidence"] = Json{{"id", kill_id},
-                              {"round", w.at("round")},
-                              {"text", "Я выбыл в раунде " + std::to_string(w.at("round").get<int>()) +
-                                           ". В следующий раз мне нужна поддержка."}};
+    if (target.contains("mind"))
+        target["evidence"] = target.at("topics").back();
+    else
+        target["evidence"] = Json{{"id", kill_id},
+                                  {"round", w.at("round")},
+                                  {"text", "Я выбыл в раунде " + std::to_string(w.at("round").get<int>()) +
+                                               ". В следующий раз мне нужна поддержка."}};
 }
 } // namespace
 

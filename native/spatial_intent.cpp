@@ -27,10 +27,13 @@ bool AgentTurn::wait_for_split(const Json &order, Tick remaining) {
         const auto &other = plan.at("orders").at("slots").at(mate->at("slot").get<int>());
         if (other.at("lane") == order.at("lane"))
             continue;
-        opposite = true;
+        if (w.value("agentPolicy",0)<12) opposite = true;
         if (auto update = recent_call(mate->at("id"), "order", 18);
             update && (!update->value("armed", true) || update->at("state") == "unavailable"))
             continue;
+        if (w.value("agentPolicy",0)>=12 && plan.contains("commandJobs") &&
+            plan.at("commandJobs").contains(mate->at("id").get<std::string>())) continue;
+        opposite=true;
         if (auto call = recent_call(mate->at("id"), "entry", 28))
             if (call->at("order") == site && call->at("state") == "ready" &&
                 call->at("tick") >= a.value("routeIssued", Tick{-1}) &&
@@ -160,11 +163,16 @@ Json AgentTurn::spatial_intent() {
                         cohesion = std::max(cohesion, chemistry(w, a, *m));
                         nearest = std::min(nearest, gap(*m));
                         if (peer_radio(w)) {
-                            const auto key = m->at("id").get<std::string>() + "/order";
+                            const auto id=m->at("id").get<std::string>();
+                            if (w.value("agentPolicy",0)>=12 && plan.contains("commandJobs") &&
+                                plan.at("commandJobs").contains(id)) continue;
+                            const auto key = id + "/order";
                             if (a.contains("peerCalls") && a.at("peerCalls").contains(key)) {
                                 const auto &update = a.at("peerCalls").at(key);
                                 if (now - update.at("tick").get<Tick>() < 30) {
-                                    behind |= update.value("waypoint", 0) < index;
+                                    bool current = update.at("tick") >= a.value("routeIssued", Tick{-1});
+                                    if (w.value("agentPolicy",0)<12 || (current && update.value("advancing",false)))
+                                        behind |= update.value("waypoint", 0) < index;
                                     blocked |= update.at("state") == "unavailable";
                                 }
                             }

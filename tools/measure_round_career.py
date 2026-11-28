@@ -17,7 +17,7 @@ from backend import attention, career, competitions, database
 from backend.store import Store
 
 
-def measure(path, days, compare=None, reports=None, scouting=False):
+def measure(path, days, compare=None, reports=None, scouting=False, legacy_rounds=False):
     store = Store(path)
     pack = store.careers.pack([database.STAFF_RELEASE, 1])
     team = next(t for t, r in pack["teams"].items() if r["name"] == "Aurora Gaming")
@@ -97,6 +97,17 @@ def measure(path, days, compare=None, reports=None, scouting=False):
                 return original(*args, **(kwargs | {"detailed": True}))
 
             stack.enter_context(patch.object(career, "initial", detailed))
+        elif legacy_rounds:
+            from backend import round_sim
+            original = career.initial
+
+            def legacy(*args, **kwargs):
+                game = original(*args, **kwargs)
+                if game.get("simulation") == round_sim.MODE:
+                    game["simulation"] = round_sim.LEGACY_MODE
+                return game
+
+            stack.enter_context(patch.object(career, "initial", legacy))
         for obj, name, key in [
             (store, "read", "readCheckpoint"),
             (store, "write", "writeCheckpoint"),
@@ -203,6 +214,7 @@ if __name__ == "__main__":
         "--reports", type=Path, help="Write the comparison sample for calibration"
     )
     parser.add_argument("--scouting", action="store_true", help="Measure private knowledge and accuracy after the run")
+    parser.add_argument("--legacy-rounds", action="store_true", help="Compare with round-mr12.1")
     opts = parser.parse_args()
     with TemporaryDirectory() as tmp:
         measure(
@@ -211,4 +223,5 @@ if __name__ == "__main__":
             opts.compare,
             opts.reports,
             opts.scouting,
+            opts.legacy_rounds,
         )

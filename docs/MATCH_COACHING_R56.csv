@@ -1,0 +1,10 @@
+map,policy11_distant_assigned_12_ticks,policy12_call,inbox_unique,radio_ticks,review_after_delivery_ticks,first_move_after_delivery_ticks,assigned_and_moved,ack_by_26_ticks,overlapping_duties,T_before_delivery,T_after_delivery,T_moved_in_8_ticks,T_actor_ticks,CT_actor_ticks,idle_without_task,blocked_assignment_no_contact
+de_ancient,0,yield,5,4,5,6,3,3,0,scout,rotate,5,2202,2138,0,0
+de_anubis,0,yield,5,2,4,5,3,3,0,scout,rotate,5,2275,2199,0,0
+de_cache,0,yield,5,3,4,5,3,3,0,scout,rotate,5,2255,2182,0,0
+de_dust2,0,yield,5,4,4,5,3,3,0,scout,rotate,5,2275,1925,0,0
+de_inferno,0,yield,5,4,4,5,3,3,0,scout,rotate,5,1848,2149,0,0
+de_mirage,2,yield,5,4,4,5,3,2,0,scout,rotate,5,2228,2068,0,0
+de_nuke,2,full,5,5,4,5,2,2,0,scout,rotate,5,1937,2066,0,0
+de_train,0,yield,5,4,4,5,3,2,0,scout,rotate,5,1624,2275,0,0
+de_vertigo,0,yield,5,4,4,5,3,3,0,scout,rotate,5,2275,1541,0,0

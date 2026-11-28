@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from . import engine
 
-AGENT_POLICY = 11
+AGENT_POLICY = 12
 UTILITY_STATS = ("flashesThrown", "enemiesFlashed", "alliesFlashed", "selfFlashes",
                  "enemyBlindTicks", "flashAssists", "heThrown", "heDamage", "smokesThrown",
                  "smokeScreenTicks", "smokesOpened", "smokeShots", "firesQuenched",
@@ -24,6 +24,7 @@ RULES = dict(
     kitDefuse=50,
     result=35,
     timeouts=3,
+    timeoutSeconds=60,
     startMoney=800,
     overtimeMoney=10000,
     cap=16000,

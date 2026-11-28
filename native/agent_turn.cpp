@@ -70,6 +70,8 @@ bool AgentTurn::clear(const Json &l, const Json &r) const {
                                          r.contains("hp") ? 64 : 5);
 }
 bool AgentTurn::move(const Point &point, double pace) {
+    if (requested_goal)
+        *requested_goal = point;
     const auto &nav = arena.objectives().map();
     if (!w.at("effects").empty() && spatial_grenades(w) && a.at("visible").empty() &&
         w.at("deadline").get<Tick>() - now > 65 && !active(a, "groupDuty") && !active(a, "groupLead") &&
@@ -274,7 +276,7 @@ void AgentTurn::duty_feedback() {
         state = "engaged";
     else if (distance(actor_point(a), goal.get<Point>()) < 8)
         state = duty ? "arrived" : "ready";
-    else if (duty)
+    else if (duty && (w.value("agentPolicy",0)<12 || distance(prior_position, actor_point(a))>.01))
         state = "moving";
     else
         return;

@@ -11,8 +11,10 @@ bool peer_radio(const Json &world) {
 int reception_quality(const Json &world, const Json &sender, const Json &recipient) {
     const auto &speaker = player_profile(world, sender).at("skills");
     const auto &listener = player_profile(world, recipient).at("skills");
-    return (speaker.at("communication").get<int>() + listener.at("coordination").get<int>() +
-            chemistry(world, sender, recipient)) / 3;
+    const int attention = sender.contains("mind") ?
+        (sender.at("mind").at("focus").get<int>()+recipient.at("mind").at("focus").get<int>())/3 : 0;
+    return std::clamp(attention + (speaker.at("communication").get<int>() + listener.at("coordination").get<int>() +
+            chemistry(world, sender, recipient)) / 3, 0, 100);
 }
 
 void report_contact(Json &world, Json &actor, const Json &sight) {
@@ -24,13 +26,18 @@ void report_contact(Json &world, Json &actor, const Json &sight) {
         auto &last = actor["sentContacts"][id];
         Json details = Json::array({sight.value("weapon", ""), sight.value("carryingC4", false),
                                     sight.value("interaction", ""), sight.value("groupSize", 1)});
-        if (!last.is_null()) {
+        const bool entered =
+            sight.contains("entrySite") &&
+            (last.is_null() || last.value("entrySite", Json(nullptr)) != sight.at("entrySite"));
+        if (!last.is_null() && !entered) {
             auto age = now - last.at("tick").get<Tick>();
             if (age < 4 || (age < 24 && last.at("details") == details &&
                             distance(last.at("point").get<Point>(), actor_point(sight)) < 8))
                 return;
         }
         last = {{"tick", now}, {"point", actor_point(sight)}, {"details", std::move(details)}};
+        if (sight.contains("entrySite"))
+            last["entrySite"] = sight.at("entrySite");
         packet.erase("motionHistory");
     }
     world.at("messages").push_back({{"team", actor.at("team")}, {"sender", actor.at("id")},

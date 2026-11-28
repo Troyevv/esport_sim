@@ -4,6 +4,7 @@ import secrets
 from collections import Counter
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
+from time import monotonic
 from typing import Literal
 from urllib.parse import urlsplit
 from uuid import UUID
@@ -11,6 +12,7 @@ from uuid import UUID
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic_core import to_json
 from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
 from . import training, training_center, competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
@@ -41,6 +43,7 @@ class Command(BaseModel):
         "match",
         "series-veto",
         "series-next",
+        "address",
         "timeout",
         "call",
         "resume",
@@ -81,6 +84,27 @@ class Pair(BaseModel):
     name: str = Field(default="Устройство", max_length=80)
 
 
+async def match_clock(store, condition):
+    deadline = monotonic() + TICK_SECONDS
+    while True:
+        await asyncio.sleep(max(0, deadline - monotonic()))
+        async with condition:
+            # Commands from either listener can start a new playback epoch.
+            # Paused time and debt at the old speed never enter the new one.
+            deadline = max(deadline, store.playback_epoch + TICK_SECONDS)
+            now = monotonic()
+            if now < deadline:
+                continue
+            # Keep unpaid intervals on the monotonic timeline. Share one
+            # checkpoint per publication and yield to commands between batches.
+            periods = min(4, 1 + int((now - deadline) / TICK_SECONDS))
+            deadline += periods * TICK_SECONDS
+            if store.tick(periods):
+                condition.notify_all()
+            else:
+                deadline = now + TICK_SECONDS
+
+
 def create_app(
     db_path: Path,
     mode="local",
@@ -115,19 +139,6 @@ def create_app(
             if pairing_code:
                 with store.transaction():
                     issue_code(store.db, pairing_code)
-
-            async def clock():
-                loop = asyncio.get_running_loop()
-                deadline = loop.time()
-                while True:
-                    deadline += TICK_SECONDS
-                    if deadline <= loop.time():
-                        # Resume from a long stall without a burst of catch-up ticks.
-                        deadline = loop.time() + TICK_SECONDS
-                    await asyncio.sleep(max(0, deadline - loop.time()))
-                    async with condition:
-                        if store.tick():
-                            condition.notify_all()
 
             async def calendar():
                 wake_calendar.set()
@@ -180,7 +191,7 @@ def create_app(
                 app.state.lan = LanAccess(db_path.parent, guest_app)
                 await app.state.lan.restore()
 
-            task = asyncio.create_task(clock())
+            task = asyncio.create_task(match_clock(store, condition))
             calendar_task = asyncio.create_task(calendar())
             try:
                 yield
@@ -548,22 +559,24 @@ def create_app(
 
         async def publish():
             previous = None
-            last = -1
+            published = None
             while True:
                 async with condition:
-                    snapshot = app.state.store.snapshot(view, previous)
-                    if snapshot["sequence"] == last:
+                    store = app.state.store
+                    if store.calendar_stamp() == published:
                         try:
                             await asyncio.wait_for(condition.wait(), timeout=1)
                             continue
                         except TimeoutError:
                             pass
+                    snapshot = store.snapshot(view, previous)
+                    published = store.calendar_stamp()
                 try:
                     if not paired(ws):
                         await ws.close(code=1008)
                         return
                     # Each message is a complete projection. Slow readers can skip frames.
-                    await ws.send_json(snapshot)
+                    await ws.send_text(to_json(snapshot).decode())
                 except RuntimeError as exc:
                     # Uvicorn sansio can close the transport before ASGI delivers disconnect.
                     if str(exc) not in (
@@ -572,7 +585,6 @@ def create_app(
                     ):
                         raise
                     return
-                last = snapshot["sequence"]
                 previous = snapshot["context"], snapshot["world"]["tick"]
 
         tasks = [asyncio.create_task(wait_for_disconnect()), asyncio.create_task(publish())]

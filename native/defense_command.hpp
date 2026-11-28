@@ -8,7 +8,7 @@ void compare_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &pl
 void assign_reserves(const OpeningMap &arena, Json &plan, const Squad &squad, Json destination,
                      const Pressure &counts, Tick now, const Json &bomb_site, int limit = -1);
 void commit_reserves(const OpeningMap &arena, Json &plan, const Squad &squad, const Json &site);
-void review_opening(const OpeningMap &arena, Json &plan, const Squad &squad, Tick now, const Json &captain);
+void review_opening(const OpeningMap &arena, Json &plan, const Squad &squad, Tick now, const Json &captain, bool clear_replacement);
 void brief_defense(const OpeningMap &arena, Json &plan, const Squad &squad, const Json &leader,
                    const Json &player, Tick now, const std::string &map, bool peers);
 } // namespace esport

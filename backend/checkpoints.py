@@ -102,6 +102,30 @@ def upgrade_match(db, world):
 def validate_current(world):
     if "agentPolicy" in world and (type(world["agentPolicy"]) is not int or world["agentPolicy"] not in range(1, AGENT_POLICY + 1)):
         raise CheckpointError("Неизвестная версия индивидуального ИИ")
+    if world.get("agentPolicy") == 12:
+        from .match_rules import RULES
+
+        profile = world.get("series", {}).get("profile", {})
+        limit = profile.get("timeouts", RULES["timeouts"])
+        duration = profile.get("timeoutSeconds", RULES["timeoutSeconds"])
+        if any(
+            type(world.get(k)) is not int or not 0 <= world[k] <= ceiling
+            for k, ceiling in (
+                ("remaining", limit),
+                ("rivalRemaining", limit),
+                ("talkSeconds", duration),
+            )
+        ):
+            raise CheckpointError("Повреждён бюджет перерыва")
+        if world.get("breakOwner", world["coachTeamId"]) not in world["domain"]["teams"] or (
+                world["phase"] == "timeout" and world.get("breakOwner") != world["coachTeamId"]):
+            raise CheckpointError("Некорректный владелец тайм-аута")
+        for actor in world["agents"]:
+            mind = actor.get("mind", {})
+            if any(type(mind.get(key)) is not int or not low <= mind[key] <= high
+                   for key, low, high in (("stress", 0, 100), ("frustration", 0, 100), ("confidence", 0, 100),
+                                          ("initiative", -18, 22), ("focus", -22, 10))):
+                raise CheckpointError("Повреждено матчевое состояние игрока")
     if world.get("mapId"):
         from math import isfinite
         from . import cs2_maps

@@ -1,3 +1,4 @@
+#include "coaching.hpp"
 #include "round_rules.hpp"
 
 #include <algorithm>
@@ -106,6 +107,11 @@ void update_accounts(Json &w, const Json &cfg, const std::string &winner, const 
 }
 } // namespace
 
+int round_target(int round, const Json &rules) {
+    const int half = rules.at("half"), ot = rules.at("overtimeHalf");
+    return round <= 2 * half ? half + 1 : half + ot * (1 + (round - 2 * half - 1) / (2 * ot)) + 1;
+}
+
 void settle_round(Json &w, const Json &cfg, const std::string &side, const std::string &reason) {
     if (side != "T" && side != "CT")
         throw std::invalid_argument("Неизвестная сторона");
@@ -133,6 +139,7 @@ void settle_round(Json &w, const Json &cfg, const std::string &side, const std::
     w.at("score").at(winner) = w.at("scoreByTeam").at(winner_id);
     emit(w, "round_end", title + " · " + reason)
         .update(Json{{"winner", winner}, {"winnerTeamId", winner_id}, {"side", side}, {"reason", reason}});
+    const Tick round_event = w.at("serial");
     if (w.contains("mapId") && w.at("plans").contains("T")) {
         append_limited(w["siteHistory"][teams.at("T")],
                        Json::array({w.at("plans").at("T").at("site"), side == "T"}), 6);
@@ -204,8 +211,10 @@ void settle_round(Json &w, const Json &cfg, const std::string &side, const std::
     streak.at(winner) = w.contains("mapId") ? std::max(0, streak.at(winner).get<int>() - 1) : 0;
     streak.at(1 - winner) = w.contains("mapId") ? std::min(4, streak.at(1 - winner).get<int>() + 1)
                                                 : streak.at(1 - winner).get<int>() + 1;
-    const int n = number(w, "round"), half = number(rules, "half"), ot = number(rules, "overtimeHalf");
-    const int target = n <= half * 2 ? half + 1 : half + ot * (1 + (n - 2 * half - 1) / (2 * ot)) + 1;
+    const int n = number(w, "round"), half = number(rules, "half");
+    const int target = round_target(n, rules);
+    for (auto &a : w.at("agents"))
+        round_emotion(w, a, a.at("team") == side, target, round_event, n > 2 * half);
     bool finished = w.at("scoreByTeam").at(winner_id) >= target;
     w["phase"] = finished ? "finished" : "result";
     w["deadline"] = plus_ticks(w.at("tick"), number(rules, "result"));
@@ -254,6 +263,8 @@ void start_round(Json &w, const Json &cfg, const Json &spawns) {
             w["opponentEconomy"] = obj;
     }
     for (auto &a : w.at("agents")) {
+        initialize_mind(w,a);
+        a.erase("coachOrder");
         const std::string side =
             ((a.at("teamId") == w.at("firstAttackTeamId")) != bool(swaps % 2)) ? "T" : "CT";
         const auto slot = number(a, "slot");

@@ -81,11 +81,18 @@ void bind_state(py::module_ &module) {
             Release())
         .def(
             "audit_individual_ticks",
-            [](MatchState &owner, int ticks) { return owner.advance_recorded(ticks, TickOutput::Individual); },
+            [](MatchState &owner, int ticks) {
+                return owner.advance_recorded(ticks, TickOutput::Individual);
+            },
             Release())
-        .def("audit_group_ticks", [](MatchState &owner, int ticks) {
-            return owner.advance_recorded(ticks, TickOutput::Group);
-        }, Release())
+        .def(
+            "review_ticks",
+            [](MatchState &owner, int ticks) { return owner.advance_recorded(ticks, TickOutput::Review); },
+            Release())
+        .def(
+            "audit_group_ticks",
+            [](MatchState &owner, int ticks) { return owner.advance_recorded(ticks, TickOutput::Group); },
+            Release())
         .def(
             "profile_ticks",
             [](MatchState &owner, int ticks) { return owner.advance_recorded(ticks, TickOutput::Profile); },

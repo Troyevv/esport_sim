@@ -79,7 +79,7 @@ struct Option {
 // Rally points come from reachable NAV surfaces. Keep the rally off the lost
 // site and separate teammates who would otherwise stop on the same surface.
 Json rally(const OpeningMap &arena, const Json &plan, const Squad &squad, const std::string &site, bool yield,
-           bool revised, const Json &leader, Tick now) {
+           bool revised, const Json &leader, Tick now, bool bring_reserves) {
     const auto &nav = arena.objectives().map();
     const Point center = arena.site_point(site);
     Json duties = Json::object();
@@ -114,6 +114,12 @@ Json rally(const OpeningMap &arena, const Json &plan, const Squad &squad, const 
         });
         back = actor_point(**reserve);
     }
+    // When the main group and device have been identified together, the nearby
+    // anchors disengage and the distant defenders join their reachable rally.
+    if (bring_reserves)
+        for (auto p : squad)
+            if (std::find(local.begin(), local.end(), p)==local.end())
+                local.push_back(p);
     for (auto p : local) {
         auto points = nearby_points(nav, yield ? center : back, yield ? 68 : 24);
         if (!yield)
@@ -201,7 +207,7 @@ Json rally(const OpeningMap &arena, const Json &plan, const Squad &squad, const 
 }
 void issue_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &plan, const Squad &squad,
                    const Json &leader, const Pressure &pressure, const Json &bomb, const Json &prior,
-                   const Option &best, const Json &pairBySite) {
+                   const Option &best, const Json &pairBySite, const Json &mainGroup) {
     const Tick now = w.at("tick");
     const auto priorSite = prior.value("site", std::string{});
     const auto &profile = player_profile(w, leader);
@@ -282,9 +288,12 @@ void issue_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &plan
             {"id", leader.at("id")}, {"site", best.site}, {"lane", home(plan, leader).at("lane")},
             {"hold", goal},          {"watch", center},   {"maneuver", "save"}};
     }
-    if (gather && (changed || (!revised_defense(w) && prior.value("alive", 0) != n)))
+    const bool join_rally = best.kind=="yield" && mainGroup==best.site && bomb==best.site;
+    const bool newly_confirmed = join_rally && !plan.at("defenseCall").value("groupIdentified",false);
+    if (gather && (newly_confirmed || changed || (!revised_defense(w) && prior.value("alive", 0) != n)))
         plan["commitments"] =
-            rally(arena, plan, squad, best.site, best.kind == "yield", revised_defense(w), leader, now);
+            rally(arena, plan, squad, best.site, best.kind == "yield", revised_defense(w), leader, now, join_rally);
+    if (join_rally) plan.at("defenseCall")["groupIdentified"]=true;
     if (gather && revised_defense(w)) {
         auto &jobs = plan.at("commitments");
         for (auto it = jobs.begin(); it != jobs.end();)
@@ -337,6 +346,7 @@ void compare_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &pl
     const Tick now = w.at("tick"), elapsed = now - plan.at("start").get<Tick>();
     const Tick remaining = w.at("deadline").get<Tick>() - now;
     const auto &profile = player_profile(w, leader), &skills = profile.at("skills");
+    Json mainGroup=nullptr;
     const auto prior = plan.value("defenseCall", Json::object());
     const auto age = now - prior.value("issued", Tick{-1000});
     const auto priorSite = prior.value("site", std::string{});
@@ -427,13 +437,17 @@ void compare_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &pl
         int seen = 0, reportedGroup = 0;
         Tick newest = -1;
         for (auto r : reports) {
-            if (now - r->at("tick").get<Tick>() >= 45 || !visual(*r) ||
-                arena.objectives().reported_site(actor_point(*r)) != site)
+            bool approach=false;
+            auto observed_site = w.value("agentPolicy",0)>=12 ? site_for(arena,actor_point(*r),approach) :
+                                 arena.objectives().reported_site(actor_point(*r));
+            if (now - r->at("tick").get<Tick>() >= 45 || !visual(*r) || observed_site!=site)
                 continue;
             ++seen;
             reportedGroup = std::max(reportedGroup, r->value("groupSize", 1));
             newest = std::max(newest, r->at("tick").get<Tick>());
         }
+        if (w.value("agentPolicy",0)>=12 && seen>=3 && bomb==site && threat>away)
+            mainGroup=site;
         seen = std::max(seen, reportedGroup);
         bool recoveredContact = false, requestedHelp = false;
         for (const auto &kill : w.at("kills")) {
@@ -573,6 +587,6 @@ void compare_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &pl
         }
     }
     plan["defenseScores"] = std::move(scores);
-    issue_defense(w, cfg, arena, plan, squad, leader, pressure, bomb, prior, best, pairBySite);
+    issue_defense(w, cfg, arena, plan, squad, leader, pressure, bomb, prior, best, pairBySite, mainGroup);
 }
 } // namespace esport
