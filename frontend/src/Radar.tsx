@@ -23,6 +23,7 @@ export interface RadarMap {
 }
 export interface Agent extends Point {
   id: string;
+  playerId?: string;
   name: string;
   team: Team;
   heading: number;

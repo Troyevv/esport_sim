@@ -219,16 +219,19 @@ test("нажатие выбирает отображаемого игрока п
   });
   await page.routeWebSocket("**/api/stream**", (route) => {
     stream = route;
-    route.send(JSON.stringify(first));
+    route.send(JSON.stringify({ ...first, context: "warmup", world: { ...first.world, tick: 1 } }));
   });
   // Hold presentation time while delivering two authoritative batches.
   await page.clock.install({ time: new Date("2026-01-01T12:00:00Z") });
-  await page.clock.pauseAt(new Date("2026-01-01T12:00:01Z"));
   await page.goto("/?screen=lab");
   await expect.poll(() => Boolean(stream)).toBe(true);
-  await page.clock.runFor(32);
   const radar = page.getByTestId("radar");
   await radar.scrollIntoViewIfNeeded();
+  await expect.poll(() => page.evaluate(() => Boolean((window as any).testPixi?.stage.getChildByLabel("CT1", true)))).toBe(true);
+  // Freeze only after the lazy route and the first Pixi frame have mounted.
+  await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now() + 1000).toISOString()));
+  stream!.send(JSON.stringify(first));
+  await expect(page.getByTestId("tick")).toHaveText("0");
   await page.clock.runFor(100);
   const last = frame(8, point(35), { speed: 8 });
   last.world.agents.push({

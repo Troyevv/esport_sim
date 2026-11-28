@@ -62,3 +62,28 @@
 | Студия внешности | [Кадры](comparison/approved-appearance-1440.webp) | [Кадры](comparison/approved-appearance-390.webp) | [Кадры](comparison/approved-appearance-844.webp) | [Кадры](comparison/approved-appearance-834.webp) | [Кадры](comparison/approved-appearance-1194.webp) |
 | Трансляция | [Кадры](comparison/approved-match-1440.webp) | [Кадры](comparison/approved-match-390.webp) | [Кадры](comparison/approved-match-844.webp) | [Кадры](comparison/approved-match-834.webp) | [Кадры](comparison/approved-match-1194.webp) |
 | Свой тайм-аут | [Кадры](comparison/approved-timeout-1440.webp) | [Кадры](comparison/approved-timeout-390.webp) | [Кадры](comparison/approved-timeout-844.webp) | [Кадры](comparison/approved-timeout-834.webp) | [Кадры](comparison/approved-timeout-1194.webp) |
+
+## Турнирные сетки после сыгранных встреч
+
+Для правых кадров быстрое матчевое ядро сыграло все 557 серий от начала контрольной карьеры до первой встречи в Double Groups. Протоколы записаны обычным механизмом карьеры. Стенд продвигал турнирный календарь и разрешал конфликты расписания. Кадры открыты в браузере через раздел соревнований. В обоих вариантах Double Elimination дополнительно проверены переключение верхней и нижней веток и подсветка пути участника. Для групп проверен переход между составами.
+
+| Формат и турнир | 1440 × 1000 | 390 × 844 | 844 × 390 | 834 × 1194 | 1194 × 834 | 960 × 700 |
+|---|---|---|---|---|---|---|
+| Swiss · PGL Major Singapore | [Пара](comparison/format-swiss-1440.webp) | [Пара](comparison/format-swiss-390.webp) | [Пара](comparison/format-swiss-844.webp) | [Пара](comparison/format-swiss-834.webp) | [Пара](comparison/format-swiss-1194.webp) | [Пара](comparison/format-swiss-960.webp) |
+| Single Elimination · плей-офф PGL Major Singapore | [Пара](comparison/format-single-1440.webp) | [Пара](comparison/format-single-390.webp) | [Пара](comparison/format-single-844.webp) | [Пара](comparison/format-single-834.webp) | [Пара](comparison/format-single-1194.webp) | [Пара](comparison/format-single-960.webp) |
+| Double Elimination · ESL Challenger League Asia Cup 4 | [Пара](comparison/format-double-1440.webp) | [Пара](comparison/format-double-390.webp) | [Пара](comparison/format-double-844.webp) | [Пара](comparison/format-double-834.webp) | [Пара](comparison/format-double-1194.webp) | [Пара](comparison/format-double-960.webp) |
+| GSL · квалификация CCT Europe Series 16 | [Пара](comparison/format-gsl-1440.webp) | [Пара](comparison/format-gsl-390.webp) | [Пара](comparison/format-gsl-844.webp) | [Пара](comparison/format-gsl-834.webp) | [Пара](comparison/format-gsl-1194.webp) | [Пара](comparison/format-gsl-960.webp) |
+| Round Robin · DraculaN Season 8 | [Пара](comparison/format-roundRobin-1440.webp) | [Пара](comparison/format-roundRobin-390.webp) | [Пара](comparison/format-roundRobin-844.webp) | [Пара](comparison/format-roundRobin-834.webp) | [Пара](comparison/format-roundRobin-1194.webp) | [Пара](comparison/format-roundRobin-960.webp) |
+| Double Groups · IEM Kraków | [Пара](comparison/format-doubleGroups-1440.webp) | [Пара](comparison/format-doubleGroups-390.webp) | [Пара](comparison/format-doubleGroups-844.webp) | [Пара](comparison/format-doubleGroups-834.webp) | [Пара](comparison/format-doubleGroups-1194.webp) | [Пара](comparison/format-doubleGroups-960.webp) |
+
+## Протокол одной архивной серии
+
+Слева открыт архивный протокол эталона, справа — встреча IEM Kraków, сыгранная быстрым ядром и сохранённая в истории карьеры. Каждая вкладка относится к одному и тому же матчу. После закрытия клавишей Escape фокус возвращался на запись в архиве во всех шести размерах.
+
+| Вкладка | 1440 × 1000 | 390 × 844 | 844 × 390 | 834 × 1194 | 1194 × 834 | 960 × 700 |
+|---|---|---|---|---|---|---|
+| Итоги серии | [Пара](comparison/protocol-overview-1440.webp) | [Пара](comparison/protocol-overview-390.webp) | [Пара](comparison/protocol-overview-844.webp) | [Пара](comparison/protocol-overview-834.webp) | [Пара](comparison/protocol-overview-1194.webp) | [Пара](comparison/protocol-overview-960.webp) |
+| Статистика | [Пара](comparison/protocol-stats-1440.webp) | [Пара](comparison/protocol-stats-390.webp) | [Пара](comparison/protocol-stats-844.webp) | [Пара](comparison/protocol-stats-834.webp) | [Пара](comparison/protocol-stats-1194.webp) | [Пара](comparison/protocol-stats-960.webp) |
+| Раунды | [Пара](comparison/protocol-rounds-1440.webp) | [Пара](comparison/protocol-rounds-390.webp) | [Пара](comparison/protocol-rounds-844.webp) | [Пара](comparison/protocol-rounds-834.webp) | [Пара](comparison/protocol-rounds-1194.webp) | [Пара](comparison/protocol-rounds-960.webp) |
+| Составы на дату | [Пара](comparison/protocol-teams-1440.webp) | [Пара](comparison/protocol-teams-390.webp) | [Пара](comparison/protocol-teams-844.webp) | [Пара](comparison/protocol-teams-834.webp) | [Пара](comparison/protocol-teams-1194.webp) | [Пара](comparison/protocol-teams-960.webp) |
+| Протокол и данные | [Пара](comparison/protocol-source-1440.webp) | [Пара](comparison/protocol-source-390.webp) | [Пара](comparison/protocol-source-844.webp) | [Пара](comparison/protocol-source-834.webp) | [Пара](comparison/protocol-source-1194.webp) | [Пара](comparison/protocol-source-960.webp) |

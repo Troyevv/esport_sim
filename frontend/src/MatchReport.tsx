@@ -4,7 +4,7 @@ import { ForecastLine } from "./ForecastLine";
 import { Tabs } from "./GameUI";
 import { date, fixtureMap, fixtureScore, useData, type Career, type Fixture, type Report, type Scene } from "./careerData";
 import { serverURL } from "./session";
-import "./report.css";
+import { ResultScore } from "./ResultScore";
 
 const pages = ["Итоги серии", "Статистика", "Раунды", "Составы на дату", "Протокол и данные"];
 const buyNames: Record<string, string> = { pistol: "Пистолетный", full: "Полная закупка", force: "Форс", eco: "Эко" };
@@ -43,12 +43,8 @@ export default function MatchReport({ careerId, event, teams, close }: Props) {
     <header className="report-meta"><div><h2 id="report-title" ref={heading} tabIndex={-1}>Протокол матча</h2>
       <p>{date(event.date)} · BO{event.bestOf || 1}{event.title && " · " + event.title}</p></div>
       <button onClick={close}>Закрыть протокол</button></header>
-    <div className="report-score">
-      {event.teams.map((tid, index) => <div className="report-team" key={tid}>
-        {index === 1 && <strong className="report-points">{fixtureScore(event) || "—"}</strong>}
-        <span><Avatar {...directory.data?.teams[tid]?.visual} club name={teamName(tid)} />{teamName(tid)}</span>
-      </div>)}
-    </div>
+    <ResultScore teams={event.teams.map(id => ({id, name: teamName(id), visual: directory.data?.teams[id]?.visual}))}
+      score={fixtureScore(event) || "—"}/>
     {data.error ? <p role="alert">{data.error} <button onClick={data.reload}>Повторить</button></p> :
       !report || !current || !metrics ? <p role="status">Загружаем данные…</p> : <>
       <Tabs items={pages} value={page} change={choosePage}/>

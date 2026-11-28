@@ -1,6 +1,8 @@
 import { ForecastLine, type Quote } from "./ForecastLine";
 import { useState } from "react";
-import { Avatar, type Visual } from "./SceneIdentity";
+import { ResultScore } from "./ResultScore";
+import { Tabs } from "./GameUI";
+import { Avatar, LineupPortrait, type Visual } from "./SceneIdentity";
 import { serverURL, type Frame } from "./session";
 import "./series.css";
 
@@ -15,7 +17,7 @@ type Evidence = {
 export interface SeriesView {
   bestOf: number;
   forecasts?:Quote[];
-  award?: { name: string } | null;
+  award?: { name: string; player: string; teamId: string; version: string; impact: number; adr: number; rounds: number } | null;
   tournament?:string;
   spectator?:boolean;
   stage: "veto" | "ready" | "playing" | "interval" | "finished";
@@ -122,9 +124,19 @@ function MapOrder({ s }: { s: SeriesView }) {
 
 export function SeriesScore({ frame, enabled, act }: Props) {
   const s = frame.world.series!;
+  const [view, setView] = useState("Итоги серии");
+  const finished = s.stage === "finished";
+  const award = s.award;
+  const matchAgent = award && frame.world.agents.find(agent => agent.playerId === award.player);
+  const portrait = matchAgent && frame.world.match?.stats.find(p => p.id === matchAgent.id)?.visual;
   return (
-    <section className="series-score surface" aria-label="Счёт серии">
-      <div className="series-scoreline">
+    <section className={"series-score surface" + (finished ? " final-series" : "")} aria-label="Счёт серии">
+      {finished ? <>
+        <header className="report-meta"><div><small>{s.tournament || "Выставочный матч"} · BO{s.bestOf}</small>
+          <h1>Итоги серии</h1></div></header>
+        <ResultScore teams={s.teams.map(id => ({ id, ...s.clubs[id] }))} score={s.teams.map(id => s.score[id]).join(" : ")}/>
+        <Tabs items={["Итоги серии", "Статистика серии"]} value={view} change={setView}/>
+      </> : <div className="series-scoreline">
         <b>BO{s.bestOf}</b>
         <strong>
           {s.teams.map((t) => s.clubs[t].name + " " + s.score[t]).join("  /  ")}
@@ -136,10 +148,17 @@ export function SeriesScore({ frame, enabled, act }: Props) {
               ? "Перерыв между картами"
               : "До " + (Math.floor(s.bestOf / 2) + 1) + " побед"}
         </span>
-      </div>
-      {s.award && <p>MVP серии · <strong>{s.award.name}</strong></p>}
-      <MapOrder s={s} />
-      <details
+      </div>}
+      {(!finished || view === "Итоги серии") && <MapOrder s={s}/>}
+      {finished && view === "Итоги серии" && <section className="report-panel">
+        <h3>MVP серии</h3>
+        {award ? <div className="report-award"><div><LineupPortrait id={award.player} name={award.name} visual={{player:true, ...portrait}}/></div>
+          <div><small>{s.clubs[award.teamId]?.name}</small><h4>{award.name}</h4>
+            <p>{award.rounds} раундов · {award.version}</p><dl>
+              <div><dt>Impact</dt><dd>{award.impact.toFixed(2)}</dd></div><div><dt>ADR</dt><dd>{award.adr.toFixed(1)}</dd></div>
+            </dl></div></div> : <p>Для определения MVP недостаточно данных протокола.</p>}
+      </section>}
+      {(!finished || view === "Статистика серии") && <details
         className="series-totals"
         open={s.stage === "interval" || s.stage === "finished"}
       >
@@ -203,7 +222,7 @@ export function SeriesScore({ frame, enabled, act }: Props) {
             </section>
           ))}
         </div>
-      </details>
+      </details>}
       {s.stage === "interval" && (
         <button
           className="btn primary"

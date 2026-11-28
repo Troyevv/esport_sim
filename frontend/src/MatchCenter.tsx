@@ -296,7 +296,7 @@ export default function MatchCenter({
   const awayBreak=!!m.breakOwner && !timeout;
   return (
     <article className={"match-center mx-match-screen "+(display==="Трансляция"?"mx-broadcast":"mx-coach-view")}>
-      <header className="mx-stage-header"><div className="mx-stage-title"><span>МАТЧ-ЦЕНТР</span><h1>{finished?"Итоги карты":m.pregame?"Подготовка карты":"Прямой эфир"}</h1></div>
+      {world.series?.stage !== "finished" && <><header className="mx-stage-header"><div className="mx-stage-title"><span>МАТЧ-ЦЕНТР</span><h1>{finished?"Итоги карты":m.pregame?"Подготовка карты":"Прямой эфир"}</h1></div>
         <div className="mx-view-switch" aria-label="Режим матч-центра"><div>{(["Трансляция","Тренерский обзор"] as const).map(v=>
           <button key={v} aria-pressed={display===v} onClick={()=>setDisplay(v)}>{v}</button>)}</div></div>
         <button onClick={openBoard}>Редактор тактик</button>
@@ -311,6 +311,7 @@ export default function MatchCenter({
           <b>{finished?"ФИНАЛ":timeout?"ПАУЗА":m.phase==="result"?"ИТОГ":clock(m.clock)}</b>
           <span>{world.series && finished ? "Карта завершена" : phases[m.phase]}</span></div>
       </section>
+      </>}
       {world.series && <SeriesScore frame={frame} enabled={enabled} act={act}/>}
       {m.phase==="planted" && <div className="arena-event">C4 установлена{m.bomb?.site && " · "+m.bomb.site}</div>}
       {m.phase==="result" && m.history.length>0 && <div className="arena-event">{clubName(m.history.at(-1)!.winnerTeamId)} · {m.history.at(-1)!.reason}</div>}

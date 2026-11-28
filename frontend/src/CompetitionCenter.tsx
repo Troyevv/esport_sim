@@ -569,42 +569,98 @@ function Registration({
   );
 }
 
-function GameDraw({draw,c,scene,onFixture}: {draw:Draw;c:Career;scene:Scene;onFixture:(id:string)=>void}) {
-  const [filter,setFilter] = useState("all");
-  const resolve = (slot:Game["slots"][number]) => {
+type DrawProps = Pick<Props, "c" | "scene"> & { onFixture: (id: string) => void };
+
+function GameDraw({ draw, c, scene, onFixture }: DrawProps & { draw: Draw }) {
+  const [focusTeam, setFocusTeam] = useState(draw.teams.includes(c.team) ? c.team : "");
+  const [branch, setBranch] = useState("Верхняя сетка");
+  const [filter, setFilter] = useState("all");
+  function resolve(slot: Game["slots"][number]) {
     if (!Array.isArray(slot)) return slot;
-    const parent=draw.games[slot[1]];
-    return slot[0]==="winner" ? parent?.winner : parent?.loser;
-  };
-  const rounds = [...new Set(draw.games.map(g=>g.round))].sort((a,b)=>a-b);
+    const parent = draw.games[slot[1]];
+    return slot[0] === "winner" ? parent?.winner : parent?.loser;
+  }
+  function slotName(slot: Game["slots"][number]) {
+    const id = resolve(slot);
+    if (id) return c.teams[id] || scene.teams[id]?.name || id;
+    if (!Array.isArray(slot)) return "Свободный слот";
+    return (slot[0] === "winner" ? "Победитель" : "Проигравший") + " № " + (slot[1] + 1);
+  }
+  const indexed = draw.games.map((game, index) => ({ game, index }));
+  const branches = draw.format === "double" ? [...new Set(draw.games.map(g => g.label))] : [];
+  const activeBranch = branches.includes(branch) ? branch : branches[0];
+  const games = indexed.filter(({game}) => !activeBranch || game.label === activeBranch);
+  const rounds = [...new Set(games.map(({game}) => game.round))].sort((a,b) => a-b);
   const next = new Map<number,string[]>();
-  for (const [index,g] of draw.games.entries()) {
-    for (const slot of g.slots) if (Array.isArray(slot)) {
-      const target=next.get(slot[1]) || [];
-      target.push((slot[0]==="winner"?"Победа":"Поражение")+" → № "+(index+1));
-      next.set(slot[1],target);
+  for (const { game, index } of indexed) {
+    for (const slot of game.slots) {
+      if (!Array.isArray(slot)) continue;
+      const destinations = next.get(slot[1]) || [];
+      destinations.push((slot[0] === "winner" ? "Победа" : "Поражение") + " → № " + (index+1));
+      next.set(slot[1], destinations);
     }
   }
-  return <section className="tournament-draw"><div className="draw-toolbar"><span>Выходят команд · {draw.advance}</span>
-    {draw.teams.includes(c.team) && <b>Ваша команда · {c.club}</b>}
-    <label>Раунды<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">Вся сетка</option>
-      {rounds.map(r=><option key={r} value={String(r)}>Раунд {r+1}</option>)}</select></label></div>
-    <div className="tc-bracket" role="region" aria-label="Сетка по раундам" tabIndex={0}>
-      {rounds.filter(r=>filter==="all" || String(r)===filter).map(r=><section key={r} className="tc-round"><h3>Раунд {r+1}</h3>
-        {draw.games.map((g,n)=>g.round!==r ? null : <article className="tc-pair" key={n} data-own={g.slots.some(slot=>resolve(slot)===c.team)}>
-          <small>{g.label} · № {n+1}{g.date && " · "+date(g.date)}</small>
-          {g.slots.map((slot,i)=>{const id=resolve(slot), info=id ? scene.teams[id] : null;
-            return <div className={id && id===g.winner?"tc-winner":""} key={i}>{id && <Avatar club name={info?.name || c.teams[id] || id} {...info?.visual}/>}
-              <b>{id ? c.teams[id] || info?.name || id : Array.isArray(slot) ? (slot[0]==="winner"?"Победитель":"Проигравший")+" № "+(slot[1]+1) : "Свободный слот"}</b>
-              <span>{g.score?.[i] ?? "—"}</span></div>})}
-          {g.bye && <small>Проход без игры</small>}{g.administrative && <small>{g.reason || "Технический результат"}</small>}
-          {g.historical && <small>До начала карьеры</small>}
-          {next.has(n) && <small className="draw-path">{next.get(n)!.join(" · ")}</small>}
-          {g.fixture && (c.history.some(f=>f.id===g.fixture) || c.queue.some(f=>f.id===g.fixture)) &&
-            <button className="link-button" onClick={()=>onFixture(g.fixture!)}>{g.score ? "Протокол встречи" : "Подготовка и линия"}</button>}
-        </article>)}</section>)}
+  const fixtures = new Set([...c.history, ...c.queue].map(f => f.id));
+  return <section className="tournament-draw">
+    <div className="draw-toolbar">
+      <label>Выделить путь<select value={focusTeam} onChange={e => setFocusTeam(e.target.value)}>
+        <option value="">Все команды</option>
+        {draw.teams.map(id => <option key={id} value={id}>{c.teams[id] || id}</option>)}
+      </select></label>
+      <label>Раунды<select value={filter} onChange={e => setFilter(e.target.value)}>
+        <option value="all">Вся сетка</option>
+        {rounds.map(r => <option key={r} value={r}>Раунд {r + 1}</option>)}
+      </select></label>
     </div>
-    {draw.outputs && <p>Выход из стадии · {draw.outputs.map(s=>{const id=resolve(s);return id ? c.teams[id] || id : Array.isArray(s) ? (s[0]==="winner"?"Победитель":"Проигравший")+" № "+(s[1]+1) : "Свободный слот"}).join(" · ")}</p>}
+    <div className="draw-context"><b>{draw.teams.length} команд</b><span>Проходят дальше · {draw.advance}</span>
+      {draw.teams.includes(c.team) && <span>Ваша команда · {c.club}</span>}</div>
+    {!!branches.length && <Tabs items={branches} value={activeBranch} change={value => {setBranch(value); setFilter("all");}}/>}
+    {(draw.format === "swiss" || draw.format === "roundRobin") && <div className="tc-standings" tabIndex={0} role="region" aria-label="Таблица группы">
+      <table className="simple-table"><thead><tr><th>Место</th><th>Команда</th><th>В</th><th>П</th>
+        <th>{draw.format === "swiss" ? "Бухгольц" : "± раундов"}</th></tr></thead>
+        <tbody>{draw.standings.map((row,index) => <tr key={row.team} data-focused={row.team === focusTeam}>
+          <td>{index + 1}</td><td><div className="vrs-team"><Avatar club name={c.teams[row.team] || row.team} {...scene.teams[row.team]?.visual}/>{c.teams[row.team] || row.team}</div></td>
+          <td>{row.wins}</td><td>{row.losses}</td><td>{draw.format === "swiss" ? row.buchholz : row.roundDiff}</td>
+        </tr>)}</tbody></table>
+    </div>}
+    <div className="tc-bracket" role="region" aria-label="Сетка по раундам" tabIndex={0}>
+      {rounds.filter(r => filter === "all" || String(r) === filter).map(r => <section key={r} className="tc-round">
+        <h3>Раунд {r + 1}</h3>
+        {games.filter(({game}) => game.round === r).map(({ game, index }) =>
+          <article className="tc-pair" key={index} data-focused={!!focusTeam && game.slots.some(s => resolve(s) === focusTeam)}>
+            <small>{game.label} · № {index + 1}{game.date && " · " + date(game.date)}</small>
+            {game.slots.map((slot,i) => {
+              const id = resolve(slot);
+              return <div key={i} className={id && id === game.winner ? "tc-winner" : ""}>
+                {id && <Avatar club name={slotName(slot)} {...scene.teams[id]?.visual}/>}
+                <b>{slotName(slot)}</b><span>{game.score?.[i] ?? "—"}</span>
+              </div>;
+            })}
+            {game.bye && <small>Проход без игры</small>}
+            {game.administrative && <small>{game.reason || "Технический результат"}</small>}
+            {game.historical && <small>До начала карьеры</small>}
+            {next.has(index) && <small className="draw-path">{next.get(index)!.join(" · ")}</small>}
+            {game.fixture && fixtures.has(game.fixture) && <button className="link-button" onClick={() => onFixture(game.fixture!)}>
+              {game.score ? "Протокол встречи" : "Подготовка и линия"}
+            </button>}
+          </article>)}
+      </section>)}
+    </div>
+    {draw.outputs && <p>Выход из стадии · {draw.outputs.map(slotName).join(" · ")}</p>}
+  </section>;
+}
+
+function TournamentStage({ phase, draws, ...props }: DrawProps & { phase: Phase; draws: Draw[] }) {
+  const [group, setGroup] = useState(Math.max(0, draws.findIndex(draw => draw.teams.includes(props.c.team))));
+  const active = draws[group] || draws[0];
+  if (!active) return null;
+  return <section className="surface panel-body tc-stage">
+    <h2>{phase.name}</h2>
+    <p>{formats[phase.format]} · BO{phase.bestOf} · {date(phase.start)} — {date(phase.end)}</p>
+    {draws.length > 1 && <label className="draw-group">Группа<select value={draws.indexOf(active)} onChange={e => setGroup(Number(e.target.value))}>
+      {draws.map((draw,index) => <option key={index} value={index}>Группа {index + 1} · {draw.teams.length} команд</option>)}
+    </select></label>}
+    <GameDraw key={group} draw={active} {...props}/>
   </section>;
 }
 
@@ -958,54 +1014,13 @@ export function CompetitionCenter(props: Props) {
           {!event.draws.length && (
             <p>Жеребьёвка после фиксации составов {date(event.lock)}.</p>
           )}
-          {event.draws.map((draws, i) => (
-            <section key={i}>
-              <h2>{event.stages[i].name}</h2><p>{formats[event.stages[i].format]} · BO{event.stages[i].bestOf} · {date(event.stages[i].start)} — {date(event.stages[i].end)}</p>
-              {draws.map((d, j) => (
-                <details
-                  className="surface panel-body"
-                  key={j}
-                  open={i === event.draws.length - 1}
-                >
-                  <summary>
-                    {draws.length > 1 ? "Группа " + (j + 1) : formats[d.format]}{" "}
-                    · {d.teams.length} команд
-                  </summary>
-                  {(d.format === "swiss" ||
-                    d.format === "roundRobin" ||
-                    draws.length > 1) && (
-                    <table className="simple-table">
-                      <thead>
-                        <tr>
-                          <th>Команда</th>
-                          <th>В</th>
-                          <th>П</th>
-                          {d.format === "roundRobin" && <th>± раундов</th>}
-                          {d.format === "swiss" && <th>Бухгольц</th>}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {d.standings.map((r) => (
-                          <tr key={r.team}>
-                            <td>{c.teams[r.team]}</td>
-                            <td>{r.wins}</td>
-                            <td>{r.losses}</td>
-                            {d.format === "roundRobin" && (
-                              <td>{r.roundDiff}</td>
-                            )}
-                            {d.format === "swiss" && <td>{r.buchholz}</td>}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                  <GameDraw draw={d} {...{c,scene}} onFixture={id=>{
-                    if(c.history.some(f=>f.id===id)){openReport(id);show("Матчи")}else props.prepare(id);
-                  }}/>
-                </details>
-              ))}
-            </section>
-          ))}
+          {event.draws.map((draws, i) => <TournamentStage key={event.id + "-" + i}
+            phase={event.stages[i]} draws={draws} c={c} scene={scene}
+            onFixture={id => {
+              if (c.history.some(f => f.id === id)) { openReport(id); show("Матчи"); }
+              else props.prepare(id);
+            }}
+          />)}
         </>
       )}
       {tab === "Матчи" && (

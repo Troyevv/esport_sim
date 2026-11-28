@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { date, fixtureName, fixtureScore, type Career, type Fixture, type Scene } from "./careerData";
-import { Dialog, Heading } from "./GameUI";
+import { Heading } from "./GameUI";
 import { MatchReport } from "./CareerForms";
 import ProfileHistory from "./ProfileHistory";
 
@@ -9,6 +9,19 @@ export default function CareerArchive({ c, scene, revision, analytics }: { c:Car
   const [group,setGroup] = useState<"teams"|"players">("teams");
   const [player,setPlayer] = useState(c.roster[0]?.id || "");
   const [selected,setSelected] = useState<Fixture | null>(null);
+  const lastFixture = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selected && lastFixture.current) {
+      document.getElementById("archive-" + lastFixture.current)?.focus();
+      lastFixture.current = null;
+    }
+  }, [selected]);
+  if (selected && !analytics) return <div className="archive-protocol" onKeyDown={e => {
+    if (e.key === "Escape" && !e.defaultPrevented) setSelected(null);
+  }}>
+    <button className="link-button" onClick={() => setSelected(null)}>← Архив матчей</button>
+    <MatchReport event={selected} careerId={c.id} teams={c.teams} close={() => setSelected(null)}/>
+  </div>;
   const rows = c.history.filter(f=>f.kind === "match" && (!team || f.teams.includes(team))).slice().reverse();
   return <div className="career-archive">
     <Heading title={analytics?"Аналитика":"Архив матчей"} sub={c.club+" · "+date(c.date)}/>
@@ -22,11 +35,10 @@ export default function CareerArchive({ c, scene, revision, analytics }: { c:Car
     </div>
     {analytics ? <ProfileHistory key={group} c={c} scene={scene} revision={revision} group={group} id={group==="teams"?team:player}/>
       : <section className="surface panel-body"><h2>Завершённые встречи · {rows.length}</h2>
-        {rows.map(f=><button className="archive-match" key={f.id} onClick={()=>setSelected(f)}>
+        {rows.map(f=><button className="archive-match" id={"archive-"+f.id} key={f.id} onClick={()=>{lastFixture.current=f.id;setSelected(f)}}>
           <time>{date(f.date)}</time><span><strong>{fixtureName(c,f)}</strong><small>{f.title || (f.pcw?"Пракк":"Встреча календаря")}</small></span>
           <b>{fixtureScore(f) || "—"}</b></button>)}
         {!rows.length && <p>В истории карьеры пока нет завершённых встреч для выбранной команды.</p>}
       </section>}
-    {selected && <Dialog title="Результат встречи" close={()=>setSelected(null)}><MatchReport event={selected} careerId={c.id} teams={c.teams} close={()=>setSelected(null)}/></Dialog>}
   </div>;
 }
