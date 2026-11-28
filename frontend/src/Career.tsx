@@ -1,5 +1,5 @@
 import { ManagerAttention } from "./ManagerAttention";
-import { type Decision } from "./careerData";
+import { CareerRoster, type Decision } from "./careerData";
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { Brand, Dialog, Glyph, Heading } from "./GameUI";
 import { Avatar } from "./SceneIdentity";
@@ -496,7 +496,7 @@ function Manager({
             enabled={enabled && !progress} resolve={resolve} repair={repair} error={decisionError}
             saves={()=>{setDecisions(false);to("Сохранения")}}/>
           <div key={active} className="screen-enter"><Suspense fallback={<p role="status">Загружаем раздел…</p>}>
-            {tool || frontMenu ||
+            {(tool && <CareerRoster.Provider value={c.roster}>{tool}</CareerRoster.Provider>) || frontMenu ||
               (active === "Календарь" ? (
                 <Calendar prepare={prepare} key={day} c={c} initial={day} tournament={tournament} revision={frame.careerRevision||0} training={d=>{setDay(d);to("Тренировочный центр")}}/>
               ) : active === "Входящие" ? (

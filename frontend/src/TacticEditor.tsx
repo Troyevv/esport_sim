@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { CareerRoster } from "./careerData";
+import { LineupPortrait } from "./SceneIdentity";
+import { useContext, useEffect, useRef, useState } from "react";
 import TacticMap from "./TacticMap";
 import {
   colors,
@@ -87,9 +89,8 @@ export default function TacticEditor({
     [replace, setReplace] = useState(false);
   const [dirty, setDirty] = useState(!!plan),
     [history, setHistory] = useState<Plan[]>([]);
-  const [libOpen, setLibOpen] = useState(
-      () => matchMedia("(min-width:1250px)").matches,
-    ),
+  const roster = useContext(CareerRoster);
+  const [libOpen, setLibOpen] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
   const [retry, setRetry] = useState(0),
@@ -120,7 +121,10 @@ export default function TacticEditor({
             (p) =>
               p.standard && p.side === coachSide && p.buy === match?.nextBuy,
           ) || data.plans.find((p) => p.standard)!;
-        const arena=data.maps.find(m=>m.id===frame.world.map.id);
+        const currentMap = data.maps.find(m => m.id === frame.world.map.id);
+        const arena = !match && frame.careerId && !currentMap?.radar
+          ? data.maps.find(m => m.id === "de_mirage") || currentMap
+          : currentMap;
         setPlan(old => old && data.maps.some(m=>m.id===old.map && Number(m.version)===old.geometry)
           ? old : arena?.radar ? newPlan(arena,coachSide || "T",match?.nextBuy || data.buys[0]) : initial);
       })
@@ -218,7 +222,7 @@ export default function TacticEditor({
     setReplace(false);
     setSlot(0);
     setTool("move");
-    if (!matchMedia("(min-width:1250px)").matches) setLibOpen(false);
+    setLibOpen(false);
     setError("");
     setNotice("");
   }
@@ -342,6 +346,7 @@ export default function TacticEditor({
     }
   }
   async function spar() {
+    setLibOpen(false);
     const token = ++request.current;
     setWorking(true);
     setError("");
@@ -373,33 +378,32 @@ export default function TacticEditor({
     );
   }
   const disabled = working || !enabled;
+  const matchLineup = match?.stats.filter(p => p.teamId === match.coachTeamId);
   const playerPicker = (
     <div className="board-players" aria-label="Выбор игрока">
-      {library.roles.map((role, i) => (
-        <button
-          key={i}
-          aria-label={
-            "Игрок " + (i + 1) + " · " + library.players[i] + " · " + role
-          }
-          aria-pressed={slot === i}
-          onClick={() => pick(i, null)}
-        >
-          <b style={{ background: colors[i] }}>{i + 1}</b>
-          <span>
-            {library.players[i]}
-            <small>{role}</small>
-          </span>
-        </button>
-      ))}
+      {library.roles.map((role, i) => {
+        const assignment = matchLineup?.[i];
+        const matchId = assignment && frame.world.agents.find(a => a.id === assignment.id)?.playerId;
+        const member = roster.find(p => p.name === library.players[i]);
+        const name = assignment?.name || library.players[i];
+        const visual = assignment ? assignment.visual : member?.visual;
+        return <button key={i} aria-label={"Игрок " + (i + 1) + " · " + name + " · " + role}
+          aria-pressed={slot === i} onClick={() => pick(i, null)}>
+          <b style={{background:colors[i]}}>{i+1}</b>
+          {visual && <LineupPortrait id={assignment ? matchId || "" : member?.id || ""} name={name} visual={visual}/>}
+          <span><strong>{name}</strong><small>{role}</small></span>
+          <small>{plan.slots[i].length} шаг.</small>
+        </button>;
+      })}
     </div>
   );
   const previewEvent = preview?.events.filter((e) => e.tick <= tick).at(-1);
   return (
-    <article className={"tactics " + (libOpen ? "library-open" : "")}>
+    <article className="tactics">
       <header className="board-title">
         <div>
-          <span className="eyebrow">ПОДГОТОВКА К МАТЧУ</span>
-          <h1>Редактор тактик</h1>
+          <span className="eyebrow">{preview ? "Проверка тактики" : "Тренерская доска"}</span>
+          <h1>{preview ? "План в действии" : "Тактика начинается здесь"}</h1>
         </div>
         <div className="board-buttons">
           <button
@@ -412,11 +416,14 @@ export default function TacticEditor({
           >
             ← {match ? "К матчу" : "К радару"}
           </button>
-          <button aria-expanded={libOpen} onClick={() => setLibOpen(!libOpen)}>
-            ▤ Библиотека
-          </button>
+          <button disabled={disabled} onClick={preview ? stopPreview : spar}>{preview ? "К редактированию" : "▷ Предпросмотр"}</button>
+          <button className="primary" disabled={disabled || !dirty} onClick={save}>Сохранить тактику</button>
         </div>
       </header>
+      <nav className="view-tabs" aria-label="Редактор тактик">
+        <button className={"view-tab "+(!libOpen ? "active" : "")} aria-pressed={!libOpen} onClick={() => setLibOpen(false)}>Доска</button>
+        <button className={"view-tab "+(libOpen ? "active" : "")} aria-expanded={libOpen} onClick={() => setLibOpen(!libOpen)}>▤ Библиотека</button>
+      </nav>
       {libOpen && (
         <section className="panel board-library">
           <div className="board-section">
@@ -448,11 +455,10 @@ export default function TacticEditor({
               )}
             </section>
           ))}
-          <h3>Исполнители</h3>
-          {playerPicker}
         </section>
       )}
-      <fieldset className="board-fieldset" disabled={working}>
+      <fieldset className="board-fieldset" disabled={working} hidden={libOpen}>
+        {playerPicker}
         <div className="board-grid">
           <section className="panel board-map-panel">
             <div className="board-section">
@@ -463,15 +469,7 @@ export default function TacticEditor({
                 </small>
                 <h2>{plan.name || "Без названия"}</h2>
               </div>
-              <button
-                className={preview ? "" : "accent-outline"}
-                disabled={disabled}
-                onClick={preview ? stopPreview : spar}
-              >
-                {preview ? "К редактированию" : "▷ Предпросмотр"}
-              </button>
             </div>
-            {!libOpen && playerPicker}
             <TacticMap
               map={map}
               plan={plan}
@@ -688,13 +686,6 @@ export default function TacticEditor({
                   {library?.planner ? "План · " + library.planner : library?.planner === null ? "Подготовить свой вариант" : "Предложение штаба"}
                 </button>
               </div>
-              <button
-                className="primary"
-                disabled={disabled || !dirty}
-                onClick={save}
-              >
-                Сохранить тактику
-              </button>
               <div className="board-buttons">
                 <button onClick={copy}>Создать копию</button>
                 <button
@@ -763,7 +754,7 @@ export default function TacticEditor({
             <section className="panel board-sequence">
               <div className="board-section">
                 <h2>
-                  Маршрут №{slot + 1} · {library.players[slot]}
+                  Маршрут №{slot + 1} · {matchLineup?.[slot]?.name || library.players[slot]}
                 </h2>
                 <small>{steps.length} точ.</small>
               </div>

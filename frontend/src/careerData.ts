@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { createContext, useState, useEffect } from "react";
 import { serverURL } from "./session";
 import type { Office } from "./StaffOffice";
 import type { Visual } from "./SceneIdentity";
@@ -54,6 +54,8 @@ export type Player = {
   skills: Record<string, number>;
   ratings: Record<string, number>;
 };
+export const CareerRoster = createContext<Player[]>([]);
+
 export type Career = Summary & {
   office: Office;
   attention: Decision[];

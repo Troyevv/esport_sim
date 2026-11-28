@@ -385,3 +385,21 @@
 .tactics .board-section h2 {font:500 24px Oswald,sans-serif}
 .tactics .panel {background:var(--surface);border-color:var(--line);border-radius:4px}
 .tactics .board-tools button[aria-pressed=true],.tactics .board-players button[aria-pressed=true] {border-color:var(--orange);background:#2c251e;color:#ffc498}
+
+.tactics .view-tabs {margin-bottom:14px}
+.tactics .board-fieldset[hidden] {display:none}
+.tactics .board-players {gap:8px;padding:0;margin:14px 0}
+.tactics .board-players button {border:1px solid var(--line);padding:8px;display:flex;align-items:center;justify-content:flex-start;background:var(--surface);flex-wrap:wrap;text-align:left;overflow-wrap:anywhere}
+.tactics .board-players button[aria-pressed=true] {border-color:var(--orange)}
+.tactics .board-players button span {min-width:0;flex:1 1 42px;display:grid;gap:3px}
+.tactics .board-players .scene-avatar,.tactics .board-players .game-portrait {width:32px;height:43px;object-fit:contain;flex:none}
+.tactics .board-players button>small {font:10px var(--mono)}
+.tactics .board-map-panel {display:flex;flex-direction:column;min-width:0}
+.tactics .board-map-panel>.board-section,.tactics .board-map-panel>.board-tools,.tactics .board-map-panel>.board-hint {order:-1}
+.tactics .board-tools {grid-template-columns:repeat(auto-fit,minmax(min(84px,100%),1fr));padding:8px;gap:6px}
+.tactics .board-side .board-sequence {order:-1}
+@media(max-width:700px) {
+ .tactics .board-players {display:flex;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:4px}
+ .tactics .board-players button {flex:0 0 145px;scroll-snap-align:start}
+ .tactics .board-tools {grid-template-columns:repeat(5,minmax(0,1fr))}
+}
