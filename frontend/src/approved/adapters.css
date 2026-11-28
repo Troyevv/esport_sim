@@ -42,3 +42,8 @@
 .cp-prematch-team .recent-form span {font:600 11px/1 Plex,monospace;letter-spacing:0;color:#c5ee97}
 .cp-prematch-team .recent-form [data-won=false] {color:#ffb29c}
 .cp-lineup .lineup-profile-action {display:block;width:100%}
+
+@media (max-width: 600px) {
+  .cp-module .cp-tournament-hero { grid-template-columns: 60px minmax(0, 1fr); }
+  .cp-tournament-hero .cp-inline .badge { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+}

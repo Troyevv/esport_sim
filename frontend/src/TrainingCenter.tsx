@@ -979,7 +979,7 @@ export function TrainingCenter({
             return (
               <section className="surface panel-body workload-card" key={p.id}>
                 <header><h2><EntityName group="players" id={p.id} fallback={p.name}/></h2><PlayerRole role={p.role}/></header>
-                <div className="staff-line">
+                <div className="staff-line" data-recovery={a.fatigue >= 60}>
                   Усталость <Scale value={a.fatigue} />
                 </div>
                 <dl className="workload-metrics">

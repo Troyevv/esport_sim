@@ -258,3 +258,7 @@
 .workload-metrics dd {margin:4px 0 0;font:500 20px "IBM Plex Mono",monospace}
 .workload-metrics small {font-size:13px;color:var(--muted)}
 .workload-advice {border-inline-start:2px solid var(--orange);padding-inline-start:10px;line-height:1.5}
+
+.workload-card [data-recovery=true] .training-scale {color:#f4b181}
+.workload-card [data-recovery=true] meter::-webkit-meter-optimum-value {background:#e99b60}
+.workload-card [data-recovery=true] meter::-moz-meter-bar {background:#e99b60}

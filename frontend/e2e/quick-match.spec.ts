@@ -26,6 +26,16 @@ test("Менеджер рассчитывает собственный матч 
   await button("Продолжить карьеру").click();
   await expect(button("Продолжить")).toBeVisible();
   if (await button("Открыть навигацию").isVisible()) await button("Открыть навигацию").click();
+  await button("Архив матчей").click();
+  const team = page.getByRole("button", {name:/^Команда ·/});
+  await team.click();
+  const picker = page.getByRole("dialog", {name:"Команда"});
+  await picker.getByRole("searchbox").fill("несуществующий клуб");
+  await expect(picker.getByRole("status")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(picker).toBeHidden();
+  await expect(team).toBeFocused();
+  if (await button("Открыть навигацию").isVisible()) await button("Открыть навигацию").click();
   await button("← Главное меню").click();
   await button("Стенд симуляции").click();
 });

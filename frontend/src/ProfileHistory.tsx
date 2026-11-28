@@ -1,6 +1,7 @@
+import { EntityPicker } from "./EntityPicker";
 import { EntityName, EditionLink } from "./CareerIdentity";
 import { serverURL } from "./session";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { date, fixtureMap, useData, type Career, type Scene } from "./careerData";
 import { Dialog, Glyph } from "./GameUI";
 import { MatchReport } from "./CareerForms";
@@ -103,6 +104,7 @@ export default function ProfileHistory({c,scene,group,id,revision}: Props) {
   const [map,setMap] = useState("");
   const [event,setEvent] = useState("");
   const [other,setOther] = useState("");
+  useEffect(() => { if (other === id) setOther(""); }, [id, other]);
   const [selected,setSelected] = useState("");
   const since = new Date(c.date+"T00:00:00Z");
   since.setUTCDate(since.getUTCDate()-Number(days)+1);
@@ -120,7 +122,7 @@ export default function ProfileHistory({c,scene,group,id,revision}: Props) {
       <label>Период<select value={days} onChange={e=>setDays(e.target.value)}><option value="7">7 дней</option><option value="30">30 дней</option><option value="0">Вся карьера</option></select></label>
       <label>Карта<select value={map} onChange={e=>setMap(e.target.value)}><option value="">Все карты</option>{Array.from(maps).sort().map(m=><option key={m} value={m}>{labelMap(m)}</option>)}</select></label>
       <label>Турнир<select value={event} onChange={e=>setEvent(e.target.value)}><option value="">Все турниры</option>{Array.from(editions,([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
-      <label>Сравнить с<select value={other} onChange={e=>setOther(e.target.value)}><option value="">Без сравнения</option>{Object.values(directory).filter(e=>e.id!==id).sort((a,b)=>a.name.localeCompare(b.name)).map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></label>
+      <EntityPicker label="Сравнить с" group={group} options={directory} value={other} exclude={id} empty="Без сравнения" select={setOther}/>
     </div>
     <div className="report-lineups">{[current,...(other?[compare]:[])].map((request,i)=>request.error ? <p key={i} role="alert">{request.error} <button onClick={request.reload}>Повторить</button></p>
       : request.data ? <Summary key={i} result={request.data} subject={directory[i ? other : id]}/> : <p key={i} role="status">Загружаем историю…</p>)}</div>

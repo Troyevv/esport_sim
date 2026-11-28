@@ -1,3 +1,4 @@
+import { EntityPicker } from "./EntityPicker";
 import { useEffect, useRef, useState } from "react";
 import { date, fixtureScore, type Career, type Fixture, type Scene } from "./careerData";
 import { EntityName, EditionLink } from "./CareerIdentity";
@@ -30,10 +31,10 @@ export default function CareerArchive({ c, scene, revision, analytics }: { c:Car
     <div className="history-filters">
       {analytics && <label>Участники<select value={group} onChange={e=>setGroup(e.target.value as typeof group)}>
         <option value="teams">Команды</option><option value="players">Игроки</option></select></label>}
-      {group==="players" && analytics ? <label>Игрок<select value={player} onChange={e=>setPlayer(e.target.value)}>
-        {Object.values(scene.players).sort((a,b)=>a.name.localeCompare(b.name)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
-        : <label>Команда<select value={team} onChange={e=>{setTeam(e.target.value);setLimit(25)}}>{!analytics && <option value="">Все команды</option>}
-          {Object.entries(c.teams).sort((a,b)=>a[1].localeCompare(b[1])).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>}
+      {group==="players" && analytics
+        ? <EntityPicker label="Игрок" group="players" options={scene.players} value={player} select={setPlayer}/>
+        : <EntityPicker label="Команда" group="teams" options={c.teams} value={team} empty={analytics ? undefined : "Все команды"}
+            select={id=>{setTeam(id);setLimit(25)}}/>}
     </div>
     {analytics ? <ProfileHistory key={group} c={c} scene={scene} revision={revision} group={group} id={group==="teams"?team:player}/>
       : <section className="surface panel-body"><h2>Завершённые встречи · {rows.length}</h2>
