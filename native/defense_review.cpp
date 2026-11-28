@@ -89,7 +89,7 @@ void brief_defense(const OpeningMap &arena, Json &plan, const Squad &squad, cons
     }
     plan["reliefLanes"] = std::move(lanes);
 }
-void review_opening(const OpeningMap &arena, Json &plan, const Squad &squad, Tick now, const Json &captain) {
+void review_opening(const OpeningMap &arena, Json &plan, const Squad &squad, Tick now, const Json &captain, bool clear_replacement) {
     if (!truth(plan, "opening"))
         return;
     auto &op = plan.at("opening"), &jobs = op.at("jobs");
@@ -145,7 +145,7 @@ void review_opening(const OpeningMap &arena, Json &plan, const Squad &squad, Tic
                 if (lost && now < job.at("coverOrder").at("until").get<Tick>() && !relief(plan, *assigned))
                     continue;
                 job.erase("coverOrder");
-                j.erase("replacement");
+                if (clear_replacement) j.erase("replacement");
             }
         }
         if (!lost || !j.contains("gate") || relief(plan, *p) || truth(j, "withdrawn"))
@@ -280,7 +280,7 @@ void direct_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &pla
     }
     if (ranked) {
         compare_defense(w, cfg, arena, plan, squad, leader, reports, counts, losses, bomb, on_site);
-        review_opening(arena, plan, squad, now, leader);
+        review_opening(arena, plan, squad, now, leader, w.value("agentPolicy",0)>=12);
         return;
     }
     std::string high = counts.at("B") > counts.at("A") ? "B" : "A", low = high == "A" ? "B" : "A";
@@ -362,7 +362,7 @@ void direct_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &pla
     if (truth(plan, "backup") && !plan.at("backup").contains("issued"))
         plan.at("backup")["issued"] = now;
     commit_reserves(arena, plan, squad, full ? destination : Json(nullptr));
-    review_opening(arena, plan, squad, now, leader);
+    review_opening(arena, plan, squad, now, leader, w.value("agentPolicy",0)>=12);
     auto current = assignments();
     if (old == current)
         return;

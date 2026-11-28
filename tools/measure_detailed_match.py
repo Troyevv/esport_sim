@@ -72,7 +72,9 @@ def run(args):
     start = domain["rosters"][pair[args.first_attack]]["team"] if args.first_attack is not None else None
     if args.native_core:
         game = production_match.initial(args.seed, domain, pair, map_id=args.map, first_attack=start,
-                                        agent_policy=production_match.AGENT_POLICY if args.current_ai else None)
+                                        agent_policy=production_match.AGENT_POLICY if args.current_ai else getattr(args, "policy", None))
+        if getattr(args, "autonomous", False):
+            game["autonomous"] = True
     else:
         game = match.initial(args.seed, domain, pair, map_id=args.map, first_attack=start)
     owner = None
@@ -81,7 +83,7 @@ def run(args):
         owner = native_match_state.open_game(game)
     initialized = perf_counter_ns() - started
     # Exercise the same legal manager input in every run.
-    commands = [(0, "timeout", None), (0, "resume", None)]
+    commands = [] if getattr(args, "autonomous", False) else [(0, "timeout", None), (0, "resume", None)]
     for _, kind, value in commands:
         if owner is None:
             match.command(game, kind, value)
@@ -179,6 +181,8 @@ if __name__ == "__main__":
     parser.add_argument("--native-nav", action="store_true", help="Substitute native NAV lookup for comparison")
     parser.add_argument("--restore", action="store_true", help="Continue from JSON at tick 150")
     parser.add_argument("--current-ai", action="store_true", help="Measure R5.5 decisions on the native owner")
+    parser.add_argument("--policy", type=int, help="Replay a particular agent policy on the native owner")
+    parser.add_argument("--autonomous", action="store_true", help="Run without a manager on either bench")
     parser.add_argument("--first-attack", choices=(0, 1), type=int, help="Roster starting on T for a mirrored pair")
     args = parser.parse_args()
     if args.current_ai and not args.native_core:

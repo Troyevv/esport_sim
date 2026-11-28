@@ -200,10 +200,11 @@ void captain_review(Json &w, const Json &cfg, const OpeningMap &arena, const std
     }
     if (now < plan.at("review").get<Tick>())
         return;
-    plan["review"] = now + 18 + (100 - skills.at("calling").get<int>()) / 2;
+    const int attention_delay = captain.contains("mind") ? -captain.at("mind").at("focus").get<int>() / 4 : 0;
+    plan["review"] = now + 18 + attention_delay + (100 - skills.at("calling").get<int>()) / 2;
     if (side == "CT") {
         plan["review"] =
-            now + 5 + (200 - skills.at("calling").get<int>() - skills.at("communication").get<int>()) / 8;
+            now + 5 + attention_delay + (200 - skills.at("calling").get<int>() - skills.at("communication").get<int>()) / 8;
         if (w.at("phase") == "live") {
             direct_defense(w, cfg, arena, plan, squad, captain);
             return;

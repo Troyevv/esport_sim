@@ -220,6 +220,8 @@ Json AgentTurn::personal_decision() {
     const auto map = grid ? std::string("depo") : w.at("mapId").get<std::string>().substr(3);
     const Json *duty = !grid && side == "CT" && !planted && revised_defense(w) ? relief(plan, a) : nullptr;
     const bool withdrawing = duty && duty->value("maneuver", std::string{}) == "yield";
+    const bool traveling = duty && a.contains("mind") && duty->contains("hold") &&
+                           distance(pos,duty->at("hold").get<Point>())>8 && a.at("visible").empty();
     Situation situation{
         .contacts = int(a.at("visible").size()),
         .hp = a.at("hp"),
@@ -237,7 +239,7 @@ Json AgentTurn::personal_decision() {
         .role_experience = player.at("roleMastery").value(role, 0),
         .entry = role == "entry",
         .support = role == "support",
-        .committed = board || planted || recovering || withdrawing,
+        .committed = board || planted || recovering || withdrawing || traveling,
         .carrying = carrying,
         .can_escape = !escape.empty(),
         .remembered = certainty > 0 && a.at("blind") <= now,

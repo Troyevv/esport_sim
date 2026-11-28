@@ -219,6 +219,7 @@ class MatchState::Impl {
         else if (kind == "address" && w.contains("talkSeconds"))
             coach_address(w, coach, Json::parse(value));
         else if (kind == "call" && calls.contains(value)) {
+            if (w.at("call") != value || w.contains("nextBoard")) spend_talk_time(w,10);
             w.erase("nextBoard");
             w["call"] = value;
             emit(w, "call", "Указание на следующий раунд · " + value, team_side(w.at("agents"), coach));
@@ -397,6 +398,7 @@ class MatchState::Impl {
         world.at("tick") = plus_ticks(world.at("tick"), 1);
         const Tick now = world.at("tick");
         if (world.at("phase") == "freeze" || world.at("phase") == "result") {
+            finish_ai_break(world, now);
             if (now >= world.at("deadline")) {
                 if (world.at("phase") == "result") {
                     start_round(world, config, spawns);
@@ -554,12 +556,13 @@ int MatchState::advance_intermission(int ticks) {
                      [&](const auto &a, const auto &b) { return key(a) < key(b); });
     current["started"] = true;
     current.at("tick") = plus_ticks(tick, count);
+    finish_ai_break(current,current.at("tick"));
     if (transition) {
         if (current.at("phase") == "result") {
             start_round(current, impl_->config, impl_->spawns);
             if (current.at("pending") == true)
                 impl_->enter_timeout(current);
-                    else consider_break(current);
+            else consider_break(current);
         } else {
             impl_->opening_map().begin_live(current, impl_->config);
         }
@@ -804,6 +807,7 @@ void MatchState::assign_board(const std::string &input) {
         if (coach != side ||
             (scenario != buy && !(scenario != "Эко" && scenario != "Пистолетная" && buy == "Оружейная")))
             throw std::invalid_argument("Тактика не соответствует стороне или закупке ближайшего раунда");
+        if (!w.contains("nextBoard") || w.at("nextBoard") != board) spend_talk_time(w,15);
         w["nextBoard"] = board;
         w["call"] = board.at("name");
     } else if (w.at("round") == 1 && w.at("tick") == 0 && w.at("phase") == "freeze" &&

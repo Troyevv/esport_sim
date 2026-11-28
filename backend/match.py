@@ -396,7 +396,7 @@ def project(w, view="full"):
             ),
             round=w["round"],
             phase=w["phase"],
-            clock=max(0, w["deadline"] - w["tick"]),
+            clock=max(0, w.get("breakEnds",w["deadline"]) - w["tick"]),
             teams=[team(w, i)["name"] for i in (0, 1)],
             teamVisuals=[team(w, i).get("visual") for i in (0, 1)],
             score=w["score"],

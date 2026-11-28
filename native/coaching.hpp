@@ -5,9 +5,12 @@ namespace esport {
 // Only model 12 owns transient affect. Older active checkpoints keep their policy.
 void initialize_mind(const Json &world, Json &actor);
 void encounter_emotion(Json &world, Json &actor, bool success, bool mistake, Tick event);
+void self_flash_emotion(Json &world, Json &actor, Tick event);
 void round_emotion(Json &world, Json &actor, bool won, int target, Tick round_event);
 void timeout_recovery(Json &world, const Json &team);
+void spend_talk_time(Json &world, int seconds);
 void coach_address(Json &world, const Json &team, const Json &request);
+void finish_ai_break(Json &world, Tick now);
 void consider_break(Json &world);
 int timeout_need(int distress, int mistakes, int deficit, int recent_losses, int economic_gap, int stakes,
                  int round, int remaining, int quality);

@@ -31,6 +31,8 @@ void attention(const Json &w, Json &a) {
 }
 void topic(Json &a, Tick id, int round, std::string kind, std::string message) {
     auto &list = a.at("topics");
+    if (!list.empty() && list.back().at("round") > round)
+        return;
     if (!list.empty() && list.back().at("round") != round)
         list.clear();
     for (const auto &prior : list)
@@ -71,6 +73,14 @@ void encounter_emotion(Json &w, Json &a, bool success, bool mistake, Tick event)
                     : "Проиграл дуэль. На следующем контакте хочу играть с разменом.");
     attention(w, a);
 }
+void self_flash_emotion(Json &w, Json &a, Tick event) {
+    if (!a.contains("mind"))
+        return;
+    auto &m = a.at("mind");
+    shift(m, "frustration", 2 + (100 - resistance(player_profile(w, a), a)) / 20);
+    topic(a, event, w.at("round"), "mistake", "Ослепил себя своей флешкой. Нужно сверить момент выхода.");
+    attention(w, a);
+}
 void round_emotion(Json &w, Json &a, bool won, int target, Tick round_event) {
     if (!a.contains("mind"))
         return;
@@ -84,8 +94,13 @@ void round_emotion(Json &w, Json &a, bool won, int target, Tick round_event) {
     const auto plan = w.at("plans").find(a.at("team").get<std::string>());
     const bool executed =
         plan != w.at("plans").end() && plan->contains("board") && a.value("stepIndex", 0) > 0 && !refused;
-    const int stakes = w.value("matchImportance", 0) + (std::max(own, other) >= target - 1 ? 18 : 0) +
-                       (w.at("round") > 24 ? 7 : 0) + std::clamp(other - own, 0, 9);
+    const auto &domain = w.at("domain");
+    const int opposition = domain.contains("oppositionPressure")
+                               ? domain.at("oppositionPressure").value(a.at("teamId").get<std::string>(), 0)
+                               : 0;
+    const int stakes = opposition + w.value("matchImportance", 0) +
+                       (std::max(own, other) >= target - 1 ? 18 : 0) + (w.at("round") > 24 ? 7 : 0) +
+                       std::clamp(other - own, 0, 9);
     const int sensitivity = 110 - resistance(p, a);
     shift(m, "stress",
           (12 + p.at("fatigue").get<int>() / 4 + stakes * sensitivity / 75 - m.at("stress").get<int>()) / 3 +
@@ -101,6 +116,13 @@ void round_emotion(Json &w, Json &a, bool won, int target, Tick round_event) {
         topic(a, round_event, w.at("round"), won || executed ? "success" : "loss",
               clutch ? (won ? "Удалось забрать клатч." : "Остался один и проиграл клатч.")
                      : "Выполнил свою часть плана.");
+    const auto &history = w.at("history");
+    if (won && history.size() >= 3 && own >= other &&
+        history.at(history.size() - 3).at("score").at(a.at("club").get<int>()).get<int>() <
+            history.at(history.size() - 3).at("score").at(1 - a.at("club").get<int>()).get<int>()) {
+        shift(m, "confidence", 2);
+        shift(m, "stress", -2);
+    }
     // Team losses and the opening frag are public. Private refusals need a delivered report.
     const auto &kills = w.at("kills");
     if (!won && !kills.empty() && kills.front().at("enemy") == true &&
@@ -113,6 +135,8 @@ void round_emotion(Json &w, Json &a, bool won, int target, Tick round_event) {
             if (call.at("state") != "refused" || !call.contains("reason"))
                 continue;
             shift(m, "stress", 1);
+            topic(a, round_event, w.at("round"), "execution_report",
+                  "По радио сообщили, что шаг плана сорвался: " + call.at("reason").get<std::string>() + ".");
             break;
         }
     }
@@ -129,6 +153,14 @@ void timeout_recovery(Json &w, const Json &team) {
             shift(m, "frustration", -m.at("frustration").get<int>() / 8);
             attention(w, a);
         }
+}
+void spend_talk_time(Json &w, int seconds) {
+    if (!w.contains("talkSeconds"))
+        return;
+    const int remaining = w.at("talkSeconds");
+    if (remaining < seconds)
+        throw std::invalid_argument("Время на разговор исчерпано");
+    w.at("talkSeconds") = remaining - seconds;
 }
 void coach_address(Json &w, const Json &team, const Json &q) {
     const std::string target = q.at("target"), action = q.at("action");
@@ -231,7 +263,7 @@ void coach_address(Json &w, const Json &team, const Json &q) {
         attention(w, a);
         replies.push_back({{"player", a.at("name")}, {"text", reply}});
     }
-    w.at("talkSeconds") = w.at("talkSeconds").get<int>() - cost;
+    spend_talk_time(w, cost);
     w.at("talkHistory")
         .push_back({{"team", team},
                     {"round", w.at("round")},
@@ -247,6 +279,12 @@ int timeout_need(int distress, int mistakes, int deficit, int recent_losses, int
     int reserve = std::max(0, 17 - round) * (4 - std::min(3, remaining)) / 2;
     return distress + std::min(18, mistakes * 5) + std::clamp(deficit * 2, -8, 14) + recent_losses * 4 +
            economic_gap + stakes + quality / 12 - reserve - 50;
+}
+void finish_ai_break(Json &w, Tick now) {
+    if (w.contains("breakEnds") && now >= w.at("breakEnds").get<Tick>()) {
+        w.erase("breakEnds");
+        w.erase("breakOwner");
+    }
 }
 void consider_break(Json &w) {
     if (w.value("agentPolicy", 0) < 12 || w.at("round") < 3 || w.at("pending") == true)
@@ -313,6 +351,11 @@ void consider_break(Json &w) {
                     {"speaker", target->at("id")},
                     {"subject", topics.empty() ? Json(0) : topics.back().at("id")},
                     {"action", "support"}};
+    if (request.at("subject") != 0 && coach(w, chosen).at("analysis") >= 40) {
+        request["action"] = "discuss";
+        coach_address(w, chosen, request);
+    }
+    request["action"] = target->at("mind").at("stress") > 43 ? "calm" : "support";
     coach_address(w, chosen, request);
     request.update(
         Json{{"action", "order"}, {"order", coach(w, chosen).at("bold") == true ? "trade" : "cautious"}});
@@ -325,6 +368,7 @@ void consider_break(Json &w) {
             plan = sites.back().at(0) == "A" ? "Выход B" : "Выход A";
     }
     w["aiCall"] = {{"team", chosen}, {"plan", plan}};
+    w["breakEnds"] = plus_ticks(w.at("tick"), 600);
     w["deadline"] = plus_ticks(w.at("deadline"), 600);
     emit(w, "timeout",
          w.at("domain").at("teams").at(chosen).at("name").get<std::string>() + " берёт тактический тайм-аут");

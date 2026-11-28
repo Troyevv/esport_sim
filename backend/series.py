@@ -121,6 +121,8 @@ def next_map(w):
     game["remaining"] = budget if s["profile"].get("timeoutScope")=="map" else w.get("remaining",budget)
     if "rivalRemaining" in game:
         game["rivalRemaining"] = budget if s["profile"].get("timeoutScope")=="map" else w.get("rivalRemaining",budget)
+    if w.get("autonomous"):
+        game["autonomous"] = True
     game["openingTimeouts"] = game["remaining"]
     s["stage"] = "playing"
     game["series"] = s

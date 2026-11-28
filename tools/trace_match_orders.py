@@ -1,6 +1,7 @@
 """Manual physical-map probe, from two real sightlines through radio to executed orders."""
 
 import argparse
+from collections import Counter
 import gzip
 import json
 from math import atan2, dist
@@ -201,11 +202,38 @@ def attack_scenario(name, seed, domain, rosters):
     )
 
 
+def field_sample(name, seed, domain, rosters):
+    """Measure stationary actor-ticks by actual decision and status on an unmodified opening."""
+    w = match.initial(seed, domain, rosters, map_id=name)
+    owner = native_match_state.open_game(w)
+    last, stationary, blocked, unresolved, totals = {}, Counter(), Counter(), Counter(), Counter()
+    for _, rnd, phase, actors in json.loads(owner.audit_individual_ticks(500)):
+        if phase not in ("live", "planted"):
+            last.clear()
+            continue
+        for actor in actors:
+            who, side, intent, x, y, z, hp = actor[:7]
+            visible, status, obstruction = actor[12], actor[17], actor[19]
+            key, point = (rnd, who), (x, y, z)
+            if hp and last.get(key) == point:
+                stationary[side, intent, status] += 1
+                if intent == "assignment" and obstruction and not visible:
+                    blocked[side, status] += 1
+                if not intent or status in ("", "Подготовка"):
+                    unresolved[side] += 1
+            last[key] = point
+            totals[side] += 1
+    return dict(map=name, samples=totals, unresolved=unresolved,
+                stationary=[[*key,count] for key,count in stationary.items()],
+                blocked=[[*key,count] for key,count in blocked.items()])
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--policy", type=int, default=12)
     parser.add_argument("--wounded", action="store_true")
     parser.add_argument("--attack", action="store_true")
+    parser.add_argument("--field", action="store_true")
     args = parser.parse_args()
     pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
     for i, name in enumerate(cs2_maps.installed()):
@@ -213,6 +241,7 @@ if __name__ == "__main__":
         rosters = Random(seed).sample(sorted(pack["rosters"]), 2)
         domain = database.match_input(pack, rosters)
         result = (
+            field_sample(name, seed, domain, rosters) if args.field else
             attack_scenario(name, seed, domain, rosters)
             if args.attack
             else scenario(name, seed, args.policy, domain, rosters, wounded=args.wounded)

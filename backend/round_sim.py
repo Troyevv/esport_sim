@@ -241,6 +241,9 @@ def play_map(game, map_id, first_attack, seed, strain=None):
         if regulation.get("timeoutScope", "series") == "series" and series.get("results"):
             budgets.update(series["results"][-1].get("remainingTimeouts", {}))
         last_break = [-10, -10]
+        pressure = [0, 0]
+        setbacks = [0, 0]
+        recent = [0, 0]
         for row in players:
             for player in row:
                 profile = domain["players"][player["player"]]
@@ -284,11 +287,8 @@ def play_map(game, map_id, first_attack, seed, strain=None):
             for side, team in enumerate(teams):
                 if n-last_break[side] < 3 or not budgets[team]:
                     continue
-                distress = sum(p["strainOfPlay"] for p in players[side]) // 5
-                losses_recent = sum(r["winnerTeamId"] != team for r in rounds[-3:])
                 poor_buy = rounds[-1]["buys"][side] in ("eco", "force")
-                setbacks = sum(p["strainOfPlay"] > 24 for p in players[side])
-                need = timeout_need(distress, setbacks, scores[1-side]-scores[side], losses_recent,
+                need = timeout_need(pressure[side] // 5, setbacks[side], scores[1-side]-scores[side], recent[side],
                                     4 if poor_buy else 0, domain.get("matchImportance", 0)//3 +
                                     (6 if max(scores) >= target-1 else 0), n, budgets[team], bench[team]["analysis"])
                 if need > best:
@@ -337,6 +337,11 @@ def play_map(game, map_id, first_attack, seed, strain=None):
         )
         scores[winner] += 1
         for side in (0, 1):
+            if active_coaching:
+                pressure[side] = setbacks[side] = 0
+                recent[side] += int(side != winner)
+                if len(rounds) >= 3:
+                    recent[side] -= int(rounds[-3]["winnerTeamId"] != teams[side])
             # Surviving opponents may also have taken non-lethal damage.
             for _ in alive[side ^ 1]:
                 if rng.random() < 0.80:
@@ -353,6 +358,8 @@ def play_map(game, map_id, first_attack, seed, strain=None):
                     load = (8 if not survived else -4) + (5 if side != winner else -5)
                     stress = max(0, min(65, stress * 4//5 + load*(145-player["stability"])//75
                                         - (3 if i in contributed[side] else 0)))
+                    pressure[side] += stress
+                    setbacks[side] += stress > 24
                     player["strainOfPlay"] = stress
                     player["risk"] = player["usualRisk"] + min(10, stress//5)
                     player["openingWeight"] = player["usualOpening"] * (1 - stress / 320)

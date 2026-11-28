@@ -94,6 +94,7 @@ def test_tilt_after_unfair_criticism_and_recovery_without_changing_traits():
     owner.finish_round(a["team"], "Устранение")
     recovered = json.loads(owner.snapshot())
     assert recovered["agents"][i]["mind"]["frustration"] < unstable["frustration"]
+    assert coaching.impression(recovered["agents"][i]["mind"], True) == "Раздражён"
     assert recovered["domain"]["players"][a["playerId"]]["skills"] == own_traits
 
 
@@ -159,3 +160,37 @@ def test_two_witnesses_five_identified_attackers_and_actual_reserve_movement():
     assert result["unique"] == 5 and result["packets"] >= 10
     assert result["site"] == "A" and len(result["acted"]) >= 2
     assert not result["conflictingDuties"] and not result["idleWithoutTask"]
+
+
+def test_same_score_and_spending_limit_allow_a_coach_to_wait_or_intervene():
+    w = match.initial(567)
+    match.advance(w, 45)
+    owner = native_match_state.open_game(w)
+    owner.finish_round("T", "Устранение")
+    w = json.loads(owner.snapshot())
+    # Same scoreboard, same money and same sequence of public results in both branches.
+    w["round"] = 7
+    rival = next(t for t in w["domain"]["teams"] if t != w["coachTeamId"])
+    def intermission(load, budget=2):
+        before = deepcopy(w)
+        before["rivalRemaining"] = budget
+        for a in before["agents"]:
+            if a["teamId"] == rival:
+                a["mind"].update(stress=load, frustration=load, confidence=60)
+        owner = native_match_state.open_game(before)
+        owner.advance(before["deadline"] - before["tick"])
+        return json.loads(owner.snapshot())
+    quiet = intermission(8)
+    assert quiet["rivalRemaining"] == 2 and "breakOwner" not in quiet
+    tense = intermission(68)
+    assert tense["breakOwner"] == rival and tense["rivalRemaining"] == 1
+    assert tense["remaining"] == w["remaining"]
+    assert tense["aiCall"]["team"] == rival and any(a.get("coachOrder") for a in tense["agents"])
+    public = match.project(tense)["match"]
+    assert public["room"] is None and not public["feedback"]
+    with pytest.raises(ValueError):
+        request(tense, "praise", "team")
+    match.advance(tense, 600)
+    assert "breakOwner" not in tense and tense["phase"] == "freeze"
+    assert "breakOwner" not in intermission(68, budget=0)
+    assert not any(row["team"] != rival for row in tense["talkHistory"])
