@@ -1,3 +1,4 @@
+import { openLab } from "./openLab";
 import { test, expect } from "@playwright/test";
 import { touchCamera } from "./touchCamera";
 
@@ -14,10 +15,7 @@ test("полный BO1, колл, сохранение и итог матча", 
     if (hasTouch) await button(name).tap();
     else await button(name).click();
   };
-  if ((await (await page.request.get("/api/state")).json()).careerId) {
-    await page.goto("/");
-    await page.getByRole("button", {name: "Стенд симуляции", exact: true}).click();
-  } else await page.goto("/?screen=lab");
+  await openLab(page);
   await expect(page.getByTestId("connection")).toContainText("На связи");
   const seed = 7171 + info.project.name.length;
   // All suites use the same home server. Enter the real lab before choosing this match.
@@ -122,10 +120,7 @@ test(
       baseURL: info.project.use.baseURL,
     });
     try {
-      if ((await (await page.request.get("/api/state")).json()).careerId) {
-    await page.goto("/");
-    await page.getByRole("button", {name: "Стенд симуляции", exact: true}).click();
-  } else await page.goto("/?screen=lab");
+      await openLab(page);
       await page.getByRole("button", { name: "Открыть матч BO1" }).click();
       let id = "";
       await page.route(
@@ -158,15 +153,13 @@ test(
 );
 
 test("ошибка чтения сохранения останавливает повторы и допускает ручное подключение", async ({ page }) => {
+  await openLab(page);
   let attempts = 0;
   await page.route("**/api/state?view=*", route => {
     attempts++;
     return route.fulfill({ status: 500, body: "Internal Server Error" });
   });
-  if ((await (await page.request.get("/api/state")).json()).careerId) {
-    await page.goto("/");
-    await page.getByRole("button", {name: "Стенд симуляции", exact: true}).click();
-  } else await page.goto("/?screen=lab");
+  await page.reload();
   await expect(page.getByRole("alert")).toContainText("HTTP 500");
   await expect(page.getByTestId("connection")).toHaveText("Ошибка загрузки");
   const failedAttempts = attempts;

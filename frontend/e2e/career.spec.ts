@@ -9,7 +9,7 @@ test("Карьера от выбора базы до общей сохранён
     page.getByRole("button", { name, exact: true });
   const press = async (name: string) => {
     const drawer = button("Открыть навигацию");
-    if ((await drawer.isVisible()) && await page.locator("aside.sidebar").getByRole("button",{name,exact:true}).count() && !(await button(name).isVisible()))
+    if ((await drawer.isVisible()) && await page.locator("aside.sidebar button[aria-label]").evaluateAll((items,label)=>items.some(b=>b.getAttribute("aria-label")===label),name) && !(await button(name).isVisible()))
       await drawer.click();
     if (info.project.use.hasTouch) await button(name).tap();
     else await button(name).click();

@@ -774,41 +774,15 @@ export function CompetitionCenter(props: Props) {
       <button className="link-button" onClick={() => select("")}>
         ← Все соревнования
       </button>
-      <div className="tc-title">
-        <CompetitionMark
-          mark={eventMark(event.id, event.organizer)}
-          name={event.title}
-          cycle={event.id}
-          year={event.year}
-          size={75}
-        />
-        <Heading
-          title={event.title}
-          sub={event.place + " · " + span(event.start, event.end)}
-        />
-      </div>
-      <div className="tc-facts surface">
-        {[
-          [event.organizer, "Организатор"],
-          [purse(event), "Призовой фонд"],
-          [event.capacity, "Команд"],
-          ["Тир " + event.prestige, "Игровой престиж"],
-        ].map(([a, b]) => (
-          <div key={b}>
-            <small>{b}</small>
-            <b>
-              {b === "Организатор" && (
-                <CompetitionMark
-                  mark={"org-" + event.organizer.toLowerCase()}
-                  name={event.organizer}
-                  size={27}
-                />
-              )}
-              {a}
-            </b>
-          </div>
-        ))}
-      </div>
+      <section className="tournament-hero">
+        <CompetitionMark mark={eventMark(event.id,event.organizer)} name={event.title} cycle={event.id} year={event.year} size={112}/>
+        <div className="tournament-identity"><Heading title={event.title} eyebrow={"Сезон "+event.year+" · "+event.organizer}
+          sub={event.place+" · "+span(event.start,event.end)}/>
+          <div className="tournament-tags"><span>{status[event.status] || event.status}</span>
+            {event.stages.map(s=>s.format).filter((f,i,all)=>all.indexOf(f)===i).map(f=><span key={f}>{formats[f] || f}</span>)}</div>
+        </div>
+        <div className="tournament-purse"><small>Призовой фонд</small><strong>{purse(event)}</strong><small>{event.capacity} команд</small></div>
+      </section>
       <Tabs
         items={[
           "Обзор",
@@ -823,6 +797,9 @@ export function CompetitionCenter(props: Props) {
       />
       {tab === "Обзор" && (
         <section className="surface panel-body">
+          <div className="tournament-overview"><div><small>Текущая стадия</small><strong>{event.stages[event.draws.length-1]?.name || status[event.status]}</strong></div>
+            <div><small>{c.club}</small><strong>{status[event.entries[c.team]] || "Вне списка участников"}</strong></div>
+            <div><small>Игровой престиж</small><strong>Тир {event.prestige}</strong></div></div>
           <h2>Регламент</h2>
           <p>
             {status[event.status]} · {admission[event.admission]} ·{" "}

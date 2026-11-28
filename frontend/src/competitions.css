@@ -266,3 +266,16 @@
   .tc-list .tc-card footer {grid-column:2;grid-row:4;text-align:left;justify-self:start}
   .vrs-layout {grid-template-columns:100%}
 }
+.tournament-hero {display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:clamp(18px,2.5vw,36px);align-items:center;margin:18px 0 22px;padding:clamp(18px,3.2vw,42px);background:linear-gradient(110deg,#272421,#181b21 65%);border:1px solid var(--line);border-radius:5px}
+.tournament-hero .page-heading {margin:0}
+.tournament-hero .subtitle {margin-top:8px}
+.tournament-tags,.tournament-overview {display:flex;flex-wrap:wrap;gap:9px}
+.tournament-tags {margin-top:16px}
+.tournament-tags span {font:600 12px var(--mono);border:1px solid #404751;padding:4px 9px;border-radius:3px}
+.tournament-tags span:first-child {color:#9bdbb0;border-color:#396148;background:#182c21}
+.tournament-purse {display:grid;text-align:right;gap:6px}
+.tournament-purse small,.tournament-overview small {color:var(--muted);font-size:13px}
+.tournament-purse strong {font:550 clamp(23px,3vw,39px) Oswald,sans-serif}
+.tournament-overview {gap:14px;margin-bottom:24px}
+.tournament-overview>div {display:grid;gap:6px;flex:1 1 150px;padding:14px;border-bottom:1px solid var(--line)}
+@media (max-width:750px) {.tournament-hero {grid-template-columns:58px minmax(0,1fr);gap:14px}.tournament-hero>.competition-mark {width:58px;height:58px}.tournament-purse {grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;text-align:left;border-top:1px solid var(--line);padding-top:12px}}

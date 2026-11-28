@@ -1,6 +1,7 @@
+import { openLab } from "./openLab";
 import { test, expect } from "@playwright/test";
 test("Пакет, поиск, правка, перенос и BO1", async ({ page }, info) => {
-  await page.goto("/?screen=lab");
+  await openLab(page);
   const open = page.getByRole("button", { name: "База сцены", exact: true });
   if (info.project.use.hasTouch) await open.tap();
   else await open.click();
@@ -100,7 +101,7 @@ test("Пакет, поиск, правка, перенос и BO1", async ({ pag
 });
 
 test("Профили организации, штаба и новая редакция", async ({ page }, info) => {
-  await page.goto("/?screen=lab");
+  await openLab(page);
   await page.getByRole("button", { name: "База сцены", exact: true }).click();
   const catalog = page.getByLabel("Пакет и редакция");
   await catalog.selectOption(

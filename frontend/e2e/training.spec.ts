@@ -119,6 +119,7 @@ test("Тренировочная неделя, профиль развития, 
   await capture("pcw-report");
   await dialog.getByRole("button", { name: "Закрыть", exact: true }).click();
   await press("Календарь");
+  await page.locator(".calendar-grid, .calendar-agenda").first().waitFor();
   const daySchedule = page.getByRole("button", {name: /^Тренировки · [0-9]+$/}).first();
   if (await page.locator(".calendar-agenda").isVisible()) await daySchedule.click();
   else await press("Открыть расписание");
