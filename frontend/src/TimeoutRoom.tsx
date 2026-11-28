@@ -3,7 +3,15 @@ import type { MatchView } from "./MatchCenter";
 import { GamePortrait } from "./GamePortrait";
 import "./timeout.css";
 
-type Topic = { id: number; round: number; kind: string; text: string; observation?: string; inference?: string; proposal?: string };
+type Topic = {
+  id: number;
+  round: number;
+  kind: string;
+  text: string;
+  observation?: string;
+  inference?: string;
+  proposal?: string;
+};
 export interface Room {
   seconds: number;
   players: Record<
@@ -73,7 +81,9 @@ export default function TimeoutRoom({
     [order, setOrder] = useState("cautious");
   const [site, setSite] = useState("A"),
     [mate, setMate] = useState(""),
-    [call, setCall] = useState(m.call && m.calls.includes(m.call) ? m.call : m.calls[0]);
+    [call, setCall] = useState(
+      m.call && m.calls.includes(m.call) ? m.call : m.calls[0],
+    );
   const selected = five.find((p) => p.id === target);
   const subjects = five
     .filter((p) => !selected || p.id === target)
@@ -183,11 +193,23 @@ export default function TimeoutRoom({
                     <b>
                       {p.name} · R{t.round}
                     </b>
-                    {"observation" in t && t.observation ? <>
-                      <span>{t.observation}</span>
-                      {t.inference && <span><em>Моя версия</em> {t.inference}</span>}
-                      {t.proposal && <span><em>Предлагаю</em> {t.proposal}</span>}
-                    </> : t.text}
+                    {"observation" in t && t.observation ? (
+                      <>
+                        <span>{t.observation}</span>
+                        {t.inference && (
+                          <span>
+                            <em>Моя версия</em> {t.inference}
+                          </span>
+                        )}
+                        {t.proposal && (
+                          <span>
+                            <em>Предлагаю</em> {t.proposal}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      t.text
+                    )}
                   </blockquote>
                 )
               );
@@ -313,10 +335,18 @@ export default function TimeoutRoom({
             </select>
           </label>
           <div className="bench-controls">
-            <button disabled={!enabled || (room.seconds < 10 && call !== m.call)} onClick={() => act("call", call)}>
+            <button
+              disabled={!enabled || (room.seconds < 10 && call !== m.call)}
+              onClick={() => act("call", call)}
+            >
               Передать колл
             </button>
-            <button disabled={!enabled || room.seconds < 15} onClick={openBoard}>Выбрать тактику</button>
+            <button
+              disabled={!enabled || room.seconds < 15}
+              onClick={openBoard}
+            >
+              Выбрать тактику
+            </button>
           </div>
           {m.call && <p role="status">Принято · {m.call}</p>}
           <button

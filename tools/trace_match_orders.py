@@ -192,7 +192,6 @@ def scenario(
         acted=acted,
         final=samples,
         idleWithoutTask=unassigned_idle,
-        scores=plan.get("defenseScores"),
         witnesses=[a["id"] for a in witnesses],
         packets=len(packets),
         unique=len(ids),
@@ -204,6 +203,16 @@ def scenario(
         firstMove=first_move,
         ack=ack,
         conflictingDuties=conflicts,
+        scoresAtReview=plan.get("defenseScores", {}),
+        recipients={
+            a["id"]: {
+                k: [r["source"], r["tick"], r.get("reporter")]
+                for k, r in a["knowledge"].items()
+                if k in ids
+            }
+            for a in received["agents"]
+            if a["team"] == "CT"
+        },
         observations={
             key: [
                 r["source"],

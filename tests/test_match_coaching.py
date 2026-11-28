@@ -327,3 +327,34 @@ def test_unreachable_rendezvous_releases_actor_and_reaches_captain_by_radio():
     igl = next(m for m in received["agents"] if m["team"] == "T" and m["appointed"])
     assert igl["peerCalls"][a["id"] + "/order"]["state"] == "refused"
     assert actor["status"] != "Перестраивается по парам"
+
+
+def test_rehearsed_fast_plan_uses_current_support_and_opening_readiness(monkeypatch):
+    game = fixture(1, 564)
+    teams = game["series"]["teams"]
+    board = dict(
+        id="test-coaching",
+        revision=1,
+        name="Совместный выход",
+        side="T",
+        buy="Полная",
+        slots=[[dict(kind="exit")] for _ in range(5)],
+    )
+    game.update(practiceTeam=teams[0], practiceBoard=board)
+    for player in game["domain"]["players"].values():
+        player["tactics"] = {"test-coaching@1": 100}
+    snapshots = []
+    original = round_sim.resolve_round
+
+    def record(rng, powers, lineups, cash, stats):
+        snapshots.append(
+            [(p["assist"], p["openingWeight"], p["usualAssist"]) for p in lineups[0]]
+        )
+        return original(rng, powers, lineups, cash, stats)
+
+    monkeypatch.setattr(round_sim, "resolve_round", record)
+    result = round_sim.play_map(game, "de_mirage", teams[0], 564)
+    called = [row for row, r in zip(snapshots, result["rounds"]) if "tactic" in r]
+    assert called and any(
+        assist < base and weight < 2 for row in called for assist, weight, base in row
+    )

@@ -71,7 +71,8 @@ Json review_frame(const Json &w, const OpeningMap *arena) {
         Json group = nullptr;
         if (a.contains("groupDuty") && a.at("groupDuty").is_object()) {
             const auto &g = a.at("groupDuty");
-            group = {g.at("ticket").at(0), g.value("until", Tick{-1}), g.value("state", std::string{}),g.value("angle",Json(nullptr)),g.value("worked",Tick{-1})};
+            group = {g.at("ticket").at(0), g.value("until", Tick{-1}), g.value("state", std::string{}),
+                     g.value("angle", Json(nullptr)), g.value("worked", Tick{-1})};
         }
         Json expected = nullptr, partner = nullptr;
         if (side == "T" && p.contains("commandJobs") && p.at("commandJobs").contains(id))

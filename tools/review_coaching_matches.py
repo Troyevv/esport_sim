@@ -11,26 +11,29 @@ from random import Random
 from backend import career, cs2_maps, database, match, native_match_state
 
 
-def obeys(actor, issued):
-    goal, duty, expected = actor[15], actor[16], actor[22]
-    if not goal:
+def obeys(actor, action, issued):
+    kind, requested = action
+    if kind != "move" or not requested:
         return False
-    if duty and duty[1] >= issued and expected and dist(goal, expected) < 6:
-        return True
-    return (
-        actor[1] == "T"
-        and actor[26] >= issued
-        and (not expected or dist(goal, expected) < 6)
-    )
+    duty, expected = actor[16], actor[22]
+    if actor[1] == "CT":
+        return bool(duty and expected and dist(requested, expected) < 6)
+    return actor[26] >= issued and (not expected or dist(requested, expected) < 6)
 
 
-def run(name, seed, leg, output):
+def fixture(name, seed, leg):
     pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
     rids = Random(seed).sample(sorted(career.roster_index(pack).values()), 2)
     domain = database.match_input(pack, rids)
     first = domain["rosters"][rids[leg]]["team"]
     w = match.initial(seed, domain, rids, map_id=name, first_attack=first)
     w["autonomous"] = True
+    return w
+
+
+def run(name, seed, leg, output):
+    w = fixture(name, seed, leg)
+    domain, rids, first = w["domain"], w["rosterIds"], w["firstAttackTeamId"]
     owner = native_match_state.open_game(w)
     baseline = {a["id"]: a["mind"] for a in w["agents"]}
     resistance = {
@@ -46,6 +49,7 @@ def run(name, seed, leg, output):
     plateaus, examples, calls, signals = {}, [], [], []
     old_order, prior, pending, previous_mind = {}, {}, {}, {}
     sent, close, tilt, tilt_rounds = {}, {}, {}, set()
+    prior_scores = {}
     replay = []
     checkpoints = 0
     previous_round = 0
@@ -59,6 +63,7 @@ def run(name, seed, leg, output):
             last_tick = tick
             if rnd != previous_round:
                 old_order.clear()
+                prior_scores.clear()
                 prior.clear()
                 plateaus.clear()
                 pending.clear()
@@ -121,6 +126,7 @@ def run(name, seed, leg, output):
                             before=old_order.get(side),
                             after=key,
                             scores=p.get("scores"),
+                            beforeScores=prior_scores.get(side),
                             firstExecuted=None,
                             reports=[r for r in p["known"] if r[8] == strong],
                             due=[
@@ -137,6 +143,7 @@ def run(name, seed, leg, output):
                     }
                     pending[side] = (tick, key, old_live)
                 old_order[side] = key
+                prior_scores[side] = p.get("scores")
                 if side in pending:
                     issued, current, positions = pending[side]
                     moved = [
@@ -145,17 +152,24 @@ def run(name, seed, leg, output):
                         if pid in live
                         and dist(live[pid][2:5], pos) > 0.5
                         and live[pid][6] == "assignment"
-                        and obeys(live[pid], issued)
+                        and obeys(
+                            live[pid],
+                            f.get("actions", {}).get(pid, (None, None)),
+                            current[3],
+                        )
                     ]
                     if moved:
                         calls.append(
                             [side, rnd, issued, tick - issued, current, list(moved)]
                         )
                         pending.pop(side)
-                for sig in reversed(signals[-2:]):
+                for sig in reversed(signals):
+                    if sig["round"] != rnd:
+                        break
                     if (
                         sig["round"] != rnd
                         or sig["side"] != side
+                        or tick > max(r[1] for r in sig["reports"]) + 45
                         or sig["firstExecuted"] is not None
                     ):
                         continue
@@ -168,10 +182,28 @@ def run(name, seed, leg, output):
                             continue
                         if (
                             r[6] == "assignment"
-                            and obeys(r, p["issued"])
+                            and obeys(
+                                r,
+                                f.get("actions", {}).get(pid, (None, None)),
+                                p["issued"],
+                            )
                             and dist(r[2:5], prior[pid][2:5]) > 0.5
                         ):
-                            sig["firstExecuted"] = [tick, p["choice"], pid, r[5], r[15]]
+                            sig["firstExecuted"] = [
+                                tick,
+                                p["choice"],
+                                pid,
+                                r[5],
+                                f["actions"][pid][1],
+                            ]
+                            sig["movement"] = {
+                                "from": prior[pid][2:5],
+                                "to": r[2:5],
+                                "previousDuty": prior[pid][16],
+                                "currentDuty": r[16],
+                                "issued": p["issued"],
+                                "scores": p.get("scores"),
+                            }
                             break
             for pid, r in live.items():
                 side = r[1]
@@ -429,11 +461,75 @@ def run(name, seed, leg, output):
     print(name, seed, leg, end["score"], counts, suspected, flush=True)
 
 
+def inspect_episode(name, seed, leg, tick, player, length, output):
+    """Replay a naturally reached turn with one player's pre-match state as control."""
+    w = fixture(name, seed, leg)
+    baseline = next(a["mind"] for a in w["agents"] if a["id"] == player)
+    owner = native_match_state.open_game(w)
+    if owner.advance(tick) != tick:
+        raise ValueError("Эпизод находится за концом матча")
+    saved = json.loads(owner.snapshot())
+    actor = next(a for a in saved["agents"] if a["id"] == player)
+    report = dict(
+        map=name,
+        seed=seed,
+        leg=leg,
+        round=saved["round"],
+        tick=tick,
+        player=player,
+        observed=actor["knowledge"],
+        mind=actor["mind"],
+        prematch=baseline,
+    )
+    for branch, mind in (("actual", actor["mind"]), ("control", baseline)):
+        actor["mind"] = mind
+        clone = native_match_state.open_game(saved)
+        frames = []
+        for _ in range(length):
+            if not clone.advance(1):
+                break
+            sample = json.loads(clone.snapshot())
+            a = next(a for a in sample["agents"] if a["id"] == player)
+            frames.append(
+                dict(
+                    tick=sample["tick"],
+                    position=[a[k] for k in "xyz"],
+                    heading=a["heading"],
+                    visibility=a["visible"],
+                    intent=a.get("decision", {}).get("intent"),
+                    status=a["status"],
+                    lastShot=a["lastShot"],
+                    hp=a["hp"],
+                    group=a.get("groupDuty"),
+                    radio={
+                        ch: r
+                        for ch, r in a.get("sentFeedback", {}).items()
+                        if r["tick"] == sample["tick"]
+                    },
+                )
+            )
+        report[branch] = frames
+    output.mkdir(exist_ok=True, parents=True)
+    (output / f"{name}-{seed}-{leg}-{tick}-{player}.json").write_text(
+        json.dumps(report, ensure_ascii=False)
+    )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--map", required=True, choices=cs2_maps.NAMES)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--leg", type=int, choices=(0, 1), required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--tick", type=int, help="Начало конкретного эпизода")
+    parser.add_argument("--player", help="Идентификатор игрока для сравнения")
+    parser.add_argument("--ticks", type=int, default=18)
     args = parser.parse_args()
-    run(args.map, args.seed, args.leg, args.out)
+    if args.tick is None and args.player is None:
+        run(args.map, args.seed, args.leg, args.out)
+    elif args.tick is not None and args.player and args.ticks > 0:
+        inspect_episode(
+            args.map, args.seed, args.leg, args.tick, args.player, args.ticks, args.out
+        )
+    else:
+        parser.error("Для эпизода укажите --tick и --player")

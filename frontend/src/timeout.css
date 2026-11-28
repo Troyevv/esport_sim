@@ -218,5 +218,9 @@
   }
 }
 
-.bench-notes blockquote span { display: block; }
-.bench-notes blockquote em { font-weight: 600; }
+.bench-notes blockquote span {
+  display: block;
+}
+.bench-notes blockquote em {
+  font-weight: 600;
+}
