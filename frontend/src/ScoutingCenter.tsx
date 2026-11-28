@@ -1,3 +1,4 @@
+import { useCareerViewTab } from "./CareerViewTab";
 import { useState, type ReactNode } from "react";
 import { useData, date, type Act, type Career, type Scene } from "./careerData";
 import { Flag, LineupPortrait } from "./SceneIdentity";
@@ -321,7 +322,7 @@ function CenterView({
   data: Center;
   open: (p: string) => void;
 }) {
-  const [tab, setTab] = useState(sections[0]),
+  const [tab, setTab] = useCareerViewTab(sections[0]),
     [query, setQuery] = useState(""),
     [criteria, setCriteria] = useState<Filters>({}),
     [sort, setSort] = useState("name"),
@@ -1061,10 +1062,10 @@ function CenterView({
           <div className="scout-columns">
             {d.regionNames.map((region) => (
               <article className="scout-item" key={region}>
-                <h3>{regions[region] || region}</h3>
+                <h3><Flag value={region}/> {regions[region] || region}</h3>
                 {d.observers.map((s) => (
                   <p key={s.id}>
-                    {s.name} ·{" "}
+                    <EntityName group="staff" id={s.id} fallback={s.name}/> ·{" "}
                     {s.region === region
                       ? "профильный регион"
                       : "выездной регион"}
@@ -1117,9 +1118,9 @@ function CenterView({
           <Panel title="Нагрузка отдела">
             {d.observers.map((s) => (
               <div className="scout-item" key={s.id}>
-                <strong>{s.name}</strong>
+                <strong><EntityName group="staff" id={s.id} fallback={s.name}/></strong>
                 <p>
-                  {regions[s.region]} ·{" "}
+                  <Flag value={s.region}/> {regions[s.region]} ·{" "}
                   {s.languages.join(", ") || "язык неизвестен"} · пригодность{" "}
                   {s.quality}/100
                 </p>

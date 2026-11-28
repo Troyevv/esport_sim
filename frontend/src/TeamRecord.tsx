@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Directory } from "./CompetitionCenter";
 import { MatchReport } from "./CareerForms";
-import { EditionLink, FixtureTeams } from "./CareerIdentity";
+import { EditionLink, EntityName, FixtureTeams } from "./CareerIdentity";
 import { Dialog } from "./GameUI";
 import { date, fixtureScore, useData, type Career, type Scene } from "./careerData";
 
@@ -33,9 +33,9 @@ export default function TeamRecord({c,scene,id,tab,revision}: {c:Career;scene:Sc
     const lineups = data.editions.flatMap(e=>(e.registrations[id] || []).filter(v=>v.date<=c.date).map(v=>({v,e})))
       .sort((a,b)=>b.v.date.localeCompare(a.v.date));
     return <section className="surface panel-body"><h2>Зарегистрированные составы</h2>{lineups.map(({v,e})=><article className="staff-line" key={e.id+"/"+v.version}>
-      <time>{date(v.date)}</time><div><strong><EditionLink id={e.id}>{e.title}</EditionLink> · версия {v.version}</strong><p>{v.players.map(p=>scene.players[p]?.name || p).join(" · ")}</p>
-      {v.reserves.length>0 && <p>Запасные · {v.reserves.map(p=>scene.players[p]?.name || p).join(" · ")}</p>}
-      {v.coach && <p>Тренер · {scene.staff[v.coach]?.name || v.coach}</p>}</div></article>)}
+      <time>{date(v.date)}</time><div><strong><EditionLink id={e.id}>{e.title}</EditionLink> · версия {v.version}</strong><p>{<span className="registered-lineup">{v.players.map(p=><EntityName group="players" key={p} id={p} historicalTeam={id} fallback={scene.players[p]?.name}/>)}</span>}</p>
+      {v.reserves.length>0 && <p>Запасные · {<span className="registered-lineup">{v.reserves.map(p=><EntityName group="players" key={p} id={p} historicalTeam={id}/>)}</span>}</p>}
+      {v.coach && <p>Тренер · {<EntityName group="staff" id={v.coach} historicalTeam={id}/>}</p>}</div></article>)}
       {!lineups.length && <p>Сохранённых заявок на турниры пока нет.</p>}</section>;
   }
   const results = data.editions.filter(e=>e.status==="finished" && e.placements?.includes(id));

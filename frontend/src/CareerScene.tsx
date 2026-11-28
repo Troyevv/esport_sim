@@ -1,3 +1,4 @@
+import { useCareerViewTab } from "./CareerViewTab";
 import { PlayerRole } from "./CareerIdentity";
 import {PlayerHero,PlayerOverview,SkillRow,Section} from "./approved/Player";
 import {Tabs as ApprovedTabs} from "./approved/Shared";
@@ -46,8 +47,8 @@ export function EntityButton({
   const item = scene[group][id];
   return item ? (
     <button className="entity-button" onClick={() => open({ group, id })}>
-      <Avatar name={item.name} {...item.visual} />
-      <span>{item.name}</span>
+      {group === "players" ? <LineupPortrait id={id} name={item.name} visual={item.visual}/> : <Avatar name={item.name} {...item.visual}/>}
+      <span className="directory-entity-name"><strong>{item.name}</strong>{group === "staff" && <small>{scene.staff[id]?.realName && scene.staff[id].realName !== item.name ? scene.staff[id].realName : null}</small>}</span>
       <Glyph name="chevron-right" />
     </button>
   ) : null;
@@ -373,7 +374,7 @@ export function EntityProfile({
   revision?: number;
   initialTab?: string;
 }) {
-  const [tab, setTab] = useState(initialTab);
+  const [tab, setTab] = useCareerViewTab(initialTab);
   const [skillQuery, setSkillQuery] = useState("");
   const [chosenRole, setRole] = useState("");
   const { group, id } = profile,
@@ -412,18 +413,15 @@ export function EntityProfile({
   if (org)
     return (
       <>
-        <div className="org-title">
+        <header className="organization-banner">
           <Avatar name={org.name} {...org.visual} />
-          <Heading title={org.name} sub="Организация · команды и персонал">
-            <button className="btn" onClick={back}>
-              Назад
-            </button>
-          </Heading>
-        </div>
-        <div className="org-grid">
-          <div className="stack">
+          <div><span className="eyebrow">Организация</span><h1>{org.name}</h1>
+            <p>{[org.founded ? "Основана "+org.founded : "Дата основания неизвестна", orgTeams.some(t=>t.id===c.team) && "Менеджер · "+c.character].filter(Boolean).join(" · ")}</p></div>
+          <button className="btn" onClick={back}><Glyph name="arrow-left"/>Назад</button>
+        </header>
+        <div className="org-grid organization-directory">
             {panel(
-              "Команды организации",
+              "Команды организации · "+orgTeams.length,
               orgTeams.length ? (
                 orgTeams.map((t) => (
                   <button
@@ -435,7 +433,7 @@ export function EntityProfile({
                     <span>
                       <strong>{t.name}</strong>
                       <small>
-                        {teamTypes[t.teamType] || "Команда"} ·{" "}
+                        {t.visual.flag && <Flag value={t.visual.flag}/>} {teamTypes[t.teamType] || "Команда"} ·{" "}
                         {t.members.length} игроков
                       </small>
                     </span>
@@ -456,30 +454,7 @@ export function EntityProfile({
                 </p>
               ),
             )}
-          </div>
-          {panel(
-            "Профиль организации",
-            <dl className="club-facts">
-              <div>
-                <dt>Название</dt>
-                <dd>{org.name}</dd>
-              </div>
-              <div>
-                <dt>Основание</dt>
-                <dd>{org.founded || "Нет сведений"}</dd>
-              </div>
-              <div>
-                <dt>Команд</dt>
-                <dd>{orgTeams.length}</dd>
-              </div>
-              {orgTeams.some((t) => t.id === c.team) && (
-                <div>
-                  <dt>Менеджер</dt>
-                  <dd>{c.character}</dd>
-                </div>
-              )}
-            </dl>,
-          )}
+
         </div>
       </>
     );

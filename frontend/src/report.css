@@ -60,3 +60,19 @@
 .history-filters select { width: 100% }
 .history-metrics dd { margin: 0; font: 24px 'IBM Plex Mono', monospace }
 .history-metrics dt { color: var(--muted); font-size: 13px }
+
+.protocol-player {display:inline-flex;gap:8px;align-items:center}
+.protocol-player>span {display:grid;place-items:center;width:30px;height:34px;flex:none}
+.protocol-player .scene-avatar {width:100%;height:100%;object-fit:contain}
+.report-member>:first-child {width:auto;height:auto}
+.report-member .protocol-player>span {width:42px;height:48px}
+.report-rounds button {min-width:38px;display:grid;place-items:center;gap:2px}
+.report-rounds button small {font:600 10px "IBM Plex Mono",monospace}
+.report-rounds [data-side=CT] small {color:#98cbeb}
+.report-rounds [data-side=T] small {color:#e5bf89}
+
+.result-club {display:flex;align-items:center;justify-content:center;gap:12px}
+.report-team:last-child .result-club {flex-direction:row-reverse}
+@media(max-width:700px) {
+  .report-team .result-club,.report-team:last-child .result-club {flex-direction:column;gap:6px}
+}

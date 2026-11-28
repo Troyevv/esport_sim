@@ -32,7 +32,7 @@ export function EntityName({group, id, fallback, historicalTeam, recordedName, l
   const portrait = historicalTeam === undefined || visual.kit?.id === historicalTeam ? visual : {...visual,kit:null};
   const mark = group === "players"
     ? <LineupPortrait id={id} name={displayName} visual={portrait}/>
-    : <Avatar name={displayName} {...entity.visual}/>;
+    : <Avatar name={displayName} {...portrait}/>;
   const content = <><span className="identity-mark" aria-hidden="true">{mark}</span><span>{displayName}</span></>;
   return link
     ? <button type="button" className="sport-identity profile-action" onClick={()=>nav.open({group,id})}>{content}</button>

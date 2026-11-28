@@ -107,6 +107,10 @@ test("Тренировочная неделя, профиль развития, 
   await press("Нагрузка");
   await expect(page.getByText("Усталость по дням").first()).toBeVisible();
   await capture("workload");
+  await page.locator(".workload-card .profile-action").first().click();
+  await expect(page.locator(".club-profile-hero")).toBeVisible();
+  await page.getByRole("button",{name:"Назад",exact:true}).first().click();
+  await expect(page.locator(".workload-card").first()).toBeVisible();
   await press("Карты и тактики");
   await capture("mastery");
   await press("Отчёты");

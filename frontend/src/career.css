@@ -351,3 +351,7 @@
 .career-create {grid-template-columns:minmax(0,1fr)}
 .career-create .filter-bar,.career-create .filter-bar label,.career-create .filter-bar select,.career-create .page-heading>div {min-width:0;max-width:100%}
 @media(max-width:700px) {.career-create .filter-bar {display:grid;grid-template-columns:minmax(0,1fr)}.career-create .filter-bar select,.career-create .filter-bar input {width:100%}}
+
+.search-result .search-fixture-marks {display:grid;grid-template-columns:20px 20px;align-items:center}
+.search-result .search-fixture-marks .scene-avatar {width:20px;height:22px;object-fit:contain}
+.search-result .competition-mark {width:32px;height:32px;flex:none}

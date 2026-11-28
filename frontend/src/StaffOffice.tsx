@@ -1,8 +1,11 @@
+import { useCareerViewTab } from "./CareerViewTab";
 import { useState } from "react";
 import { MetricStrip, Heading } from "./GameUI";
 import { resolvePortrait } from "./portraits";
 import { Avatar } from "./SceneIdentity";
 import { date, type Act, type Career, type Scene } from "./careerData";
+import { Icon } from "./approved/Shared";
+import { FixtureTeams } from "./CareerIdentity";
 import "./staff.css";
 
 type Person = {
@@ -34,6 +37,10 @@ export type Office = {
     cost: number;
     quality: number;
   }[];
+};
+const roleIcons: Record<string, string> = {
+  head:"staff", assistant:"users", tactical:"tactic", individual:"training",
+  analyst:"chart", psychologist:"users", chief_scout:"eye", scout:"search"
 };
 const departments = ["Тренерский штаб", "Скаутский отдел"];
 const screens = [...departments, "Обязанности", "Занятость", "Должности"];
@@ -115,7 +122,7 @@ export function StaffOffice({
   initial: string;
   personId?: string;
 }) {
-  const [section, setSection] = useState(initial);
+  const [section, setSection] = useCareerViewTab(initial);
   const [id, setId] = useState(personId || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -243,8 +250,8 @@ export function StaffOffice({
               .map(([key, title]) => {
                 const members = people.filter((s) => s.role === key);
                 return (
-                  <section key={key} className="surface staff-role">
-                    <h2>{title}</h2>
+                  <section key={key} className="surface staff-role" data-vacant={!members.length}>
+                    <h2 className="staff-position"><Icon name={roleIcons[key] || "staff"}/>{title}</h2>
                     {members.length ? (
                       members.map((person) => (
                         <button
@@ -283,7 +290,9 @@ export function StaffOffice({
                       : duty.stage === "R5.2" ? "Работа в тренировочном центре" : "Работа в скаутском центре"}
                 </small>
               </div>
-              <select
+              <div className="duty-owner">
+                {office.people[office.owners[key]] && <button className="staff-owner" aria-label={"Профиль · "+office.people[office.owners[key]].name} onClick={()=>setId(office.owners[key])}>{picture(office.people[office.owners[key]])}</button>}
+                <select
                 aria-label={duty.title}
                 value={office.owners[key] || ""}
                 disabled={!allowed}
@@ -306,7 +315,8 @@ export function StaffOffice({
                       {s.name} · пригодность {s.suitability[key]}
                     </option>
                   ))}
-              </select>
+                </select>
+              </div>
             </div>
           ))}
         </div>
@@ -315,7 +325,7 @@ export function StaffOffice({
           {people.map((s) => (
             <div key={s.id} className="staff-assignment">
               <button className="staff-link" onClick={() => setId(s.id)}>
-                {s.name}
+                <span aria-hidden="true">{picture(s)}</span><strong>{s.name}</strong>
               </button>
               {roleSelect(s)}
             </div>
@@ -327,7 +337,7 @@ export function StaffOffice({
           {people.map((s) => (
             <section key={s.id} className="surface panel-body">
               <button className="staff-link" onClick={() => setId(s.id)}>
-                {s.name}
+                <span aria-hidden="true">{picture(s)}</span><strong>{s.name}</strong>
               </button>
               <p>{office.roles[s.role]}</p>
               <div className="staff-line">
@@ -350,22 +360,21 @@ export function StaffOffice({
               <h3>Задания по календарю</h3>
               {office.jobs
                 .filter((j) => j.person === s.id)
-                .map((j) => (
+                .map((j) => {
+                  const fixture = c.queue.find(e => e.id === j.event);
+                  return (
                   <div className="staff-job" key={j.event + j.duty}>
                     <strong>{office.duties[j.duty].title}</strong>
                     <small>
                       {j.duty === "tactics"
                         ? "Черновик в редакторе"
-                        : c.queue
-                            .find((e) => e.id === j.event)
-                            ?.teams.map((t) => c.teams[t])
-                            .join(" — ") || "Сыгранная серия"}
+                        : fixture ? <FixtureTeams teams={fixture.teams} names={c.teams}/> : "Сыгранная серия"}
                     </small>
                     <small>
                       Срок {date(j.due)} · {j.cost} ед.
                     </small>
                   </div>
-                ))}
+                )})}
               {!office.jobs.some((j) => j.person === s.id) && (
                 <p className="muted">Запланированных заданий нет</p>
               )}

@@ -66,6 +66,12 @@ test("Ноябрьская карьера · отбор, заявка, сохр�
       name: /CCT Contenders Europe 12 · открытая квалификация 1/,
     })
     .click();
+  await page.keyboard.press("Control+k");
+  const search = page.getByRole("dialog", {name:"Глобальный поиск"});
+  await search.getByRole("textbox", {name:"Поиск по карьере"}).fill("CCT Contenders Europe 12 · открытая квалификация 1");
+  await search.getByRole("button").filter({has:page.locator("svg.competition-mark")}).first().click();
+  await expect(search).toHaveCount(0);
+  await expect(page.locator(".cp-tournament-hero h1")).toContainText("открытая квалификация 1");
   await press("Моя заявка");
   await press("Заявиться на участие");
   await press("Сохранить заявку");

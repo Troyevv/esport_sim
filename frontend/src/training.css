@@ -247,3 +247,14 @@
 .training-brief strong {color:var(--green)}
 .training-block {border-left:3px solid #7894a3;background:#20272d;min-height:70px}
 .training-day header h2 {font:500 19px Oswald,sans-serif}
+
+.workload-card header {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.workload-card header h2 {margin:0}
+.workload-card .identity-mark {width:46px;height:54px}
+.workload-card .sport-identity {gap:10px;font:500 22px Oswald,sans-serif}
+.workload-card .player-role {color:var(--muted);font-size:13px}
+.workload-metrics {display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.workload-metrics dt {font-size:13px;color:var(--muted)}
+.workload-metrics dd {margin:4px 0 0;font:500 20px "IBM Plex Mono",monospace}
+.workload-metrics small {font-size:13px;color:var(--muted)}
+.workload-advice {border-inline-start:2px solid var(--orange);padding-inline-start:10px;line-height:1.5}

@@ -1,3 +1,5 @@
+import { useCareerViewTab } from "./CareerViewTab";
+import { EntityName, PlayerRole } from "./CareerIdentity";
 import { useState } from "react";
 import {
   date,
@@ -356,7 +358,7 @@ function PlayerProgram({
   };
   return (
     <section className="surface panel-body">
-      <h2>Программа · {player.name}</h2>
+      <h2>Программа · <EntityName group="players" id={pid} fallback={player.name}/></h2>
       <form
         className="training-form"
         onSubmit={(e) => {
@@ -674,7 +676,7 @@ export function TrainingCenter({
   reports?: boolean;
 }) {
   const [week, setWeek] = useState(monday(initial || c.date)),
-    [tab, setTab] = useState(reports ? "Отчёты" : screens[0]);
+    [tab, setTab] = useCareerViewTab(reports ? "Отчёты" : screens[0]);
   const [day, setDay] = useState(initial || c.date);
   const [pid, setPid] = useState(c.roster[0].id),
     [edit, setEdit] = useState<Edit | null>(null);
@@ -951,13 +953,17 @@ export function TrainingCenter({
               С начала карьеры · {player.skills[focus] > 0 ? "+" : ""}
               {player.skills[focus]}
             </p>
+            {!Object.values(data.history).some(rows => rows[pid]?.[focus] != null) &&
+              <p className="muted">Пока нет недельных измерений этой характеристики.</p>}
             {Object.entries(data.history)
+              .filter(([, rows]) => rows[pid]?.[focus] != null)
+              .sort(([a], [b]) => a.localeCompare(b))
               .slice(-12)
               .map(([d, rows]) => (
                 <div className="staff-line" key={d}>
                   <time>{date(d)}</time>
                   <Scale
-                    value={rows[pid]?.[focus] ?? data.initial[pid][focus]}
+                    value={rows[pid][focus]}
                   />
                 </div>
               ))}
@@ -971,20 +977,22 @@ export function TrainingCenter({
               trend = a.trend,
               prev = trend.at(-2)?.[1];
             return (
-              <section className="surface panel-body" key={p.id}>
-                <h2>{p.name}</h2>
+              <section className="surface panel-body workload-card" key={p.id}>
+                <header><h2><EntityName group="players" id={p.id} fallback={p.name}/></h2><PlayerRole role={p.role}/></header>
                 <div className="staff-line">
                   Усталость <Scale value={a.fatigue} />
                 </div>
-                <p>Плановая нагрузка сегодня · {a.plannedLoad}</p>
-                <p>Игровая практика · {a.practice.toFixed(1)} / 40</p>
+                <dl className="workload-metrics">
+                  <div><dt>Нагрузка сегодня</dt><dd>{a.plannedLoad}</dd></div>
+                  <div><dt>Игровая практика</dt><dd>{a.practice.toFixed(1)} <small>/ 40</small></dd></div>
+                </dl>
                 {a.metrics.load !== undefined && (
                   <p>
                     Последний день · нагрузка {a.metrics.load.toFixed(1)} ·
                     восстановлено {a.metrics.recovery?.toFixed(1)}
                   </p>
                 )}
-                <p>
+                <p className="workload-advice">
                   {a.fatigue >= 60
                     ? "Рекомендация штаба · назначить восстановление"
                     : a.practice < 3

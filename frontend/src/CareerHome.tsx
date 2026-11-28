@@ -2,6 +2,7 @@ import { useData, type Report, type Decision } from "./careerData";
 import type { Quote } from "./ForecastLine";
 import type { Directory } from "./CompetitionCenter";
 import { regions, roles } from "./databaseModel";
+import { EntityName } from "./CareerIdentity";
 import "./home.css";
 import { useState } from "react";
 import { Glyph, Heading } from "./GameUI";
@@ -70,13 +71,16 @@ function letterIcon(m: Letter) {
   return m.edition ? "trophy" : "mail";
 }
 export function Inbox({
-  box,
+  c, report, prepare, box,
   read,
   selected,
   select,
   calendar,
   tournament,
 }: {
+  c: Career;
+  report: (id:string)=>void;
+  prepare: (id:string)=>void;
   box: Letter[];
   read: string[];
   selected: Letter | null;
@@ -85,6 +89,8 @@ export function Inbox({
   tournament:(id:string)=>void;
 }) {
   const [filter, setFilter] = useState(false);
+  const fixture = selected?.event;
+  const score = fixture && fixtureScore(fixture);
   const filtered = box.filter(
     (m) => !filter || !read.includes(m.id) || selected?.id === m.id,
   );
@@ -141,9 +147,19 @@ export function Inbox({
                   <small>{date(selected.date)}</small>
                 </span>
               </div>
-              <p className="message-body">{selected.body}</p>
+              {fixture && fixture.teams.length === 2 ? (
+                <section className="letter-fixture" aria-label="Встреча">
+                  <header><span>{fixture.title || "Встреча календаря"}</span><time>{date(fixture.date)} · BO{fixture.bestOf ?? 1}</time></header>
+                  <div><EntityName group="teams" id={fixture.teams[0]} fallback={c.teams[fixture.teams[0]]}/>
+                    <strong aria-label={score ? "Счёт "+score : "Против"}>{score || "VS"}</strong>
+                    <EntityName group="teams" id={fixture.teams[1]} fallback={c.teams[fixture.teams[1]]}/></div>
+                </section>
+              ) : <p className="message-body">{selected.body}</p>}
               <div className="message-actions">
-                {(selected.edition || selected.event?.edition) && <button className="btn primary" onClick={()=>tournament((selected.edition || selected.event?.edition)!)}>Открыть турнир</button>}
+                {fixture && (score
+                  ? <button className="btn primary" onClick={()=>report(fixture.id)}>Протокол встречи</button>
+                  : fixture.kind === "match" && !fixture.pcw && <button className="btn primary" onClick={()=>prepare(fixture.id)}>Подготовка к матчу</button>)}
+                {(selected.edition || selected.event?.edition) && <button className="btn" onClick={()=>tournament((selected.edition || selected.event?.edition)!)}>Открыть турнир</button>}
                 <button
                   className="btn"
                   onClick={() =>
@@ -177,7 +193,7 @@ export function Dashboard({
   tournament,
   resolve,
   revision,
-  quick,
+  report, quick,
 }: {
   c: Career;
   scene: Scene;
@@ -190,6 +206,7 @@ export function Dashboard({
   tournament: (id: string) => void;
   resolve: (row: Decision) => void;
   revision: number;
+  report: (id:string)=>void;
   quick?: () => void;
 }) {
   const next = c.queue.find(
@@ -529,13 +546,13 @@ export function Dashboard({
                   <button
                     className={
                       "score " +
-                      (e.score &&
-                      e.score[e.teams.indexOf(c.team)] >
-                        e.score[e.teams.indexOf(tid)]
+                      ((e.scoreByTeam?.[c.team] ?? e.score?.[e.teams.indexOf(c.team)] ?? 0) >
+                        (e.scoreByTeam?.[tid] ?? e.score?.[e.teams.indexOf(tid)] ?? 0)
                         ? "green"
                         : "red")
                     }
-                    onClick={() => calendar(e.date)}
+                    aria-label={"Протокол · "+fixtureName(c,e)+" · "+fixtureScore(e)}
+                    onClick={() => report(e.id)}
                   >
                     {fixtureScore(e)}
                   </button>

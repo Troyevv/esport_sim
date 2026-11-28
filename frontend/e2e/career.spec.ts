@@ -68,7 +68,7 @@ test("Карьера от выбора базы до общей сохранён
   await capture("skills");
   await press("Глобальный поиск");
   await page
-    .getByPlaceholder("Игрок, команда, организация или раздел")
+    .getByRole("textbox", {name: "Поиск по карьере"})
     .fill("ZywOo");
   await page.locator(".search-result").filter({ hasText: "ZywOo" }).click();
   await press("Кабинет");

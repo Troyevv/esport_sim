@@ -51,3 +51,5 @@ button.profile-action:active {color:var(--text);transform:translateY(1px)}
  .archive-contender,.archive-contender:first-child {justify-content:space-between}
  .archive-contender:nth-child(2)>b {order:0}
 }
+
+.registered-lineup {display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 12px}

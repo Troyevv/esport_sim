@@ -1,13 +1,17 @@
+import { CareerViewTab } from "./CareerViewTab";
+import { CompetitionMark, eventMark } from "./CompetitionMark";
+import type { Directory as CompetitionDirectory } from "./CompetitionCenter";
 import { CareerLinks } from "./CareerIdentity";
 import { ManagerAttention } from "./ManagerAttention";
 import { CareerRoster, type Decision } from "./careerData";
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { Brand, Dialog, Glyph, Heading } from "./GameUI";
-import { Avatar } from "./SceneIdentity";
+import { Avatar, LineupPortrait } from "./SceneIdentity";
 import { type Frame } from "./session";
 import {
   date,
   groupTitle,
+  fixtureName, fixtureScore,
   position,
   useData,
   type Act,
@@ -140,7 +144,7 @@ const EntityProfile = lazy(() => import("./CareerScene").then(v=>({default:v.Ent
 const Squad = lazy(() => import("./CareerScene").then(v=>({default:v.Squad})));
 const Archive = lazy(() => import("./CareerArchive"));
 const Prematch = lazy(() => import("./Prematch"));
-type Route = { page: string; fixture?:string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
+type Route = { page: string; tab?: string; fixture?:string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
 function Manager({
   frontMenu,
   pauseEnabled,
@@ -204,7 +208,7 @@ function Manager({
     closeOverlays();
     if (tool) leaveTool();
     if (frontMenu) go("hub");
-    historyStack.current.push({route, match:toolName==="Матч-центр" && !!frame.world.match});
+    historyStack.current.push({route, match:toolName==="Матч-центр" && !!(frame.world.match || frame.world.series)});
     setRoute({ page, profile, edition, entry, fixture, jump: historyStack.current.length });
     window.scrollTo(0, 0);
   };
@@ -214,7 +218,7 @@ function Manager({
   const back = () => {
     const previous = historyStack.current.pop();
     setRoute(previous?.route || { page: "Кабинет" });
-    if (previous?.match && frame.world.match) go("match");
+    if (previous?.match && (frame.world.match || frame.world.series)) go("match");
     window.scrollTo(0, 0);
   };
   const calendar = (d: string) => {
@@ -344,7 +348,16 @@ function Manager({
     </button>
   );
   const searchTerm = q.trim().toLowerCase();
-  const matches = search && scene
+  const searchCompetitions = useData<CompetitionDirectory>(
+    search && c.competitions && searchTerm ? "/api/career/"+c.id+"/competitions" : null,
+    frame.careerRevision || 0
+  );
+  const editions = searchTerm && search ? (searchCompetitions.data?.editions || [])
+    .filter(e => e.title.toLowerCase().includes(searchTerm)).slice(0, 6) : [];
+  const fixtures = search && searchTerm ? [...c.queue, ...c.history.slice().reverse()]
+    .filter(f => f.kind === "match" && !f.pcw && (f.teams.map(id=>c.teams[id]).join(" ")+" "+(f.title || "")+" "+f.date).toLowerCase().includes(searchTerm))
+    .slice(0, 6) : [];
+  const matches = search && searchTerm && scene
     ? (Object.keys(groupTitle) as Group[]).flatMap((g) =>
         Object.values(scene[g])
           .filter((r) =>
@@ -358,7 +371,7 @@ function Manager({
       )
     : [];
   const profileTitle = {players:"Профиль игрока", teams:"Профиль команды", organizations:"Организация", staff:"Профиль сотрудника"};
-  const content = <CareerLinks.Provider value={{scene, open, tournament}}>
+  const content = <CareerViewTab.Provider value={{tab:route.tab, select:tab=>setRoute(current=>({...current,tab}))}}><CareerLinks.Provider value={{scene, open, tournament}}>
           {progress && (
             <div className="cr-progress" role="status">
               Рассчитано встреч · {progress.done}
@@ -375,7 +388,7 @@ function Manager({
               (active === "Календарь" ? (
                 <Calendar prepare={prepare} key={day} c={c} initial={day} tournament={tournament} revision={frame.careerRevision||0} training={d=>{setDay(d);to("Тренировочный центр")}}/>
               ) : active === "Входящие" ? (
-                <Inbox
+                <Inbox c={c} report={setQuickResult} prepare={prepare}
                   box={box}
                   read={read}
                   selected={box.find((m) => m.id === inboxId) || null}
@@ -478,7 +491,7 @@ function Manager({
                   : <section className="surface panel-body"><h2>Матч-центр</h2><p>{preparedFixture ? "Подготовка к пракку доступна в тренировочном центре." : "В календаре пока нет ближайшей встречи."}</p>
                     <button onClick={()=>calendar(preparedFixture?.date || c.date)}>Открыть календарь</button></section>
               ) : (
-                <Dashboard quick={directMatch && required[0].action==="play" && enabled && !progress ? quick:undefined} {...{prepare,tournament,resolve}} revision={frame.careerRevision||0}
+                <Dashboard report={setQuickResult} quick={directMatch && required[0].action==="play" && enabled && !progress ? quick:undefined} {...{prepare,tournament,resolve}} revision={frame.careerRevision||0}
                   {...{
                     c,
                     scene,
@@ -491,7 +504,7 @@ function Manager({
                 />
               ))}</Suspense>
           </div>
-  </CareerLinks.Provider>;
+  </CareerLinks.Provider></CareerViewTab.Provider>;
   return (
     <div
       className={
@@ -637,7 +650,7 @@ function Manager({
             <Glyph name="search" />
             <input
               autoFocus
-              placeholder="Игрок, команда, организация или раздел"
+              aria-label="Поиск по карьере" placeholder="Раздел, команда, игрок, турнир или матч"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => {
@@ -673,19 +686,32 @@ function Manager({
                 key={r.group + r.id}
                 onClick={() => open(r)}
               >
-                <Avatar name={r.name} {...r.visual} />
+                {r.group === "players" ? <LineupPortrait id={r.id} name={r.name} visual={r.visual}/> : <Avatar name={r.name} {...r.visual} />}
                 <span>
                   <strong>{r.name}</strong>
                   <small>{groupTitle[r.group]}</small>
                 </span>
               </button>
             ))}
+            {editions.map(e => <button type="button" className="search-result" key={e.id} onClick={()=>tournament(e.id)}>
+              <CompetitionMark mark={eventMark(e.id,e.organizer)} name={e.title} year={e.year} cycle={e.id} size={32}/>
+              <span><strong>{e.title}</strong><small>Турнир · {date(e.start)} — {date(e.end)}</small></span>
+            </button>)}
+            {fixtures.map(f => <button type="button" className="search-result" key={f.id} onClick={()=>{
+              if (fixtureScore(f)) { setSearch(false); setQuickResult(f.id); }
+              else prepare(f.id);
+            }}>
+              <span className="search-fixture-marks" aria-hidden="true">{f.teams.map(id=>
+                <Avatar key={id} name={c.teams[id] || id} {...scene?.teams[id]?.visual} club/>)}</span>
+              <span><strong>{fixtureName(c,f)}</strong><small>{date(f.date)} · {fixtureScore(f) ? "Протокол · "+fixtureScore(f) : "Предматчевая подготовка"} · {f.title}</small></span>
+            </button>)}
+            {searchTerm && c.competitions && !searchCompetitions.data && <Load {...searchCompetitions}/>}
             {!scene && <Load {...directory} />}
             {scene &&
-              !matches.length &&
+              !matches.length && !editions.length && !fixtures.length && (!c.competitions || !searchTerm || !!searchCompetitions.data) &&
               !sections.some(([, items]) =>
                 items.some(([s]) => s.toLowerCase().includes(q.toLowerCase())),
-              ) && <p className="empty-state">Ничего не найдено.</p>}
+              ) && <p className="empty-state">Совпадений нет. Попробуйте никнейм, название команды или турнира.</p>}
           </div>
         </Dialog>
       )}

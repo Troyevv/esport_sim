@@ -1,3 +1,4 @@
+import { EntityName, ProfileAction } from "./CareerIdentity";
 import { ForecastLine, type Quote } from "./ForecastLine";
 import { useState } from "react";
 import { ResultScore } from "./ResultScore";
@@ -153,7 +154,7 @@ export function SeriesScore({ frame, enabled, act }: Props) {
       {finished && view === "Итоги серии" && <section className="report-panel">
         <h3>MVP серии</h3>
         {award ? <div className="report-award"><div><LineupPortrait id={award.player} name={award.name} visual={{player:true, ...portrait}}/></div>
-          <div><small>{s.clubs[award.teamId]?.name}</small><h4>{award.name}</h4>
+          <div><small>{s.clubs[award.teamId]?.name}</small><h4><ProfileAction group="players" id={award.player}>{award.name}</ProfileAction></h4>
             <p>{award.rounds} раундов · {award.version}</p><dl>
               <div><dt>Impact</dt><dd>{award.impact.toFixed(2)}</dd></div><div><dt>ADR</dt><dd>{award.adr.toFixed(1)}</dd></div>
             </dl></div></div> : <p>Для определения MVP недостаточно данных протокола.</p>}
@@ -193,7 +194,7 @@ export function SeriesScore({ frame, enabled, act }: Props) {
                       ?.filter((p) => p.teamId === t)
                       .map((p) => (
                         <tr key={p.player}>
-                          <th>{p.name}</th>
+                          <th><EntityName group="players" id={p.player} recordedName={p.name} historicalTeam={t}/></th>
                           <td>{p.k}</td>
                           <td>{p.d}</td>
                           <td>{p.a}</td>

@@ -1,3 +1,4 @@
+import { useCareerViewTab } from "./CareerViewTab";
 import { FixtureTeams, EntityName } from "./CareerIdentity";
 import { RecentForm } from "./RecentForm";
 import { useState } from "react";
@@ -87,7 +88,7 @@ export default function Prematch({
   prepareBoard: (map: string, side: "CT" | "T") => void;
   play?: () => void;
 }) {
-  const [tab, setTab] = useState(tabs[0]);
+  const [tab, setTab] = useCareerViewTab(tabs[0]);
   const [chosenMap, setChosenMap] = useState("");
   const [planSide, setPlanSide] = useState<"CT" | "T">("T");
   const request = useData<Prep>(

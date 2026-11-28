@@ -139,3 +139,14 @@
 .club-roster-summary small { color:var(--muted) }
 .club-player-visual>.roster-photo, .club-profile-portrait>.roster-photo { object-position:bottom }
 @media(max-width:700px) { .club-roster-summary { grid-template-columns:1fr 1fr } }
+
+.organization-banner {display:flex;align-items:center;gap:clamp(14px,3vw,36px);padding:clamp(18px,3vw,38px);margin-bottom:18px;border:1px solid var(--line);border-bottom:2px solid var(--orange);background:linear-gradient(105deg,var(--surface-2),var(--surface));flex-wrap:wrap}
+.organization-banner>.scene-avatar {width:clamp(60px,8vw,100px);height:clamp(60px,8vw,100px);object-fit:contain}
+.organization-banner>div {flex:1;min-width:min(12rem,100%)}
+.organization-banner h1 {font:600 clamp(28px,4vw,52px)/1.1 Oswald,sans-serif;text-transform:uppercase;margin:4px 0;overflow-wrap:anywhere}
+.organization-banner p {color:var(--muted);margin:6px 0 0}
+.organization-directory {align-items:start}
+.organization-directory .roster-branch small {display:flex;align-items:center;gap:6px}
+.organization-directory .roster-branch .scene-flag {width:20px}
+.directory-entity-name {display:grid;gap:2px}
+.directory-entity-name small:empty {display:none}

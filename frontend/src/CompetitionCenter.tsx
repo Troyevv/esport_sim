@@ -1,3 +1,4 @@
+import { useCareerViewTab } from "./CareerViewTab";
 import {Icon,Badge,Button,Panel,Stat,Field,Tabs as ApprovedTabs} from "./approved/Shared";
 import {TeamLogo} from "./approved/Identity";
 import {Mark} from "./approved/EventMark";
@@ -686,7 +687,7 @@ export function CompetitionCenter(props: Props) {
     revision,
   );
   const [picked, select] = useState(props.initialEdition || ""),
-    [tab, show] = useState(props.initialEntry ? "Моя заявка" : "Обзор"),
+    [tab, show] = useCareerViewTab(props.initialEntry ? "Моя заявка" : "Обзор"),
     [archive, setArchive] = useState(false);
   const [report, openReport] = useState("");
   const [rulesOpen, setRulesOpen] = useState(false);
