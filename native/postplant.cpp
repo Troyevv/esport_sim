@@ -195,6 +195,21 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
            : !a.at("heardSite").is_null() ? search_site(site)
                                           : arena.site_point(site);
     bool helping = !action.empty() && action.at("player") != id;
+    Json coverFor = helping ? action.at("player") : Json(nullptr);
+    if (!helping && !device.empty() && plan.contains("retakeCall")) {
+        const auto &call = plan.at("retakeCall");
+        // Cover a nearby, faster kit. The first player in range can still
+        // start immediately when the kit player is late, blocked or fighting.
+        for (auto m : squad)
+            if (m != &a && call.at("kind") == "retake" && m->at("id") == call.at("defuser") &&
+                m->at("kit") == true && a.at("kit") == false && !active(*m, "saving") &&
+                distance(actor_point(*m), goal) < 10 && clear(*m, device) && !observed_aim(*m) &&
+                call.at("slack") > 12 && distance(pos, goal) < 18) {
+                helping = true;
+                coverFor = m->at("id");
+                break;
+            }
+    }
     if (!device.empty() && distance(pos, goal) <= 6 && !helping && clear(a, device))
         return Json::array({"defuse", nullptr});
     if (!device.empty() && !helping && a.value("blockedTicks", 0) >= 5 &&
@@ -205,9 +220,17 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
     }
     if (!device.empty() && a.value("useTarget", Json(nullptr)) == goal && active(a, "useFloor"))
         goal = a.at("useFloor").get<Point>();
+    const Json *sector = nullptr;
+    if (helping && revised_defense(w) && plan.contains("retakeCall")) {
+        const auto &call = plan.at("retakeCall");
+        if (call.contains("sectors") && call.at("sectors").contains(id))
+            sector = &call.at("sectors").at(id);
+    }
     if (helping) {
-        auto who = action.at("player");
-        if (a.value("coveredDefuser", Json(nullptr)) != who) {
+        auto who = coverFor;
+        if (a.value("coveredDefuser", Json(nullptr)) != who ||
+            (sector &&
+             (a.value("coverSector", Json(nullptr)) != *sector || a.value("blockedTicks", 0) >= 5))) {
             auto center = pos;
             Points occupied;
             for (auto m : squad) {
@@ -215,16 +238,29 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
                     center = actor_point(*m);
                 if (small_groups(w) && m != &a) {
                     const auto call = recent_call(m->at("id"), "position", 30);
-                    occupied.push_back(call && call->at("order") == who ? call->at("point").get<Point>() : actor_point(*m));
-                } else if (m != &a && m->value("coveredDefuser", Json(nullptr)) == who && active(*m, "coverPoint"))
+                    occupied.push_back(call && call->at("order") == who ? call->at("point").get<Point>()
+                                                                        : actor_point(*m));
+                } else if (m != &a && m->value("coveredDefuser", Json(nullptr)) == who &&
+                           active(*m, "coverPoint"))
                     occupied.push_back(m->at("coverPoint").get<Point>());
             }
             occupied.push_back(center);
             Points choices;
             for (auto &[area, q] : arena.layout().holds.at(site))
                 choices.push_back(q);
+            if (sector) {
+                a["coverSector"] = *sector;
+                choices.push_back(pos);
+                const auto extra = nearby_points(nav, center, 23);
+                choices.insert(choices.end(), extra.begin(), extra.end());
+            }
             auto rank = [&](const Point &q) {
-                return std::tuple{reserved(q, occupied, 5), std::abs(q[2] - center[2]), distance(q, pos)};
+                const bool screened = sector && nav.hit(q, sector->at("watch"), 1, 64, 64);
+                const double offset =
+                    sector && sector->at("role") == "clear" ? .5 * distance(q, sector->at("watch")) : 0;
+                const bool detached = sector && sector->at("role") == "cover" && distance(q, center) > 26;
+                return std::tuple{detached, reserved(q, occupied, 5),   screened,
+                                  offset,   std::abs(q[2] - center[2]), distance(q, pos)};
             };
             std::stable_sort(choices.begin(), choices.end(),
                              [&](auto &l, auto &r) { return rank(l) < rank(r); });
@@ -238,13 +274,17 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
     } else
         a.erase("coveredDefuser");
     a["status"] = helping ? "Прикрывает разминирование" : "Идёт на ретейк";
+    if (sector && sector->at("role") == "clear")
+        a["status"] = "Зачищает подход к обезвреживающему";
     if (!helping) {
         Json *duty = nullptr;
         if (active(plan, "retake") && plan.at("retake").at("duties").contains(id))
             duty = &plan.at("retake").at("duties").at(id);
         if (duty && !active(*duty, "done")) {
-            if (now >= duty->at("latest").get<Tick>() || a.value("blockedTicks", 0) >= 5 ||
-                std::ranges::none_of(squad, [&](auto m) { return m != &a && (small_groups(w) || !active(*m, "saving")); }))
+            if ((plan.contains("retakeCall") && plan.at("retakeCall").at("slack") <= 25) ||
+                now >= duty->at("latest").get<Tick>() || a.value("blockedTicks", 0) >= 5 ||
+                std::ranges::none_of(
+                    squad, [&](auto m) { return m != &a && (small_groups(w) || !active(*m, "saving")); }))
                 (*duty)["done"] = true;
             else if (distance(pos, duty->at("stage").get<Point>()) > 4) {
                 a["status"] = "Заходит на ретейк через свой проход";
@@ -306,6 +346,10 @@ Json AgentTurn::postplant(std::string &site, const Json &order, const Json *late
                 sweep["next"] = now + (point ? 3 + (100 - skills.at("positioning").get<int>()) / 15 : 6);
             }
         }
+    } else if (sector) {
+        watch = latest && visual(*latest) && now - latest->at("tick").get<Tick>() < 12
+                    ? actor_point(*latest)
+                    : sector->at("watch").get<Point>();
     } else if (!device.empty()) {
         if (latest)
             watch = actor_point(*latest);

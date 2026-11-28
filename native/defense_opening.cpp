@@ -333,5 +333,21 @@ void OpeningMap::equip_defense(const Json &w, Json &plan, const Json &cfg) const
         if (!carried)
             job["utilityReason"] = "Нет подходящей гранаты";
     }
+    // Adding a key to an ordered JSON object can move its children. Publish
+    // the reserve after the last use of references into the opening.
+    // Allocate one late-round grenade to a player who can spare it. The
+    // local executor releases the reserve for a confirmed attack or a rescue.
+    if (collective_defense(w)) {
+        const Json *keeper = nullptr;
+        auto rank = [&](const Json *p) {
+            return std::tuple{p->at("utility").size(), p->at("slot") == 4,
+                              skills(w, p).at("support").get<int>()};
+        };
+        for (auto p : squad)
+            if (p->at("utility").size() && (!keeper || rank(p) > rank(keeper)))
+                keeper = p;
+        if (keeper)
+            plan["utilityReserve"] = id(keeper);
+    }
 }
 } // namespace esport

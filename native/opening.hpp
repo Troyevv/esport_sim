@@ -3,6 +3,8 @@
 
 namespace esport {
 inline bool collective_attack(const Json &world) { return world.value("agentPolicy", 0) >= 8; }
+inline bool collective_defense(const Json &world) { return world.value("agentPolicy", 0) >= 10; }
+inline bool revised_defense(const Json &world) { return world.value("agentPolicy", 0) >= 11; }
 using Contest = std::pair<std::map<AreaId, double>, double>;
 using ContestTable = std::map<std::string, std::array<Contest, 2>>;
 using Stations = std::map<std::string, std::vector<Point>>;

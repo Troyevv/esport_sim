@@ -30,7 +30,7 @@ bool AgentTurn::flash_risk(const Json &mate, const Point &burst, int flight) con
     if (grid ? !grid->clear(xy(mate), {burst[0], burst[1]})
              : bool(arena.objectives().map().hit(burst, eye, 1, 5, 64)))
         return false;
-    if (!grid && side == "T" && collective_attack(w) &&
+    if (!grid && ((side == "T" && collective_attack(w)) || (side == "CT" && collective_defense(w))) &&
         (exposure >= .72 || (&mate == &a && !a.at("visible").empty())))
         return true;
     if (!action.empty() && action.at("player") == mate.at("id"))
@@ -44,13 +44,31 @@ Json AgentTurn::prepare_flash(Json intent) {
         return intent;
     Json &target = intent[1];
     const auto item = target.value("utility", a.at("utility").front().get<std::string>());
+    if (!grid && side == "CT" && collective_defense(w) && !active(plan, "board")) {
+        const Point aim = actor_point(target);
+        const double radius = cfg.at("utility").at(item)[0];
+        // Only broadcasts already delivered to this player count. A locally
+        // planned crossing may already be in crossingCalls before release.
+        const auto calls = a.find("friendlyUtility");
+        if ((item == "Дым" || item == "Огонь") && calls != a.end() &&
+            std::ranges::any_of(*calls, [&](const Json &msg) {
+                const auto cast = msg.find("cast");
+                return cast != msg.end() && cast->at("item") == item && cast->at("end") > now &&
+                       distance(aim, cast->at("point")) < .8 * radius;
+            })) {
+            a["throwAt"] = now + 4;
+            a["status"] = "Учитывает бросок напарника";
+            return Json::array({"hold", nullptr});
+        }
+    }
     if (item != "Свет" || target.contains("announced"))
         return intent;
     const Point p = actor_point(target);
     const Tick delay = 1 + (100 - skills.at("communication").get<int>()) / 12;
 
     const int flight = std::max(3, int(std::nearbyint(distance(actor_point(a), p) / 7)));
-    if (!grid && side == "T" && collective_attack(w) && !active(plan, "board")) {
+    if (!grid && ((side == "T" && collective_attack(w)) || (side == "CT" && collective_defense(w))) &&
+        !active(plan, "board")) {
         // Use the physical endpoint before spending the item. Error at release
         // remains private to combat's RNG.
         const auto land = arena.objectives().map().grenade(actor_point(a), p, flight).back();
@@ -302,6 +320,10 @@ Json AgentTurn::assist_contact(const Squad &partners, const Json &r) {
     return nullptr;
 }
 Json AgentTurn::retake_utility(const std::string &site) {
+    if (auto call = plan.find("retakeCall");
+        call != plan.end() && (call->at("kind") == "save" || !member_of(call->at("throwers"), a.at("id")) ||
+                               (call->at("defuser") == a.at("id") && call->at("slack") <= 25)))
+        return nullptr;
     auto &radio_memory = peer_radio(w) ? a : plan;
     const auto &nav = arena.objectives().map();
     if (now < std::max(a.at("throwAt").get<Tick>(), a.value("crossingReview", Tick{0})) ||

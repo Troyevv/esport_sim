@@ -53,6 +53,9 @@ Json AgentTurn::opening_decision() {
     auto support = lookup(job.value("partner", Json(nullptr)));
     if (support && relief(plan, *support))
         support = nullptr;
+    if (plan.contains("defenseCall") && (slot == 2 || slot == 3) &&
+        &assignment(plan, a, squad) == &plan.at("orders").at("slots").at(slot - 2))
+        return nullptr;
     if (relief(plan, a) || plan.at("reinforce") == job.at("site")) {
         job["reason"] = "Приказ на усиление";
         return nullptr;
@@ -103,8 +106,12 @@ Json AgentTurn::opening_decision() {
         }
         return Json::array({moved ? "move" : "hold", nullptr});
     };
-    if (op.at("quiet") == true && job.at("zone") != op.at("focus")[0] && !active(job, "coverOrder") &&
-        !active(job, "release"))
+    const bool press = plan.contains("defenseCall") && plan.at("defenseCall").contains("pair") &&
+                       member_of(plan.at("defenseCall").at("pair"), id) && support;
+    if (press)
+        peek = plan.at("defenseCall").at("post");
+    if (!press && op.at("quiet") == true && job.at("zone") != op.at("focus")[0] &&
+        !active(job, "coverOrder") && !active(job, "release"))
         return towards(job.at("home"), "Держит внутренний рубеж",
                        plan.at("orders").at("slots").at(slot).at("watch").get<Point>());
     if (active(job, "coverOrder") && now < job.at("coverOrder").at("until").get<Tick>())
@@ -116,7 +123,9 @@ Json AgentTurn::opening_decision() {
         if (!cast.contains("land") && !cast.contains("skip")) {
             std::string item = cast.at("item");
             Point target = cast.at("target"), launch = cast.at("launch");
-            if (!member_of(a.at("utility"), item) || now - plan.at("start").get<Tick>() > 260)
+            if (plan.value("utilityReserve", std::string{}) == id && a.at("utility").size() == 1 && !fresh)
+                cast["skip"] = "Последняя граната в резерве";
+            else if (!member_of(a.at("utility"), item) || now - plan.at("start").get<Tick>() > 260)
                 cast["skip"] = "Расход или истёк интервал";
             else if (cast.at("forPlayer") != id && !support)
                 cast["skip"] = "Напарник недоступен";

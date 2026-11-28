@@ -179,23 +179,47 @@ void review_opening(const OpeningMap &arena, Json &plan, const Squad &squad, Tic
         if (job.contains("coverOrder") && job.at("coverOrder").at("until") <= now)
             job.erase("coverOrder");
 }
-void direct_defense(Json &w, const OpeningMap &arena, Json &plan, const Squad &squad, Json &leader) {
+void direct_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &plan, const Squad &squad,
+                    Json &leader) {
     Tick now = w.at("tick");
     const auto &sites = arena.objectives();
     std::set<std::string> dead;
     for (auto &k : w.at("kills"))
         dead.insert(k.at("target"));
     Reports reports, calls;
+    const bool ranked = collective_defense(w) && !truth(plan, "board");
     for (auto &r : leader.at("knowledge"))
-        if (!dead.contains(r.at("id").get<std::string>()))
+        if ((!ranked ||
+             (!r.value("disputed", false) && r.value("confidence", 1.) >= .35 && r.at("tick") <= now)) &&
+            !dead.contains(r.at("id").get<std::string>()))
             reports.push_back(&r);
+    if (revised_defense(w) && ranked) {
+        std::erase_if(reports, [&](auto r) {
+            // A later clear concerns only the reported crossing the observer
+            // watched.
+            return std::ranges::any_of(leader.at("sectorCalls"), [&](const Json &c) {
+                return c.at("state") == "watching" && c.at("tick") > r->at("tick") && c.at("tick") <= now &&
+                       now - c.at("tick").get<Tick>() < 30 &&
+                       distance(actor_point(*r), c.at("point").get<Point>()) < 16;
+            });
+        });
+    }
     auto counts = site_pressure(arena, reports, now);
     Json sector = leader.value("sectorCalls", Json::object()), unavailable = Json::object();
     for (auto it = sector.begin(); it != sector.end(); ++it) {
         calls.push_back(&it.value());
         auto age = now - it->at("tick").get<Tick>();
-        if (it->value("duty", false) && it->at("state") == "blocked" && age >= 0 && age < 30)
-            unavailable[it.key().substr(0, it.key().find('/'))] = it->at("site");
+        if (it->value("duty", false) && it->at("state") == "blocked" && age >= 0 && age < 30) {
+            const auto id = it.key().substr(0, it.key().find('/'));
+            if (!ranked || !revised_defense(w) || std::ranges::any_of(squad, [&](auto p) {
+                    const Json *duty = relief(plan, *p);
+                    return p->at("id") == id && duty &&
+                           it->value("goal", Json(nullptr)) == duty->at("hold") &&
+                           plan.contains("defenseCall") &&
+                           it->at("tick") >= plan.at("defenseCall").at("issued");
+                }))
+                unavailable[id] = it->at("site");
+        }
     }
     sector_pressure(arena, reports, calls, now, counts);
     plan["unavailable"] = std::move(unavailable);
@@ -205,8 +229,14 @@ void direct_defense(Json &w, const OpeningMap &arena, Json &plan, const Squad &s
             auto id = it.key().substr(0, it.key().find('/'));
             for (auto p : squad)
                 if (p->at("id") == id) {
-                    if (auto ptr = relief(plan, *p); ptr && ptr->at("site") == it->at("site")) {
-                        // plan is mutable here, and relief only returns references owned by plan.
+                    if (auto ptr = relief(plan, *p);
+                        ptr && ptr->at("site") == it->at("site") &&
+                        (!ranked || !revised_defense(w) ||
+                         (plan.contains("defenseCall") &&
+                          it->value("goal", Json(nullptr)) == ptr->at("hold") &&
+                          it->at("tick") >= plan.at("defenseCall").at("issued")))) {
+                        // plan is mutable here, and relief only returns references
+                        // owned by plan.
                         auto &duty = const_cast<Json &>(*ptr);
                         duty["acknowledged"] = it->at("state");
                         if (it->at("state") == "moving" && !duty.contains("arriveBy"))
@@ -234,7 +264,8 @@ void direct_defense(Json &w, const OpeningMap &arena, Json &plan, const Squad &s
                             (1 - (now - *std::max_element(times.begin(), times.end())) / 75.);
     const Json *carrier = nullptr;
     for (auto r : reports)
-        if (r->value("carryingC4", false) && now - r->at("tick").get<Tick>() < 35 &&
+        if ((!ranked || (direct_sight(*r) && r->value("confidence", 1.) >= .55)) &&
+            r->value("carryingC4", false) && now - r->at("tick").get<Tick>() < 35 &&
             (!carrier || r->at("tick") > carrier->at("tick")))
             carrier = r;
     Json bomb = nullptr, on_site = nullptr;
@@ -244,6 +275,11 @@ void direct_defense(Json &w, const OpeningMap &arena, Json &plan, const Squad &s
         if (now - carrier->at("tick").get<Tick>() < 20)
             if (auto s = sites.site_at(actor_point(*carrier)))
                 on_site = *s;
+    }
+    if (ranked) {
+        compare_defense(w, cfg, arena, plan, squad, leader, reports, counts, losses, bomb, on_site);
+        review_opening(arena, plan, squad, now, leader);
+        return;
     }
     std::string high = counts.at("B") > counts.at("A") ? "B" : "A", low = high == "A" ? "B" : "A";
     Json destination = on_site;

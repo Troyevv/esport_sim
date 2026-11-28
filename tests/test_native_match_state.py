@@ -553,7 +553,7 @@ def test_batch_starts_new_map_with_older_rules_and_records_exact_profile(combat_
     from backend import match as production_match, cs2_maps as installed_maps
     monkeypatch.setattr(installed_maps,"get",lambda _:old)
     fresh = production_match.initial(41000, map_id="de_nuke")
-    assert fresh.pop("agentPolicy") == 9
+    assert fresh.pop("agentPolicy") == 11
     assert encode_world(fresh) == encode_world(w)
     w["rules"] = cs2_maps.PREVIOUS_RULES
     owner = native_match_state.restore(encode_world(w), old, physics=physics)
@@ -576,7 +576,7 @@ def test_depo_owner_restores_mid_board_and_continues_exact_events():
 
     game = match.initial(42)
     fresh = production.initial(42)
-    assert fresh.pop("agentPolicy") == 9
+    assert fresh.pop("agentPolicy") == 11
     assert encode_world(fresh) == encode_world(game)
     board = dict(tactics.propose("T", "Пистолетная", 17), id="depo-regression", revision=1)
     owner = native_match_state.open_game(game)
@@ -668,3 +668,24 @@ def test_peer_utility_call_reaches_only_allies_after_cast_and_delay(combat_arena
         assert (cast in a.get("crossingCalls", [])) == (
             a["hp"] > 0 and a["team"] == caster["team"] and a["id"] != caster["id"]
         )
+
+
+def test_nuke_opening_in_the_windows_archive_scenario(tmp_path, monkeypatch):
+    from zipfile import ZipFile
+    from backend import cs2_maps as production_maps, database, match as production
+
+    name = "de_nuke"
+    packs = Path(__file__).resolve().parents[1] / "resources/cs2" / str(production_maps.BUILD)
+    with ZipFile(packs / (name + ".zip")) as archive:
+        for file in production_maps.RUNTIME_FILES[name]:
+            archive.extract(file, tmp_path / name)
+    monkeypatch.setattr(production_maps, "_active_root", tmp_path)
+    pack = json.loads(gzip.decompress(database.RELEASE.read_bytes()))["package"]
+    ids = [k for k, roster in pack["rosters"].items() if roster["name"] in ("Team Vitality", "Team Falcons")]
+    world = production.initial(42, database.match_input(pack, ids), ids, map_id=name)
+    owner = native_match_state.open_game(world)
+    for _ in range(12):
+        owner.advance_motion(8)
+    state = json.loads(owner.snapshot())
+    assert state["tick"] == 96 and state["phase"] == "live"
+    assert state["plans"]["CT"]["defenseCall"]["kind"]

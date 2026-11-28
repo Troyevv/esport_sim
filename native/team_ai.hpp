@@ -9,7 +9,10 @@ Point actor_point(const Json &p);
 int chemistry(const Json &w, const Json &l, const Json &r);
 const Json &player_profile(const Json &w, const Json &actor);
 void captain_review(Json &w, const Json &cfg, const OpeningMap &arena, const std::string &side);
-void direct_defense(Json &w, const OpeningMap &arena, Json &plan, const Squad &squad, Json &captain);
+void direct_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &plan, const Squad &squad,
+                    Json &captain);
+void review_retake(Json &w, const Json &cfg, const OpeningMap &arena, const Squad &squad, const Json &captain,
+                   const std::string &site);
 void assemble_retake(Json &w, const Json &cfg, const OpeningMap &arena, const Squad &squad,
                      const Json &captain, const std::string &site);
 void review_attack(Json &w, const Json &cfg, const OpeningMap &arena, Json &plan, const Squad &squad,
