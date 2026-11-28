@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Brand, Dialog, Glyph } from "./GameUI";
 import { date, type Summary } from "./careerData";
+import "./menu.css";
 import { Avatar } from "./SceneIdentity";
 export function CareerMenu({
   current,
@@ -10,6 +11,7 @@ export function CareerMenu({
   open,
   enabled,
   database,
+  board,
   lab,
   settings,
 }: {
@@ -19,80 +21,34 @@ export function CareerMenu({
   resume: () => void;
   open: (s: Summary) => void;
   enabled: boolean;
-  database: () => void;
+  database: (page?:"editor"|"exhibition"|"appearance") => void;
+  board:()=>void;
   lab: () => void;
   settings: ReactNode;
 }) {
   const [load, setLoad] = useState(false);
   return (
-    <section className="main-menu" aria-label="Главное меню">
-      <header className="menu-top">
-        <Brand />
-        <span className="eyebrow">Твоя команда. Твои решения.</span>
-        {settings}
-      </header>
-      <div className="menu-content">
-        <section className="menu-copy">
-          <div className="eyebrow">Counter-Strike · менеджер команды</div>
-          <h1 aria-label="Главное меню">
-            КАЖДЫЙ
-            <br />
-            РАУНД
-            <br />
-            <span>
-              НАЧИНАЕТСЯ
-              <br />С ТЕБЯ.
-            </span>
-          </h1>
-          <p>
-            Собери свою пятёрку. Найди собственный стиль. Проведи команду до
-            решающего матча.
-          </p>
-          <div className="menu-buttons">
-            {current && (
-              <>
-                <button className="btn primary" onClick={resume}>
-                  Продолжить карьеру <Glyph name="player-play" />
-                </button>
-                <div className="continue-details">
-                  {current.club} · {current.character} · {date(current.date)}
-                </div>
-              </>
-            )}
-            <button
-              className={"btn " + (!current ? "primary" : "")}
-              onClick={create}
-            >
-              Новая карьера <Glyph name="plus" />
-            </button>
-            <button className="btn ghost" onClick={() => setLoad(true)}>
-              Загрузить сохранение <Glyph name="folder" />
-            </button>
-          </div>
-        </section>
-        <div className="menu-art">
-          <img className="dragon" alt="" src="/interface/menu/spirit.png" />
-          {["sh1ro", "zont1x", "donk"].map((p, i) => (
-            <img
-              key={p}
-              className={"menu-player " + ["side left", "side", ""][i]}
-              src={"/interface/menu/" + p + ".png"}
-              alt=""
-            />
-          ))}
-          <div className="menu-art-label">
-            <span>
-              <strong>TEAM SPIRIT</strong>
-              <small>Counter-Strike</small>
-            </span>
-          </div>
+    <section className="root-menu" aria-label="Главное меню">
+      <header className="menu-top"><Brand/>{settings}</header>
+      <div className="root-menu-body">
+        <div className="intro-hero"><div><div className="eyebrow">ESPORT SIM · TEAM MANAGER</div>
+          <h1 className="intro-title" aria-label="Главное меню">ПЯТЬ ИГРОКОВ.<br/>ОДНА <em>АМБИЦИЯ.</em></h1>
+          <p>Постройте команду, которая выдержит давление. Каждое решение ведёт к следующему раунду.</p>
+          <div className="intro-actions">{current && <button className="btn primary" onClick={resume}>Продолжить карьеру</button>}
+            <button className={"btn "+(!current?"primary":"")} onClick={create}>Новая карьера</button></div>
+          {current && <small>{current.club} · {current.character} · {date(current.date)}</small>}</div>
+          <div className="intro-players"><img src="/interface/menu/donk.png" alt="donk в форме Team Spirit"/><img src="/interface/menu/sh1ro.png" alt="sh1ro в форме Team Spirit"/></div>
         </div>
+        <div className="intro-menu">{[
+          {title:"Загрузить карьеру",label:"Загрузить сохранение",detail:"Слоты и резервные копии",glyph:"save",run:()=>setLoad(true)},
+          {title:"Выставочный матч",detail:"Составы, подготовка, veto и трансляция",glyph:"player-play",run:()=>database("exhibition")},
+          {title:"Редактор базы",label:"База сцены",detail:"Редакции команд, игроков и организаций",glyph:"book",run:()=>database("editor")},
+          {title:"Тактическая доска",detail:"Карта, исполнители и цепочки действий",glyph:"crosshair",run:board},
+          {title:"Лаборатория матчей",label:"Стенд симуляции",detail:"Настройка серии и воспроизводимый разбор",glyph:"report-analytics",run:lab},
+          {title:"Студия образа",detail:"Портреты, форма и личные пакеты",glyph:"users",run:()=>database("appearance")}
+        ].map(item=><button key={item.title} aria-label={item.label || item.title} onClick={item.run}><Glyph name={item.glyph}/><span>
+          <strong>{item.title}</strong><small>{item.detail}</small></span></button>)}</div>
       </div>
-      <footer className="menu-footer">
-        <span>ESPORT SIM</span>
-        <button onClick={database}>База сцены</button>
-        <button onClick={lab}>Стенд симуляции</button>
-      </footer>
       {load && (
         <Dialog title="Мои карьеры" close={() => setLoad(false)}>
           <div className="panel-body">

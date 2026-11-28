@@ -232,3 +232,18 @@
     min-height: 44px;
   }
 }
+
+.training-day-picker {display:none}
+@media(max-width:700px), (max-height:500px) {
+  .training-day-picker {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+  .training-day-picker button {display:grid;gap:2px;font-size:12px;padding:5px 0;text-align:center;color:var(--muted)}
+  .training-day-picker button[aria-pressed=true] {border-color:var(--accent);background:#38291f;color:#ffbb89}
+  .training-day-picker b {font-family:var(--mono);font-size:16px}
+  .training-week-grid {display:block}
+  .training-week-grid [data-selected=false] {display:none}
+}
+
+.training-brief {display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:12px 16px;background:#1b2119;border-left:3px solid var(--green)}
+.training-brief strong {color:var(--green)}
+.training-block {border-left:3px solid #7894a3;background:#20272d;min-height:70px}
+.training-day header h2 {font:500 19px Oswald,sans-serif}

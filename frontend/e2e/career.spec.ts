@@ -93,6 +93,14 @@ test("Карьера от выбора базы до общей сохранён
     await capture("report");
     await press("Закрыть протокол");
     await press("В матч-центр");
+    await expect(page.locator(".veto-center, canvas").first()).toBeVisible();
+    if (await page.locator(".veto-center").isVisible()) {
+      if (await page.getByText("Делегировать оставшиеся ходы", {exact:true}).isVisible()) {
+        await page.getByText("Делегировать оставшиеся ходы", {exact:true}).click();
+        await press("Капитану");
+      }
+      await press("Перейти к подготовке");
+    }
     await expect(page.locator("canvas").first()).toBeVisible();
     await capture("match");
     await press("← Карьера");

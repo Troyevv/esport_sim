@@ -675,6 +675,7 @@ export function TrainingCenter({
 }) {
   const [week, setWeek] = useState(monday(initial || c.date)),
     [tab, setTab] = useState(reports ? "Отчёты" : screens[0]);
+  const [day, setDay] = useState(initial || c.date);
   const [pid, setPid] = useState(c.roster[0].id),
     [edit, setEdit] = useState<Edit | null>(null);
   const [name, setName] = useState(""),
@@ -724,6 +725,7 @@ export function TrainingCenter({
       </select>
     </label>
   );
+  const activeDay = data.days.find(d=>d.date===day) || data.days[0];
   const changeWeek = (d: number) => setWeek(isoDay(dayAt(week, d)));
   const navigator = (
     <div className="training-week">
@@ -751,7 +753,10 @@ export function TrainingCenter({
   );
   return (
     <div className="training-center">
-      <Heading title="Тренировочный центр" sub={c.club} />
+      <Heading title="Тренировки" eyebrow={c.club+" / Подготовка"} sub="Расписание, индивидуальная подготовка и пракки">
+        <button className="btn primary" disabled={!allowed || !activeDay || activeDay.date<c.date || activeDay.sessions.length+activeDay.practices.filter(p=>!p.cancelled).length>=3}
+          onClick={()=>activeDay && setEdit({day:activeDay,index:activeDay.sessions.length})}>Добавить тренировку</button></Heading>
+      {activeDay && <div className="training-brief"><strong>{date(activeDay.date)}</strong><span>{activeDay.official?"Матч / турнир":"Тренировочный день"} · занятий {activeDay.sessions.length}</span></div>}
       <div className="training-nav">
         <Tabs
           items={screens}
@@ -787,12 +792,17 @@ export function TrainingCenter({
       {tab === "Расписание" && (
         <>
           {navigator}
+          <nav className="training-day-picker" aria-label="Выбор дня тренировки">
+            {data.days.map((d,i) => <button key={d.date} aria-pressed={d.date===activeDay?.date}
+              aria-label={date(d.date)} onClick={()=>setDay(d.date)}><span>{weekdays[i].slice(0,2)}</span><b>{d.date.slice(8)}</b></button>)}
+          </nav>
           <div className="training-week-grid">
             {data.days.map((d, i) => (
               <section
                 className="surface training-day"
                 key={d.date}
                 data-today={d.date === c.date}
+                data-selected={d.date === activeDay?.date}
               >
                 <header>
                   <h2>{weekdays[i]}</h2>

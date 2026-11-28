@@ -17,19 +17,14 @@ import {
   type Summary,
 } from "./careerData";
 import { Load, MatchReport, NewCareer, Saves } from "./CareerForms";
-import { TrainingCenter } from "./TrainingCenter";
+
 import { ScoutingCenter } from "./ScoutingCenter";
 import { StaffOffice } from "./StaffOffice";
 import { CareerMenu } from "./CareerMenu";
-import { CompetitionCenter } from "./CompetitionCenter";
-import { Calendar } from "./CareerCalendar";
+
+
 import { Dashboard, Inbox, letters } from "./CareerHome";
-import {
-  Directory,
-  EntityProfile,
-  Squad,
-  useDirectoryView,
-} from "./CareerScene";
+import { useDirectoryView } from "./careerData";
 import "./career.css";
 
 const sections = [
@@ -58,6 +53,8 @@ const sections = [
     "На сервере",
     [
       ["Матч-центр", "device-gamepad-2"],
+      ["Архив матчей", "book"],
+      ["Аналитика", "report-analytics"],
       ["База сцены", "book"],
     ],
   ],
@@ -68,7 +65,7 @@ type Props = {
   act: Act;
   screen: "menu" | "hub";
   go: (s: "menu" | "hub" | "lab" | "match") => void;
-  database: () => void;
+  database: (page?:"editor"|"exhibition"|"appearance") => void;
   board: () => void;
   settings: ReactNode;
   status: ReactNode;
@@ -120,6 +117,7 @@ export default function CareerScreen(props: Props) {
             go("hub");
         }}
         database={database}
+        board={props.board}
         lab={async () => {
           if (!c || (await act("career-lab"))) go("lab");
         }}
@@ -133,6 +131,13 @@ export default function CareerScreen(props: Props) {
     );
   return <Manager key={c.id} {...props} c={c} enabled={enabled} pauseEnabled={props.enabled && frame.careerId===c.id} />;
 }
+const TrainingCenter = lazy(() => import("./TrainingCenter").then(v=>({default:v.TrainingCenter})));
+const CompetitionCenter = lazy(() => import("./CompetitionCenter").then(v=>({default:v.CompetitionCenter})));
+const Calendar = lazy(() => import("./CareerCalendar").then(v=>({default:v.Calendar})));
+const Directory = lazy(() => import("./CareerScene").then(v=>({default:v.Directory})));
+const EntityProfile = lazy(() => import("./CareerScene").then(v=>({default:v.EntityProfile})));
+const Squad = lazy(() => import("./CareerScene").then(v=>({default:v.Squad})));
+const Archive = lazy(() => import("./CareerArchive"));
 const Prematch = lazy(() => import("./Prematch"));
 type Route = { page: string; fixture?:string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
 function Manager({
@@ -584,6 +589,8 @@ function Manager({
                 />
               ) : active === "Соревнования" || active === "Рейтинг VRS" ? (
                 <CompetitionCenter prepare={prepare} key={(route.edition||"directory")+":"+route.jump} initialEdition={route.edition} initialEntry={route.entry==="entry" || route.entry==="calendar"} initialConflict={route.entry==="calendar"} {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
+              ) : active === "Архив матчей" || active === "Аналитика" ? (
+                <Archive c={c} scene={scene} revision={frame.careerRevision || 0} analytics={active === "Аналитика"} />
               ) : active === "База сцены" ? (
                 <Directory {...{ scene, open }} view={directoryView} />
               ) : active === "Матч-центр" ? (
@@ -593,7 +600,7 @@ function Manager({
                   : <section className="surface panel-body"><h2>Матч-центр</h2><p>{preparedFixture ? "Подготовка к пракку доступна в тренировочном центре." : "В календаре пока нет ближайшей встречи."}</p>
                     <button onClick={()=>calendar(preparedFixture?.date || c.date)}>Открыть календарь</button></section>
               ) : (
-                <Dashboard
+                <Dashboard {...{prepare,tournament,resolve}} revision={frame.careerRevision||0}
                   {...{
                     c,
                     scene,
@@ -608,6 +615,14 @@ function Manager({
           </div>
         </div>
       </div>
+      <nav className="pocket-nav" aria-label="Быстрая навигация" inert={drawer}>
+        {[
+          ["Кабинет","Кабинет","home"], ["Состав","Состав","users"], ["Матч-центр","Матч","player-play"],
+          ...(c.competitions ? [["Соревнования","Турниры","trophy"]] : [])
+        ].map(([page,title,icon])=><button key={page} aria-label={"Быстрый переход · "+title} aria-current={active===page?"page":undefined} onClick={()=>nav(page)}>
+          <Glyph name={icon}/><span>{title}</span></button>)}
+        <button aria-label="Все разделы" onClick={()=>setDrawer(true)}><Glyph name="menu"/><span>Ещё</span></button>
+      </nav>
       {search && (
         <Dialog title="Глобальный поиск" close={() => setSearch(false)}>
           <label className="search-box">

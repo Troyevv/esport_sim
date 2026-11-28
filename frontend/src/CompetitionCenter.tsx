@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { date, useData, type Act, type Career, type Scene } from "./careerData";
-import { Dialog, Heading, Tabs } from "./GameUI";
+import { Dialog, Heading, MetricStrip, Tabs } from "./GameUI";
 import { Load, MatchReport } from "./CareerForms";
 import { Avatar } from "./SceneIdentity";
 import "./competitions.css";
@@ -29,6 +29,8 @@ type Game = {
   bye?: boolean;
 };
 type Draw = {
+  advance:number;
+  outputs?:Game["slots"];
   standings: {
     team: string;
     wins: number;
@@ -259,19 +261,26 @@ function Archive({ editions }: { editions: PastEdition[] }) {
   );
 }
 
-function Rankings({ data }: { data: Directory }) {
+function Rankings({ data, c, scene }: { data: Directory; c:Career; scene:Scene }) {
   const dates = Object.keys(data.snapshots).sort().reverse();
   const [publication, pick] = useState(dates[0]),
     [region, setRegion] = useState("Global"),
     [query, search] = useState("");
+  const [selected,setSelected] = useState(c.team);
   const rows =
     publication === "live"
       ? data.live?.rows || []
       : data.snapshots[publication];
+  const identity = (r:Ranking) => r.team || Object.keys(c.teams).find(t=>c.teams[t]===r.name) || r.name;
+  const selectedRow = rows?.find(r=>identity(r)===selected);
+  const past = dates.filter(d=>publication==="live" || d<=publication).flatMap(d=>{
+    const row=data.snapshots[d].find(r=>identity(r)===selected);
+    return row?[{date:d,points:row.points,rank:row.rank}]:[];
+  });
   return (
     <>
       <Heading
-        title="Valve Regional Standings"
+        title="Рейтинг VRS" eyebrow="Соревновательная сцена"
         sub="Составы, очки и даты приглашений"
       />
       <div className="filter-bar">
@@ -319,7 +328,7 @@ function Rankings({ data }: { data: Directory }) {
           за 180 дней неполна.
         </p>
       )}
-      <section className="surface table-wrap">
+      <div className="vrs-layout"><section className="surface table-wrap">
         <table className="simple-table">
           <thead>
             <tr>
@@ -330,17 +339,17 @@ function Rankings({ data }: { data: Directory }) {
             </tr>
           </thead>
           <tbody>
-            {rows
+            {(rows || [])
               .filter(
                 (r) =>
                   (region === "Global" || r.region === region) &&
                   r.name.toLowerCase().includes(query.toLowerCase()),
               )
               .map((r) => (
-                <tr key={r.rank}>
+                <tr key={r.rank} data-selected={identity(r)===selected}>
                   <td>{region === "Global" ? r.rank : r.regional}</td>
                   <td>
-                    <strong>{r.name}</strong>
+                    <button className="vrs-team" onClick={()=>setSelected(identity(r))}><Avatar club name={r.name} {...scene.teams[identity(r)]?.visual}/>{r.name}</button>
                     <small className="tc-sub">{r.nicks.join(" · ")}</small>
                   </td>
                   <td>{r.region}</td>
@@ -349,7 +358,12 @@ function Rankings({ data }: { data: Directory }) {
               ))}
           </tbody>
         </table>
-      </section>
+      </section><aside className="surface vrs-trend"><h2>Динамика публикаций</h2>
+        <h3>{selectedRow?.name || c.teams[selected] || selected}</h3>
+        {selectedRow && <><p>Место #{selectedRow.rank} · {selectedRow.points} очков</p><small>Пятёрка на дату публикации</small><p>{selectedRow.nicks.join(" · ")}</p></>}
+        {past.length ? <ol>{past.map(p=><li key={p.date}><time>{date(p.date)}</time><strong>#{p.rank}</strong><span>{p.points}</span></li>)}</ol>
+          : <p>В доступных публикациях нет истории этой команды.</p>}
+      </aside></div>
     </>
   );
 }
@@ -555,62 +569,43 @@ function Registration({
   );
 }
 
-function GameDraw({ draw, c }: { draw: Draw; c: Career }) {
-  const slot = (s: Game["slots"][number]) => {
-    if (s === null) return "Свободный слот";
-    if (typeof s === "string") return c.teams[s] || s;
-    const parent = draw.games[s[1]],
-      t = s[0] === "winner" ? parent.winner : parent.loser;
-    return t
-      ? c.teams[t]
-      : (s[0] === "winner" ? "Победитель" : "Проигравший") +
-          " матча " +
-          (s[1] + 1);
+function GameDraw({draw,c,scene,onFixture}: {draw:Draw;c:Career;scene:Scene;onFixture:(id:string)=>void}) {
+  const [filter,setFilter] = useState("all");
+  const resolve = (slot:Game["slots"][number]) => {
+    if (!Array.isArray(slot)) return slot;
+    const parent=draw.games[slot[1]];
+    return slot[0]==="winner" ? parent?.winner : parent?.loser;
   };
-  const rounds = Array.from(new Set(draw.games.map((g) => g.round))).sort(
-    (a, b) => a - b,
-  );
-  return (
-    <div
-      className="tc-bracket"
-      role="region"
-      aria-label="Сетка по раундам"
-      tabIndex={0}
-    >
-      {rounds.map((round) => (
-        <section key={round} className="tc-round">
-          <h3>Раунд {round + 1}</h3>
-          {draw.games.map(
-            (g, n) =>
-              g.round === round &&
-              !g.bye && (
-                <article className="tc-pair" key={n}>
-                  <small>
-                    {g.label} · № {n + 1}
-                    {g.date && " · " + date(g.date)}
-                  </small>
-                  {g.slots.map((s, i) => (
-                    <div
-                      className={
-                        g.winner && c.teams[g.winner] === slot(s)
-                          ? "tc-winner"
-                          : ""
-                      }
-                      key={i}
-                    >
-                      <b>{slot(s)}</b>
-                      <span>{g.score?.[i] ?? "—"}</span>
-                    </div>
-                  ))}
-                  {g.administrative && <small>{g.reason}</small>}
-                  {g.historical && <small>До начала карьеры</small>}
-                </article>
-              ),
-          )}
-        </section>
-      ))}
+  const rounds = [...new Set(draw.games.map(g=>g.round))].sort((a,b)=>a-b);
+  const next = new Map<number,string[]>();
+  for (const [index,g] of draw.games.entries()) {
+    for (const slot of g.slots) if (Array.isArray(slot)) {
+      const target=next.get(slot[1]) || [];
+      target.push((slot[0]==="winner"?"Победа":"Поражение")+" → № "+(index+1));
+      next.set(slot[1],target);
+    }
+  }
+  return <section className="tournament-draw"><div className="draw-toolbar"><span>Выходят команд · {draw.advance}</span>
+    {draw.teams.includes(c.team) && <b>Ваша команда · {c.club}</b>}
+    <label>Раунды<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">Вся сетка</option>
+      {rounds.map(r=><option key={r} value={String(r)}>Раунд {r+1}</option>)}</select></label></div>
+    <div className="tc-bracket" role="region" aria-label="Сетка по раундам" tabIndex={0}>
+      {rounds.filter(r=>filter==="all" || String(r)===filter).map(r=><section key={r} className="tc-round"><h3>Раунд {r+1}</h3>
+        {draw.games.map((g,n)=>g.round!==r ? null : <article className="tc-pair" key={n} data-own={g.slots.some(slot=>resolve(slot)===c.team)}>
+          <small>{g.label} · № {n+1}{g.date && " · "+date(g.date)}</small>
+          {g.slots.map((slot,i)=>{const id=resolve(slot), info=id ? scene.teams[id] : null;
+            return <div className={id && id===g.winner?"tc-winner":""} key={i}>{id && <Avatar club name={info?.name || c.teams[id] || id} {...info?.visual}/>}
+              <b>{id ? c.teams[id] || info?.name || id : Array.isArray(slot) ? (slot[0]==="winner"?"Победитель":"Проигравший")+" № "+(slot[1]+1) : "Свободный слот"}</b>
+              <span>{g.score?.[i] ?? "—"}</span></div>})}
+          {g.bye && <small>Проход без игры</small>}{g.administrative && <small>{g.reason || "Технический результат"}</small>}
+          {g.historical && <small>Историческая встреча</small>}
+          {next.has(n) && <small className="draw-path">{next.get(n)!.join(" · ")}</small>}
+          {g.fixture && (c.history.some(f=>f.id===g.fixture) || c.queue.some(f=>f.id===g.fixture)) &&
+            <button className="link-button" onClick={()=>onFixture(g.fixture!)}>{g.score ? "Протокол встречи" : "Подготовка и линия"}</button>}
+        </article>)}</section>)}
     </div>
-  );
+    {draw.outputs && <p>Выход из стадии · {draw.outputs.map(s=>{const id=resolve(s);return id ? c.teams[id] || id : Array.isArray(s) ? (s[0]==="winner"?"Победитель":"Проигравший")+" № "+(s[1]+1) : "Свободный слот"}).join(" · ")}</p>}
+  </section>;
 }
 
 export function CompetitionCenter(props: Props) {
@@ -623,6 +618,7 @@ export function CompetitionCenter(props: Props) {
     [tab, show] = useState(props.initialEntry ? "Моя заявка" : "Обзор"),
     [archive, setArchive] = useState(false);
   const [report, openReport] = useState("");
+  const [participantQuery,setParticipantQuery] = useState("");
   const [region, filterRegion] = useState("Все регионы"),
     [search, filterName] = useState(""),
     [period, setPeriod] = useState(""),
@@ -630,11 +626,17 @@ export function CompetitionCenter(props: Props) {
   if (res.error || !res.data) return <Load {...res} />;
   const data = res.data,
     event = data.editions.find((e) => e.id === picked);
-  if (rankings) return <Rankings data={data} />;
+  if (rankings) return <Rankings {...{data,c,scene}} />;
   if (!event)
     return (
       <>
-        <Heading title="Соревнования" sub="Календарь профессиональной сцены" />
+        <Heading title="Соревнования" eyebrow={"Сезон "+c.date.slice(0,4)} sub="Календарь, турнирные этапы и участие команды" />
+        <MetricStrip items={[
+          ["Соревнования", data.editions.length,"В календаре карьеры"],
+          ["Участие команды",data.editions.filter(e=>["confirmed","locked","accepted","playing","qualified"].includes(e.entries[c.team])).length,c.club],
+          ["Регистрация",data.editions.filter(e=>e.status==="registration").length,"Открытые соревнования"],
+          ["Форматы",new Set(data.editions.flatMap(e=>e.stages.map(s=>s.format))).size,"Включены в календарь"]
+        ]}/>
         <Tabs
           items={["Календарь турниров", "Архив"]}
           value={archive ? "Архив" : "Календарь турниров"}
@@ -938,14 +940,16 @@ export function CompetitionCenter(props: Props) {
       )}
       {tab === "Участники" && (
         <section className="surface panel-body">
+          <div className="draw-toolbar"><h2>Все участники и заявки · {Object.keys(event.entries).length}</h2>
+            <label>Найти команду<input type="search" value={participantQuery} onChange={e=>setParticipantQuery(e.target.value)}/></label></div>
           {Object.keys(event.entries).length === 0 && <p>Заявок пока нет.</p>}
-          {Object.entries(event.entries).map(([t, state]) => {
+          {Object.entries(event.entries).filter(([t])=>(c.teams[t] || t).toLowerCase().includes(participantQuery.toLowerCase())).map(([t, state]) => {
             const entry = event.registrations[t]?.at(-1);
             return (
-              <details key={t} className="tc-team">
+              <details key={t} className="tc-team" data-own={t===c.team}>
                 <summary>
                   <Avatar name={c.teams[t]} {...scene.teams[t]?.visual} />
-                  <b>{c.teams[t]}</b> · {status[state]}
+                  <b>{c.teams[t]}</b> · {status[state] || state}{t===c.team && " · Ваша команда"}
                 </summary>
                 {entry && (
                   <>
@@ -979,7 +983,7 @@ export function CompetitionCenter(props: Props) {
           )}
           {event.draws.map((draws, i) => (
             <section key={i}>
-              <h2>{event.stages[i].name}</h2>
+              <h2>{event.stages[i].name}</h2><p>{formats[event.stages[i].format]} · BO{event.stages[i].bestOf} · {date(event.stages[i].start)} — {date(event.stages[i].end)}</p>
               {draws.map((d, j) => (
                 <details
                   className="surface panel-body"
@@ -1018,7 +1022,9 @@ export function CompetitionCenter(props: Props) {
                       </tbody>
                     </table>
                   )}
-                  <GameDraw draw={d} c={c} />
+                  <GameDraw draw={d} {...{c,scene}} onFixture={id=>{
+                    if(c.history.some(f=>f.id===id)){openReport(id);show("Матчи")}else props.prepare(id);
+                  }}/>
                 </details>
               ))}
             </section>

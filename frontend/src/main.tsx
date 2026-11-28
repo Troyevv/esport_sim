@@ -1,18 +1,29 @@
 import { FormatSelect, VetoCenter } from "./SeriesCenter";
 import MapSelect from "./MapSelect";
 import { Brand } from "./GameUI";
-import { useEffect, useState } from "react";
+import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import TacticEditor from "./TacticEditor";
-import DatabaseEditor from "./DatabaseEditor";
-import CareerScreen from "./Career";
-import MatchCenter from "./MatchCenter";
-import Radar from "./Radar";
 import HostSettings from "./HostSettings";
 import { useSession, type View } from "./session";
 import "./style.css";
 import "./reference.css";
 import "./manager.css";
+
+const CareerScreen = lazy(() => import("./Career"));
+const DatabaseEditor = lazy(() => import("./DatabaseEditor"));
+const TacticEditor = lazy(() => import("./TacticEditor"));
+const MatchCenter = lazy(() => import("./MatchCenter"));
+const Radar = lazy(() => import("./Radar"));
+
+class RouteBoundary extends Component<{children:ReactNode},{failed:boolean}> {
+  state = {failed:false};
+  static getDerivedStateFromError() { return {failed:true}; }
+  render() {
+    if (this.state.failed) return <section className="surface panel-body" role="alert">
+      <h2>Не удалось открыть экран</h2><button onClick={()=>location.reload()}>Загрузить игру повторно</button></section>;
+    return <Suspense fallback={<p className="panel-body" role="status">Загружаем экран…</p>}>{this.props.children}</Suspense>;
+  }
+}
 
 const formatTime = (seconds: number) =>
   [
@@ -82,7 +93,7 @@ function App() {
       ? "lab"
       : "menu",
   );
-  const [database, showDatabase] = useState(false);
+  const [database, showDatabase] = useState<false|"editor"|"exhibition"|"appearance">(false);
   const [board, showBoard] = useState(false);
   const [view, setView] = useState<View>("full");
   const [selected, setSelected] = useState<string | null>(null);
@@ -163,7 +174,7 @@ function App() {
     />
   );
   const editor = database && world && (
-    <DatabaseEditor
+    <DatabaseEditor initial={database}
       onClose={() => showDatabase(false)}
       enabled={enabled}
       start={async (value) => {
@@ -205,7 +216,7 @@ function App() {
       </>
     ));
   return (
-    <>
+    <RouteBoundary>
       {!showManager && (
         <header className="mast">
           <Brand />
@@ -225,7 +236,7 @@ function App() {
             enabled={enabled}
             screen={screen === "menu" ? "menu" : "hub"}
             go={go}
-            database={async () => { if (!frame.careerId || await act("career-lab")) showDatabase(true) }}
+            database={async (page="editor") => { if (!frame.careerId || await act("career-lab")) showDatabase(page) }}
             board={() => showBoard(true)}
             status={status}
             settings={settings}
@@ -249,7 +260,7 @@ function App() {
           </button>
         )}
         {world && playingLab && !database && !board && (
-          <button className="database-entry" onClick={() => showDatabase(true)}>
+          <button className="database-entry" onClick={() => showDatabase("editor")}>
             База сцены
           </button>
         )}
@@ -550,7 +561,7 @@ function App() {
             </div>
           )}
       </main>
-    </>
+    </RouteBoundary>
   );
 }
 createRoot(document.getElementById("root")!).render(<App />);

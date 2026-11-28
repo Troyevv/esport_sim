@@ -32,15 +32,16 @@ async function api(path: string, body?: object) {
 }
 export function PortraitImport({
   pack,
-  onRefresh,
+  onRefresh, initiallyOpen=false,
 }: {
+  initiallyOpen?:boolean;
   pack: Pack;
   onRefresh: () => Promise<void>;
 }) {
   const [status, setStatus] = useState<Status | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [open, setOpen] = useState(false);
+    [open, setOpen] = useState(initiallyOpen);
   const refreshing = useRef(onRefresh);
   refreshing.current = onRefresh;
   const previous = useRef(-1);
@@ -130,7 +131,7 @@ export function PortraitImport({
   const total = Object.values(c).reduce((a, b) => a + b, 0);
   return (
     <details
-      className="db-import-studio"
+      className="db-import-studio" open={open}
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >
       <summary>Студийные портреты</summary>

@@ -234,3 +234,35 @@
 .tc-decision h3,.tc-decision p {margin:0}
 .tc-decision article {padding:12px;border:1px solid var(--border,#38424d);border-radius:6px}
 .tc-decision button {white-space:normal;height:auto;min-height:42px}
+.draw-toolbar {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:16px 0}
+.draw-toolbar label {display:grid;gap:4px}
+.tc-pair {background:#171b20;color:var(--text);border-color:var(--line)}
+.tc-pair[data-own=true],details.tc-team[data-own=true] {border-inline-start:3px solid var(--green)}
+.tc-pair>div>.scene-avatar {width:25px;height:25px;object-fit:contain;flex-shrink:0}
+.tc-pair>div>b {flex:1;overflow-wrap:anywhere}.tc-pair>div>span{font-family:var(--mono)}
+.tc-pair .draw-path {margin-top:7px;border-top:1px solid var(--line);padding-top:5px}
+.tc-bracket {max-width:100%;overscroll-behavior-inline:contain}
+.tournament-draw {min-width:0}
+
+.tc-list {display:flex;flex-direction:column;gap:0}
+.tc-list .tc-card {display:grid;grid-template-columns:70px minmax(0,1fr) minmax(130px,22%);gap:3px 16px;align-items:center;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:17px 12px}
+.tc-card-line {display:contents}
+.tc-card-line .competition-mark {grid-column:1;grid-row:1/span 3;justify-self:center}
+.tc-card-line small {grid-column:2;grid-row:1}
+.tc-list .tc-card>strong {grid-column:2;grid-row:2;font:500 24px/1.2 Oswald,sans-serif;text-transform:uppercase}
+.tc-list .tc-card>span:not(.tc-card-line) {grid-column:2;grid-row:3}
+.tc-list .tc-card footer {grid-column:3;grid-row:1/span 3;justify-self:end;text-align:right;font-family:var(--mono)}
+.tc-list .tc-card>b {grid-column:2/-1}
+.vrs-layout {display:grid;grid-template-columns:minmax(0,2fr) minmax(220px,1fr);gap:16px;align-items:start}
+.vrs-layout tr[data-selected=true] {background:#28261e;box-shadow:inset 3px 0 var(--orange)}
+.vrs-team {display:flex;gap:8px;align-items:center;text-align:left;padding:0;border:0;background:transparent}
+.vrs-team .scene-avatar {width:28px;height:28px;object-fit:contain}
+.vrs-trend {padding:20px}
+.vrs-trend h3 {font:500 26px Oswald,sans-serif;margin:16px 0}
+.vrs-trend ol {max-height:350px;overflow:auto;list-style:none;padding:0}
+.vrs-trend li {display:flex;justify-content:space-between;border-top:1px solid var(--line);padding:7px 0}
+@media(max-width:800px) {
+  .tc-list .tc-card {grid-template-columns:45px minmax(0,1fr);padding:12px 3px;gap:3px 12px}
+  .tc-list .tc-card footer {grid-column:2;grid-row:4;text-align:left;justify-self:start}
+  .vrs-layout {grid-template-columns:100%}
+}

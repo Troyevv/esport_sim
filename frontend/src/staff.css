@@ -146,3 +146,10 @@
   object-fit: contain;
   margin: 12px 0;
 }
+
+.staff-cards {grid-template-columns:repeat(2,minmax(0,1fr))}
+.staff-member {min-height:76px}
+.staff-member strong,.staff-rating {font:500 23px Oswald,sans-serif}
+.staff-rating {background:transparent;color:var(--green);padding:0}
+.staff-member span:not(.staff-rating) {min-width:0;overflow-wrap:anywhere}
+@media(max-width:700px) {.staff-cards {grid-template-columns:1fr}}

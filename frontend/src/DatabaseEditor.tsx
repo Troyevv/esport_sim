@@ -47,6 +47,7 @@ import PlayerEditorFields from "./PlayerEditorFields";
 
 type Destination = { group: Group; id: string };
 type Props = {
+  initial?:"editor"|"exhibition"|"appearance";
   onClose: () => void;
   start: (value: object) => Promise<boolean>;
   enabled: boolean;
@@ -141,7 +142,7 @@ function Select({
   );
 }
 
-export default function DatabaseEditor({ onClose, start, enabled }: Props) {
+export default function DatabaseEditor({ onClose, start, enabled, initial }: Props) {
   const [format, setFormat] = useState(0);
   const [mapId, setMapId] = useState("depo");
   const [catalog, setCatalog] = useState<(Ref & { title: string })[]>([]);
@@ -158,7 +159,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
-  const [matchSetup, setMatchSetup] = useState(false),
+  const [matchSetup, setMatchSetup] = useState(initial==="exhibition"),
     [home, setHome] = useState(""),
     [away, setAway] = useState(""),
     [seed, setSeed] = useState("42");
@@ -633,7 +634,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
           });
         }}
       />
-      <PortraitImport
+      <PortraitImport initiallyOpen={initial==="appearance"}
         pack={pack}
         onRefresh={async () => {
           const response = await fetch(

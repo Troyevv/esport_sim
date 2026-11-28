@@ -13,7 +13,7 @@ test("Менеджер рассчитывает собственный матч 
   await button("Быстро рассчитать матч").click();
   const result = page.getByRole("dialog", {name:"Матч завершён"});
   await expect(result.getByText("Быстрый расчёт по раундам",{exact:false})).toBeVisible();
-  await expect(result.getByRole("heading", {name:"MVP карты"})).toBeVisible();
+  await expect(result.getByRole("heading", {name:/MVP (карты|серии)/})).toBeVisible();
   await result.getByRole("button",{name:"Статистика",exact:true}).click();
   await expect(result.getByRole("table")).toHaveCount(2);
   await expect(result.getByRole("columnheader",{name:"KAST"})).toHaveCount(2);

@@ -6,6 +6,7 @@ import Radar from "./Radar";
 import type { Frame, View } from "./session";
 import type { RadarPlayback } from "./playback";
 import "./match.css";
+import "./arena.css";
 import { Avatar, Identity, type Visual } from "./SceneIdentity";
 import { itemLabel } from "./scorebotIcons";
 import { Gear, ItemIcon, WeaponSlots } from "./MatchEquipment";
@@ -15,6 +16,8 @@ type Side = "CT" | "T";
 type Point = { x: number; y: number; z?: number };
 export interface MatchView {
   award?: { name: string } | null;
+  radio?: {player:string;channel:string;state:string;tick:number}[];
+  impressions?:Record<string,string>;
   rules: string;
   clubs: {
     id: string;
@@ -115,6 +118,8 @@ export interface MatchView {
   feedback: { player: string; id: number; round: number; text: string }[];
 }
 
+const radioStates:Record<string,string> = {ack:"Задание принято",help:"Запрашивает поддержку",check:"Проверяет контакт",
+  refused:"Не может выполнить задачу",completed:"Задача выполнена",progress:"Выполняет задачу",holding:"Удерживает позицию",moving:"Перемещается"};
 const phases: Record<string, string> = {
   freeze: "Подготовка",
   live: "В игре",
@@ -248,6 +253,7 @@ export default function MatchCenter({
     m = world.match!;
   const [tab, setTab] = useState<(typeof tabs)[number]>("Статистика");
   const [pane, setPane] = useState(0);
+  const [display,setDisplay] = useState<"Трансляция"|"Тренерский обзор">("Трансляция");
   const [selected, select] = useState<string | null>(null);
   const [seed, setSeed] = useState(String(world.seed));
   const [nextCall, setNextCall] = useState(m.calls[0]);
@@ -289,62 +295,34 @@ export default function MatchCenter({
     enabled={enabled} saved={frame.hasSave} act={act} openBoard={openBoard}/></article>;
   const awayBreak=!!m.breakOwner && !timeout;
   return (
-    <article className="match-center">
-      <header className="match-title">
-        <div>
-          <span className="eyebrow">МАТЧ-ЦЕНТР</span>
-          <h1>{m.clubs.map((c) => c.name).join(" — ")}</h1>
-        </div>
+    <article className={"match-center mx-match-screen "+(display==="Трансляция"?"mx-broadcast":"mx-coach-view")}>
+      <header className="mx-stage-header"><div className="mx-stage-title"><span>МАТЧ-ЦЕНТР</span><h1>{finished?"Итоги карты":m.pregame?"Подготовка карты":"Прямой эфир"}</h1></div>
+        <div className="mx-view-switch" aria-label="Режим матч-центра"><div>{(["Трансляция","Тренерский обзор"] as const).map(v=>
+          <button key={v} aria-pressed={display===v} onClick={()=>setDisplay(v)}>{v}</button>)}</div></div>
         <button onClick={openBoard}>Редактор тактик</button>
-        <span
-          className={
-            "match-format" +
-            (m.source && m.source.id !== "depo-exhibition" ? " sourced" : "")
-          }
-        >
-          Выставочный матч · <br />
-          {m.source && m.source.id !== "depo-exhibition"
-            ? "Составы из базы · ред. " + m.source.revision
-            : "Тестовые составы"}
-        </span>
       </header>
-      {world.series && <SeriesScore frame={frame} enabled={enabled} act={act}/>}
-      <div className="match-meta-strip">
-        <span>{world.map.name} · BO{world.series?.bestOf ?? 1}</span>
-        <span>{world.series && finished ? "Карта завершена" : phases[m.phase]}</span>
-      </div>
-      <section className="scoreboard" aria-label="Счёт матча">
-        {m.clubs.map((club, i) => (
-          <div
-            key={club.id}
-            data-team={club.id}
-            data-side={club.side}
-            className={"club club-" + i}
-          >
-            <span className="club-side">
-              {club.side} · {club.id === coach.id ? "Ваша команда" : "Соперник"}
-            </span>
-            <strong>
-              <Avatar name={club.name} club {...club.visual} />
-              <span>{club.name}</span>
-            </strong>
-            <b>{club.score}</b>
-          </div>
-        ))}
-        <div className="round-clock" data-planted={m.phase === "planted"}>
-          <small>РАУНД {m.round}</small>
-          <b>
-            {finished
-              ? "ФИНАЛ"
-              : timeout
-                ? "ПАУЗА"
-                : m.phase === "result"
-                  ? "ИТОГ"
-                  : clock(m.clock)}
-          </b>
-          <span>{world.series && finished ? "Карта завершена" : phases[m.phase]}</span>
-        </div>
+      <section className="scoreboard mx-broadcast-score" aria-label="Счёт матча">
+        <div className="mx-score-event"><span>{world.series?.tournament || (frame.careerId?"Встреча календаря":"Выставочный матч")}</span>
+          <span>BO{world.series?.bestOf || 1} {world.series && " · Серия "+world.series.teams.map(t=>world.series!.score[t]).join(" : ")}</span></div>
+        {m.clubs.map((club,i)=><div key={club.id} data-team={club.id} data-side={club.side} className={"mx-score-team "+(i?"rival":"own")}>
+          <Avatar name={club.name} club {...club.visual}/><div><strong>{club.name}</strong><small>{club.side} · {club.id===coach.id?"Пятёрка тренера":"Соперник"}</small></div><b>{club.score}</b></div>)}
+        <div className="round-clock mx-round-clock" data-planted={m.phase==="planted"}><small>{world.map.name} · РАУНД {m.round}</small>
+          <b>{finished?"ФИНАЛ":timeout?"ПАУЗА":m.phase==="result"?"ИТОГ":clock(m.clock)}</b>
+          <span>{world.series && finished ? "Карта завершена" : phases[m.phase]}</span></div>
       </section>
+      {world.series && <SeriesScore frame={frame} enabled={enabled} act={act}/>}
+      {m.phase==="planted" && <div className="arena-event">C4 установлена{m.bomb?.site && " · "+m.bomb.site}</div>}
+      {m.phase==="result" && m.history.length>0 && <div className="arena-event">{clubName(m.history.at(-1)!.winnerTeamId)} · {m.history.at(-1)!.reason}</div>}
+      {m.phase==="freeze" && m.round>1 && m.history.at(-1)?.side && (() => {
+        const previous=m.history.at(-1)!;
+        const winner=m.clubs.find(c=>c.id===previous.winnerTeamId);
+        return winner && winner.side!==previous.side ? <div className="arena-event">Смена сторон · {coach.name} начинает за {coach.side}</div> : null;
+      })()}
+      {world.view==="full" && ["live","planted"].includes(m.phase) && m.clubs.map(club=>{
+        const alive=world.agents.filter(a=>a.team===club.side && a.alive);
+        const opponents=world.agents.filter(a=>a.team!==club.side && a.alive).length;
+        return alive.length===1 && opponents>1 ? <div className="arena-event" key={club.id}>Клатч · {name(alive[0].id)} · 1 против {opponents}</div> : null;
+      })}
       {awayBreak && <p className="match-result">{clubName(m.breakOwner!)} · Тактический перерыв · {clock(m.clock)}</p>}
       {finished && (
         <p className="match-result">
@@ -352,6 +330,12 @@ export default function MatchCenter({
           {m.award && <> · MVP карты <strong>{m.award.name}</strong></>}
         </p>
       )}
+      {display==="Тренерский обзор" && <div className="arena-bench">
+        <section className="surface panel-body"><h2>Состояние пятёрки</h2>{Object.entries(m.impressions || {}).map(([id,state])=><p key={id}><strong>{name(id)}</strong> · {state}</p>)}
+          {!Object.keys(m.impressions || {}).length && <p>В этой проекции наблюдения своего штаба недоступны.</p>}</section>
+        <section className="surface panel-body"><h2>Командное радио</h2>{m.radio?.map(r=><p key={r.player+r.channel}><strong>{name(r.player)}</strong> · {radioStates[r.state] || "Обновил статус задачи"} · {clock(r.tick)}</p>)}
+          {!m.radio?.length && <p>Подтверждённых передач пока нет.</p>}</section>
+      </div>}
       {rounds > 0 && (
         <div className="hud-history" aria-label="Последние раунды">
           <strong>Раунды</strong>

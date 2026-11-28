@@ -750,3 +750,31 @@ button.host-action {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.pocket-nav {display:none}
+.career-archive {display:grid;gap:16px}
+.archive-match {display:grid;width:100%;grid-template-columns:100px 1fr auto;text-align:left;padding:12px;gap:10px;border:0;border-top:1px solid var(--line);border-radius:0;background:transparent}
+.archive-match small {display:block;color:var(--muted)}
+.archive-match b {font-family:var(--mono)}
+@media(max-width:700px) {
+  .pocket-nav {position:fixed;z-index:24;inset:auto 0 0;display:flex;align-items:stretch;padding-bottom:env(safe-area-inset-bottom);background:#111419;border-top:1px solid var(--line)}
+  .pocket-nav button {display:grid;align-content:center;justify-items:center;gap:3px;min-height:54px;flex:1;background:none;border:0;color:var(--muted);font-size:11px;padding:4px}
+  .pocket-nav button[aria-current] {color:var(--accent);box-shadow:inset 0 2px var(--accent)}
+  .workspace {padding-bottom:calc(60px + env(safe-area-inset-bottom))}
+  .archive-match {grid-template-columns:1fr auto}
+  .archive-match time {grid-column:1 / -1}
+}
+
+.manager-root .page-heading h1 {font:550 38px/1.15 Oswald,sans-serif;letter-spacing:.2px;text-transform:uppercase;margin:4px 0 8px}
+.section-kicker {font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.metric-strip {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:14px 0 20px;border-block:1px solid var(--line)}
+.metric-strip>div {padding:16px 20px;min-width:0;border-right:1px solid var(--line)}
+.metric-strip>div:last-child {border:0}
+.metric-strip dt,.metric-strip small {font:12px/1.5 Manrope,sans-serif;color:var(--muted)}
+.metric-strip dd {margin:4px 0;font:500 29px/1.2 Oswald,sans-serif;color:var(--text)}
+.manager-root .btn.primary:hover:not(:disabled) {background:#ffab70;color:#24180e}
+@media(max-width:700px) {
+  .manager-root .page-heading h1 {font-size:32px}
+  .metric-strip {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metric-strip>div {padding:10px}
+}

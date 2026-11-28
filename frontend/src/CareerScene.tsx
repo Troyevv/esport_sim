@@ -16,6 +16,7 @@ import {
   age,
   date,
   groupTitle,
+  useDirectoryView,
   useData,
   type Career,
   type Group,
@@ -275,12 +276,6 @@ export function Squad({
       )}
     </>
   );
-}
-export function useDirectoryView() {
-  const [group, setGroup] = useState<Group>("teams");
-  const [query, setQuery] = useState("");
-  const [page, setPage] = useState(0);
-  return { group, setGroup, query, setQuery, page, setPage };
 }
 export function Directory({
   scene,

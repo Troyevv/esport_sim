@@ -234,3 +234,10 @@ export const age = (born: string | null, now: string) =>
       Number(born.slice(0, 4)) -
       Number(now.slice(5) < born.slice(5))
     : null;
+
+export function useDirectoryView() {
+  const [group, setGroup] = useState<Group>("teams");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
+  return { group, setGroup, query, setQuery, page, setPage };
+}

@@ -30,16 +30,19 @@ export function Brand({ menu }: { menu?: () => void }) {
 }
 export function Heading({
   title,
+  eyebrow,
   sub,
   children,
 }: {
   title: string;
+  eyebrow?: string;
   sub?: string;
   children?: ReactNode;
 }) {
   return (
     <div className="page-heading">
       <div>
+        {eyebrow && <small className="section-kicker">{eyebrow}</small>}
         <h1>{title}</h1>
         {sub && <p className="subtitle">{sub}</p>}
       </div>
@@ -120,4 +123,10 @@ export function Readiness({ fatigue }: { fatigue: number | undefined }) {
       {value}%
     </span>
   );
+}
+
+export function MetricStrip({items}: {items: [string, ReactNode, string][]}) {
+  return <dl className="metric-strip">{items.map(([label,value,detail])=><div key={label}>
+    <dt>{label}</dt><dd>{value}</dd><small>{detail}</small>
+  </div>)}</dl>;
 }

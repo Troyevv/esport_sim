@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heading } from "./GameUI";
+import { MetricStrip, Heading } from "./GameUI";
 import { resolvePortrait } from "./portraits";
 import { Avatar } from "./SceneIdentity";
 import { date, type Act, type Career, type Scene } from "./careerData";
@@ -173,9 +173,16 @@ export function StaffOffice({
   return (
     <div className="staff-office">
       <Heading
-        title={p ? p.name : section}
+        title={p ? p.name : section==="Тренерский штаб"?"Штаб":section}
+        eyebrow={c.club+" / Люди"}
         sub={c.club + " · " + date(c.date)}
       />
+      {!p && <MetricStrip items={[
+        ["В команде",people.length,"Штат клуба"],
+        ["Обязанности",Object.values(office.owners).filter(Boolean).length+" / "+Object.keys(office.duties).length,"Назначения штаба"],
+        ["Свободные позиции",Object.keys(office.roles).filter(role=>!people.some(person=>person.role===role)).length,"Должности без специалиста"],
+        ["Загрузка сегодня",people.reduce((sum,person)=>sum+dayLoad(person.id),0),"Единицы по плану штаба"]
+      ]}/>}
       <nav className="staff-tabs" aria-label="Управление персоналом">
         {screens.map((s) => (
           <button
@@ -249,6 +256,7 @@ export function StaffOffice({
                           <span>
                             <strong>{person.name}</strong>
                             <small>{person.realName || c.club}</small>
+                            <small>Загрузка {dayLoad(person.id)} / {person.capacity} · обязанностей {owners(person.id).length}</small>
                           </span>
                           <Rating value={person.ratings[key]} />
                         </button>

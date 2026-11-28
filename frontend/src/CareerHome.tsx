@@ -1,6 +1,10 @@
-import { fixtureMap } from "./careerData";
-import { Fragment, useState } from "react";
-import { Avatar } from "./SceneIdentity";
+import { useData, type Report, type Decision } from "./careerData";
+import type { Quote } from "./ForecastLine";
+import type { Directory } from "./CompetitionCenter";
+import { roles } from "./databaseModel";
+import "./home.css";
+import { useState } from "react";
+import { Avatar, LineupPortrait } from "./SceneIdentity";
 import { Glyph, Heading } from "./GameUI";
 import {
   date,
@@ -154,244 +158,52 @@ export function Inbox({
   );
 }
 
-export function Dashboard({
-  c,
-  scene,
-  box,
-  go,
-  calendar,
-  open,
-  letter,
-}: {
-  c: Career;
-  scene: Scene;
-  box: Letter[];
-  go: (s: string) => void;
-  calendar: (d: string) => void;
-  open: (p: Profile) => void;
-  letter: (id: string) => void;
+export function Dashboard({c,scene,box,go,calendar,open,letter,prepare,tournament,resolve,revision}: {
+  c:Career;scene:Scene;box:Letter[];go:(page:string)=>void;calendar:(day:string)=>void;
+  open:(p:Profile)=>void;letter:(id:string)=>void;prepare:(id:string)=>void;tournament:(id:string)=>void;
+  resolve:(row:Decision)=>void;revision:number;
 }) {
-  const next = c.queue.find((e) => e.teams.includes(c.team)),
-    start = monday(c.date);
-  const played = c.history.filter((e) => e.teams.includes(c.team)),
-    latest = played.at(-1);
-  const metrics = [
-    ["users", "Сила состава", c.teamRating, "Командный OVR"],
-    [
-      "calendar",
-      "До матча",
-      next ? Math.round((+dayAt(next.date) - +dayAt(c.date)) / 86400000) : "—",
-      "Дней по календарю",
-    ],
-    ["trophy", "Сыграно матчей", played.length, "В текущей карьере"],
-    [
-      "building",
-      "Команд в календаре",
-      Object.keys(c.teams).length,
-      "Охват симуляции",
-    ],
-  ] as const;
-  return (
-    <>
-      <Heading
-        title="Кабинет менеджера"
-        sub={c.character + " · " + position(c.mode)}
-      >
-        <span className="pill accented">{c.club}</span>
-      </Heading>
-      <div className="dashboard-top">
-        <section className="surface match-preview">
-          <div className="panel-head">
-            <span className="eyebrow">Следующий матч</span>
-            {next && (
-              <span className="match-preview-header">
-                {date(next.date)} <span className="pill">BO{next.bestOf ?? 1}</span>
-              </span>
-            )}
-          </div>
-          {next ? (
-            <>
-              <div className="match-matchup">
-                {next.teams.map((tid, i) => (
-                  <Fragment key={tid}>
-                    {i === 1 && (
-                      <div>
-                        <div className="versus">VS</div>
-                        <div className="match-meta">{fixtureMap(next)}</div>
-                      </div>
-                    )}
-                    <button
-                      className="match-team"
-                      onClick={() => open({ group: "teams", id: tid })}
-                    >
-                      <Avatar
-                        name={c.teams[tid]}
-                        {...scene.teams[tid]?.visual}
-                      />
-                      <strong>{c.teams[tid]}</strong>
-                      <small>
-                        {tid === c.team ? "Ваша команда" : "Соперник"}
-                      </small>
-                    </button>
-                  </Fragment>
-                ))}
-              </div>
-              <div className="match-preview-foot">
-                <span>{next.title||"Выставочная встреча"}</span>
-                <button className="btn" onClick={() => calendar(next.date)}>
-                  Открыть календарь <Glyph name="calendar" />
-                </button>
-              </div>
-            </>
-          ) : (
-            <p className="panel-body">Предстоящих встреч нет.</p>
-          )}
-        </section>
-        <section className="surface priority-card">
-          <span className="eyebrow">Внимание тренера</span>
-          <h2>{box[0]?.title || "Клубная почта"}</h2>
-          <p>{box[0]?.body}</p>
-          <button
-            className="btn primary"
-            onClick={() => (box[0] ? letter(box[0].id) : go("Входящие"))}
-          >
-            Открыть письмо <Glyph name="inbox" />
-          </button>
-        </section>
-      </div>
-      <section className="metrics-strip">
-        {metrics.map(([icon, title, value, caption]) => (
-          <div className="metric" key={title}>
-            <div className="metric-label">
-              <Glyph name={icon} />
-              {title}
-            </div>
-            <div className="metric-main">
-              <strong>{value}</strong>
-            </div>
-            <div className="metric-foot">{caption}</div>
-          </div>
-        ))}
-      </section>
-      <div className="dashboard-middle">
-        <section className="surface">
-          <div className="panel-head">
-            <h2>На этой неделе</h2>
-            <button className="link-button" onClick={() => calendar(c.date)}>
-              В календарь
-            </button>
-          </div>
-          <div className="week-grid">
-            {weekdays.map((w, i) => {
-              const d = isoDay(dayAt(start, i));
-              const e = [...c.history, ...c.queue].find(
-                (e) =>
-                  e.date === d &&
-                  (e.kind === "review" || e.teams.includes(c.team)),
-              );
-              return (
-                <button
-                  key={w}
-                  className={"week-day " + (d === c.date ? "today" : "")}
-                  onClick={() => calendar(d)}
-                >
-                  <span className="dayname">{w}</span>
-                  <span className="daynumber">{+d.slice(-2)}</span>
-                  <span className="event-name">
-                    {e ? fixtureName(c, e) : "Свободный день"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-        <section className="surface">
-          <div className="panel-head">
-            <h2>Входящие</h2>
-            <button className="link-button" onClick={() => go("Входящие")}>
-              Все
-            </button>
-          </div>
-          {box.slice(0, 3).map((m) => (
-            <button
-              className="message-preview"
-              key={m.id}
-              onClick={() => letter(m.id)}
-            >
-              <span className="message-symbol">
-                <Glyph name="mail" />
-              </span>
-              <span>
-                <strong>{m.title}</strong>
-                <small>{m.from}</small>
-              </span>
-            </button>
-          ))}
-        </section>
-      </div>
-      <div className="dashboard-bottom">
-        <section className="surface">
-          <div className="panel-head">
-            <h2>Основной состав</h2>
-            <button className="link-button" onClick={() => go("Состав")}>
-              Весь состав
-            </button>
-          </div>
-          <div className="table-wrap">
-            <table className="simple-table compact">
-              <thead>
-                <tr>
-                  <th>Игрок</th>
-                  <th>OVR</th>
-                  <th>Готовность</th>
-                  <th>Мораль</th>
-                  <th>Форма</th>
-                </tr>
-              </thead>
-              <tbody>
-                {c.roster.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <button
-                        className="player-identity"
-                        onClick={() => open({ group: "players", id: p.id })}
-                      >
-                        <Avatar name={p.name} {...p.visual} />
-                        <strong>{p.name}</strong>
-                      </button>
-                    </td>
-                    <td className="mono accent">{p.ratings[p.role] ?? "—"}</td>
-                    <td>
-                      <Readiness fatigue={p.fatigue} />
-                    </td>
-                    <td>{p.morale}</td>
-                    <td>{p.form}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-        <section className="surface">
-          <div className="panel-head">
-            <h2>Последняя встреча</h2>
-          </div>
-          <div className="panel-body">
-            {latest ? (
-              <button
-                className="link-button"
-                onClick={() => calendar(latest.date)}
-              >
-                {fixtureName(c, latest)} · {fixtureScore(latest)}
-              </button>
-            ) : (
-              <p className="muted">
-                Команда ещё не завершила свой первый матч.
-              </p>
-            )}
-          </div>
-        </section>
-      </div>
-    </>
-  );
+  const next = c.queue.find(e=>e.kind==="match" && !e.pcw && e.teams.includes(c.team));
+  const recent = c.history.filter(e=>e.kind==="match" && e.teams.includes(c.team)).slice(-3).reverse();
+  const plan = useData<{forecasts:Quote[]}> (next ? "/api/career/"+c.id+"/prematch/"+next.id : null,revision);
+  const directory = useData<Directory>(!next && c.competitions ? "/api/career/"+c.id+"/competitions" : null,revision);
+  const upcoming = directory.data?.editions.filter(e=>["accepted","confirmed","qualified","locked","playing"].includes(e.entries[c.team]) && e.status!=="finished")
+    .sort((a,b)=>a.start.localeCompare(b.start))[0];
+  const last = useData<Report>(recent.length ? "/api/career/"+c.id+"/report/"+recent[0].id : null);
+  const mvp = last.data?.performance.players.find(p=>p.player===last.data?.performance.mvp);
+  const start=monday(c.date);
+  const training=useData<Record<string,string[]>>("/api/career/"+c.id+"/training-calendar?since="+start+"&count=7",revision);
+  const quote=plan.data?.forecasts.at(-1);
+  const team=(id:string)=>scene.teams[id]?.name || c.teams[id] || id;
+  return <div className="manager-home"><div className="home-caption"><span className="eyebrow">{c.character} · {position(c.mode)}</span><h1>Кабинет менеджера</h1></div>
+    <div className="home-layout"><div className="home-main"><section className="match-hero">
+      <div className="hero-topline"><button className="event-wordmark" onClick={()=>next?.edition ? tournament(next.edition) : upcoming ? tournament(upcoming.id) : calendar(next?.date || c.date)}>{next?.title || upcoming?.title || "Календарь команды"}</button>
+        {next && <span>BO{next.bestOf || 1} · MR12</span>}</div>
+      <h2>{next ? "Следующий матч" : upcoming ? "Следующий турнир" : "Расписание команды"}</h2>
+      <div className="hero-versus">{(next?.teams || [c.team]).map((tid,i)=><div key={tid} className="hero-team">
+        <button onClick={()=>open({group:"teams",id:tid})}><Avatar name={team(tid)} club {...scene.teams[tid]?.visual}/><strong>{team(tid)}</strong></button>
+        {quote && <small>{Math.round(100*quote.probability[i])}%</small>}</div>)}
+        <div className="versus-time"><strong>{next ? "VS" : upcoming ? date(upcoming.start) : "—"}</strong><small>{next ? date(next.date) : "Соперник ещё не определён"}</small></div></div>
+      {quote && <><div className="probability-line"><i style={{width:100*quote.probability[0]+"%"}}/></div><div className="hero-odds">{quote.odds.map((v,i)=><small key={i}>{team(quote.teams[i])} · {v.toFixed(2)}</small>)}</div></>}
+      <button className="btn primary" onClick={()=>next ? prepare(next.id) : upcoming ? tournament(upcoming.id) : calendar(c.date)}>{next ? "Подготовка к матчу" : upcoming ? "Открыть турнир" : "Открыть календарь"}</button>
+    </section><section><div className="section-heading"><h2>Основная пятёрка</h2><button className="text-button" onClick={()=>go("Состав")}>Весь состав</button></div>
+      <div className="lineup-five">{c.roster.map(p=><button className="home-player" key={p.id} onClick={()=>open({group:"players",id:p.id})}>
+        <div className="portrait"><LineupPortrait id={p.id} name={p.name} visual={p.visual}/></div><div className="home-player-info"><strong>{p.name}</strong><small>{roles[p.role] || p.role}</small>
+        <div className="readiness-label">Готовность</div><Readiness fatigue={p.fatigue}/></div></button>)}</div></section>
+      <section><div className="section-heading"><h2>Неделя команды</h2><button className="text-button" onClick={()=>calendar(c.date)}>Открыть календарь</button></div>
+        <div className="week-strip">{weekdays.map((d,i)=>{const day=isoDay(dayAt(start,i));
+          const e=[...recent,...c.queue].find(g=>g.date===day && g.kind==="match" && g.teams.includes(c.team));
+          return <button className={"week-day"+(day===c.date?" today":"")} onClick={()=>calendar(day)} key={day}><small>{d}</small><b>{Number(day.slice(-2))}</b><span>{e?fixtureName(c,e):training.data?.[day]?.join(" · ") || "Свободно"}</span></button>})}</div>
+      </section></div><aside className="home-aside">
+        <section className="panel"><div className="section-heading"><h2>Решения тренера</h2><b>{c.attention.length}</b></div>
+          {c.attention.slice(0,3).map(a=><div key={a.id} className="decision-item"><small>{date(a.due)}</small><h3>{a.title}</h3><p>{a.detail}</p><button className="btn" onClick={()=>resolve(a)}>Открыть решение</button></div>)}
+          {!c.attention.length && <p>Обязательных решений сейчас нет.</p>}
+          {box[0] && <div className="decision-item"><small>{box[0].from}</small><h3>{box[0].title}</h3><button className="btn" onClick={()=>letter(box[0].id)}>Открыть письмо</button></div>}
+        </section><section className="panel"><h2>Последние встречи</h2>{recent.map(e=><div className="result-mini" key={e.id}><button onClick={()=>calendar(e.date)}>{team(e.teams.find(t=>t!==c.team)!)}<small>{date(e.date)}</small></button><strong>{fixtureScore(e)}</strong></div>)}
+          {!recent.length && <p>В этой карьере команда ещё не сыграла официальный матч.</p>}</section>
+        <section className="panel"><h2>MVP последней встречи</h2>{mvp ? <button className="focus-player" onClick={()=>open({group:"players",id:mvp.player})}>
+          <LineupPortrait id={mvp.player} name={mvp.name} visual={{...scene.players[mvp.player]?.visual, kit:scene.players[mvp.player]?.visual.kit?.id===mvp.teamId ? scene.players[mvp.player].visual.kit : null}}/>
+          <span><strong>{mvp.name}</strong><small>Impact {mvp.impact?.toFixed(2)} · {mvp.rounds} раундов</small></span></button>
+          : <p>{last.error || (recent.length && !last.data ? "Загружаем протокол…" : "Для определения MVP пока недостаточно данных.")}</p>}</section>
+      </aside></div></div>;
 }
