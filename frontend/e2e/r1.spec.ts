@@ -26,23 +26,23 @@ test("полный BO1, колл, сохранение и итог матча", 
   }
   await page.getByLabel("Seed", { exact: true }).fill(String(seed));
   await press("Открыть матч BO1");
-  await expect(page.locator(".scoreboard")).toContainText("РАУНД 1");
+  await expect(page.locator(".mx-broadcast-score")).toContainText("R1");
   await expect(page.getByTestId("radar")).toHaveAttribute("data-ready", "true");
-  await expect(page.locator(".lineups")).toContainText(/Север.*OVR/s);
-  if (await page.locator(".touch-lineup").isVisible()) await press("Север");
+  await expect(page.locator(".mx-roster-title[title^=OVR]")).toContainText("Север");
   await page.getByRole("button", { name: /Sable/ }).click();
-  if (await page.locator(".touch-lineup").isVisible()) await press("Радар");
+
   await expect(page.locator(".role-ratings")).toContainText(/Рифлер.*Снайпер.*Капитан/);
   await page.screenshot({ path: info.outputPath("r31-ratings.png"), fullPage: true });
+  await page.locator(".mx-match-tabs").getByRole("button",{name:"Радар",exact:true}).click();
   if (hasTouch) {
     await touchCamera(page);
     await press("Центрировать карту");
   }
   await press("8×");
   await press("Запустить");
-  await expect(page.locator(".round-clock")).toContainText("В игре");
+  await expect(page.locator(".mx-round-clock, .round-clock")).toContainText("В игре");
   await press("Запросить тайм-аут");
-  await expect(page.locator(".round-clock")).toContainText("ПАУЗА", {
+  await expect(page.locator(".mx-round-clock, .round-clock")).toContainText("ПАУЗА", {
     timeout: 25_000,
   });
   await expect(page.locator(".coaching blockquote").first()).toBeVisible();
@@ -63,11 +63,11 @@ test("полный BO1, колл, сохранение и итог матча", 
   ).toContainText("Выход B");
   await press("Сохранить");
   await page.reload();
-  await expect(page.locator(".round-clock")).toContainText("ПАУЗА");
+  await expect(page.locator(".mx-round-clock, .round-clock")).toContainText("ПАУЗА");
   await expect(page.locator(".coaching")).toContainText("2 / 3");
   await press("Загрузить");
   await press("Завершить тайм-аут");
-  await expect(page.locator(".round-clock")).toContainText("В игре");
+  await expect(page.locator(".mx-round-clock, .round-clock")).toContainText("В игре");
   await page.waitForTimeout(1100);
   await press("Пауза просмотра");
   await page.evaluate(() => window.scrollTo(0, 0));

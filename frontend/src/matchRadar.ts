@@ -74,11 +74,12 @@ export function drawEvents(
   carrier?: { x: number; y: number },
   visible: (z?: number) => boolean = () => true,
   scale = 1,
+  grenades = true,
 ) {
   g.clear();
   for (const gun of m.groundWeapons)
     if (visible(gun.z)) items.show(gun.weapon, gun.x, gun.y, 8, 4, 0xacbfc3);
-  for (const f of m.effects) {
+  if (grenades) for (const f of m.effects) {
     if (tick < f.start || tick >= f.end + 3) continue;
     const color = colors[f.kind];
     if (tick < f.land) {

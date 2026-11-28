@@ -41,7 +41,7 @@ test("Штаб, назначения и выбор между ECL и Major", asy
     .selectOption({ label: "Team Vitality" });
   await press("Создать карьеру");
   await expect(
-    page.getByRole("heading", { name: "Кабинет менеджера" }),
+    page.getByRole("heading", { name: /^(Кабинет команды|День матча)$/ }),
   ).toBeVisible();
   await press("Глобальный поиск");
   const search = page.getByRole("dialog", { name: "Глобальный поиск" });

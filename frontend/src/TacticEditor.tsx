@@ -22,6 +22,7 @@ import { serverURL, type Frame } from "./session";
 import "./tactics.css";
 
 type Props = {
+  initialSetup?:{map:string;side:"CT"|"T"};
   commandNotice: string;
   clearNotice: () => void;
   frame: Frame;
@@ -72,6 +73,7 @@ const errorText = (e: unknown) =>
   e instanceof Error ? e.message : "Домашний сервер недоступен";
 
 export default function TacticEditor({
+  initialSetup,
   frame,
   enabled,
   act,
@@ -105,6 +107,7 @@ export default function TacticEditor({
   const clock = useRef(0),
     version = frame.libraryRevision || 0;
   const request = useRef(0);
+  const requestedSetup = useRef(initialSetup);
   useEffect(() => {
     if (dirty && plan) sessionStorage.setItem(draftKey, JSON.stringify(plan));
     else sessionStorage.removeItem(draftKey);
@@ -115,6 +118,15 @@ export default function TacticEditor({
       .then((data) => {
         if (!live) return;
         setLibrary(data);
+        const setup = requestedSetup.current;
+        requestedSetup.current = undefined;
+        if (setup) {
+          const target = data.maps.find(m=>m.id===setup.map);
+          if (target && (!dirty || canDiscard())) {
+            open(newPlan(target,setup.side,data.buys[0]));
+            return;
+          }
+        }
         const match = frame.world.match;
         const initial =
           data.plans.find(

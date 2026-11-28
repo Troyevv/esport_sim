@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import {createPortal} from "react-dom";
 import { Application, Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import type { RadarPlayback } from "./playback";
 import { serverURL, type Frame } from "./session";
@@ -36,6 +37,9 @@ export interface Agent extends Point {
   status: string;
 }
 interface Props {
+  controlsHost?:HTMLElement|null;
+  showNames?:boolean;
+  showGrenades?:boolean;
   layer?: string;
   frame: Frame;
   playback: RadarPlayback;
@@ -170,9 +174,9 @@ type RadarApi = {
   selectAt: (at: Point) => void;
 };
 
-function marker(agent: Agent, match: boolean) {
+function marker(agent: Agent, ownSide?:Team) {
   const group = new Container({ label: agent.id });
-  const color = colors[agent.team];
+  const color = ownSide ? (agent.team===ownSide?0xb6df7c:0xef8b42) : colors[agent.team];
   const ring = new Graphics()
     .circle(0, 0, 1.45)
     .stroke({ color: 0xffffff, width: 0.22 });
@@ -180,7 +184,7 @@ function marker(agent: Agent, match: boolean) {
     .poly([0.95, -0.53, 2.15, 0, 0.95, 0.53])
     .fill(color);
   const body = new Graphics();
-  if (agent.team === "T") body.roundRect(-1, -1, 2, 2, 0.34);
+  if (!ownSide && agent.team === "T") body.roundRect(-1, -1, 2, 2, 0.34);
   else body.circle(0, 0, 1);
   body.fill(color).stroke({ color: 0x0f1a1d, width: 0.22 });
   const text = label(
@@ -191,8 +195,9 @@ function marker(agent: Agent, match: boolean) {
   );
   text.scale.set(1.52 / 14);
   group.addChild(tip, ring, body, text);
-  if (match) {
-    const nick = label(agent.name, 12, color, "bold");
+  const nick = ownSide ? label(agent.name, 12, 0xffffff, "bold") : null;
+  if (nick) {
+    nick.style.stroke={color:0x101216,width:2};
     nick.scale.set(0.075);
     nick.position.y = 1.9;
     group.addChild(nick);
@@ -201,7 +206,7 @@ function marker(agent: Agent, match: boolean) {
   flash.position.set(0, -2.35);
   flash.visible = false;
   group.addChild(flash);
-  return { group, tip, ring, flash, intensity: -1, team:agent.team };
+  return { group, tip, ring, nick, flash, intensity: -1, team:agent.team };
 }
 
 function setupScene(
@@ -252,7 +257,7 @@ function setupScene(
       const id = match.bomb?.carrier;
       const carrier = id && playback.has(id) ? playback.sample(id, now) : undefined;
       items.begin();
-      drawEvents(effects, match, tick, items, carrier, z => onLayer(current.frame.world.map, current.layer || "default", z), world.scale.x);
+      drawEvents(effects, match, tick, items, carrier, z => onLayer(current.frame.world.map, current.layer || "default", z), world.scale.x,current.showGrenades!==false);
       items.end();
       changed = true;
     }
@@ -309,13 +314,15 @@ function setupScene(
       for (const a of next.frame.world.agents) {
         let m = markers.get(a.id);
         if (!m) {
-          m = marker(a, !!next.frame.world.match);
+          const match=next.frame.world.match;
+          m = marker(a, match?.clubs.find(t=>t.id===match.coachTeamId)?.side);
           markers.set(a.id, m);
           players.addChild(m.group);
           const scale = fit * zoom;
           m.group.scale.set(limit(4.5 * scale, 6.3, 13) / scale);
           dirty = true;
         }
+        if (m.nick && m.nick.visible!==(next.showNames!==false)) {m.nick.visible=next.showNames!==false;dirty=true;}
         const strength = a.alive === false ? 0 : (a.flashLevel ?? 0);
         if (m.intensity !== strength) {
           m.intensity = strength;
@@ -611,22 +618,7 @@ export default function Radar(input: Props) {
       if (initialized) app.destroy(true, { children: true });
     };
   }, []);
-  return (
-    <div className="sim-radar">
-      <div
-        className="sim-radar-viewport"
-        ref={hostRef}
-        data-testid="radar"
-        tabIndex={0}
-        role="region"
-        aria-label="Тактическая карта. Перемещение стрелками, масштаб клавишами плюс и минус, центрирование клавишей Home."
-      />
-      {error && (
-        <div className="sim-radar-error" role="alert">
-          Браузеру не удалось отобразить карту. Обновите страницу или откройте
-          её в современном браузере.
-        </div>
-      )}
+  const controls=(
       <div
         className="sim-radar-tools"
         role="group"
@@ -668,6 +660,24 @@ export default function Radar(input: Props) {
           </svg>
         </CameraButton>
       </div>
+  );
+  return (
+    <div className="sim-radar">
+      <div
+        className="sim-radar-viewport"
+        ref={hostRef}
+        data-testid="radar"
+        tabIndex={0}
+        role="region"
+        aria-label="Тактическая карта. Перемещение стрелками, масштаб клавишами плюс и минус, центрирование клавишей Home."
+      />
+      {error && (
+        <div className="sim-radar-error" role="alert">
+          Браузеру не удалось отобразить карту. Обновите страницу или откройте
+          её в современном браузере.
+        </div>
+      )}
+      {input.controlsHost ? createPortal(controls,input.controlsHost) : controls}
     </div>
   );
 }

@@ -1,0 +1,26 @@
+.workspace{margin:0;width:auto;max-width:none;padding:0;display:block}
+.sidebar{left:0;height:auto;max-height:none}
+.page-content{width:100%}
+.team-logo{width:var(--logo-size);height:var(--logo-size);display:inline-flex;align-items:center;justify-content:center}
+.team-logo>.scene-avatar{width:100%;height:100%;object-fit:contain;border:0;border-radius:0;padding:0;background:transparent!important}
+.portrait>.scene-avatar{width:100%;height:100%;border:0;border-radius:0;background:transparent;object-fit:contain;object-position:center bottom}
+.mx-arena[hidden],.match-data[hidden]{display:none}
+.mx-radar-viewport>.sim-radar,.mx-radar-viewport .sim-radar-viewport{width:100%;height:100%}
+.mx-radar-viewport .sim-radar{position:absolute;inset:0}
+.mx-live-utility .hud-kit,.mx-live-utility .gear-item{display:inline-flex;align-items:center;gap:2px}
+.mx-live-utility .sb-icon{width:15px;height:14px;object-fit:contain}
+.mx-live-weapon>.sb-icon{width:40px}
+.mx-live-player>.scene-avatar{border:0;border-radius:0;background:transparent}
+.mx-live-player>.scene-avatar:not(img){width:44px;height:69px}
+.mx-arena .live-feed{position:absolute;top:6px;right:6px;pointer-events:none}
+.mx-radar .sim-radar{background:#0e1114}
+.mx-radar-top .sim-radar-tools{position:static;height:auto;border:0;background:none;display:flex;align-items:center;gap:4px}
+.mx-radar-top .sim-radar-tools button{width:32px;height:32px;min-height:0;border:0;padding:0;background:transparent;color:var(--text)}
+.mx-radar-top .sim-radar-tools output{color:var(--muted);font:12px Plex,monospace}
+
+.club-profile-meta .scene-flag{display:inline-flex;align-items:center;width:22px;height:15px}
+.club-profile-meta .scene-flag img,.club-profile-meta .scene-flag svg{width:100%;height:100%;object-fit:cover}
+.sidebar-status .connection{display:inline-flex;align-items:center;gap:5px}
+.sidebar-status .connection.up i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--green)}
+
+.screen-enter{animation:none}

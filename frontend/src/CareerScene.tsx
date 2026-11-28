@@ -1,3 +1,5 @@
+import {PlayerHero,PlayerOverview,SkillRow,Section} from "./approved/Player";
+import {Tabs as ApprovedTabs} from "./approved/Shared";
 import "./club.css";
 import { lazy, Suspense, useState } from "react";
 import { range, type Knowledge } from "./ScoutingCenter";
@@ -10,7 +12,6 @@ import {
   skillGroups,
   skillLabels,
 } from "./databaseModel";
-import { RoleRatings, Familiarity } from "./SceneProfiles";
 import { Heading, Tabs, Glyph, Dialog, Readiness } from "./GameUI";
 import {
   age,
@@ -358,15 +359,28 @@ export function EntityProfile({
   open,
   profile,
   back,
-  revision=0,
-}: Props & { profile: Profile; back: () => void; revision?:number }) {
+  canTalk = false,
+  navigate,
+  revision = 0,
+}: Props & {
+  profile: Profile;
+  back: () => void;
+  canTalk?: boolean;
+  navigate?: (p: string) => void;
+  revision?: number;
+}) {
   const [tab, setTab] = useState("Обзор");
-  const [skillQuery,setSkillQuery] = useState("");
+  const [skillQuery, setSkillQuery] = useState("");
   const [chosenRole, setRole] = useState("");
   const { group, id } = profile,
     item = scene[group][id];
-  const scouting=useData<Knowledge>(group==="players"?"/api/career/"+c.id+"/scouting/"+encodeURIComponent(id):null,revision);
-  const assessment=scouting.data;
+  const scouting = useData<Knowledge>(
+    group === "players"
+      ? "/api/career/" + c.id + "/scouting/" + encodeURIComponent(id)
+      : null,
+    revision,
+  );
+  const assessment = scouting.data;
   if (!item) return <p role="alert">Запись отсутствует в редакции карьеры.</p>;
   const player = group === "players" ? scene.players[id] : null,
     own = player ? c.roster.find((p) => p.id === id) : null,
@@ -391,7 +405,6 @@ export function EntityProfile({
     team ? s.team === id : orgTeams.some((t) => t.id === s.team),
   );
   const selectedRole = chosenRole || own?.role || "";
-  const rating = own?.ratings[selectedRole];
   if (org)
     return (
       <>
@@ -467,77 +480,200 @@ export function EntityProfile({
       </>
     );
 
+  const Container = player ? "div" : "section";
   return (
-    <>
-      <button className="club-breadcrumb" onClick={back}><Glyph name="arrow-left"/> Назад</button>
-      <header className={"club-profile-hero"+(staff?" club-staff-hero":"")}>
-        <div className="club-profile-portrait"><LineupPortrait id={id} name={item.name} visual={own?.visual || item.visual}/></div>
-        <div className="club-profile-copy"><div className="club-kicker">{player?"Профиль игрока":team?"Профиль команды":"Профиль сотрудника"}</div>
-          <h2>{item.name}</h2><p className="club-fullname">{player?.realName || staff?.realName}</p>
-          <div className="club-profile-meta"><Flag value={item.visual.flag}/>
-            {player?.born && <span>{date(player.born)} · {age(player.born,c.date)} лет</span>}
-            <span>{player ? roles[own?.role || player.role || ""] : team ? teamTypes[team.teamType] : staff?.role}</span>
-            {player?.teams.map(t=><button key={t} className="club-text-link" onClick={()=>open({group:"teams",id:t})}>{scene.teams[t]?.name || t}</button>)}
-            {team && <span>{regions[team.region || ""] || "Регион неизвестен"}</span>}
-          </div>
-        </div>
-        {player && <div className="club-profile-overall"><span>{own?"Ролевой OVR":"Оценка скаута"}</span>
-          <strong>{rating ?? range(assessment?.current)}</strong>
-          {own && <label className="club-filter">Роль для оценки<select aria-label="Роль для оценки OVR" value={selectedRole} onChange={e=>setRole(e.target.value)}>
-            {Object.keys(own.ratings).map(r=><option key={r} value={r}>{roles[r]}</option>)}</select></label>}
-          <small>{own?"Внутренние данные клуба":assessment?.level || "Нет доступной оценки"}</small>
-        </div>}
-      </header>
-      {player && (tab === "Скаутинг" || (!own && tab === "Обзор")) && <section className="surface panel-body"><h2>Знания организации</h2>{scouting.error?<p role="alert">{scouting.error}</p>:assessment?<><p>{assessment.inSquad?"Текущие навыки известны штабу":assessment.level} · Изученность {assessment.score}/100 · наблюдений {assessment.count}</p><p>Оценка потенциала · {range(assessment.potential)}{assessment.last && " · последнее наблюдение "+date(assessment.last)}</p></>:<p>Загрузка оценок…</p>}</section>}
+    <Container className={player ? "club" : undefined}>
+      {player ? (
+        <PlayerHero
+          {...{ c, scene, id, assessment, setRole, back, navigate, canTalk }}
+          role={selectedRole}
+          tab={setTab}
+          team={(id) => open({ group: "teams", id })}
+        />
+      ) : (
+        <>
+          <button className="club-breadcrumb" onClick={back}>
+            <Glyph name="arrow-left" /> Назад
+          </button>
+          <header
+            className={"club-profile-hero" + (staff ? " club-staff-hero" : "")}
+          >
+            <div className="club-profile-portrait">
+              <LineupPortrait
+                id={id}
+                name={item.name}
+                visual={own?.visual || item.visual}
+              />
+            </div>
+            <div className="club-profile-copy">
+              <div className="club-kicker">
+                {player
+                  ? "Профиль игрока"
+                  : team
+                    ? "Профиль команды"
+                    : "Профиль сотрудника"}
+              </div>
+              <h2>{item.name}</h2>
+              <p className="club-fullname">{staff?.realName}</p>
+              <div className="club-profile-meta">
+                <Flag value={item.visual.flag} />
+                <span>{team ? teamTypes[team.teamType] : staff?.role}</span>
+                {team && (
+                  <span>
+                    {regions[team.region || ""] || "Регион неизвестен"}
+                  </span>
+                )}
+              </div>
+            </div>
+          </header>{" "}
+        </>
+      )}
+      {player && tab === "Скаутинг" && (
+        <section className="surface panel-body">
+          <h2>Знания организации</h2>
+          {scouting.error ? (
+            <p role="alert">{scouting.error}</p>
+          ) : assessment ? (
+            <>
+              <p>
+                {assessment.inSquad
+                  ? "Текущие навыки известны штабу"
+                  : assessment.level}{" "}
+                · Изученность {assessment.score}/100 · наблюдений{" "}
+                {assessment.count}
+              </p>
+              <p>
+                Оценка потенциала · {range(assessment.potential)}
+                {assessment.last &&
+                  " · последнее наблюдение " + date(assessment.last)}
+              </p>
+            </>
+          ) : (
+            <p>Загрузка оценок…</p>
+          )}
+        </section>
+      )}
       {player && (
+        <ApprovedTabs
+          items={[
+            "Обзор",
+            "Характеристики · 58",
+            "Развитие",
+            "Статистика",
+            "История",
+            "Достижения",
+            "Скаутинг",
+            "Контракт",
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+      )}
+      {player && ["Обзор", "История", "Достижения"].includes(tab) && (
+        <Suspense fallback={<p role="status">Загружаем профиль…</p>}>
+          <PlayerRecord
+            {...{ c, id, scene, revision, tab }}
+            overview={(maps) => (
+              <PlayerOverview
+                {...{ c, scene, id, assessment, maps }}
+                tab={setTab}
+              />
+            )}
+          />
+        </Suspense>
+      )}
+      {player && tab === "Развитие" && (
+        <Suspense fallback={<p role="status">Загружаем развитие…</p>}>
+          <ProfileDevelopment {...{ c, id, revision }} />
+        </Suspense>
+      )}
+      {team && (
         <Tabs
-          items={["Обзор", "Характеристики · 58", "Развитие", "Статистика", "История", "Достижения", "Скаутинг", "Контракт"]}
+          items={[
+            "Обзор",
+            "Статистика",
+            "VRS",
+            "Календарь и результаты",
+            "История составов",
+            "Достижения",
+          ]}
           value={tab}
           change={setTab}
         />
       )}
-      {player && ["Обзор","История","Достижения"].includes(tab) && <Suspense fallback={<p role="status">Загружаем профиль…</p>}>
-        <PlayerRecord {...{c,id,scene,revision,tab}}/></Suspense>}
-      {player && tab === "Развитие" && <Suspense fallback={<p role="status">Загружаем развитие…</p>}><ProfileDevelopment {...{c,id,revision}}/></Suspense>}
-      {team && <Tabs items={["Обзор","Статистика","VRS","Календарь и результаты","История составов","Достижения"]} value={tab} change={setTab}/>}
-      {team && !["Обзор","Статистика"].includes(tab) && <Suspense fallback={<p role="status">Загружаем историю…</p>}>
-        <TeamRecord {...{c,id,scene,revision,tab}}/></Suspense>}
-      {tab === "Статистика" && (group === "teams" || group === "players") &&
+      {team && !["Обзор", "Статистика"].includes(tab) && (
+        <Suspense fallback={<p role="status">Загружаем историю…</p>}>
+          <TeamRecord {...{ c, id, scene, revision, tab }} />
+        </Suspense>
+      )}
+      {tab === "Статистика" && (group === "teams" || group === "players") && (
         <Suspense fallback={<p role="status">Загружаем статистику…</p>}>
-          <ProfileHistory key={group+id} c={c} scene={scene} group={group} id={id} revision={revision}/>
-        </Suspense>}
+          <ProfileHistory
+            key={group + id}
+            c={c}
+            scene={scene}
+            group={group}
+            id={id}
+            revision={revision}
+          />
+        </Suspense>
+      )}
       {tab === "Характеристики · 58" ? (
-        <><label className="club-filter">Найти характеристику<input type="search" value={skillQuery} onChange={e=>setSkillQuery(e.target.value)}/></label>
-        <div className="attribute-groups">
-          {Object.entries(skillGroups).map(([g, all]) => {
-            const keys = all.filter(k => skillLabels[k].toLocaleLowerCase("ru").includes(skillQuery.trim().toLocaleLowerCase("ru")));
-            return keys.length > 0 && (
-            <section className="surface" key={g}>
-              <div className="panel-head">
-                <h2>{g}</h2>
-                <span className="pill">{keys.length}</span>
-              </div>
-              <div className="attribute-rows">
-                {keys.map((k) => (
-                  <div className="attribute-row" key={k}>
-                    <span>{skillLabels[k]}</span>
-                    <strong
-                      title={
-                        own?.skills[k] === undefined && !assessment?.skills[k]
-                          ? "Нет доступной оценки"
-                          : undefined
-                      }
-                    >
-                      {own?.skills[k] ?? range(assessment?.skills[k])}
-                    </strong>
-                  </div>
-                ))}
-              </div>
-            </section>
-          );})}
-          {!Object.values(skillLabels).some(name=>name.toLocaleLowerCase("ru").includes(skillQuery.trim().toLocaleLowerCase("ru"))) && <p>Характеристик с таким названием нет.</p>}
-        </div></>
-      ) : ["История","Достижения","Развитие","Скаутинг","VRS","Календарь и результаты","История составов"].includes(tab) ? null : tab === "Статистика" && team ? null : tab === "Статистика" ? (
+        <>
+          <div className="club-toolbar">
+            <div>
+              <h2>Полный набор характеристик</h2>
+              <p className="club-muted">
+                58 навыков · шкала 0–100{!own && " · диапазоны наблюдения"}
+              </p>
+            </div>
+            <label className="club-search">
+              <Glyph name="search" />
+              <input
+                aria-label="Найти характеристику"
+                placeholder="Найти характеристику"
+                type="search"
+                value={skillQuery}
+                onChange={(e) => setSkillQuery(e.target.value)}
+              />
+            </label>
+          </div>
+          <div className="club-skill-grid">
+            {Object.entries(skillGroups).map(([group, all]) => {
+              const keys = all.filter((k) =>
+                skillLabels[k]
+                  .toLowerCase()
+                  .includes(skillQuery.trim().toLowerCase()),
+              );
+              return (
+                keys.length > 0 && (
+                  <Section key={group} title={group + " · " + keys.length}>
+                    {keys.map((k) => (
+                      <SkillRow
+                        key={k}
+                        label={skillLabels[k]}
+                        value={own?.skills[k] ?? assessment?.skills[k]}
+                      />
+                    ))}
+                  </Section>
+                )
+              );
+            })}
+          </div>
+          {!Object.values(skillLabels).some((name) =>
+            name.toLowerCase().includes(skillQuery.trim().toLowerCase()),
+          ) && <p>Характеристик с таким названием нет.</p>}
+        </>
+      ) : [
+          "История",
+          "Достижения",
+          "Развитие",
+          "Скаутинг",
+          "VRS",
+          "Календарь и результаты",
+          "История составов",
+        ].includes(tab) ? null : tab === "Статистика" && team ? null : tab ===
+        "Статистика" ? (
         panel(
           "Статистика игрока",
           player?.statistics ? (
@@ -564,65 +700,8 @@ export function EntityProfile({
               : "Условия контракта неизвестны."}
           </p>,
         )
-      ) : (
+      ) : player ? null : (
         <div className="org-grid">
-          {player && (
-            <>
-              {own && (
-                <Familiarity
-                  title="Ключевые характеристики"
-                  names={skillLabels}
-                  values={Object.fromEntries(
-                    [
-                      "aim",
-                      "positioning",
-                      "rifles",
-                      "communication",
-                      "concentration",
-                      "endurance",
-                    ]
-                      .filter((k) => own.skills[k] !== undefined)
-                      .map((k) => [k, own.skills[k]]),
-                  )}
-                />
-              )}
-              {own &&
-                panel(
-                  "Состояние игрока",
-                  <dl className="club-facts">
-                    <div>
-                      <dt>Готовность</dt>
-                      <dd>
-                        <Readiness fatigue={own.fatigue} />
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Мораль</dt>
-                      <dd>{own.morale} / 100</dd>
-                    </div>
-                    <div>
-                      <dt>Форма</dt>
-                      <dd>{own.form} / 100</dd>
-                    </div>
-                  </dl>,
-                )}
-              {panel(
-                "Команды",
-                player.teams.length ? (
-                  player.teams.map((t) => link("teams", t))
-                ) : (
-                  <p className="panel-body">Нет подтверждённой заявки.</p>
-                ),
-              )}
-              {own &&
-                panel(
-                  "Оценки по ролям",
-                  <div className="panel-body">
-                    <RoleRatings values={own.ratings} />
-                  </div>,
-                )}
-            </>
-          )}
           {team && (
             <>
               {panel(
@@ -661,16 +740,49 @@ export function EntityProfile({
       )}
       {staff && (
         <div className="staff-office">
-          {staff.visual.head?.includes("/generated/") && <small>Синтетический портрет · OpenAI ImageGen</small>}
-          {c.office.people[id] && <section className="surface panel-body"><h2>Обязанности и нагрузка</h2>
-            <p>{Object.entries(c.office.owners).filter(([,person])=>person===id).map(([d])=>c.office.duties[d]?.title || d).join(" · ") || "Постоянные обязанности не назначены"}</p>
-            <p>Нагрузка на {date(c.date)} · {c.office.jobs.filter(j=>j.person===id && j.date===c.date).reduce((n,j)=>n+j.cost,0)} / {c.office.people[id].capacity}</p>
-            {c.office.jobs.filter(j=>j.person===id).map((j,i)=><div className="staff-line" key={i}><time>{date(j.date)}</time><strong>{c.office.duties[j.duty]?.title || j.duty}</strong><span>Срок · {date(j.due)}</span></div>)}
-          </section>}
-          {staff.professional ? <StaffSkills p={staff.professional} roles={c.office.roles} groups={c.office.groups}/>
-            : <p className="surface panel-body muted">Оценки компетенций доступны для собственного штаба.</p>}
+          {staff.visual.head?.includes("/generated/") && (
+            <small>Синтетический портрет · OpenAI ImageGen</small>
+          )}
+          {c.office.people[id] && (
+            <section className="surface panel-body">
+              <h2>Обязанности и нагрузка</h2>
+              <p>
+                {Object.entries(c.office.owners)
+                  .filter(([, person]) => person === id)
+                  .map(([d]) => c.office.duties[d]?.title || d)
+                  .join(" · ") || "Постоянные обязанности не назначены"}
+              </p>
+              <p>
+                Нагрузка на {date(c.date)} ·{" "}
+                {c.office.jobs
+                  .filter((j) => j.person === id && j.date === c.date)
+                  .reduce((n, j) => n + j.cost, 0)}{" "}
+                / {c.office.people[id].capacity}
+              </p>
+              {c.office.jobs
+                .filter((j) => j.person === id)
+                .map((j, i) => (
+                  <div className="staff-line" key={i}>
+                    <time>{date(j.date)}</time>
+                    <strong>{c.office.duties[j.duty]?.title || j.duty}</strong>
+                    <span>Срок · {date(j.due)}</span>
+                  </div>
+                ))}
+            </section>
+          )}
+          {staff.professional ? (
+            <StaffSkills
+              p={staff.professional}
+              roles={c.office.roles}
+              groups={c.office.groups}
+            />
+          ) : (
+            <p className="surface panel-body muted">
+              Оценки компетенций доступны для собственного штаба.
+            </p>
+          )}
         </div>
       )}
-    </>
+    </Container>
   );
 }

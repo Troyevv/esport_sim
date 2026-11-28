@@ -81,6 +81,7 @@ if (process.env.ESPORT_CS2_QA) {
       "data-ready",
       "true",
     );
+    await page.locator(".mx-match-tabs").getByRole("button",{name:"Статистика",exact:true}).click();
     await page
       .getByText("Статистика игроков за серию", { exact: true })
       .click();

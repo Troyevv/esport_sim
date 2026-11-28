@@ -31,7 +31,7 @@ function Summary({result, name}: {result: Result; name: string}) {
     <small>ADR и KAST учитывают только карты с записанным показателем.</small></article>;
 }
 
-export function PlayerRecord({c,id,scene,revision,tab}: Omit<Props,"group"> & {tab:string}) {
+export function PlayerRecord({c,id,scene,revision,tab,overview}: Omit<Props,"group"> & {tab:string;overview?:(maps:{key:string;name:string;impact:number|null}[])=>React.ReactNode}) {
   const response = useData<Result>("/api/career/"+c.id+"/performance/players/"+encodeURIComponent(id),revision);
   const [selected,setSelected] = useState("");
   const fixture = c.history.find(f => f.id === selected);
@@ -44,10 +44,10 @@ export function PlayerRecord({c,id,scene,revision,tab}: Omit<Props,"group"> & {t
     const ranked = recent.filter(r => r.impact != null);
     const rounds = ranked.reduce((n,r) => n+r.rounds,0);
     const impact = rounds ? (ranked.reduce((n,r) => n+r.impact!*r.rounds,0)/rounds).toFixed(2) : "—";
-    return <div className="club-roster-summary">{[
+    return <><div className="club-roster-summary">{[
       ["Impact",impact,"Среднее по раундам · карт "+ranked.length],["ADR",rate(recent,"damage"),"Завершённых карт "+recent.length],
       ["Форма",own?.form ?? "—","Оценка штаба"],["Готовность",own ? (100-own.fatigue)+"%" : "—","Оценка штаба"]
-    ].map(([label,value,note])=><div className="stat" key={label}><span>{label}</span><strong>{value}</strong><small>{note}</small></div>)}</div>;
+    ].map(([label,value,note])=><div className="stat" key={label}><span>{label}</span><strong>{value}</strong><small>{note}</small></div>)}</div>{overview?.(recent.map(r=>({key:r.fixture+"/"+r.index,name:labelMap(r.mapId),impact:r.impact})))}</>;
   }
   const awards = tab === "Достижения";
   const entries = rows.filter(r => !awards || r.mapMvp === id || r.seriesMvp === id);

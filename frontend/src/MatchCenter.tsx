@@ -1,3 +1,6 @@
+import {Badge,Button,Icon,Tabs as ApprovedTabs} from "./approved/Shared";
+import {Portrait,TeamLogo} from "./approved/Identity";
+import "./approved/Match.css";
 import TimeoutRoom, {type Room} from "./TimeoutRoom";
 import { SeriesScore } from "./SeriesCenter";
 import { useState } from "react";
@@ -7,7 +10,7 @@ import type { Frame, View } from "./session";
 import type { RadarPlayback } from "./playback";
 import "./match.css";
 import "./arena.css";
-import { Avatar, Identity, type Visual } from "./SceneIdentity";
+import { LineupPortrait, Identity, type Visual } from "./SceneIdentity";
 import { itemLabel } from "./scorebotIcons";
 import { Gear, ItemIcon, WeaponSlots } from "./MatchEquipment";
 import { RoleRatings } from "./SceneProfiles";
@@ -128,7 +131,7 @@ const phases: Record<string, string> = {
   timeout: "Тактический тайм-аут",
   finished: "Матч завершён",
 };
-const tabs = ["Составы", "Статистика", "Раунды", "Журнал"] as const;
+const tabs = ["Радар","Составы", "Статистика", "Раунды", "Журнал"] as const;
 const clock = (ticks: number) => {
   const seconds = Math.ceil(ticks / 10);
   return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
@@ -158,85 +161,95 @@ function RosterPanel({
   const { match: m, agents } = frame.world;
   const players = m!.stats.filter((row) => row.teamId === club.id);
   return (
-    <section
-      className="hud-team"
+    <div
+      className={
+        "mx-live-roster " + (club.id === m!.coachTeamId ? "own" : "rival")
+      }
       data-team={club.id}
       data-side={club.side}
       aria-label={"Пятёрка · " + club.name}
     >
-      <h3>
-        <span>{club.name}</span>
-        <small>
-          {club.side}
-          {club.id === m!.coachTeamId &&
-            m!.teamRating != null &&
-            " · OVR " + m!.teamRating}
-        </small>
-      </h3>
+      <div
+        className="mx-roster-title"
+        title={
+          club.id === m!.coachTeamId && m!.teamRating != null
+            ? "OVR " + m!.teamRating
+            : undefined
+        }
+      >
+        <TeamLogo name={club.name} visual={club.visual} size={25} />
+        <strong>{club.name}</strong>
+        <small>{club.side}</small>
+      </div>
       {players.map((row) => {
-        const a = agents.find((p) => p.id === row.id);
-        const dead =
-          a?.alive === false || m!.kills.some((k) => k.target === row.id);
-        const hp = dead ? 0 : a?.hp;
+        const a = agents.find((p) => p.id === row.id),
+          dead =
+            a?.alive === false || m!.kills.some((k) => k.target === row.id);
+        const hp = dead ? 0 : a?.hp,
+          known = a?.equipmentValue !== undefined;
         return (
           <button
             key={row.id}
-            className="player-card"
+            className={
+              "mx-live-player" +
+              (dead ? " dead" : "") +
+              (selected === row.id ? " selected" : "") +
+              (!known ? " mx-limited-player" : "")
+            }
             data-player={row.id}
-            data-dead={dead}
             aria-pressed={selected === row.id}
-            disabled={!a}
             onClick={() => select(row.id)}
           >
-            <span className="hud-head">
-              <Avatar name={row.name} {...row.visual} />
-              <span>
-                <strong>{row.name}</strong>
-                <small>{row.role}</small>
-              </span>
-              <b className="hud-hp">
-                {hp ?? "—"}
-                <small>HP</small>
-              </b>
-            </span>
-            <span
-              className="hud-health"
-              role="meter"
-              aria-label={"Здоровье · " + row.name}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={hp}
-            >
-              <i style={{ width: (hp ?? 0) + "%" }} />
-            </span>
-            <span className="hud-loadout">
-              <WeaponSlots a={a} dead={dead} />
-              <span>{a?.cash !== undefined ? money(a.cash) : "—"}</span>
-            </span>
-            <Gear a={a} dead={dead} carrier={m!.bomb?.carrier === row.id} />
-            <span className="hud-figures">
-              <span title="Убийства / смерти / передачи">
-                K/D/A{" "}
-                <b>
-                  {row.k}/{row.d}/{row.a}
-                </b>
-              </span>
-              <span>
-                ADR <b>{Math.round(row.damage / m!.round)}</b>
-              </span>
-              <span title="Стоимость экипировки">
-                Инв.{" "}
-                <b>
-                  {a?.equipmentValue !== undefined
-                    ? money(a.equipmentValue)
-                    : "—"}
-                </b>
-              </span>
-            </span>
+            <LineupPortrait
+              id={a?.playerId || row.id}
+              name={row.name}
+              visual={row.visual || {}}
+            />
+            <div className="mx-live-player-data">
+              <strong>{row.name}</strong>
+              <div className="mx-live-weapon">
+                {a?.weapon ? (
+                  <ItemIcon name={a.weapon} side={a.team} />
+                ) : (
+                  <span className="mx-unknown-weapon">Оружие ?</span>
+                )}
+                <span>{dead ? "Выбыл" : hp != null ? hp + " HP" : "HP ?"}</span>
+              </div>
+              <div
+                className={"mx-hp" + (hp == null ? " unknown" : "")}
+                role={hp == null ? "img" : "meter"}
+                aria-valuenow={hp}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={"Здоровье · " + row.name}
+              >
+                {hp != null && <i style={{ width: hp + "%" }} />}
+              </div>
+              {known ? (
+                <div className="mx-live-utility">
+                  <Gear
+                    a={a}
+                    dead={dead}
+                    carrier={m!.bomb?.carrier === row.id}
+                  />
+                </div>
+              ) : (
+                <div className="mx-knowledge-hint">
+                  {dead ? "Устранение подтверждено" : "Экипировка неизвестна"}
+                </div>
+              )}
+              <small>
+                {a?.cash != null ? money(a.cash) : "Экономика неизвестна"}
+              </small>
+            </div>
+            <b className="mx-kd">
+              <span>{row.k}</span>
+              <small>{row.d}</small>
+            </b>
           </button>
         );
       })}
-    </section>
+    </div>
   );
 }
 
@@ -251,13 +264,23 @@ export default function MatchCenter({
 }: Props) {
   const world = frame.world,
     m = world.match!;
-  const [tab, setTab] = useState<(typeof tabs)[number]>("Статистика");
-  const [pane, setPane] = useState(0);
-  const [display,setDisplay] = useState<"Трансляция"|"Тренерский обзор">("Трансляция");
-  const [selected, select] = useState<string | null>(null);
+  const [tab, setTab] = useState<(typeof tabs)[number]>("Радар");
+  const [preparation, setPreparation] = useState("План на карту");
+  const [focus, setFocus] = useState(false);
+  const [showNames, setShowNames] = useState(true),
+    [showGrenades, setShowGrenades] = useState(true);
+  const [cameraControls, setCameraControls] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const [display, setDisplay] = useState<"Трансляция" | "Тренерский обзор">(
+    "Трансляция",
+  );
+  const [selected, select] = useState<string | null>(
+    () => m.stats.find((row) => row.teamId === m.coachTeamId)?.id ?? null,
+  );
   const [seed, setSeed] = useState(String(world.seed));
   const [nextCall, setNextCall] = useState(m.calls[0]);
-  const utilityStats = m.stats.find(row => row.id === selected);
+  const utilityStats = m.stats.find((row) => row.id === selected);
   const selectedAgent = world.agents.find((a) => a.id === selected);
   const name = (id: string) => m.stats.find((p) => p.id === id)?.name ?? id;
   const finished = m.phase === "finished",
@@ -271,10 +294,7 @@ export default function MatchCenter({
       club={club}
       frame={frame}
       selected={selected}
-      select={(id) => {
-        select(id);
-        setTab("Составы");
-      }}
+      select={select}
     />
   );
   const played = new Map<
@@ -291,52 +311,497 @@ export default function MatchCenter({
       played.set(key, entry);
     }
   }
-  if (m.room) return <article className="match-center"><TimeoutRoom key={m.round} match={m} map={world.map.name}
-    enabled={enabled} saved={frame.hasSave} act={act} openBoard={openBoard}/></article>;
-  const awayBreak=!!m.breakOwner && !timeout;
+  if (m.room)
+    return (
+      <article className="match-center">
+        <TimeoutRoom
+          key={m.round}
+          match={m}
+          map={world.map.name}
+          enabled={enabled}
+          saved={frame.hasSave}
+          act={act}
+          openBoard={openBoard}
+        />
+      </article>
+    );
+  const awayBreak = !!m.breakOwner && !timeout;
+  const ser = world.series;
+  const scoreTeam = (club: MatchView["clubs"][number], rival = false) => {
+    const badge = <TeamLogo name={club.name} visual={club.visual} size={48} />;
+    return (
+      <div
+        data-team={club.id}
+        data-side={club.side}
+        className={"mx-score-team " + (rival ? "rival" : "own")}
+      >
+        {rival ? <b>{club.score}</b> : badge}
+        <div>
+          <strong>{club.name}</strong>
+          <small>
+            {club.side} · {rival ? "Соперник" : "Команда тренера"}
+          </small>
+        </div>
+        {rival ? badge : <b>{club.score}</b>}
+      </div>
+    );
+  };
+  const tabItems =
+    display === "Трансляция"
+      ? ["Радар", "Статистика", "Раунды"]
+      : Array.from(tabs);
   return (
-    <article className={"match-center mx-match-screen "+(display==="Трансляция"?"mx-broadcast":"mx-coach-view")}>
-      {world.series?.stage !== "finished" && <><header className="mx-stage-header"><div className="mx-stage-title"><span>МАТЧ-ЦЕНТР</span><h1>{finished?"Итоги карты":m.pregame?"Подготовка карты":"Прямой эфир"}</h1></div>
-        <div className="mx-view-switch" aria-label="Режим матч-центра"><div>{(["Трансляция","Тренерский обзор"] as const).map(v=>
-          <button key={v} aria-pressed={display===v} onClick={()=>setDisplay(v)}>{v}</button>)}</div></div>
-        <button onClick={openBoard}>Редактор тактик</button>
-      </header>
-      <section className="scoreboard mx-broadcast-score" aria-label="Счёт матча">
-        <div className="mx-score-event"><span>{world.series?.tournament || (frame.careerId?"Встреча календаря":"Выставочный матч")}</span>
-          {m.source && m.source.id!=="depo-exhibition" && <small>Составы из базы · ред. {m.source.revision}</small>}
-          <span>BO{world.series?.bestOf || 1} {world.series && " · Серия "+world.series.teams.map(t=>world.series!.score[t]).join(" : ")}</span></div>
-        {m.clubs.map((club,i)=><div key={club.id} data-team={club.id} data-side={club.side} className={"mx-score-team "+(i?"rival":"own")}>
-          <Avatar name={club.name} club {...club.visual}/><div><strong>{club.name}</strong><small>{club.side} · {club.id===coach.id?"Пятёрка тренера":"Соперник"}</small></div><b>{club.score}</b></div>)}
-        <div className="round-clock mx-round-clock" data-planted={m.phase==="planted"}><small>{world.map.name} · РАУНД {m.round}</small>
-          <b>{finished?"ФИНАЛ":timeout?"ПАУЗА":m.phase==="result"?"ИТОГ":clock(m.clock)}</b>
-          <span>{world.series && finished ? "Карта завершена" : phases[m.phase]}</span></div>
-      </section>
-      </>}
-      {world.series && <SeriesScore frame={frame} enabled={enabled} act={act}/>}
-      {m.phase==="planted" && <div className="arena-event">C4 установлена{m.bomb?.site && " · "+m.bomb.site}</div>}
-      {m.phase==="result" && m.history.length>0 && <div className="arena-event">{clubName(m.history.at(-1)!.winnerTeamId)} · {m.history.at(-1)!.reason}</div>}
-      {m.phase==="freeze" && m.round>1 && m.history.at(-1)?.side && (() => {
-        const previous=m.history.at(-1)!;
-        const winner=m.clubs.find(c=>c.id===previous.winnerTeamId);
-        return winner && winner.side!==previous.side ? <div className="arena-event">Смена сторон · {coach.name} начинает за {coach.side}</div> : null;
-      })()}
-      {world.view==="full" && ["live","planted"].includes(m.phase) && m.clubs.map(club=>{
-        const alive=world.agents.filter(a=>a.team===club.side && a.alive);
-        const opponents=world.agents.filter(a=>a.team!==club.side && a.alive).length;
-        return alive.length===1 && opponents>1 ? <div className="arena-event" key={club.id}>Клатч · {name(alive[0].id)} · 1 против {opponents}</div> : null;
-      })}
-      {awayBreak && <p className="match-result">{clubName(m.breakOwner!)} · Тактический перерыв · {clock(m.clock)}</p>}
-      {finished && (
+    <article
+      className={
+        "mx-root mx-match-screen " +
+        (display === "Трансляция" ? "mx-broadcast" : "mx-coach-view") +
+        (focus ? " mx-focus" : "") +
+        (tab === "Радар" ? " mx-radar-active" : "") +
+        (m.pregame ? " mx-preparing" : "")
+      }
+    >
+      {ser?.stage !== "finished" && (
+        <>
+          <header className="mx-stage-header">
+            <div className="mx-stage-title">
+              <span>МАТЧ-ЦЕНТР</span>
+              <h1>
+                {finished
+                  ? "Итоги карты"
+                  : m.pregame
+                    ? "Подготовка карты"
+                    : "Прямой эфир"}
+              </h1>
+            </div>
+            <div className="mx-view-switch">
+              <div>
+                {(["Трансляция", "Тренерский обзор"] as const).map((v) => (
+                  <button
+                    key={v}
+                    aria-pressed={display === v}
+                    className={display === v ? "active" : ""}
+                    onClick={() => {
+                      setDisplay(v);
+                      if (
+                        v === "Трансляция" &&
+                        (tab === "Журнал" || tab === "Составы")
+                      )
+                        setTab("Радар");
+                    }}
+                  >
+                    <Icon
+                      name={v === "Трансляция" ? "eye" : "tactic"}
+                      size={17}
+                    />
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mx-stage-actions">
+              <button
+                className="mx-arena-toggle"
+                aria-pressed={focus}
+                onClick={() => {
+                  setTab("Радар");
+                  setFocus(!focus);
+                }}
+              >
+                <Icon name={focus ? "close" : "tactic"} size={19} />
+                <span>{focus ? "Выйти" : "Арена"}</span>
+              </button>
+              <details className="mx-match-options">
+                <summary>Эпизод</summary>
+                <div>
+                  <Button disabled={!enabled} onClick={() => act("save")}>
+                    Сохранить эпизод
+                  </Button>
+                  <Button
+                    disabled={!enabled || !frame.hasSave}
+                    onClick={() => act("load")}
+                  >
+                    Загрузить эпизод
+                  </Button>
+                  <Button onClick={openBoard}>Редактор тактик</Button>
+                </div>
+              </details>
+            </div>
+          </header>
+          <section className="mx-broadcast-score" aria-label="Счёт матча">
+            <div className="mx-score-event">
+              <span>
+                {ser?.tournament ||
+                  (frame.careerId ? "Встреча календаря" : "Выставочная серия")}
+              </span>
+              <span>
+                BO{ser?.bestOf || 1}
+                {ser && (
+                  <b> · СЕРИЯ {ser.teams.map((t) => ser.score[t]).join(":")}</b>
+                )}
+              </span>
+              <span>
+                {world.view === "full"
+                  ? "Режим наблюдателя"
+                  : "Командная проекция"}
+              </span>
+            </div>
+            {scoreTeam(coach)}
+            <div className="mx-round-clock">
+              <small>
+                {world.map.name} · R{m.round}
+              </small>
+              <strong>
+                {finished
+                  ? "ФИНАЛ"
+                  : timeout
+                    ? "ПАУЗА"
+                    : m.phase === "result"
+                      ? "ИТОГ"
+                      : clock(m.clock)}
+              </strong>
+              <span>
+                {!frame.running && m.phase === "live"
+                  ? "Пауза просмотра"
+                  : phases[m.phase]}
+              </span>
+            </div>
+            {scoreTeam(opponent, true)}
+          </section>
+          <div className="mx-series-strip">
+            {ser ? (
+              ser.order.map((v, i) => (
+                <span
+                  key={v.map}
+                  className={ser.results.length === i ? "active" : ""}
+                >
+                  <b>{ser.names[v.map]}</b>
+                  {ser.results[i] && (
+                    <strong>
+                      {ser.teams.map((t) => ser.results[i].score[t]).join(":")}
+                    </strong>
+                  )}
+                </span>
+              ))
+            ) : (
+              <span className="active">
+                <b>{world.map.name}</b>
+              </span>
+            )}
+            <b>Лимит перерывов · {m.timeoutLimit}</b>
+          </div>
+        </>
+      )}
+      {ser && (finished || ser.stage === "finished") && (
+        <SeriesScore frame={frame} enabled={enabled} act={act} />
+      )}
+      {m.phase === "planted" && (
+        <div className="arena-event">
+          C4 установлена{m.bomb?.site && " · " + m.bomb.site}
+        </div>
+      )}
+      {m.phase === "result" && m.history.length > 0 && (
+        <div className="arena-event">
+          {clubName(m.history.at(-1)!.winnerTeamId)} ·{" "}
+          {m.history.at(-1)!.reason}
+        </div>
+      )}
+      {m.phase === "freeze" &&
+        m.round > 1 &&
+        m.history.at(-1)?.side &&
+        (() => {
+          const previous = m.history.at(-1)!;
+          const winner = m.clubs.find((c) => c.id === previous.winnerTeamId);
+          return winner && winner.side !== previous.side ? (
+            <div className="arena-event">
+              Смена сторон · {coach.name} начинает за {coach.side}
+            </div>
+          ) : null;
+        })()}
+      {world.view === "full" &&
+        ["live", "planted"].includes(m.phase) &&
+        m.clubs.map((club) => {
+          const alive = world.agents.filter(
+            (a) => a.team === club.side && a.alive,
+          );
+          const opponents = world.agents.filter(
+            (a) => a.team !== club.side && a.alive,
+          ).length;
+          return alive.length === 1 && opponents > 1 ? (
+            <div className="arena-event" key={club.id}>
+              Клатч · {name(alive[0].id)} · 1 против {opponents}
+            </div>
+          ) : null;
+        })}
+      {awayBreak && (
         <p className="match-result">
-          Победитель {world.series ? "карты" : "матча"} — <strong>{clubName(m.winnerTeamId!)}</strong>
-          {m.award && <> · MVP карты <strong>{m.award.name}</strong></>}
+          {clubName(m.breakOwner!)} · Тактический перерыв · {clock(m.clock)}
         </p>
       )}
+      {finished && (
+        <p className="match-result">
+          Победитель {world.series ? "карты" : "матча"} —{" "}
+          <strong>{clubName(m.winnerTeamId!)}</strong>
+          {m.award && (
+            <>
+              {" "}
+              · MVP карты <strong>{m.award.name}</strong>
+            </>
+          )}
+        </p>
+      )}
+      {m.pregame && !finished && (
+        <section className="mx-pregame">
+          <div>
+            <Badge tone="orange">
+              До начала карты · {m.clubs.map((c) => c.score).join(":")}
+            </Badge>
+            <h2>
+              {world.map.name.toUpperCase()} · СТАРТ ЗА {coach.side}
+            </h2>
+            <p>Проверьте пятёрку и выберите план до первого раунда.</p>
+            <div className="mx-button-row">
+              <Button
+                variant="primary"
+                disabled={!enabled || frame.running}
+                onClick={() => act("start")}
+              >
+                <Icon name="play" />
+                Начать первый раунд
+              </Button>
+            </div>
+          </div>
+          <div>
+            <ApprovedTabs
+              items={["План на карту", "Пятёрка", "Закупка"]}
+              value={preparation}
+              onChange={setPreparation}
+            />
+            {preparation === "План на карту" ? (
+              <>
+                {m.prepared.length ? (
+                  m.prepared.map((p) => (
+                    <p key={p.side + p.buy}>
+                      {p.side} · {p.name} · в{p.revision}
+                    </p>
+                  ))
+                ) : (
+                  <p>Готовый план на эту карту пока не назначен.</p>
+                )}
+                {!ser?.spectator && (
+                  <Button onClick={openBoard}>Выбрать тактику</Button>
+                )}
+              </>
+            ) : preparation === "Пятёрка" ? (
+              <p>
+                {m.stats
+                  .filter((p) => p.teamId === coach.id)
+                  .map((p) => p.name)
+                  .join(" · ")}
+              </p>
+            ) : (
+              <p>
+                {m.nextBuy || "Закупку определяет капитан"} · {coach.side}
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+      <div className="mx-playback">
+        <div className="mx-button-row">
+          <Button
+            variant="primary"
+            aria-label={frame.running ? "Пауза просмотра" : "Запустить"}
+            disabled={!enabled || finished || timeout}
+            onClick={() => act(frame.running ? "pause" : "start")}
+          >
+            <Icon name={frame.running ? "pause" : "play"} size={17} />
+            {frame.running ? "Пауза" : "Смотреть"}
+          </Button>
+          <div className="mx-speed" aria-label="Скорость просмотра">
+            {[1, 2, 4, 8, 128].map((n) => (
+              <button
+                key={n}
+                disabled={!enabled}
+                className={frame.speed === n ? "active" : ""}
+                aria-pressed={frame.speed === n}
+                onClick={() => act("speed", n)}
+              >
+                {n === 128 ? "Быстро" : n + "×"}
+              </button>
+            ))}
+          </div>
+        </div>
+        <span className="mx-permission-note">
+          {awayBreak
+            ? "Перерыв соперника"
+            : m.pending
+              ? "Запрос ожидает границы раунда"
+              : m.pregame
+                ? "Решения доступны до старта карты"
+                : "Управление планом — в свой перерыв"}
+        </span>
+        <Button
+          className="mx-timeout-request"
+          disabled={
+            !enabled ||
+            finished ||
+            awayBreak ||
+            timeout ||
+            m.pending ||
+            m.remaining === 0 ||
+            ser?.spectator
+          }
+          onClick={() => act("timeout")}
+        >
+          {m.pending ? "Тайм-аут запрошен" : "Тайм-аут"} · {m.remaining}/
+          {m.timeoutLimit}
+        </Button>
+      </div>
+      <div className="mx-match-tabs">
+        <ApprovedTabs
+          items={tabItems}
+          value={tab}
+          onChange={(v) => setTab(v as typeof tab)}
+        />
+        <select
+          aria-label="Режим обзора"
+          value={world.view}
+          onChange={(e) => {
+            select(null);
+            setView(e.target.value as View);
+          }}
+        >
+          <option value="full">Полная карта · анализ</option>
+          <option value="T">Видимость T</option>
+          <option value="CT">Видимость CT</option>
+        </select>
+      </div>
+      <div className="mx-arena" hidden={tab !== "Радар"}>
+        {roster(coach)}
+        <div className="mx-center-radar">
+          <section className="mx-radar">
+            <div className="mx-radar-top">
+              <strong>{world.map.name.toUpperCase()}</strong>
+              <div className="mx-button-row" ref={setCameraControls} />
+            </div>
+            {m.phase === "planted" && (
+              <div className="hud-bomb">
+                <strong>
+                  <ItemIcon name="C4" /> · {m.bomb?.site || "Установлена"}
+                </strong>
+                <span>
+                  {m.action?.kind === "defuse" ? "Обезвреживание" : "До взрыва"}{" "}
+                  · {clock(m.clock)}
+                </span>
+                <progress
+                  aria-label="Время до взрыва"
+                  value={m.clock}
+                  max={400}
+                />
+              </div>
+            )}
+            <div className="radar-broadcast mx-radar-viewport">
+              <Radar
+                controlsHost={cameraControls}
+                showNames={showNames}
+                showGrenades={showGrenades}
+                frame={frame}
+                playback={playback}
+                connected={connected}
+                selected={selectedAgent?.id ?? null}
+                onSelect={select}
+              />
+              <section className="live-feed" aria-label="Лента убийств">
+                {m.kills
+                  .slice()
+                  .reverse()
+                  .map((k) => (
+                    <div key={k.id} className="kill-row" data-kill={k.id}>
+                      <span className="kill-attacker">
+                        {k.weapon !== "C4" && <b>{name(k.player)}</b>}
+                        {k.assists?.length > 0 && (
+                          <span className="assist">
+                            <ItemIcon name="Помощь" />
+                            {k.assists.map(name).join(", ")}
+                          </span>
+                        )}
+                      </span>
+                      <span className="kill-method">
+                        <ItemIcon
+                          name={k.weapon}
+                          side={m.stats.find((p) => p.id === k.player)?.team}
+                          label={
+                            ["HE", "Огонь"].includes(k.weapon)
+                              ? "Убийство гранатой · " +
+                                itemLabel(
+                                  k.weapon,
+                                  m.stats.find((p) => p.id === k.player)?.team,
+                                )
+                              : undefined
+                          }
+                          className="kill-weapon"
+                        />
+                        {k.head && <ItemIcon name="В голову" />}
+                        {k.opening && (
+                          <abbr
+                            title="Первое убийство раунда"
+                            aria-label="Первое убийство раунда"
+                          >
+                            1K
+                          </abbr>
+                        )}
+                        {k.trade && (
+                          <ItemIcon
+                            name="Размен"
+                            label={"Размен за " + name(k.trade)}
+                          />
+                        )}
+                        {!k.enemy &&
+                          k.weapon !== "C4" &&
+                          (k.player === k.target ? (
+                            <ItemIcon name="Самоустранение" />
+                          ) : (
+                            <abbr
+                              title="Убийство союзника"
+                              aria-label="Убийство союзника"
+                            >
+                              TK
+                            </abbr>
+                          ))}
+                      </span>
+                      <b>{name(k.target)}</b>
+                    </div>
+                  ))}
+              </section>
+            </div>
+            <div className="mx-radar-bottom">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={showNames}
+                  onChange={(e) => setShowNames(e.target.checked)}
+                />{" "}
+                Имена
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={showGrenades}
+                  onChange={(e) => setShowGrenades(e.target.checked)}
+                />{" "}
+                Гранаты
+              </label>
+              <span>Перетаскивание — обзор · два пальца — масштаб</span>
+            </div>
+          </section>
+        </div>
+        {roster(opponent)}
+      </div>
       {rounds > 0 && (
-        <div className="hud-history" aria-label="Последние раунды">
-          <strong>Раунды</strong>
+        <div className="mx-round-timeline" aria-label="Последние раунды">
           {m.history.slice(-12).map((r) => (
             <button
+              className={r.winnerTeamId === coach.id ? "won" : "lost"}
               data-side={r.side}
               key={r.round}
               onClick={() => {
@@ -368,183 +833,93 @@ export default function MatchCenter({
         </div>
       )}
 
-      <section className="hud-controls" aria-label="Управление просмотром">
-        <button
-          className="primary"
-          disabled={!enabled || finished || timeout}
-          onClick={() => act(frame.running ? "pause" : "start")}
-        >
-          {frame.running ? "Пауза просмотра" : "Запустить"}
-        </button>
-        <div className="speed-list">
-          {[1, 2, 4, 8, 128].map((n) => (
-            <button
-              key={n}
-              disabled={!enabled}
-              aria-pressed={frame.speed === n}
-              onClick={() => act("speed", n)}
-            >
-              {n === 128 ? "Быстро" : n + "×"}
-            </button>
-          ))}
-        </div>
-      </section>
-      <nav className="touch-lineup" aria-label="Панель матча">
-        {["Радар", ...m.clubs.map((c) => c.name)].map((label, i) => (
-          <button key={i} aria-pressed={pane === i} onClick={() => setPane(i)}>
-            {label}
-          </button>
-        ))}
-      </nav>
-      <div className="lineups" data-pane={pane}>
-        {roster(m.clubs[0])}
-        <section className="panel hud-map">
-          <div className="maphead">
-            <div className="mapname">
-              <h2>Тактический радар</h2>
+      {tab === "Радар" && (
+        <>
+          <div className="mx-below-radar">
+            <div className="mx-radio-card">
+              <span className="mx-eyebrow">КОМАНДНОЕ РАДИО · {coach.name}</span>
+              <h3>
+                {m.radio?.length
+                  ? name(m.radio[0].player) +
+                    " · " +
+                    (radioStates[m.radio[0].state] || "Обновил статус задачи")
+                  : "Передач пока нет"}
+              </h3>
+              <span>Подтверждённые сообщения пятёрки</span>
+              <Button
+                onClick={() => {
+                  setDisplay("Тренерский обзор");
+                  setTab("Журнал");
+                }}
+              >
+                Журнал матча
+              </Button>
             </div>
-            <select
-              aria-label="Режим обзора"
-              value={world.view}
-              onChange={(e) => {
-                select(null);
-                setView(e.target.value as View);
-              }}
-            >
-              <option value="full">Полная карта · анализ</option>
-              <option value="T">Видимость T</option>
-              <option value="CT">Видимость CT</option>
-            </select>
-          </div>
-          {m.phase === "planted" && (
-            <div className="hud-bomb">
-              <strong>
-                <ItemIcon name="C4" /> · {m.bomb?.site || "Установлена"}
-              </strong>
-              <span>
-                {m.action?.kind === "defuse" ? "Обезвреживание" : "До взрыва"} ·{" "}
-                {clock(m.clock)}
-              </span>
-              <progress
-                aria-label="Время до взрыва"
-                value={m.clock}
-                max={400}
-              />
-            </div>
-          )}
-          <div className="radar-broadcast">
-            <Radar
-              frame={frame}
-              playback={playback}
-              connected={connected}
-              selected={selectedAgent?.id ?? null}
-              onSelect={select}
-            />
-            <section className="live-feed" aria-label="Лента убийств">
-              {m.kills
-                .slice()
-                .reverse()
-                .map((k) => (
-                  <div key={k.id} className="kill-row" data-kill={k.id}>
-                    <span className="kill-attacker">
-                      {k.weapon !== "C4" && <b>{name(k.player)}</b>}
-                      {k.assists?.length > 0 && (
-                        <span className="assist">
-                          <ItemIcon name="Помощь" />
-                          {k.assists.map(name).join(", ")}
-                        </span>
-                      )}
-                    </span>
-                    <span className="kill-method">
-                      <ItemIcon
-                        name={k.weapon}
-                        side={m.stats.find((p) => p.id === k.player)?.team}
-                        label={
-                          ["HE", "Огонь"].includes(k.weapon)
-                            ? "Убийство гранатой · " +
-                              itemLabel(
-                                k.weapon,
-                                m.stats.find((p) => p.id === k.player)?.team,
-                              )
-                            : undefined
-                        }
-                        className="kill-weapon"
-                      />
-                      {k.head && <ItemIcon name="В голову" />}
-                      {k.opening && (
-                        <abbr
-                          title="Первое убийство раунда"
-                          aria-label="Первое убийство раунда"
-                        >
-                          1K
-                        </abbr>
-                      )}
-                      {k.trade && (
-                        <ItemIcon
-                          name="Размен"
-                          label={"Размен за " + name(k.trade)}
-                        />
-                      )}
-                      {!k.enemy &&
-                        k.weapon !== "C4" &&
-                        (k.player === k.target ? (
-                          <ItemIcon name="Самоустранение" />
-                        ) : (
-                          <abbr
-                            title="Убийство союзника"
-                            aria-label="Убийство союзника"
-                          >
-                            TK
-                          </abbr>
-                        ))}
-                    </span>
-                    <b>{name(k.target)}</b>
-                  </div>
-                ))}
-            </section>
-          </div>
-          <div className="match-legend">
-            <span>● CT</span>
-            <span>◆ T</span>
-            <span>
-              <ItemIcon name="C4" /> C4
-            </span>
-            <span>
-              {selectedAgent
-                ? selectedAgent.name + " · " + selectedAgent.status
-                : "Выберите игрока на карте"}
-            </span>
-          </div>
-        </section>
-        {roster(m.clubs[1])}
-      </div>
-      {display==="Тренерский обзор" && <div className="arena-bench">
-        <section className="surface panel-body"><h2>Состояние пятёрки</h2>{Object.entries(m.impressions || {}).map(([id,state])=><p key={id}><strong>{name(id)}</strong> · {state}</p>)}
-          {!Object.keys(m.impressions || {}).length && <p>В этой проекции наблюдения своего штаба недоступны.</p>}</section>
-        <section className="surface panel-body"><h2>Командное радио</h2>{m.radio?.map(r=><p key={r.player+r.channel}><strong>{name(r.player)}</strong> · {radioStates[r.state] || "Обновил статус задачи"} · {clock(r.tick)}</p>)}
-          {!m.radio?.length && <p>Подтверждённых передач пока нет.</p>}</section>
-      </div>}
-      <div className="match-grid">
-        <div className="match-main">
-          <section className="panel match-data">
-            <nav aria-label="Данные матча">
-              {tabs.map((t) => (
-                <button
-                  key={t}
-                  aria-pressed={tab === t}
-                  onClick={() => setTab(t)}
-                >
-                  {t}
-                </button>
-              ))}
-            </nav>
-            {tab === "Составы" && !selectedAgent && (
-              <p className="inventory">
-                Выберите игрока на радаре или в пятёрке команды, чтобы открыть
-                его роль и снаряжение.
+            <div className="mx-current-order">
+              <span className="mx-eyebrow">УСТАНОВКА ТРЕНЕРА</span>
+              <h3>
+                {m.call ||
+                  m.plans[coach.side]?.tactic?.name ||
+                  "Решение капитана"}
+              </h3>
+              <p>
+                {m.pending
+                  ? "Запрос перерыва передан"
+                  : m.pregame
+                    ? "До начала карты доступен выбор тактики"
+                    : "Указания доступны в собственный перерыв"}
               </p>
+            </div>
+          </div>
+        </>
+      )}
+      {display === "Тренерский обзор" && (
+        <div className="arena-bench">
+          <section className="surface panel-body">
+            <h2>Состояние пятёрки</h2>
+            {Object.entries(m.impressions || {}).map(([id, state]) => (
+              <p key={id}>
+                <strong>{name(id)}</strong> · {state}
+              </p>
+            ))}
+            {!Object.keys(m.impressions || {}).length && (
+              <p>В этой проекции наблюдения своего штаба недоступны.</p>
             )}
-            {tab === "Составы" && selectedAgent && (
+          </section>
+          <section className="surface panel-body">
+            <h2>Командное радио</h2>
+            {m.radio?.map((r) => (
+              <p key={r.player + r.channel}>
+                <strong>{name(r.player)}</strong> ·{" "}
+                {radioStates[r.state] || "Обновил статус задачи"} ·{" "}
+                {clock(r.tick)}
+              </p>
+            ))}
+            {!m.radio?.length && <p>Подтверждённых передач пока нет.</p>}
+          </section>
+        </div>
+      )}
+      {(tab === "Радар" || tab === "Составы") && utilityStats && (
+        <div className="mx-player-detail">
+          <Portrait
+            size="large"
+            id={selectedAgent?.playerId || utilityStats.id}
+            name={utilityStats.name}
+            visual={utilityStats.visual}
+          />
+          <div>
+            <Badge
+              tone={utilityStats.teamId === coach.id ? "green" : "neutral"}
+            >
+              {utilityStats.teamId === coach.id
+                ? "Своя команда"
+                : "Публичные наблюдения"}
+            </Badge>
+            <h3>{utilityStats.name}</h3>
+            <p>
+              {utilityStats.role} · {clubName(utilityStats.teamId)}
+            </p>
+            {selectedAgent ? (
               <div className="inventory">
                 <b>{selectedAgent.name}</b> · {selectedAgent.status}
                 {m.roleRatings[selectedAgent.id] && (
@@ -554,12 +929,18 @@ export default function MatchCenter({
                   />
                 )}
                 {utilityStats?.flashesThrown !== undefined && (
-                  <small>Флешки {utilityStats.flashesThrown} · ослеплено противников {utilityStats.enemiesFlashed},
-                    союзников {utilityStats.alliesFlashed}, себя {utilityStats.selfFlashes} ·
-                    зрение противников снижено {((utilityStats.enemyBlindTicks ?? 0) / 10).toFixed(1)} с ·
-                    флеш-ассисты {utilityStats.flashAssists}<br />
-                    Урон HE {utilityStats.heDamage} · огонь {utilityStats.fireDamage} ·
-                    потушено очагов {utilityStats.firesQuenched} · услышано ложных выстрелов {utilityStats.decoyHearings}
+                  <small>
+                    Флешки {utilityStats.flashesThrown} · ослеплено противников{" "}
+                    {utilityStats.enemiesFlashed}, союзников{" "}
+                    {utilityStats.alliesFlashed}, себя{" "}
+                    {utilityStats.selfFlashes} · зрение противников снижено{" "}
+                    {((utilityStats.enemyBlindTicks ?? 0) / 10).toFixed(1)} с ·
+                    флеш-ассисты {utilityStats.flashAssists}
+                    <br />
+                    Урон HE {utilityStats.heDamage} · огонь{" "}
+                    {utilityStats.fireDamage} · потушено очагов{" "}
+                    {utilityStats.firesQuenched} · услышано ложных выстрелов{" "}
+                    {utilityStats.decoyHearings}
                   </small>
                 )}
                 <div className="selected-loadout">
@@ -579,6 +960,23 @@ export default function MatchCenter({
                   )}
                 </div>
               </div>
+            ) : (
+              <p>Инвентарь и состояние игрока в этой проекции неизвестны.</p>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="match-grid">
+        <div className="match-main">
+          <section className="panel match-data" hidden={tab === "Радар"}>
+            {tab === "Статистика" && ser && !finished && (
+              <SeriesScore frame={frame} enabled={enabled} act={act} />
+            )}
+            {tab === "Составы" && !utilityStats && (
+              <p className="inventory">
+                Выберите игрока на радаре или в пятёрке команды, чтобы открыть
+                его роль и снаряжение.
+              </p>
             )}
             {tab === "Статистика" && (
               <div
@@ -739,13 +1137,15 @@ export default function MatchCenter({
                   {p.side} · {p.buy} · {p.name} · в{p.revision}
                 </p>
               ))}
-            {(timeout || m.pregame) && (
-              <button onClick={openBoard}>Выбрать тактику</button>
-            )}
+            {timeout && <button onClick={openBoard}>Выбрать тактику</button>}
             {!timeout ? (
               <button
                 disabled={
-                  !enabled || finished || awayBreak || m.pending || m.remaining === 0
+                  !enabled ||
+                  finished ||
+                  awayBreak ||
+                  m.pending ||
+                  m.remaining === 0
                 }
                 onClick={() => act("timeout")}
               >

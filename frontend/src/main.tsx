@@ -96,7 +96,7 @@ function App() {
   );
   const [database, showDatabase] = useState<false|"editor"|"exhibition"|"appearance">(false);
   const [host, showHost] = useState(false);
-  const [board, showBoard] = useState(false);
+  const [board, showBoard] = useState<boolean | {map:string;side:"CT"|"T"}>(false);
   const [view, setView] = useState<View>("full");
   const [selected, setSelected] = useState<string | null>(null);
   const [seed, setSeed] = useState("42");
@@ -152,6 +152,7 @@ function App() {
   };
   const tactics = board && frame && (
     <TacticEditor
+      initialSetup={typeof board==="object"?board:undefined}
       frame={frame}
       enabled={enabled}
       act={act}
@@ -198,12 +199,12 @@ function App() {
     tactics ||
     (match && (
       <>
-        <button
+        {(!frame?.careerId || !world?.match) && <button
           className="cr-return"
           onClick={() => go(frame?.careerId ? "hub" : "menu")}
         >
           {frame?.careerId ? "← Карьера" : "← Главное меню"}
-        </button>
+        </button>}
         {world?.match?.phase === "finished" && (!world.series || world.series.winner) && frame?.careerId && (
           <button
             className="primary"
@@ -241,6 +242,7 @@ function App() {
             go={go}
             database={async (page="editor") => { if (!frame.careerId || await act("career-lab")) showDatabase(page) }}
             board={() => showBoard(true)}
+            prepareBoard={(map,side)=>showBoard({map,side})}
             status={status}
             settings={settings}
             leaveTool={leaveTool}
@@ -256,7 +258,7 @@ function App() {
             }
           />
         )}
-        {!showManager && tool}
+        {!showManager && (world?.match ? <div className="r571">{tool}</div> : tool)}
         {playingLab && workspace && !match && (
           <button className="cr-return" onClick={() => go("menu")}>
             ← Главное меню

@@ -96,7 +96,7 @@ test("Пакет, поиск, правка, перенос и BO1", async ({ pag
   await page.getByText("Новый сценарий", { exact: true }).click();
   await page.getByRole("button", { name: "Стенд R0", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Тактический радар" }),
+    page.getByTestId("radar"),
   ).toBeVisible();
 });
 

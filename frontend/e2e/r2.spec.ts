@@ -15,7 +15,7 @@ test("доска, жесты, библиотека, спарринг и назн
   };
   await page.goto("/?screen=lab");
   await expect(page.getByTestId("connection")).toContainText("На связи");
-  if (await page.locator(".scoreboard").count()) {
+  if (await page.locator(".mx-broadcast-score").count()) {
     await page.getByText("Новый сценарий", { exact: true }).click();
     await press("Стенд R0");
   }

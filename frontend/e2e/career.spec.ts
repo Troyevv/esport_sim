@@ -42,10 +42,10 @@ test("Карьера от выбора базы до общей сохранён
   await capture("creation");
   await press("Создать карьеру");
   await expect(
-    page.getByRole("heading", { name: "Кабинет менеджера", exact: true }),
+    page.getByRole("heading", { name: /^(Кабинет команды|День матча)$/ }),
   ).toBeVisible();
   await capture("career");
-  const searchTrigger = page.locator(".search-trigger");
+  const searchTrigger = button("Глобальный поиск");
   await searchTrigger.focus();
   await page.keyboard.press("Control+k");
   const search = page.getByRole("dialog", {name:"Глобальный поиск"});
@@ -61,10 +61,10 @@ test("Карьера от выбора базы до общей сохранён
   await capture("roster");
   await press("Действия · ZywOo");
   await press("Открыть профиль");
-  await expect(page.locator(".club-profile-copy h2")).toHaveText("ZywOo");
+  await expect(page.locator(".club-profile-copy h1")).toHaveText("ZywOo");
   await capture("profile");
   await press("Характеристики · 58");
-  await expect(page.locator(".attribute-row")).toHaveCount(58);
+  await expect(page.locator(".club-skill-grid .club-meter-row")).toHaveCount(58);
   await capture("skills");
   await press("Глобальный поиск");
   await page
@@ -116,18 +116,18 @@ test("Карьера от выбора базы до общей сохранён
     }
     await expect(page.locator("canvas").first()).toBeVisible();
     await capture("match");
-    await press("← Карьера");
+    await press("Кабинет");
     await press("Сохранения");
     await page
       .locator(".cr-save")
       .filter({ hasText: "Слот 1" })
       .getByRole("button", { name: "Загрузить" })
       .click();
-    await expect(peer.locator(".cr-time time")).toHaveText("9 мая 2025 г.");
+    await expect(peer.locator(".top-date strong")).toHaveText("9 мая 2025 г.");
     await press("← Главное меню");
     await press("Стенд симуляции");
     await expect(
-      page.getByRole("heading", { name: "Тактический радар" }),
+      page.getByTestId("radar"),
     ).toBeVisible();
   } finally {
     await peer.close();

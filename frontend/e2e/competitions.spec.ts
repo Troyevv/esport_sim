@@ -45,7 +45,7 @@ test("Ноябрьская карьера · отбор, заявка, сохр�
     .selectOption({ label: "SINNERS Esports" });
   await press("Создать карьеру");
   await expect(
-    page.getByRole("heading", { name: "Кабинет менеджера" }),
+    page.getByRole("heading", { name: /^(Кабинет команды|День матча)$/ }),
   ).toBeVisible();
   await press("Соревнования");
   await expect(button("Архив")).toBeVisible();
@@ -79,7 +79,7 @@ test("Ноябрьская карьера · отбор, заявка, сохр�
   await capture("vrs");
   await press("Соревнования");
   await page.getByRole("button", { name: /PGL Major Singapore 2026/ }).click();
-  await press("Сетки");
+  await press("Группы");
   await expect(page.getByText("До начала карьеры").first()).toBeVisible();
   await capture("major");
   await press("Входящие");
@@ -111,6 +111,6 @@ test("Ноябрьская карьера · отбор, заявка, сохр�
   await press("← Главное меню");
   await press("Стенд симуляции");
   await expect(
-    page.getByRole("heading", { name: "Тактический радар" }),
+    page.getByTestId("radar"),
   ).toBeVisible();
 });

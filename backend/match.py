@@ -377,7 +377,7 @@ def project(w, view="full"):
         detail = w["coaches"][w["coachTeamId"]]["support"] >= 55
         bench_view["impressions"] = {a["id"]: coaching.impression(a["mind"], detail) for a in permitted if "mind" in a}
         signals = [dict(player=a["id"], channel=channel, state=signal["state"], tick=signal["tick"])
-                   for a in permitted for channel, signal in a.get("sentFeedback", {}).items()
+                   for a in permitted for channel, signal in (a.get("sentFeedback") or {}).items()
                    if isinstance(signal,dict) and "tick" in signal and "state" in signal]
         bench_view["radio"] = sorted(signals,key=lambda s:s["tick"],reverse=True)[:5]
     completed = {}

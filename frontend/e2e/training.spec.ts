@@ -58,7 +58,7 @@ test("Тренировочная неделя, профиль развития, 
     .selectOption({ label: "Vitality" });
   await press("Создать карьеру");
   await expect(
-    page.getByRole("heading", { name: "Кабинет менеджера" }),
+    page.getByRole("heading", { name: /^(Кабинет команды|День матча)$/ }),
   ).toBeVisible();
   await press("Тренировочный центр");
   await capture("week");

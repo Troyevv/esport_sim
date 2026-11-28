@@ -28,7 +28,7 @@ test("Aurora · приоритет турнира, центр решений и 
     .selectOption({ label: "Aurora Gaming" });
   await press("Создать карьеру");
   await expect(
-    page.getByRole("heading", { name: "Кабинет менеджера" }),
+    page.getByRole("heading", { name: /^(Кабинет команды|День матча)$/ }),
   ).toBeVisible();
   await press("Соревнования");
   await page

@@ -54,7 +54,7 @@ test("Скаутский отдел ведёт досье и сохраняет 
     .selectOption({ label: "Vitality" });
   await press("Создать карьеру");
   await expect(
-    page.getByRole("heading", { name: "Кабинет менеджера" }),
+    page.getByRole("heading", { name: /^(Кабинет команды|День матча)$/ }),
   ).toBeVisible();
   await press("Скаутский отдел");
   await tab("Поиск игроков");
