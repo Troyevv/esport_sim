@@ -435,3 +435,23 @@ test("подтверждённый буфер переживает задерж�
   expect(smallest).toBeGreaterThan(0.02);
   expect(playback.sample("T1", 8000).x).toBe(15 + (tick - 1) * 2);
 });
+
+test("смена скорости сохраняет уже показанный момент полёта гранаты", () => {
+  const playback = new RadarPlayback();
+  for (let tick = 0; tick <= 8; tick++)
+    playback.push(frame(tick, point(tick, 15)), true, tick * 100);
+  const before = playback.displayTick(810);
+  playback.push(frame(8, point(8, 15), { speed: 8 }), true, 810);
+  expect(playback.displayTick(810)).toBeCloseTo(before, 8);
+  const accelerated = frame(16, point(16, 15), { speed: 8 });
+  accelerated.world.motion = {
+    startTick: 8,
+    tracks: { T1: Array.from({ length: 8 }, (_, i) => [8 + i, 15, 0]) },
+  };
+  playback.push(accelerated, true, 900);
+  for (const now of [900, 930, 960, 990, 1020]) {
+    const tick = playback.displayTick(now);
+    expect(tick).toBeGreaterThanOrEqual(before);
+    expect(tick).toBeCloseTo(playback.sample("T1", now).x, 7);
+  }
+});

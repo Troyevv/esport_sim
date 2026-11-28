@@ -106,6 +106,7 @@ function roundCorner(keys: Key[], cursor: number, map: RadarMap) {
 
 export class RadarPlayback {
   private tracks = new Map<string, Track>();
+  private timeline: { at: number; tick: number }[] = [];
   private last?: Frame;
   private online = false;
   private received = 0;
@@ -198,6 +199,12 @@ export class RadarPlayback {
       this.clockAt = now;
       this.rate = 1;
     }
+    // Grenades, shots and player poses share these confirmed presentation times.
+    // A speed command only changes the slope of subsequently received segments.
+    if (!bridge) this.timeline.length = 0;
+    while (this.timeline.length > 1 && this.timeline[1].at <= this.cursor)
+      this.timeline.shift();
+    this.timeline.push({ at: end, tick: world.tick });
     const visible = new Set(world.agents.map((a) => a.id));
     for (const id of this.tracks.keys())
       if (!visible.has(id)) this.tracks.delete(id);
@@ -242,7 +249,11 @@ export class RadarPlayback {
     this.advance(now);
     if (!this.last) return 0;
     if (!this.last.running || !this.online || this.last.speed > 8) return this.last.world.tick;
-    return this.last.world.tick - Math.max(0, this.end - this.cursor) * this.last.speed / 100;
+    while (this.timeline.length > 1 && this.timeline[1].at <= this.cursor)
+      this.timeline.shift();
+    const [a, b] = this.timeline;
+    if (!b || this.cursor <= a.at) return a.tick;
+    return a.tick + (b.tick - a.tick) * (this.cursor - a.at) / (b.at - a.at);
   }
 
   has(id: string) {
