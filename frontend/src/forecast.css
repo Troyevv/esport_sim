@@ -7,3 +7,11 @@
 .forecast-chance meter::-webkit-meter-bar {height:8px;background:#303739;border:0;border-radius:0}
 .forecast-chance meter::-webkit-meter-optimum-value {background:#bfdc90}
 .forecast-chance meter::-moz-meter-bar {background:#bfdc90}
+
+.forecast-timeline {display:grid;gap:10px;margin-block:12px}
+.forecast-update {border-inline-start:2px solid var(--line,#454951);padding-inline:12px}
+.forecast-update header {display:flex;align-items:baseline;gap:6px 16px;flex-wrap:wrap;margin-bottom:6px}
+.forecast-update time,.forecast-reading>span:last-child {color:var(--muted)}
+.forecast-reading {display:grid;align-items:center;grid-template-columns:minmax(0,1fr) minmax(24px,1fr) 6ch 6ch;gap:8px;padding-block:4px;font-variant-numeric:tabular-nums}
+.forecast-reading meter {width:100%;height:10px}
+.forecast-reading strong,.forecast-reading>span:last-child {text-align:end}

@@ -19,7 +19,18 @@ export function ForecastLine({quotes,names,calibration}: {quotes:Quote[];names:R
       <span key={team} style={{flexGrow:line.probability[i]}}/>)}</div>
     <details><summary>Точный счёт BO{line.bestOf}</summary><table className="simple-table"><thead><tr><th>Счёт</th><th>Вероятность</th><th>Коэффициент</th></tr></thead>
       <tbody>{line.scores.map(r=><tr key={r.score.join("-")}><th>{r.score.join(" : ")}</th><td><span className="forecast-chance"><meter aria-label={"Вероятность счёта "+r.score.join(" : ")} min={0} max={1} value={r.probability}/>{percent(r.probability)}</span></td><td>{r.odds.toFixed(2)}</td></tr>)}</tbody></table></details>
-    <details><summary>История линии · {quotes.length}</summary>{quotes.map((q,i)=><p key={i}>{date(q.date)} · {stages[q.stage]}{q.move ? " · ход "+q.move : ""} · {q.odds.map(n=>n.toFixed(2)).join(" / ")}</p>)}</details>
+    <details><summary>История линии · {quotes.length}</summary>
+      <div className="forecast-timeline">{quotes.map((quote,index) => (
+        <article key={index} className="forecast-update">
+          <header><strong>{stages[quote.stage]}{quote.move ? " · ход "+quote.move : ""}</strong><time>{date(quote.date)}</time></header>
+          {quote.teams.map((team,side) => <div className="forecast-reading" key={team}>
+            <span>{names[team] || team}</span>
+            <meter min={0} max={1} value={quote.probability[side]} aria-label={"Шанс на победу · "+(names[team] || team)}/>
+            <strong>{percent(quote.probability[side])}</strong>
+            <span aria-label={"Коэффициент "+quote.odds[side].toFixed(2)}>×{quote.odds[side].toFixed(2)}</span>
+          </div>)}
+        </article>
+      ))}</div></details>
     <details><summary>Модель и выборка</summary><p>Модель учитывает опубликованный VRS, составы, датированные рейтинги, результаты и карты соперников. Для неизвестных карт она усредняет допустимые варианты без повторений. При недостатке наблюдений оценки приближаются к равным. Маржа виртуальной линии {percent(line.margin)}.</p>
       {calibration && <p>Калибровка по последней предматчевой линии · {calibration.count} завершённых встреч · Brier {calibration.brier?.toFixed(3) ?? "—"}. Меньшее значение означает меньшую ошибку вероятности.</p>}</details>
   </section>;
