@@ -328,16 +328,16 @@ function Manager({
       )}
     </button>
   );
-  const query = q.trim().toLowerCase();
+  const searchTerm = q.trim().toLowerCase();
   const matches = search && scene
     ? (Object.keys(groupTitle) as Group[]).flatMap((g) =>
         Object.values(scene[g])
           .filter((r) =>
             (r.name + " " + ("realName" in r ? r.realName || "" : ""))
               .toLowerCase()
-              .includes(query),
+              .includes(searchTerm),
           )
-          .sort((a,b) => Number(b.name.toLowerCase() === query) - Number(a.name.toLowerCase() === query))
+          .sort((a,b) => Number(b.name.toLowerCase() === searchTerm) - Number(a.name.toLowerCase() === searchTerm))
           .slice(0, 6)
           .map((r) => ({ group: g, id: r.id, name: r.name, visual: r.visual })),
       )
