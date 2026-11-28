@@ -14,16 +14,16 @@ const { chromium } = require("../frontend/node_modules/playwright");
       viewport: { width: 1280, height: 800 },
     });
     await page.addInitScript(() => {
-      window.clockProbe = { packets: [], renders: [], throws: {} };
+      window.clockProbe = { packets: [], renders: [], throws: {}, sprites: {} };
       const p = window.clockProbe;
       let airborne = [];
-      window.measureSprite = (kind, x, y) => {
+      window.measureSprite = (kind, x, y, fallback = false) => {
         const item = airborne.find(
           (e) => e.kind === kind && Math.hypot(e.x - x, e.y - y) < 1e-5,
         );
         if (!item) return;
         const at = epoch();
-        const f = ((p.sprites ??= {})[item.id] ??= {
+        const f = (p.sprites[item.id] ??= {
           start: item.start,
           land: item.land,
           kind,
@@ -33,6 +33,7 @@ const { chromium } = require("../frontend/node_modules/playwright");
         });
         f.last = at;
         f.count++;
+        if (fallback) f.fallback = (f.fallback || 0) + 1;
       };
       const epoch = () => performance.timeOrigin + performance.now();
       window.measurePaint = (tick, match) => {
@@ -123,6 +124,15 @@ const { chromium } = require("../frontend/node_modules/playwright");
         }
       };
     });
+    const textureDelay = Number(process.env.CLOCK_TEXTURE_DELAY_MS || 0);
+    if (textureDelay)
+      await page.route(
+        /\/scorebot\/(hegrenade|flashbang|smokegrenade|decoy|incgrenade|molotov)\.svg$/,
+        async (route) => {
+          await new Promise((resolve) => setTimeout(resolve, textureDelay));
+          await route.continue();
+        },
+      );
     await page.route("**/assets/index-*.js", async (route) => {
       const response = await route.fetch();
       const src = await response.text();
@@ -131,16 +141,21 @@ const { chromium } = require("../frontend/node_modules/playwright");
       if (!hook.test(src))
         throw Error("Radar paint call not found in the production bundle");
       const sprite =
-        /(show\((\w+),(\w+),(\w+),\w+,\w+,\w+,\w+\)\{[^}]*?const [\s\S]{0,1000}?\+\+this\.used,[^}]+?\.visible=!0)(\}end\(\))/;
+        /(show\((\w+),(\w+),(\w+),\w+,\w+,\w+,\w+\)\{[^}]*?const [\s\S]{0,1000}?\+\+this\.used,[^}]+?\.visible=!0)(\}(?:airborne|end)\()/;
       if (!sprite.test(src))
         throw Error(
           "Radar sprite paint call not found in the production bundle",
         );
+      const fallback =
+        /(airborne\(\w+,(\w+),(\w+),(\w+),[^}]+?this\.used===\w+&&)([^}]+?\.fill\(\w+\))(\})/;
+      if (src.includes(".airborne(") && !fallback.test(src))
+        throw Error("Missing cold texture paint hook");
       await route.fulfill({
         response,
         body: src
           .replace(hook, "$1window.measurePaint($4,$2)")
-          .replace(sprite, "$1,window.measureSprite($2,$3,$4)$5"),
+          .replace(sprite, "$1,window.measureSprite($2,$3,$4)$5")
+          .replace(fallback, "$1($5,window.measureSprite($2,$3,$4,true))$6"),
       });
     });
     const base = "http://127.0.0.1:" + port;

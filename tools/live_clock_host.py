@@ -20,7 +20,7 @@ def main():
     parser.add_argument("--coach", action="store_true")
     parser.add_argument("--port", type=int, default=8777)
     parser.add_argument("--tick", type=int, default=0)
-    parser.add_argument("--speed", type=int, default=1)
+    parser.add_argument("--speed", type=int, choices=(1, 2, 4, 8), default=1)
     parser.add_argument("--service-ms", type=float, default=0)
     args = parser.parse_args()
     args.directory.mkdir(parents=True, exist_ok=True)

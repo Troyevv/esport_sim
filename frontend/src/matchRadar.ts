@@ -53,6 +53,14 @@ export class RadarEquipment extends Container {
     sprite.tint = tint;
     sprite.visible = true;
   }
+  airborne(
+    g: Graphics, kind: string, x: number, y: number, color: number, team?: string,
+  ) {
+    const before = this.used;
+    this.show(kind, x, y, 5, 6, color, team);
+    // The first flight can finish before its SVG texture has decoded.
+    if (this.used === before) g.circle(x, y, 1.8).fill(color);
+  }
   end() {
     for (let i = this.used; i < this.children.length; i++)
       this.children[i].visible = false;
@@ -80,7 +88,11 @@ export function drawEvents(
         const from = path[Math.min(path.length-1,Math.floor(span))];
         const to = path[Math.min(path.length-1,Math.floor(span)+1)];
         const t = span%1;
-        if (visible(from[2]+(to[2]-from[2])*t)) items.show(f.kind,from[0]+(to[0]-from[0])*t,from[1]+(to[1]-from[1])*t,5,6,color,f.team);
+        if (visible(from[2] + (to[2] - from[2]) * t))
+          items.airborne(
+            g, f.kind, from[0] + (to[0] - from[0]) * t,
+            from[1] + (to[1] - from[1]) * t, color, f.team,
+          );
         continue;
       }
       const t = Math.min(1, (tick - f.start) / (f.land - f.start)),
@@ -89,7 +101,7 @@ export function drawEvents(
       g.moveTo(f.sx, f.sy)
         .lineTo(x, y)
         .stroke({ color, width: 0.7, alpha: 0.7 });
-      items.show(f.kind, x, y, 5, 6, color, f.team);
+      items.airborne(g, f.kind, x, y, color, f.team);
     } else {
       if (!visible(f.z) && !(f.spatial && f.volume)) continue;
       if (f.spatial) {
