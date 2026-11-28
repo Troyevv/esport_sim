@@ -1,3 +1,4 @@
+import { MapRecord } from "./MapRecord";
 import { useState } from "react";
 import { date, fixtureMap, useData, type Career, type Scene } from "./careerData";
 import { Dialog, Glyph } from "./GameUI";
@@ -122,6 +123,8 @@ export default function ProfileHistory({c,scene,group,id,revision}: Props) {
     </div>
     <div className="report-lineups">{[current,...(other?[compare]:[])].map((request,i)=>request.error ? <p key={i} role="alert">{request.error} <button onClick={request.reload}>Повторить</button></p>
       : request.data ? <Summary key={i} result={request.data} subject={directory[i ? other : id]}/> : <p key={i} role="status">Загружаем историю…</p>)}</div>
+    {current.data && <MapRecord current={current.data} compared={other ? compare.data ?? undefined : undefined}
+      names={[directory[id]?.name || id, directory[other]?.name || other]} active={map} select={setMap} label={labelMap}/>}
     {current.data && (current.data.rows.length ? <div className="report-table" tabIndex={0} role="region" aria-label="История выступлений"><table><caption>Карты и результаты</caption>
       <thead><tr>{["Дата","Команда на дату","Соперник","Турнир","Карта","Итог","K / D / A","ADR","Impact","MVP"].map(t=><th key={t}>{t}</th>)}</tr></thead>
       <tbody>{current.data.rows.map(r=><tr key={r.fixture+"/"+r.index}><th><button onClick={()=>setSelected(r.fixture)}>{date(r.date)}</button></th>
