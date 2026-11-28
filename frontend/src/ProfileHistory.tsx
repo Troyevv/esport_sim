@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { date, fixtureMap, useData, type Career, type Scene } from "./careerData";
-import { Dialog } from "./GameUI";
+import { Dialog, Glyph } from "./GameUI";
 import { MatchReport } from "./CareerForms";
+import { Avatar } from "./SceneIdentity";
 import { RecentForm } from "./RecentForm";
 import "./report.css";
 
@@ -44,10 +45,10 @@ function MapTrend({ rows }: { rows: Row[] }) {
     </svg></figure>;
 }
 
-function Summary({result, name}: {result: Result; name: string}) {
+function Summary({result, subject}: {result: Result; subject?: Scene[Subject][string]}) {
   const known = result.rows.filter(r=>r.won !== null);
   const wins = known.filter(r=>r.won).length;
-  return <article className="report-panel"><h3>{name}</h3><p>{result.rows.length} карт · {result.rows.reduce((n,r)=>n+r.rounds,0)} раундов</p>
+  return <article className="report-panel"><h3 className="record-subject">{subject ? <><Avatar name={subject.name} {...subject.visual}/>{subject.name}</> : "Участник из архива"}</h3><p>{result.rows.length} карт · {result.rows.reduce((n,r)=>n+r.rounds,0)} раундов</p>
     <dl className="history-metrics"><div><dt>Победы</dt><dd>{known.length ? wins+"/"+known.length : "—"}</dd></div>
       <div><dt>ADR</dt><dd>{rate(result.rows,"damage")}</dd></div>
       <div><dt>KAST</dt><dd>{rate(result.rows,"kast",100)}{result.rows.some(r=>r.counts.kast!=null && r.playerRounds>0) ? "%" : ""}</dd></div></dl>
@@ -83,11 +84,11 @@ export function PlayerRecord({c,id,scene,revision,tab}: Omit<Props,"group"> & {t
     <p>Официальные протоколы карьеры · по {date(response.data.asOf)}</p>
     {entries.map(r => {
       const awardedSeries = r.seriesMvp === id && !series.has(r.fixture);
-      series.add(r.fixture);
+      if (awardedSeries) series.add(r.fixture);
       if (awards && r.mapMvp !== id && !awardedSeries) return null;
       return <div key={r.fixture+"/"+r.index} className="staff-line"><time>{date(r.date)}</time>
         <span>{r.team ? scene.teams[r.team]?.name || r.team : "Команда неизвестна"} · {labelMap(r.mapId)}
-        {awards && [r.mapMvp === id && "MVP карты",awardedSeries && "MVP встречи"].filter(Boolean).map(text => <b key={String(text)}> · {text}</b>)}</span>
+        {awards && [r.mapMvp === id && "MVP карты",awardedSeries && "MVP встречи"].filter(Boolean).map(text => <span className="record-award" key={String(text)}><Glyph name="trophy"/>{text}</span>)}</span>
         <button onClick={()=>setSelected(r.fixture)}>Протокол</button></div>;
     })}
     {!entries.length && <p>{awards ? "Подтверждённых индивидуальных наград в протоколах карьеры пока нет." : "В истории карьеры пока нет завершённых официальных карт этого игрока."}</p>}
@@ -120,7 +121,7 @@ export default function ProfileHistory({c,scene,group,id,revision}: Props) {
       <label>Сравнить с<select value={other} onChange={e=>setOther(e.target.value)}><option value="">Без сравнения</option>{Object.values(directory).filter(e=>e.id!==id).sort((a,b)=>a.name.localeCompare(b.name)).map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></label>
     </div>
     <div className="report-lineups">{[current,...(other?[compare]:[])].map((request,i)=>request.error ? <p key={i} role="alert">{request.error} <button onClick={request.reload}>Повторить</button></p>
-      : request.data ? <Summary key={i} result={request.data} name={directory[i ? other : id]?.name || id}/> : <p key={i} role="status">Загружаем историю…</p>)}</div>
+      : request.data ? <Summary key={i} result={request.data} subject={directory[i ? other : id]}/> : <p key={i} role="status">Загружаем историю…</p>)}</div>
     {current.data && (current.data.rows.length ? <div className="report-table" tabIndex={0} role="region" aria-label="История выступлений"><table><caption>Карты и результаты</caption>
       <thead><tr>{["Дата","Команда на дату","Соперник","Турнир","Карта","Итог","K / D / A","ADR","Impact","MVP"].map(t=><th key={t}>{t}</th>)}</tr></thead>
       <tbody>{current.data.rows.map(r=><tr key={r.fixture+"/"+r.index}><th><button onClick={()=>setSelected(r.fixture)}>{date(r.date)}</button></th>
