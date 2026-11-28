@@ -19,6 +19,7 @@ export type Summary = {
 export const fixtureMap = (e: Fixture) => e.bestOf ? "Map Veto" : ({de_dust2: "Dust II", depo: "Депо"}[e.mapId || "depo"] || e.mapId!.slice(3,4).toUpperCase() + e.mapId!.slice(4));
 type Simulation = { mode: "detailed" | "round"; version: number };
 export type Fixture = {
+  maps?: {map:string}[];
   pcw?: boolean;
   simulation?: Simulation;
   mapId?: string;
@@ -84,22 +85,21 @@ type Team = {
 };
 export type Options = { circuit?:boolean; date: string; teams: Team[] };
 export type Catalog = { id: string; title: string; revision: number }[];
-export type RoundSummary = { round: number; winnerTeamId: string | null; side: string; score: number[]; buys?: string[] };
+export type RoundSummary = {
+  round: number; winnerTeamId: string | null; side: string; score?: number[]; buys?: string[]; reason?: string;
+};
+export type Performance = {
+  version: string; rounds: number; maps: number; mvp: string | null;
+  players: { player: string; name: string; teamId: string | null; rounds: number; maps: number;
+    impact: number | null; adr: number | null; kastPercent: number | null }[];
+};
 export type Report = {
-  simulation?: Simulation;
-  maps?: { mapId: string; scoreByTeam: Record<string, number>; rounds: RoundSummary[] }[];
+  teams?: string[]; scoreByTeam?: Record<string, number>; winnerTeamId?: string | null;
+  mapId?: string; simulation?: Simulation; maps?: Report[]; performance: Performance;
   stats: {
-    player: string;
-    name: string;
-    club: number;
-    teamId: string | null;
-    k: number;
-    d: number;
-    a: number;
-    damage: number;
-    kast: number;
-    opening: number;
-    openingDeaths?: number;
+    player: string; name: string; club?: number; teamId: string | null;
+    k?: number; d?: number; a?: number; damage?: number; kast?: number;
+    opening?: number; openingDeaths?: number; clutches?: number; spent?: number; utilityDamage?: number;
   }[];
   rounds: RoundSummary[];
 };

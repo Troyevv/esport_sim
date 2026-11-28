@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic_core import to_json
 from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
-from . import training, training_center, competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
+from . import career_store, performance, training, training_center, competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
@@ -402,16 +402,29 @@ def create_app(
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
 
+    @app.get("/api/career/{career_id}/performance/{group}/{subject}")
+    async def career_performance(career_id: str, group: Literal["teams", "players"], subject: str,
+                                 since: str = "", edition: str = "", map_id: str = ""):
+        c, pack = scouting_career(career_id)
+        if subject not in pack[group]:
+            raise HTTPException(404, "Запись отсутствует в редакции карьеры")
+        # Pin the active career at request time. Read its immutable reports off the match clock thread.
+        path = app.state.store.db.execute("PRAGMA database_list").fetchone()[2]
+
+        return await asyncio.to_thread(career_store.profile_performance, path, c, pack, group, subject,
+                                       since, edition, map_id)
+
+    @app.get("/api/career/{career_id}/report/{event_id}")
     @app.get("/api/career/report/{event_id}")
-    async def career_report(event_id: str):
+    async def career_report(event_id: str, career_id: str | None = None):
         store = app.state.store
         c = store.read().get("career")
-        if not c:
+        if not c or (career_id is not None and career_id != c["id"]):
             raise HTTPException(404, "Отчёт не найден")
         practices = (e for e in c["training"]["practice"] if e.get("result") and c["team"] in e["teams"])
         for event in reversed([*c["history"], *practices]):
             if event["id"] == event_id:
-                return store.careers.historical_report(c, event)
+                return performance.annotate(store.careers.historical_report(c, event), c["team"])
         raise HTTPException(404, "Отчёт не найден")
 
     @app.get("/api/maps")

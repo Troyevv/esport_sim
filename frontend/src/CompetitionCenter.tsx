@@ -1077,7 +1077,7 @@ export function CompetitionCenter(props: Props) {
             ))}
           {!event.draws.length && <p>Расписание появится после жеребьёвки.</p>}
           {fixture && (
-            <MatchReport
+            <MatchReport careerId={c.id}
               event={fixture}
               teams={c.teams}
               close={() => openReport("")}

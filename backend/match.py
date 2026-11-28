@@ -92,7 +92,7 @@ def initial(seed, domain=None, roster_ids=world.FIXTURE_ROSTERS, coach_id=None, 
             club=0 if a["team"] == "T" else 1, slot=slot, cash=0, hp=0, evidence=None
         )
         w["stats"][a["id"]] = dict(
-            k=0, d=0, a=0, hs=0, damage=0, opening=0, kast=0, spent=0, clutches=0
+            k=0, d=0, a=0, hs=0, damage=0, opening=0, openingDeaths=0, kast=0, spent=0, clutches=0
         )
     bind_rosters(
         w,

@@ -1,0 +1,26 @@
+# R5.7 · матрица внедрения
+
+Визуальный эталон — утверждённый переносимый ZIP R5.7.1 с SHA-256 `0416c28f5b146fcdf25834c50cde8c7a58a2361efb9c9d29219c5fab7ae201a2`. Основа игры — main `65155bd` после PR #51 и #52. Матрица связывает экраны с точками интеграции. Визуальная приёмка требует сопоставимого состояния в запущенной игре. Проверки макета из design-qa к ней не относятся.
+
+| Экран / действие | Эталон в src макета | Компоненты игры в frontend/src | Данные и механика игры |
+|---|---|---|---|
+| Меню, создание, открытие, слоты | modules/RootPages | CareerMenu, CareerForms | /api/career, редакции database, команды career-create/open/save/load, резервные копии |
+| Навигация, поиск, диалог | App, shared | Career, GameUI, main | Активная карьера, справочник scene, доступность действий по ревизии |
+| Кабинет и решения, входящие | App, modules/RootPages | CareerHome, ManagerAttention | Очередь матчей, история, attention, регистрация |
+| Календарь и повестка | modules/RootPages | CareerCalendar | Очередь карьеры, training-calendar, прогресс календаря |
+| Состав, академия, игрок, организация и команда | modules/Club | CareerScene, SceneProfiles, GamePortrait | Справочник закреплённой редакции, собственный состав, досье scouting, исторические протоколы и VRS |
+| Штаб и тренер | modules/Club | StaffOffice, CareerScene | staff.overview, обязанности, нагрузка, записи карьеры |
+| Тренировки и выбор дня | modules/Club | TrainingCenter | training, training_center, занятия, спарринг |
+| Скаутинг, сравнение | modules/Club | ScoutingCenter | scouting, scout_sources, датированные версии отчётов |
+| Турнир, участники, регистрация, квалификация | modules/Competition | CompetitionCenter, CompetitionMark | competitions, registrations, зафиксированные версии пятёрок, приглашения и дедлайны |
+| Swiss, Single, Double, GSL, Round Robin, Double Groups | modules/Competition | CompetitionCenter.GameDraw | competition_stages, группы издания, победитель/проигравший предыдущего слота, завершённые игры |
+| VRS и история рейтинга | modules/Competition | CompetitionCenter.Rankings | Публикации competitions и официальный расчёт vrs |
+| Предматчевая подготовка, прогноз | modules/Competition | Career, StaffOffice, CompetitionCenter | Конкретная встреча из очереди, публичная история на дату, версия состава и известные карты veto |
+| Пики, баны, decider, сторона | modules/Match | SeriesCenter.VetoCenter | veto и series, очередь действий и сохранение текущего выбора |
+| Режимы матча, радар, перерыв и тренерская комната | modules/Match | MatchCenter, Radar, matchRadar, playback, TimeoutRoom | Один WebSocket, подтверждённые тики и позы, server.match_clock, игровые окна действий и бюджет |
+| Результат карты/серии, составы на дату, MVP | modules/Competition, modules/Match | CareerForms.MatchReport, SeriesCenter | career_report, historical_protocol, итоги round_sim и series.map_result |
+| Тактическая доска, библиотека и спарринг | modules/Match | TacticEditor, TacticMap | tactics, tactic_library, tactic_preview, геометрия карты |
+| Редактор базы и студия | modules/RootPages, modules/Appearance | DatabaseEditor, PortraitEditor, KitStudio, PersonalBadges | database_api, portrait_api, редакции, файлы персонализации, импорт/экспорт |
+| Настройки, LAN, доверенные устройства | modules/RootPages, modules/Host | main, HostSettings, session | /api/capabilities, /api/host, подтверждения команд, сопряжение и отзыв |
+
+Контрольные размеры в CSS-пикселях — 1440 × 1000, 390 × 844, 844 × 390, 834 × 1194 и 1194 × 834. Итоговые кадры эталона перечислены в его docs/qa/INDEX.md. Для кабинета применяется серия 34, для домашнего сервера 35, для студии 37, для матча 39. Проверка физических устройств учитывается отдельно.

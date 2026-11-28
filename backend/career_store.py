@@ -1,5 +1,6 @@
 """Career checkpoints share immutable database editions, round logs and match reports."""
 
+from contextlib import closing
 from copy import deepcopy
 import hashlib
 import json
@@ -9,7 +10,7 @@ from pathlib import Path
 from time import monotonic
 from uuid import uuid4
 
-from . import historical_protocol, scout_sources, scouting, training, training_center, attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
+from . import performance, historical_protocol, scout_sources, scouting, training, training_center, attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -48,6 +49,19 @@ def checksum(body):
 
 def summary(c):
     return {k: c[k] for k in ("id", "character", "mode", "club", "scope", "date")}
+
+
+def read_report(db, digest):
+    row = db.execute("SELECT body FROM career_report WHERE digest=?", (digest,)).fetchone()
+    require(row and checksum(row[0]) == digest, "Повреждён отчёт матча")
+    return json.loads(row[0])
+
+
+def profile_performance(path, c, pack, group, subject, since, edition, map_id):
+    # This connection belongs to the analytics worker. All referenced report blobs are immutable.
+    with closing(sqlite3.connect(Path(path).as_uri() + "?mode=ro", uri=True)) as db:
+        return performance.profile_rows(c, pack, group, subject, c["history"], lambda digest: read_report(db, digest),
+                                        since, edition, map_id)
 
 
 class CareerStore:
@@ -165,11 +179,7 @@ class CareerStore:
         )
 
     def report(self, digest):
-        row = self.db.execute(
-            "SELECT body FROM career_report WHERE digest=?", (digest,)
-        ).fetchone()
-        require(row and checksum(row[0]) == digest, "Повреждён отчёт матча")
-        return json.loads(row[0])
+        return read_report(self.db, digest)
 
     def historical_report(self, c, event):
         report = self.report(event["result"])

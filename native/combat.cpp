@@ -114,6 +114,10 @@ void death(Json &w, const Json &cfg, Json &shooter, Json &target, const std::str
         add(line.at("k"), 1);
         add(line.at("hs"), head);
         add(line.at("opening"), opening);
+        // Pre-R5.7 maps lack the earlier opening deaths, so keep that statistic absent.
+        auto &victim = stats.at(ident);
+        if (opening && victim.contains("openingDeaths"))
+            add(victim.at("openingDeaths"), 1);
         const auto &guns = cfg.at("weapons");
         pay(w, shooter, guns.contains(weapon) ? guns.at(weapon).at("reward").get<int>() : 300, "Фраг",
             cfg.at("rules").at("cap"));

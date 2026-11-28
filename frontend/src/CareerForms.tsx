@@ -1,18 +1,15 @@
-import { fixtureMap } from "./careerData";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { regions } from "./databaseModel";
 import {
   useData,
   date,
   scopes,
   slotName,
-  fixtureScore,
   type Act,
   type Career,
   type Catalog,
   type Options,
   type Fixture,
-  type Report,
 } from "./careerData";
 export function Load({ error, reload }: { error: string; reload: () => void }) {
   return error ? (
@@ -211,91 +208,11 @@ export function NewCareer({
   );
 }
 
-const buyName: Record<string,string> = {pistol:"пистолетный", full:"полная закупка", force:"форс", eco:"эко"};
-
-export function MatchReport({
-  event,
-  teams,
-  close,
-}: {
-  event: Fixture;
-  teams: Record<string, string>;
-  close: () => void;
-}) {
-  const data = useData<Report>("/api/career/report/" + event.id);
-  const title = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    title.current?.focus();
-  }, [event.id]);
-  const rounds = data.data?.rounds.length || 0;
-  return (
-    <section className="cr-card cr-report">
-      <div className="cr-line">
-        <h2 ref={title} tabIndex={-1}>
-          Протокол матча
-        </h2>
-        <button onClick={close}>Закрыть протокол</button>
-      </div>
-      <h3 className="cr-result-title">
-        {teams[event.teams[0]]} <strong>{fixtureScore(event)}</strong>{" "}
-        {teams[event.teams[1]]}
-      </h3>
-      {!data.data || data.error ? (
-        <Load {...data} />
-      ) : (
-        <>
-          <p>
-            {date(event.date)} · {fixtureMap(event)} · Раунды: {rounds} · {data.data.simulation?.mode === "round" ? "Быстрый расчёт по раундам" : "Подробная симуляция"}
-          </p>
-          {data.data.maps && <ol className="series-order" aria-label="Итоги карт">
-            {data.data.maps.map((m,i) => <li key={m.mapId}><small>Карта {i+1}</small>
-              <strong>{fixtureMap({...event,bestOf:undefined,mapId:m.mapId})}</strong>
-              <span>{event.teams.map(t => m.scoreByTeam[t]).join(" : ")}</span></li>)}
-          </ol>}
-          {data.data.simulation?.mode === "round" && (data.data.maps || [{mapId:event.mapId || "depo", rounds:data.data.rounds}]).map(m=>(
-            <details className="cr-rounds" key={m.mapId}>
-              <summary>Раунды · {fixtureMap({...event,bestOf:undefined,mapId:m.mapId})}</summary>
-              <ol>{m.rounds.map(r=><li key={r.round}>
-                <strong>{r.score.join(" : ")}</strong> {r.winnerTeamId ? teams[r.winnerTeamId] : "Победитель неизвестен"} · {r.side}
-                <small>{r.buys?.map((b,i)=>teams[event.teams[i]]+" · "+(buyName[b] || b)).join(" / ")}</small>
-              </li>)}</ol>
-            </details>
-          ))}
-          {[...event.teams, ...(data.data.stats.some(p => p.teamId === null) ? [null] : [])].map(tid => (
-            <table key={tid ?? "unassigned"}>
-              <caption>{tid === null ? "Команда не установлена по протоколу" : teams[tid]}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Игрок</th>
-                  <th scope="col">K</th>
-                  <th scope="col">D</th>
-                  <th scope="col">A</th>
-                  <th scope="col">ADR</th>
-                  <th scope="col">KAST</th>
-                  <th scope="col" title="Первые убийства / первые смерти">FK / FD</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data
-                  .data!.stats.filter((p) => p.teamId === tid)
-                  .map((p) => (
-                    <tr key={p.player}>
-                      <th scope="row">{p.name}</th>
-                      <td>{p.k}</td>
-                      <td>{p.d}</td>
-                      <td>{p.a}</td>
-                      <td>{(p.damage / rounds).toFixed(1)}</td>
-                      <td>{Number.isFinite(p.kast) ? Math.round(100*p.kast/rounds)+"%" : "—"}</td>
-                      <td>{p.opening ?? "—"} / {p.openingDeaths ?? "—"}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          ))}
-        </>
-      )}
-    </section>
-  );
+const ReportScreen = lazy(() => import("./MatchReport"));
+export function MatchReport(props: { event: Fixture; teams: Career["teams"]; careerId: string; close: () => void }) {
+  return <Suspense fallback={<p role="status">Загружаем протокол…</p>}>
+    <ReportScreen key={props.careerId + "/" + props.event.id} {...props} />
+  </Suspense>;
 }
 
 export function Saves({

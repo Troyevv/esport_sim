@@ -1,4 +1,5 @@
 import { badgeSurface, GamePortrait, type ClubKit } from "./GamePortrait";
+import { useGarment } from "./wardrobe";
 import { useState } from "react";
 import { resolvePortrait, type PhotoRef } from "./portraits";
 
@@ -70,6 +71,19 @@ export type Visual = {
   head?: string | null;
   kit?: ClubKit | null;
 };
+const rosterPhotos: Record<string,string> = {
+  "steam-76561198018303780": "donk", "p-f53da391aede75af17d6": "sh1ro", "steam-76561198995880877": "zont1x"
+};
+export function LineupPortrait({id,name,visual}: {id:string;name:string;visual:Visual}) {
+  const kit = visual.kit;
+  const personal = useGarment(kit?.id);
+  const photo = rosterPhotos[id];
+  if (photo && kit?.id === "t-686f34552cee3bc3c46d" && !kit.design && !personal &&
+      visual.head?.includes("/generated/") && !visual.photo) {
+    return <img className="scene-avatar roster-photo" src={"/interface/menu/"+photo+".png"} alt={name+" в форме "+kit.name}/>;
+  }
+  return <Avatar {...visual} name={name}/>;
+}
 export function Avatar({
   name,
   photo,

@@ -174,7 +174,7 @@ export function Calendar({ c, initial,tournament, revision, training }: { revisi
       )}
       {report && (
         <Dialog title="Результат встречи" close={() => setReport(null)}>
-          <MatchReport
+          <MatchReport careerId={c.id}
             event={report}
             teams={c.teams}
             close={() => setReport(null)}

@@ -651,7 +651,7 @@ function PracticeRow({
       )}
       {open && (
         <Dialog title="Отчёт по пракку" close={() => setOpen(false)}>
-          <MatchReport event={p} teams={c.teams} close={() => setOpen(false)} />
+          <MatchReport careerId={c.id} event={p} teams={c.teams} close={() => setOpen(false)} />
         </Dialog>
       )}
     </article>

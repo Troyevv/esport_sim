@@ -1,7 +1,8 @@
-import { useState } from "react";
+import "./club.css";
+import { lazy, Suspense, useState } from "react";
 import { range, type Knowledge } from "./ScoutingCenter";
 import { StaffSkills } from "./StaffOffice";
-import { Avatar, Flag } from "./SceneIdentity";
+import { Avatar, Flag, LineupPortrait } from "./SceneIdentity";
 import {
   roles,
   regions,
@@ -21,6 +22,8 @@ import {
   type Profile,
   type Scene,
 } from "./careerData";
+
+const ProfileHistory = lazy(() => import("./ProfileHistory"));
 
 type Props = { scene: Scene; c: Career; open: (p: Profile) => void };
 export function EntityButton({
@@ -62,6 +65,7 @@ export function Squad({
   setSort: (s: string) => void;
 } & Props) {
   const [context, setContext] = useState<string | null>(null);
+  const [view,setView] = useState("Карточки");
   const org = scene.teams[c.team]?.organization;
   const teams = Object.values(scene.teams).filter(
     (t) => t.id === c.team || (org && t.organization === org),
@@ -110,33 +114,23 @@ export function Squad({
     });
   const sortBy = (k: string) =>
     setSort((sort === "+" + k || (k !== key && k === "ovr") ? "-" : "+") + k);
+  const ownAverage = (select: (row: typeof rows[number])=>number|null) => {
+    const values = rows.map(select).filter((v): v is number=>v!==null);
+    return values.length ? (values.reduce((sum,v)=>sum+v,0)/values.length).toFixed(1) : "—";
+  };
   const ages = rows.flatMap((r) => (r.age === null ? [] : [r.age]));
   return (
     <>
-      <Heading title="Состав команды" sub={c.organization || c.club} />
-      <Tabs
-        items={["Основной состав", "Академия", "Все игроки"]}
-        value={filter}
-        change={setFilter}
-      />
-      <div className="roster-summary">
-        <div>
-          <strong>{rows.length}</strong>
-          <span>Игроков</span>
-        </div>
-        <div>
-          <strong>
-            {ages.length
-              ? (ages.reduce((a, b) => a + b, 0) / ages.length).toFixed(1)
-              : "—"}
-          </strong>
-          <span>Средний возраст</span>
-        </div>
-        <div>
-          <strong>{chosen.length}</strong>
-          <span>Составов</span>
-        </div>
+      <div className="club-kicker">{c.organization || c.club} / Команда</div><h1 className="club-title">Состав</h1>
+      <div className="club-roster-summary">
+        {[
+          ["Средний OVR", ownAverage(r=>r.ovr),"По доступным оценкам"],
+          ["Готовность",ownAverage(r=>r.own ? 100-r.own.fatigue : null),"По данным штаба"],
+          ["Средний возраст",ages.length ? (ages.reduce((a,b)=>a+b,0)/ages.length).toFixed(1) : "—","Известные даты рождения"],
+          ["Игроки",rows.length,filter]
+        ].map(([label,value,note])=><div className="stat" key={label}><span>{label}</span><strong>{value}</strong><small>{note}</small></div>)}
       </div>
+      <Tabs items={["Основной состав","Академия","Все игроки"]} value={filter} change={setFilter}/>
       <div className="filter-bar">
         <label className="filter-input">
           <Glyph name="search" />
@@ -147,8 +141,22 @@ export function Squad({
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
+        <label className="club-filter">Сортировка<select value={sort} onChange={e=>setSort(e.target.value)}>
+          {[["+name","По имени"],["-name","По имени · обратно"],["+age","По возрасту"],["-age","По возрасту · обратно"],["+role","По роли"],["-role","По роли · обратно"],["-ovr","По OVR"],["+ovr","По OVR · по возрастанию"]].map(([value,label])=><option key={value} value={value}>{label}</option>)}
+        </select></label>
+        <div className="club-segment" aria-label="Представление состава">{["Карточки","Таблица"].map(v=>
+          <button key={v} aria-pressed={v===view} className={v===view?"active":""} onClick={()=>setView(v)}>{v}</button>)}</div>
       </div>
-      <section className="surface table-wrap">
+      {view === "Карточки" && display.length > 0 ? <div className="club-roster-grid">{display.map(r=><article className="club-player-card" key={r.p.id}>
+        <button className="club-player-visual" aria-label={"Профиль · "+r.name} onClick={()=>open({group:"players",id:r.p.id})}>
+          <span className="club-card-ovr"><b>{r.ovr ?? "—"}</b><small>OVR</small></span>
+          <LineupPortrait id={r.p.id} name={r.name} visual={r.p.visual}/></button>
+        <div className="club-player-card-body"><button className="club-player-name" onClick={()=>open({group:"players",id:r.p.id})}>{r.name} <Flag value={r.p.visual.flag}/></button>
+          <span>{r.role}{r.captain && " · Капитан"}</span>
+          <div className="club-card-metrics"><span>Форма <b>{r.own?.form ?? "—"}</b></span><span>Настрой <b>{r.own?.morale ?? "—"}</b></span></div>
+          <Readiness fatigue={r.own?.fatigue}/>
+          <button className="club-text-link" aria-label={"Действия · "+r.name} onClick={()=>setContext(r.p.id)}>Действия</button>
+        </div></article>)}</div> : <section className="surface table-wrap">
         <table className="simple-table">
           <thead>
             <tr>
@@ -243,7 +251,7 @@ export function Squad({
               : "В выбранной редакции нет игроков этого состава."}
           </p>
         )}
-      </section>
+      </section>}
       {context && (
         <Dialog
           title={scene.players[context].name}
@@ -462,72 +470,25 @@ export function EntityProfile({
 
   return (
     <>
-      <Heading
-        title={
-          player
-            ? "Профиль игрока"
-            : team
-              ? "Профиль команды"
-              : org
-                ? "Организация"
-                : "Профиль сотрудника"
-        }
-        sub={c.club}
-      >
-        <button className="btn" onClick={back}>
-          <Glyph name="arrow-left" />
-          Назад
-        </button>
-      </Heading>
-      <section className="surface profile-hero pf-heading">
-        <div className="profile-photo">
-          <Avatar {...(own?.visual || item.visual)} name={item.name} />
-        </div>
-        <div className="profile-info">
-          <span className="eyebrow">
-            {player
-              ? roles[own?.role || player.role || ""] || "Игрок"
-              : team
-                ? teamTypes[team.teamType]
-                : staff?.role || "Организация"}
-          </span>
-          <h2>{item.name}</h2>
-          <div className="fullname">{player?.realName || staff?.realName}</div>
-          {item.visual.head?.includes("/generated/") && <small>Синтетический игровой портрет</small>}
-          <div className="profile-meta">
-            <Flag value={item.visual.flag} />
-            {player?.born && (
-              <span>
-                {date(player.born)} · {age(player.born, c.date)} лет
-              </span>
-            )}
-            {team && (
-              <span>{regions[team.region || ""] || "Регион неизвестен"}</span>
-            )}
+      <button className="club-breadcrumb" onClick={back}><Glyph name="arrow-left"/> Назад</button>
+      <header className={"club-profile-hero"+(staff?" club-staff-hero":"")}>
+        <div className="club-profile-portrait"><LineupPortrait id={id} name={item.name} visual={own?.visual || item.visual}/></div>
+        <div className="club-profile-copy"><div className="club-kicker">{player?"Профиль игрока":team?"Профиль команды":"Профиль сотрудника"}</div>
+          <h2>{item.name}</h2><p className="club-fullname">{player?.realName || staff?.realName}</p>
+          <div className="club-profile-meta"><Flag value={item.visual.flag}/>
+            {player?.born && <span>{date(player.born)} · {age(player.born,c.date)} лет</span>}
+            <span>{player ? roles[own?.role || player.role || ""] : team ? teamTypes[team.teamType] : staff?.role}</span>
+            {player?.teams.map(t=><button key={t} className="club-text-link" onClick={()=>open({group:"teams",id:t})}>{scene.teams[t]?.name || t}</button>)}
+            {team && <span>{regions[team.region || ""] || "Регион неизвестен"}</span>}
           </div>
         </div>
-        {player && (
-          <div className="profile-rating">
-            <div className="profile-rating-top">
-              <span className={"ovr large"+(rating===undefined && assessment?.current?" scout-range":"")}>{rating ?? range(assessment?.current)}</span>
-              <span>Ролевой OVR</span>
-            </div>
-            {own && (
-              <select
-                aria-label="Роль для оценки OVR"
-                value={selectedRole}
-                onChange={(e) => setRole(e.target.value)}
-              >
-                {Object.keys(own.ratings).map((r) => (
-                  <option value={r} key={r}>
-                    {roles[r]}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        )}
-      </section>
+        {player && <div className="club-profile-overall"><span>{own?"Ролевой OVR":"Оценка скаута"}</span>
+          <strong>{rating ?? range(assessment?.current)}</strong>
+          {own && <label className="club-filter">Роль для оценки<select aria-label="Роль для оценки OVR" value={selectedRole} onChange={e=>setRole(e.target.value)}>
+            {Object.keys(own.ratings).map(r=><option key={r} value={r}>{roles[r]}</option>)}</select></label>}
+          <small>{own?"Внутренние данные клуба":assessment?.level || "Нет доступной оценки"}</small>
+        </div>}
+      </header>
       {player && <section className="surface panel-body"><h2>Знания организации</h2>{scouting.error?<p role="alert">{scouting.error}</p>:assessment?<><p>{assessment.inSquad?"Текущие навыки известны штабу":assessment.level} · Изученность {assessment.score}/100 · наблюдений {assessment.count}</p><p>Оценка потенциала · {range(assessment.potential)}{assessment.last && " · последнее наблюдение "+date(assessment.last)}</p></>:<p>Загрузка оценок…</p>}</section>}
       {player && (
         <Tabs
@@ -536,6 +497,11 @@ export function EntityProfile({
           change={setTab}
         />
       )}
+      {team && <Tabs items={["Обзор","Статистика"]} value={tab} change={setTab}/>}
+      {tab === "Статистика" && (group === "teams" || group === "players") &&
+        <Suspense fallback={<p role="status">Загружаем статистику…</p>}>
+          <ProfileHistory key={group+id} c={c} scene={scene} group={group} id={id} revision={revision}/>
+        </Suspense>}
       {tab === "Характеристики · 58" ? (
         <div className="attribute-groups">
           {Object.entries(skillGroups).map(([g, keys]) => (
@@ -563,7 +529,7 @@ export function EntityProfile({
             </section>
           ))}
         </div>
-      ) : tab === "Статистика" ? (
+      ) : tab === "Статистика" && team ? null : tab === "Статистика" ? (
         panel(
           "Статистика игрока",
           player?.statistics ? (

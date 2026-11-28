@@ -48,7 +48,7 @@ test("Карьера от выбора базы до общей сохранён
   await capture("roster");
   await press("Действия · ZywOo");
   await press("Открыть профиль");
-  await expect(page.locator(".pf-heading h2")).toHaveText("ZywOo");
+  await expect(page.locator(".club-profile-copy h2")).toHaveText("ZywOo");
   await capture("profile");
   await press("Характеристики · 58");
   await expect(page.locator(".attribute-row")).toHaveCount(58);
@@ -88,6 +88,7 @@ test("Карьера от выбора базы до общей сохранён
       .getByRole("button", { name: /Протокол/ })
       .first()
       .click();
+    await page.getByRole("dialog").getByRole("button", {name:"Статистика", exact:true}).click();
     await expect(page.getByRole("table").locator("tbody tr")).toHaveCount(10);
     await capture("report");
     await press("Закрыть протокол");

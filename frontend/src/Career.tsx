@@ -469,7 +469,7 @@ function Manager({
               <button className="btn" disabled={!pauseEnabled} onClick={()=>act("career-pause",{runId:progress.runId})}>Остановить расчёт</button>
             </div>
           )}
-          {!tool && (!progress || required.length > 0) && <button className="attention-summary surface" data-blocked={!!required.length}
+          {!tool && (active === "Кабинет" || required.length > 0) && (!progress || required.length > 0) && <button className="attention-summary surface" data-blocked={!!required.length}
             aria-label={"Открыть центр решений · обязательных: " + required.length} aria-describedby="decision-explanation"
             onClick={()=>{setDecisionError("");setDecisions(true)}}>
             <span id="decision-explanation"><strong>{required.length ? required[0].title : "Центр решений"}</strong>
@@ -480,7 +480,7 @@ function Manager({
             <div><strong>{c.queue[0].teams.map(t=>c.teams[t]).join(" — ")}</strong><small>Расчёт по раундам с автоматическим выбором карт</small></div>
             <button className="btn" disabled={!enabled} onClick={quick}>Быстро рассчитать матч</button>
           </div>}
-          {completedQuick && <Dialog title="Матч завершён" close={()=>setQuickResult(null)}><MatchReport event={completedQuick} teams={c.teams} close={()=>setQuickResult(null)}/></Dialog>}
+          {completedQuick && <Dialog title="Матч завершён" close={()=>setQuickResult(null)}><MatchReport careerId={c.id} event={completedQuick} teams={c.teams} close={()=>setQuickResult(null)}/></Dialog>}
           <ManagerAttention quick={quick} items={c.attention} open={decisions} close={()=>setDecisions(false)}
             enabled={enabled && !progress} resolve={resolve} repair={repair} error={decisionError}
             saves={()=>{setDecisions(false);to("Сохранения")}}/>
