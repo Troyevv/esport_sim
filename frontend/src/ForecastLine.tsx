@@ -1,3 +1,4 @@
+import { QuoteTrend } from "./QuoteTrend";
 import "./forecast.css";
 import { date } from "./careerData";
 
@@ -14,7 +15,7 @@ export function ForecastLine({quotes,names,calibration}: {quotes:Quote[];names:R
   return <section className="surface panel-body forecast-line"><h2>Виртуальная линия</h2>
     <p>{date(line.date)} · {stages[line.stage]} · {line.version}</p>
     <div className="cp-two-col">{line.teams.map((t,i)=><div className="forecast-side" key={t}>
-      <span>{names[t] || t}</span><strong>{percent(line.probability[i])}</strong><b>Коэффициент {line.odds[i].toFixed(2)}</b></div>)}</div>
+      <span>{names[t] || t}</span><strong>{percent(line.probability[i])}</strong><b>Коэффициент {line.odds[i].toFixed(2)}</b><QuoteTrend quotes={quotes} team={t}/></div>)}</div>
     <div className="forecast-balance" aria-hidden="true">{line.teams.map((team,i) =>
       <span key={team} style={{flexGrow:line.probability[i]}}/>)}</div>
     <details><summary>Точный счёт BO{line.bestOf}</summary><table className="simple-table"><thead><tr><th>Счёт</th><th>Вероятность</th><th>Коэффициент</th></tr></thead>
