@@ -271,7 +271,7 @@ def create_app(
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
         if request.url.path.startswith("/api/"):
-            response.headers["Cache-Control"] = "no-store"
+            response.headers.setdefault("Cache-Control", "no-store")
         return response
 
     @app.get("/api/capabilities")
@@ -399,7 +399,14 @@ def create_app(
     @app.get("/api/career/options/{key}/{revision}")
     async def career_options(key: str, revision: int):
         try:
-            return career.choices(app.state.store.careers.pack(competition_scene.source(key, revision)))
+            store = app.state.store
+            pack = store.careers.pack(competition_scene.source(key, revision))
+            options = career.choices(pack)
+            badges = store.badges.index(pack)
+            for team in options["teams"]:
+                tid = team["id"]
+                team["visual"] = career_scene.identity(pack, badges, "teams", tid, pack["teams"][tid])["visual"]
+            return options
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
 
@@ -468,7 +475,7 @@ def create_app(
         path=cs2_maps.root()/name/(name+("_lower" if layer=="lower" else "")+".png")
         if not path.is_file():
             raise HTTPException(404,"Радар выбранного этажа отсутствует")
-        return FileResponse(path,media_type="image/png")
+        return FileResponse(path, media_type="image/png", headers={"Cache-Control":"private, max-age=3600"})
 
     @app.post("/api/maps/{name}/surface")
     def surface_points(name: str, body: dict):

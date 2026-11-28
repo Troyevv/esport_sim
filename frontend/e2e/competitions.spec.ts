@@ -38,13 +38,14 @@ test("Ноябрьская карьера · отбор, заявка, сохр�
   await page.goto("/");
   await press("Новая карьера");
   await page.getByLabel("Редакция базы").selectOption("scene-20261125-clubs/1");
+  await page.getByRole("button",{name:"Настроить карьеру",exact:true}).click();
   await page.getByLabel("Имя персонажа").fill("Тренер");
   await page
     .getByLabel("Команда", { exact: true })
     .selectOption({ label: "SINNERS Esports" });
   await press("Создать карьеру");
   await expect(
-    page.getByRole("heading", { name: "Кабинет менеджера" }),
+    page.getByRole("heading", { name: /^(Кабинет команды|День матча)$/ }),
   ).toBeVisible();
   await press("Соревнования");
   await expect(button("Архив")).toBeVisible();
@@ -65,6 +66,12 @@ test("Ноябрьская карьера · отбор, заявка, сохр�
       name: /CCT Contenders Europe 12 · открытая квалификация 1/,
     })
     .click();
+  await page.keyboard.press("Control+k");
+  const search = page.getByRole("dialog", {name:"Глобальный поиск"});
+  await search.getByRole("textbox", {name:"Поиск по карьере"}).fill("CCT Contenders Europe 12 · открытая квалификация 1");
+  await search.getByRole("button").filter({has:page.locator("svg.competition-mark")}).first().click();
+  await expect(search).toHaveCount(0);
+  await expect(page.locator(".cp-tournament-hero h1")).toContainText("открытая квалификация 1");
   await press("Моя заявка");
   await press("Заявиться на участие");
   await press("Сохранить заявку");
@@ -78,7 +85,7 @@ test("Ноябрьская карьера · отбор, заявка, сохр�
   await capture("vrs");
   await press("Соревнования");
   await page.getByRole("button", { name: /PGL Major Singapore 2026/ }).click();
-  await press("Сетки");
+  await press("Группы");
   await expect(page.getByText("До начала карьеры").first()).toBeVisible();
   await capture("major");
   await press("Входящие");
@@ -110,6 +117,6 @@ test("Ноябрьская карьера · отбор, заявка, сохр�
   await press("← Главное меню");
   await press("Стенд симуляции");
   await expect(
-    page.getByRole("heading", { name: "Тактический радар" }),
+    page.getByTestId("radar"),
   ).toBeVisible();
 });

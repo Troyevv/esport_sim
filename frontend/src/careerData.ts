@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { createContext, useState, useEffect } from "react";
 import { serverURL } from "./session";
 import type { Office } from "./StaffOffice";
 import type { Visual } from "./SceneIdentity";
@@ -40,6 +40,13 @@ export const fixtureScore = (e: Fixture) =>
     " : ",
   );
 
+export function fixtureOutcome(fixture: Fixture, team: string): "win" | "loss" | null {
+  if (fixture.kind !== "match" || fixture.teams.length !== 2 || !fixture.teams.includes(team)) return null;
+  const scored = (id: string) => fixture.scoreByTeam?.[id] ?? fixture.score?.[fixture.teams.indexOf(id)];
+  const own = scored(team), other = scored(fixture.teams.find(id=>id!==team)!);
+  return own == null || other == null || own === other ? null : own > other ? "win" : "loss";
+}
+
 export type Player = {
   id: string;
   name: string;
@@ -54,6 +61,8 @@ export type Player = {
   skills: Record<string, number>;
   ratings: Record<string, number>;
 };
+export const CareerRoster = createContext<Player[]>([]);
+
 export type Career = Summary & {
   office: Office;
   attention: Decision[];
@@ -78,6 +87,7 @@ export type Career = Summary & {
   slots: (Summary & { slot: string })[];
 };
 type Team = {
+  visual?: Visual;
   id: string;
   name: string;
   region: string | null;
@@ -234,3 +244,10 @@ export const age = (born: string | null, now: string) =>
       Number(born.slice(0, 4)) -
       Number(now.slice(5) < born.slice(5))
     : null;
+
+export function useDirectoryView() {
+  const [group, setGroup] = useState<Group>("teams");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
+  return { group, setGroup, query, setQuery, page, setPage };
+}

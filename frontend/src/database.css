@@ -396,3 +396,18 @@
   color: var(--accent);
   min-height: 36px;
 }
+
+.db .db-heading h1,.board-title h1 {font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.02em}
+.db .db-pack,.db .db-index,.db .db-card,.db .db-match,.db .db-import-studio,.db .db-editor-extra {background:var(--surface);border-color:var(--line);border-radius:4px}
+.db .db-tabs button[aria-pressed=true],.db .db-subtabs button[aria-pressed=true] {border-bottom:2px solid var(--orange);background:var(--surface-2);color:var(--text)}
+.db .db-heading .eyebrow {color:var(--muted)}
+
+.db-heading {flex-wrap:wrap;gap:14px}
+.db-heading > div:first-child {flex:1 1 320px;min-width:0}
+.db-heading p {font-size:14px;color:var(--muted);margin:6px 0 0}
+.db-heading-actions {display:flex;gap:7px;flex-wrap:wrap}
+.db .db-category-tabs {display:flex;gap:2px;margin:14px 0 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.db .db-category-tabs button {min-height:44px;background:transparent;border:0;border-bottom:2px solid transparent;border-radius:0;color:var(--muted)}
+.db .db-category-tabs button[aria-pressed=true] {color:var(--text);border-bottom-color:var(--orange)}
+.db .db-category-tabs b {font:10px var(--mono);color:var(--muted)}
+@media(min-width:740px) {.db .db-layout {grid-template-columns:minmax(220px,28%) minmax(0,1fr)}}

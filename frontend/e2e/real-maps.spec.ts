@@ -1,3 +1,4 @@
+import { openMatchBoard } from "./openLab";
 import { expect, test } from "@playwright/test";
 
 if (process.env.ESPORT_CS2_QA) {
@@ -22,7 +23,9 @@ if (process.env.ESPORT_CS2_QA) {
       const radarRequest = page.waitForResponse(r=>r.url().includes("/"+map.id+"/radar.png?layer=default") && r.ok());
       await button("Открыть матч BO1").click();
       await radarRequest;
-      await expect(page.getByText(map.name+" · BO1",{exact:true})).toBeVisible();
+      const scoreboard = page.getByRole("region",{name:"Счёт матча"});
+      await expect(scoreboard.getByText("BO1",{exact:true})).toBeVisible();
+      await expect(scoreboard.getByText(map.name+" · R1",{exact:true})).toBeVisible();
       await expect(page.getByTestId("radar")).toHaveAttribute("data-ready","true");
       await button("Запустить").click();
       await expect.poll(async()=> (await (await page.request.get("/api/state")).json()).world.match.phase,{timeout:30000}).toBe("live");
@@ -35,7 +38,7 @@ if (process.env.ESPORT_CS2_QA) {
         await expect(button("Сменить этаж")).toHaveText("Нижний");
       }
       await page.screenshot({path:info.outputPath(map.id+".png")});
-      await button("Редактор тактик").click();
+      await openMatchBoard(page);
       await expect(page.getByTestId("tactic-map")).toHaveAttribute("data-ready","true");
       if (map.id === "de_nuke") {
         const buy = page.getByRole("combobox", {name:"Закупка"});

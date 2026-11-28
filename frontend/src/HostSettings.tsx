@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { serverURL } from "./session";
+import {Heading, Tabs} from "./GameUI";
 import "./host-settings.css";
 
 type Device = { id: string; name: string; pairedAt: number | null; connected: boolean };
@@ -28,7 +29,7 @@ function NetworkGlyph() {
 }
 
 function TrustInstructions({ fingerprint }: { fingerprint: string }) {
-  return <details className="host-trust"><summary>Доверие к сертификату</summary>
+  return <div className="host-trust">
     <p>Скачайте открытый сертификат этого ПК и передайте его на телефон через USB, AirDrop или другой доверенный канал. Перед установкой сравните отпечаток SHA-256 сертификата с отпечатком на экране ПК.</p>
     <div className="host-fingerprint"><span>SHA-256</span><code>{fingerprint}</code></div>
     <a className="host-download" href={serverURL("/api/host/authority.cer").href} download="esport-sim-ca.cer">Скачать сертификат (.cer)</a>
@@ -36,11 +37,11 @@ function TrustInstructions({ fingerprint }: { fingerprint: string }) {
     <p>Откройте файл. В «Настройки» → «Основные» → «VPN и управление устройством» выберите загруженный профиль и установите его. Затем в «Основные» → «Об этом устройстве» → «Доверие сертификатам» включите полное доверие для этого УЦ.</p>
     <h4>Android</h4>
     <p>В настройках найдите «Установка сертификата» → «Сертификат ЦС», подтвердите выбор и откройте файл. Название раздела зависит от производителя. После установки откройте адрес сервера в браузере.</p>
-  </details>;
+  </div>;
 }
 
-function SettingsDialog({ close }: { close: () => void }) {
-  const dialog = useRef<HTMLDialogElement>(null);
+export function HostPage({ close }: { close: () => void }) {
+  const [tab,setTab] = useState("Подключение");
   const [state, setState] = useState<Host | null>(null);
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
@@ -75,15 +76,14 @@ function SettingsDialog({ close }: { close: () => void }) {
     }
   }
   useEffect(() => {
-    dialog.current?.showModal();
-    const old = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const previous = document.activeElement as HTMLElement | null;
+    document.getElementById("host-close")?.focus({preventScroll:true});
     void refresh();
     const timer = window.setInterval(() => void refresh(), 4000);
     return () => {
       ++serial.current;
       window.clearInterval(timer);
-      document.body.style.overflow = old;
+      if (previous?.isConnected) previous.focus({preventScroll:true});
     };
   }, []);
   async function action(op: () => Promise<void>) {
@@ -112,18 +112,20 @@ function SettingsDialog({ close }: { close: () => void }) {
     await hostRequest("/api/host/shutdown", "POST");
     setStopping(true);
   });
-  return <dialog ref={dialog} className="host-dialog" aria-labelledby="host-title" onClose={close}>
-    <header className="host-titlebar">
-      <div className="host-heading"><div className="host-emblem"><NetworkGlyph/></div><div><span>ESPORT_SIM</span><h2 id="host-title">Домашний сервер</h2></div></div>
-      <button className="host-x" aria-label="Закрыть настройки" onClick={() => dialog.current?.close()} autoFocus>×</button>
-    </header>
+  return <section className="host-page host-dialog" aria-label="Домашний сервер"
+    onKeyDown={e=>{if(e.key==="Escape"){e.stopPropagation();close()}}}>
+    <Heading eyebrow="Параметры игры" title="Домашний сервер" sub="Одна карьера на компьютере, телефоне и планшете.">
+      <button id="host-close" className="btn" aria-label="Закрыть настройки" onClick={close}>Назад</button></Heading>
+    {state && <div className="host-status-strip"><span className={state.enabled?"host-tag active":"host-tag"}>{state.enabled?"Доступ открыт":"Только этот ПК"}</span>
+      <span>{state.enabled?state.url:"Подключения из локальной сети отключены"}</span></div>}
+    <Tabs items={["Подключение","Устройства","Доверие и сертификат"]} value={tab} change={setTab}/>
     <div className="host-sections">
     {stopping ? <p role="status">Завершается работа сервера. Это окно можно закрыть.</p> : <>
       {error && <p className="host-error" role="alert">{error}</p>}
       {!state && <p role="status">Загружаем настройки…</p>}
       {state && <>
-        <section className="host-block">
-          <div className="host-sectionhead"><h3>Локальная сеть</h3><span className={state.enabled ? "host-tag active" : "host-tag"}>{state.enabled ? "Доступ открыт" : "Только этот ПК"}</span></div>
+        {tab==="Подключение" && <div className="host-columns"><section className="host-block">
+          <div className="host-sectionhead"><h3>Локальная сеть</h3></div>
           <p>Подключите телефон или планшет к той же домашней сети, что и этот ПК.</p>
           <div className="host-address-row"><label>Сетевой интерфейс<select value={address} disabled={busy || state.enabled || !state.addresses.length} onChange={e => setAddress(e.target.value)}>
             {!state.addresses.length && <option value="">Нет доступного IPv4-адреса</option>}
@@ -132,17 +134,19 @@ function SettingsDialog({ close }: { close: () => void }) {
           <button className={state.enabled ? "" : "host-action"} disabled={busy || (!state.enabled && !address)} onClick={() => void toggle(!state.enabled)}>{state.enabled ? "Отключить LAN" : "Включить LAN"}</button></div>
           {state.error && <p className="host-error" role="alert">{state.error}</p>}
         </section>
-        {state.enabled && state.url && <section className="host-block">
+        {state.enabled && state.url ? <section className="host-block">
           <h3>Подключение телефона</h3>
-          {state.fingerprint && <TrustInstructions fingerprint={state.fingerprint}/>}
+          <button className="link-button" onClick={()=>setTab("Доверие и сертификат")}>Доверие к сертификату</button>
           <div className="host-pairing"><img src={invite?.qrDataUrl || serverURL("/api/host/qr.svg?address=" + encodeURIComponent(state.url)).href} alt={invite ? "QR-код одноразового приглашения" : "QR-код адреса сервера"} width="128" height="128"/>
           <div><h4>Адрес сервера</h4><code className="host-url">https://<wbr/><span>{new URL(state.url).host}</span></code>
             <p>{invite ? "Отсканируйте приглашение на телефоне. Код заполнится автоматически. Проверьте название устройства и нажмите «Подключить»." : "После установки сертификата выдайте код, чтобы показать QR-приглашение. Также можно открыть этот адрес и ввести код вручную."}</p></div></div>
           <div className="host-invite"><div><h4>Одноразовый код</h4><p>Введите его на телефоне в течение 10 минут. Новый код заменяет предыдущий.</p></div>
           <button className="host-action" disabled={busy} onClick={() => void issue()}>Выдать код</button></div>
           {invite && <output aria-label="Одноразовый код" className="host-code">{invite.code}</output>}
-        </section>}
-        <section className="host-block"><div className="host-sectionhead"><h3>Разрешённые устройства</h3><span className="host-total">{state.devices.length}</span></div>
+        </section> : <section className="host-block"><h3>Приглашение устройства</h3><p>После включения LAN здесь появятся сетевой адрес и QR-код для подключения.</p></section>}</div>}
+        {tab==="Доверие и сертификат" && <section className="host-block"><h3>Проверка сертификата</h3>
+          {state.fingerprint?<TrustInstructions fingerprint={state.fingerprint}/>:<p>Включите LAN для получения сертификата этого домашнего сервера.</p>}</section>}
+        {tab==="Устройства" && <section className="host-block"><div className="host-sectionhead"><h3>Разрешённые устройства</h3><span className="host-total">{state.devices.length}</span></div>
           {!state.devices.length && <p>Список появится после первого подключения по коду.</p>}
           <ul className="host-devices">{state.devices.map(device => <li key={device.id}>
             <div><strong>{device.name}</strong><small>{device.connected ? "На связи" : "Вне сети"}{device.pairedAt ? " · С " + new Date(device.pairedAt * 1000).toLocaleDateString("ru-RU") : ""}</small></div>
@@ -150,19 +154,18 @@ function SettingsDialog({ close }: { close: () => void }) {
               ? <div className="host-confirm"><button disabled={busy} onClick={() => setConfirm(null)}>Отмена</button><button className="host-danger" disabled={busy} onClick={() => void revoke(device.id)}>Подтвердить отзыв</button></div>
               : <button disabled={busy} onClick={() => setConfirm(device.id)}>Отозвать доступ</button>}
           </li>)}</ul>
-        </section>
+        </section>}
         {state.shutdownAvailable && <section className="host-block host-stop"><h3>Завершение работы</h3>
           {confirm === "shutdown" ? <><p>Сервер закроется, все устройства будут отключены. Для продолжения запустите приложение снова.</p><div className="host-confirm"><button disabled={busy} onClick={() => setConfirm(null)}>Отмена</button><button disabled={busy} className="host-danger" onClick={() => void shutdown()}>Подтвердить остановку</button></div></>
             : <button disabled={busy} onClick={() => setConfirm("shutdown")}>Остановить приложение</button>}
         </section>}
       </>}
     </>}</div>
-  </dialog>;
+  </section>;
 }
 
-export default function HostSettings({ connected }: { connected: boolean }) {
+export default function HostSettings({ connected, open }: { connected: boolean; open:()=>void }) {
   const [available, setAvailable] = useState(false);
-  const [open, setOpen] = useState(false);
   useEffect(() => {
     let mounted = true;
     const check = () => hostRequest<{hostSettings: boolean}>("/api/capabilities")
@@ -172,6 +175,6 @@ export default function HostSettings({ connected }: { connected: boolean }) {
     return () => { mounted = false; window.removeEventListener("online", check); };
   }, [connected]);
   if (!available) return null;
-  return <><button className="host-trigger" aria-label="Настройки сервера" onClick={() => setOpen(true)}><NetworkGlyph/><span>Настройки сервера</span></button>
-    {open && <SettingsDialog close={() => setOpen(false)}/>}</>;
+  return <><button className="host-trigger" aria-label="Настройки сервера" onClick={open}><NetworkGlyph/><span>Настройки сервера</span></button>
+    </>;
 }

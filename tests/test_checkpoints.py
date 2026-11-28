@@ -216,3 +216,23 @@ def test_launcher_releases_descriptor_after_a_windows_reader_closes(tmp_path, mo
     monkeypatch.setattr(Path, "unlink", shared_reader)
     remove_descriptor(descriptor)
     assert attempts == [descriptor, descriptor] and not descriptor.exists()
+
+
+def test_idle_clock_skips_decoding_and_sees_external_resume(tmp_path, monkeypatch):
+    from contextlib import closing
+
+    path = tmp_path / "idle.sqlite"
+    store = Store(path)
+    try:
+        assert not store.tick()
+        with monkeypatch.context() as m:
+            m.setattr(store, "read", lambda: pytest.fail("decoded unchanged paused checkpoint"))
+            assert not store.tick()
+        with closing(sqlite3.connect(path)) as other, other:
+            other.execute("UPDATE active SET body=json_set(body,'$.running',json('true')) WHERE id=1")
+        assert store.tick()
+        assert store.read()["world"]["tick"] == 1
+    finally:
+        store.db.close()
+        store.portraits.close()
+        store.badges.close()

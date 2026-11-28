@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import forecast, lineup_photos, scouting, training, round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
+from . import forecast, scouting, training, round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
 from .database import require
 
 VERSION = 1
@@ -214,7 +214,7 @@ def match_domain(pack, c, event, badges=None, portraits=None):
             ids = lineups[r["team"]]
             practice[rid] = dict(r, players=ids, captain=r["captain"] if r["captain"] in ids else ids[0])
         pack = dict(pack, rosters=practice)
-    domain = database.match_input(pack, rosters, badges)
+    domain = database.match_input(pack, rosters, badges, portraits)
     if "training" in c:
         training.overlay(domain, c["training"])
     domain["authority"]["mode"] = c["mode"]
@@ -235,16 +235,6 @@ def match_domain(pack, c, event, badges=None, portraits=None):
         if sid in domain["staff"]:
             domain["staff"][sid] = dict(domain["staff"][sid], matchRole=role)
     domain["managerPlayers"] = list(manager_players)
-    if portraits:
-        for pid, photo in lineup_photos.index(portraits).items():
-            if pid in domain["players"]:
-                domain["players"][pid]["visual"]["lineupPhoto"] = photo
-        for pid, portrait in portraits.index(
-            {pid: pack["players"][pid] for pid in domain["players"]}
-        ).items():
-            visual = domain["players"][pid]["visual"]
-            if not pack["players"][pid].get("appearance"):
-                visual["head"] = portrait["image"]
     return domain, rosters
 
 
@@ -265,7 +255,8 @@ def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
             game["series"].update(forecastBasis=basis, forecasts=quotes)
             forecast.after_veto(game["series"])
         if event.get("edition"):
-            game["series"]["tournament"]=c["circuit"]["editions"][event["edition"]]["title"]
+            game["series"]["edition"] = event["edition"]
+            game["series"]["tournament"] = c["circuit"]["editions"][event["edition"]]["title"]
         if c["team"] not in event["teams"] and detailed:
             game["autonomous"] = True
         if not detailed:

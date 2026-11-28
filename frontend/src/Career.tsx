@@ -1,12 +1,17 @@
+import { CareerViewTab } from "./CareerViewTab";
+import { CompetitionMark, eventMark } from "./CompetitionMark";
+import type { Directory as CompetitionDirectory } from "./CompetitionCenter";
+import { CareerLinks } from "./CareerIdentity";
 import { ManagerAttention } from "./ManagerAttention";
-import { type Decision } from "./careerData";
+import { CareerRoster, type Decision } from "./careerData";
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { Brand, Dialog, Glyph, Heading } from "./GameUI";
-import { Avatar } from "./SceneIdentity";
+import { Avatar, LineupPortrait } from "./SceneIdentity";
 import { type Frame } from "./session";
 import {
   date,
   groupTitle,
+  fixtureName, fixtureScore,
   position,
   useData,
   type Act,
@@ -17,19 +22,15 @@ import {
   type Summary,
 } from "./careerData";
 import { Load, MatchReport, NewCareer, Saves } from "./CareerForms";
-import { TrainingCenter } from "./TrainingCenter";
+
 import { ScoutingCenter } from "./ScoutingCenter";
 import { StaffOffice } from "./StaffOffice";
 import { CareerMenu } from "./CareerMenu";
-import { CompetitionCenter } from "./CompetitionCenter";
-import { Calendar } from "./CareerCalendar";
+
+
+import { ApprovedShell } from "./approved/Shell";
 import { Dashboard, Inbox, letters } from "./CareerHome";
-import {
-  Directory,
-  EntityProfile,
-  Squad,
-  useDirectoryView,
-} from "./CareerScene";
+import { useDirectoryView } from "./careerData";
 import "./career.css";
 
 const sections = [
@@ -58,6 +59,8 @@ const sections = [
     "На сервере",
     [
       ["Матч-центр", "device-gamepad-2"],
+      ["Архив матчей", "book"],
+      ["Аналитика", "report-analytics"],
       ["База сцены", "book"],
     ],
   ],
@@ -68,8 +71,9 @@ type Props = {
   act: Act;
   screen: "menu" | "hub";
   go: (s: "menu" | "hub" | "lab" | "match") => void;
-  database: () => void;
+  database: (page?:"editor"|"exhibition"|"appearance") => void;
   board: () => void;
+  prepareBoard:(map:string,side:"CT"|"T")=>void;
   settings: ReactNode;
   status: ReactNode;
   tool?: ReactNode;
@@ -107,9 +111,9 @@ export default function CareerScreen(props: Props) {
         </div>
       </>
     );
-  if (!c || screen === "menu")
-    return (
+  const menu = (
       <CareerMenu
+        embedded={!!c}
         current={c}
         careers={res.data.careers}
         create={() => setCreate(true)}
@@ -120,35 +124,42 @@ export default function CareerScreen(props: Props) {
             go("hub");
         }}
         database={database}
+        board={props.board}
         lab={async () => {
           if (!c || (await act("career-lab"))) go("lab");
         }}
         settings={
-          <div className="menu-settings">
-            {status}
-            {settings}
-          </div>
+          settings
         }
       />
     );
-  return <Manager key={c.id} {...props} c={c} enabled={enabled} pauseEnabled={props.enabled && frame.careerId===c.id} />;
+  if (!c) return menu;
+  return <Manager frontMenu={screen==="menu"?menu:null} key={c.id} {...props} c={c} enabled={enabled} pauseEnabled={props.enabled && frame.careerId===c.id} />;
 }
+const TrainingCenter = lazy(() => import("./TrainingCenter").then(v=>({default:v.TrainingCenter})));
+const CompetitionCenter = lazy(() => import("./CompetitionCenter").then(v=>({default:v.CompetitionCenter})));
+const Calendar = lazy(() => import("./CareerCalendar").then(v=>({default:v.Calendar})));
+const Directory = lazy(() => import("./CareerScene").then(v=>({default:v.Directory})));
+const EntityProfile = lazy(() => import("./CareerScene").then(v=>({default:v.EntityProfile})));
+const Squad = lazy(() => import("./CareerScene").then(v=>({default:v.Squad})));
+const Archive = lazy(() => import("./CareerArchive"));
 const Prematch = lazy(() => import("./Prematch"));
-type Route = { page: string; fixture?:string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
+type Route = { page: string; calendarDay?:string; calendarScope?:string; tab?: string; fixture?:string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
 function Manager({
+  frontMenu,
   pauseEnabled,
   c,
   frame,
   enabled,
   act,
   go,
-  board,
+  board,prepareBoard,
   settings,
   status,
   tool,
   toolName,
   leaveTool,
-}: Props & { c: Career; pauseEnabled:boolean }) {
+}: Props & { frontMenu:ReactNode; c: Career; pauseEnabled:boolean }) {
   const progress = frame.calendarProgress;
   const currentDate = progress?.date || c.date;
   const directory = useData<Scene>("/api/career/" + c.id + "/scene");
@@ -183,7 +194,7 @@ function Manager({
   const required = c.attention.filter(row=>row.level==="required");
   const directMatch = required.length===1 && ["play","match"].includes(required[0].action);
   const directoryView = useDirectoryView();
-  const historyStack = useRef<Route[]>([]);
+  const historyStack = useRef<{route:Route; match:boolean}[]>([]);
   const scene = directory.data,
     box = letters(c),
     unread = box.filter((m) => !read.includes(m.id)).length;
@@ -196,7 +207,8 @@ function Manager({
   const to = (page: string, profile?: Profile, edition?:string, entry?:Decision["action"], fixture?:string) => {
     closeOverlays();
     if (tool) leaveTool();
-    historyStack.current.push(route);
+    if (frontMenu) go("hub");
+    historyStack.current.push({route:route.page==="Календарь" ? {...route,calendarDay:route.calendarDay ?? day} : route, match:toolName==="Матч-центр" && !!(frame.world.match || frame.world.series)});
     setRoute({ page, profile, edition, entry, fixture, jump: historyStack.current.length });
     window.scrollTo(0, 0);
   };
@@ -204,7 +216,9 @@ function Manager({
   const tournament = (id:string) => to("Соревнования",undefined,id);
   const open = (p: Profile) => to("Профиль", p);
   const back = () => {
-    setRoute(historyStack.current.pop() || { page: "Кабинет" });
+    const previous = historyStack.current.pop();
+    setRoute(previous?.route || { page: "Кабинет" });
+    if (previous?.match && (frame.world.match || frame.world.series)) go("match");
     window.scrollTo(0, 0);
   };
   const calendar = (d: string) => {
@@ -262,6 +276,7 @@ function Manager({
       return;
     }
     if (page === "Тактики") {
+      if (frontMenu) go("hub");
       board();
       return;
     }
@@ -281,7 +296,7 @@ function Manager({
     }
     to(page);
   };
-  const active = toolName || route.page;
+  const active = toolName || (frontMenu ? "Главное меню" : route.page);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -295,18 +310,20 @@ function Manager({
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, []);
+  const breakpoint = !frontMenu ? "(max-width:700px)" : "(max-width:800px)";
   const [narrow, setNarrow] = useState(
-    () => matchMedia("(max-width:800px)").matches,
+    () => matchMedia(breakpoint).matches,
   );
   useEffect(() => {
-    const m = matchMedia("(max-width:800px)");
+    const m = matchMedia(breakpoint);
     const change = () => {
       setNarrow(m.matches);
       setDrawer(false);
     };
+    setNarrow(m.matches);
     m.addEventListener("change", change);
     return () => m.removeEventListener("change", change);
-  }, []);
+  }, [breakpoint]);
   const menuButton = useRef<HTMLButtonElement>(null),
     side = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -317,7 +334,7 @@ function Manager({
   }, [drawer]);
   const navButton = (label: string, icon: string) => (
     <button
-      aria-label={label}
+      aria-label={frontMenu && label==="База сцены"?"Справочник сцены":label}
       className={"nav-item " + (active === label ? "active" : "")}
       aria-current={active === label ? "page" : undefined}
       key={label}
@@ -331,7 +348,16 @@ function Manager({
     </button>
   );
   const searchTerm = q.trim().toLowerCase();
-  const matches = search && scene
+  const searchCompetitions = useData<CompetitionDirectory>(
+    search && c.competitions && searchTerm ? "/api/career/"+c.id+"/competitions" : null,
+    frame.careerRevision || 0
+  );
+  const editions = searchTerm && search ? (searchCompetitions.data?.editions || [])
+    .filter(e => e.title.toLowerCase().includes(searchTerm)).slice(0, 6) : [];
+  const fixtures = search && searchTerm ? [...c.queue, ...c.history.slice().reverse()]
+    .filter(f => f.kind === "match" && !f.pcw && (f.teams.map(id=>c.teams[id]).join(" ")+" "+(f.title || "")+" "+f.date).toLowerCase().includes(searchTerm))
+    .slice(0, 6) : [];
+  const matches = search && searchTerm && scene
     ? (Object.keys(groupTitle) as Group[]).flatMap((g) =>
         Object.values(scene[g])
           .filter((r) =>
@@ -344,12 +370,152 @@ function Manager({
           .map((r) => ({ group: g, id: r.id, name: r.name, visual: r.visual })),
       )
     : [];
+  const profileTitle = {players:"Профиль игрока", teams:"Профиль команды", organizations:"Организация", staff:"Профиль сотрудника"};
+  const content = <CareerViewTab.Provider value={{tab:route.tab, select:tab=>setRoute(current=>({...current,tab}))}}><CareerLinks.Provider value={{scene, open, tournament}}>
+          {progress && (
+            <div className="cr-progress" role="status">
+              Рассчитано встреч · {progress.done}
+              <progress aria-label="Расчёт календаря до следующего решения" />
+              <button className="btn" disabled={!pauseEnabled} onClick={()=>act("career-pause",{runId:progress.runId})}>Остановить расчёт</button>
+            </div>
+          )}
+          {completedQuick && <Dialog title="Матч завершён" close={()=>setQuickResult(null)}><MatchReport careerId={c.id} event={completedQuick} teams={c.teams} close={()=>setQuickResult(null)}/></Dialog>}
+          <ManagerAttention quick={quick} items={c.attention} open={decisions} close={()=>setDecisions(false)}
+            enabled={enabled && !progress} resolve={resolve} repair={repair} error={decisionError}
+            saves={()=>{setDecisions(false);to("Сохранения")}}/>
+          <div key={active} className="screen-enter"><Suspense fallback={<p role="status">Загружаем раздел…</p>}>
+            {(tool && <CareerRoster.Provider value={c.roster}>{tool}</CareerRoster.Provider>) || frontMenu ||
+              (active === "Календарь" ? (
+                <Calendar prepare={prepare} c={c} selected={route.calendarDay ?? day} filter={route.calendarScope ?? "club"}
+                  select={calendarDay=>setRoute(prev=>({...prev,calendarDay}))} setFilter={calendarScope=>setRoute(prev=>({...prev,calendarScope}))} tournament={tournament} revision={frame.careerRevision||0} training={d=>{setDay(d);to("Тренировочный центр")}}/>
+              ) : active === "Входящие" ? (
+                <Inbox c={c} report={setQuickResult} prepare={prepare}
+                  box={box}
+                  read={read}
+                  selected={box.find((m) => m.id === inboxId) || null}
+                  select={showLetter}
+                  calendar={calendar} tournament={tournament}
+                />
+              ) : active === "Сохранения" ? (
+                <>
+                  <Heading title="Сохранения" sub={c.club} />
+                  <Saves {...{ act, c, enabled }} />
+                </>
+              ) : active === "Настройки" ? (
+                <>
+                  <Heading
+                    title="Настройки"
+                    sub="Отображение и домашний сервер"
+                  />
+                  <div className="surface panel-body settings-list"><h2>Отображение</h2>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={compact}
+                        onChange={(e) => {
+                          setCompact(e.target.checked);
+                          localStorage.setItem(
+                            "esport-sim/compact",
+                            String(e.target.checked),
+                          );
+                        }}
+                      />
+                      <span>Компактные таблицы<small>Уменьшить расстояние между строками</small></span>
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={motion}
+                        onChange={(e) => {
+                          setMotion(e.target.checked);
+                          localStorage.setItem(
+                            "esport-sim/motion",
+                            String(e.target.checked),
+                          );
+                        }}
+                      />
+                      <span>Анимации интерфейса<small>Переходы при открытии разделов и диалогов</small></span>
+                    </label>
+                    {settings}
+                  </div>
+                </>
+              ) : !scene || directory.error ? (
+                <Load {...directory} />
+              ) : route.profile?.group === "staff" && c.office.people[route.profile.id] ? (
+                <StaffOffice key={route.profile.id} {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial="Тренерский штаб" personId={route.profile.id}/>
+              ) : active === "Тренировочный центр" ? (
+                <TrainingCenter key={route.jump} {...{c,act}} reports={route.entry==="training"} initial={day} revision={frame.careerRevision||0} enabled={enabled && !progress && !frame.world.series && !frame.world.match}/>
+              ) : active === "Скаутский отдел" ? (
+                <ScoutingCenter {...{c,scene,act}} enabled={enabled && !progress && !frame.world.series && !frame.world.match} revision={frame.careerRevision||0} open={id=>open({group:"players",id})}/>
+              ) : active === "Тренерский штаб" ? (
+                <StaffOffice {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial={active}/>
+              ) : route.profile ? (
+                <EntityProfile
+                  initialTab={route.profile.group==="players" && historyStack.current.at(-1)?.route.page==="Скаутский отдел" ? "Скаутинг" : undefined}
+                  canTalk={!!frame.world.match?.room} navigate={nav} revision={frame.careerRevision||0} key={route.profile.group + route.profile.id}
+                  {...{ profile: route.profile, scene, c, open, back }}
+                />
+              ) : active === "Организация" ? (
+                <EntityProfile
+                  {...{
+                    profile: { group: "teams", id: c.team },
+                    scene,
+                    c,
+                    open,
+                    back,
+                  }}
+                />
+              ) : active === "Состав" ? (
+                <Squad
+                  {...{
+                    scene,
+                    c,
+                    open,
+                    filter,
+                    setFilter,
+                    query,
+                    setQuery,
+                    sort,
+                    setSort,
+                  }}
+                />
+              ) : active === "Соревнования" || active === "Рейтинг VRS" ? (
+                <CompetitionCenter open={open} onEdition={id=>id?tournament(id):to("Соревнования")} prepare={prepare} key={(route.edition||"directory")+":"+route.jump} initialEdition={route.edition} initialEntry={route.entry==="entry" || route.entry==="calendar"} initialConflict={route.entry==="calendar"} {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
+              ) : active === "Архив матчей" || active === "Аналитика" ? (
+                <Archive c={c} scene={scene} revision={frame.careerRevision || 0} analytics={active === "Аналитика"} />
+              ) : active === "База сцены" ? (
+                <Directory {...{ scene, open }} view={directoryView} />
+              ) : active === "Матч-центр" ? (
+                preparedFixture && !preparedFixture.pcw ? <Suspense fallback={<p role="status">Загружаем подготовку…</p>}>
+                  <Prematch key={preparedFixture.id} {...{c,scene,calendar,tournament,prepareBoard,open}} revision={frame.careerRevision||0}
+                    event={preparedFixture} play={enabled && directMatch && c.queue[0]?.id===preparedFixture.id ? ()=>void resolve(required[0]) : undefined}/></Suspense>
+                  : <section className="surface panel-body"><h2>Матч-центр</h2><p>{preparedFixture ? "Подготовка к пракку доступна в тренировочном центре." : "В календаре пока нет ближайшей встречи."}</p>
+                    <button onClick={()=>calendar(preparedFixture?.date || c.date)}>Открыть календарь</button></section>
+              ) : (
+                <Dashboard report={setQuickResult} quick={directMatch && required[0].action==="play" && enabled && !progress ? quick:undefined} {...{prepare,tournament,resolve}} revision={frame.careerRevision||0}
+                  {...{
+                    c,
+                    scene,
+                    box,
+                    go: nav,
+                    calendar,
+                    open,
+                    letter: showLetter,
+                  }}
+                />
+              ))}</Suspense>
+          </div>
+  </CareerLinks.Provider></CareerViewTab.Provider>;
   return (
     <div
       className={
         (compact ? "density-compact " : "") + (motion ? "" : "reduced-motion")
       }
     >
+      {!frontMenu ? <ApprovedShell c={c} section={tool?active:route.profile?profileTitle[route.profile.group]:route.edition?"Центр турнира":active==="Матч-центр"?"Подготовка к матчу":active} {...{active,nav,drawer,setDrawer,side,unread,advance,status}}
+ small={narrow} action={directMatch?"В матч-центр":required.length?"Решения · "+required.length:"Продолжить"} day={currentDate}
+ menu={()=>{closeOverlays();leaveTool();go("menu")}} team={()=>open({group:"teams",id:c.team})}
+ disabled={!enabled || !!progress} search={()=>{setQ("");setSearch(true)}} decisions={()=>{setDecisionError("");setDecisions(true)}}>{content}</ApprovedShell> : <>
       {drawer && (
         <button
           className="responsive-overlay visible"
@@ -366,6 +532,7 @@ function Manager({
       >
         <Brand
           menu={() => {
+            closeOverlays();
             leaveTool();
             go("menu");
           }}
@@ -466,155 +633,25 @@ function Manager({
           </div>
         </header>
         <div className="main-content" id="main-content">
-          {progress && (
-            <div className="cr-progress" role="status">
-              Рассчитано встреч · {progress.done}
-              <progress aria-label="Расчёт календаря до следующего решения" />
-              <button className="btn" disabled={!pauseEnabled} onClick={()=>act("career-pause",{runId:progress.runId})}>Остановить расчёт</button>
-            </div>
-          )}
-          {!tool && (active === "Кабинет" || required.length > 0) && (!progress || required.length > 0) && <button className="attention-summary surface" data-blocked={!!required.length}
-            aria-label={"Открыть центр решений · обязательных: " + required.length} aria-describedby="decision-explanation"
-            onClick={()=>{setDecisionError("");setDecisions(true)}}>
-            <span id="decision-explanation"><strong>{required.length ? required[0].title : "Центр решений"}</strong>
-            <small>{required.length ? required[0].detail : "Обязательных решений нет"}</small></span>
-            <b>{required.length ? "Требуют внимания · " + required.length : "Открыть"}</b>
-          </button>}
-          {directMatch && required[0].action === "play" && !progress && <div className="quick-fixture surface">
-            <div><strong>{c.queue[0].teams.map(t=>c.teams[t]).join(" — ")}</strong><small>Расчёт по раундам с автоматическим выбором карт</small></div>
-            <button className="btn" disabled={!enabled} onClick={quick}>Быстро рассчитать матч</button>
-          </div>}
-          {completedQuick && <Dialog title="Матч завершён" close={()=>setQuickResult(null)}><MatchReport careerId={c.id} event={completedQuick} teams={c.teams} close={()=>setQuickResult(null)}/></Dialog>}
-          <ManagerAttention quick={quick} items={c.attention} open={decisions} close={()=>setDecisions(false)}
-            enabled={enabled && !progress} resolve={resolve} repair={repair} error={decisionError}
-            saves={()=>{setDecisions(false);to("Сохранения")}}/>
-          <div key={active} className="screen-enter">
-            {tool ||
-              (active === "Календарь" ? (
-                <Calendar prepare={prepare} key={day} c={c} initial={day} tournament={tournament} revision={frame.careerRevision||0} training={d=>{setDay(d);to("Тренировочный центр")}}/>
-              ) : active === "Входящие" ? (
-                <Inbox
-                  box={box}
-                  read={read}
-                  selected={box.find((m) => m.id === inboxId) || null}
-                  select={showLetter}
-                  calendar={calendar} tournament={tournament}
-                />
-              ) : active === "Сохранения" ? (
-                <>
-                  <Heading title="Сохранения" sub={c.club} />
-                  <Saves {...{ act, c, enabled }} />
-                </>
-              ) : active === "Настройки" ? (
-                <>
-                  <Heading
-                    title="Настройки"
-                    sub="Отображение и домашний сервер"
-                  />
-                  <div className="surface panel-body settings-list">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={compact}
-                        onChange={(e) => {
-                          setCompact(e.target.checked);
-                          localStorage.setItem(
-                            "esport-sim/compact",
-                            String(e.target.checked),
-                          );
-                        }}
-                      />
-                      Компактные таблицы
-                    </label>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={motion}
-                        onChange={(e) => {
-                          setMotion(e.target.checked);
-                          localStorage.setItem(
-                            "esport-sim/motion",
-                            String(e.target.checked),
-                          );
-                        }}
-                      />
-                      Анимации интерфейса
-                    </label>
-                    {settings}
-                  </div>
-                </>
-              ) : !scene || directory.error ? (
-                <Load {...directory} />
-              ) : route.profile?.group === "staff" && c.office.people[route.profile.id] ? (
-                <StaffOffice key={route.profile.id} {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial="Тренерский штаб" personId={route.profile.id}/>
-              ) : active === "Тренировочный центр" ? (
-                <TrainingCenter key={route.jump} {...{c,act}} reports={route.entry==="training"} initial={day} revision={frame.careerRevision||0} enabled={enabled && !progress && !frame.world.series && !frame.world.match}/>
-              ) : active === "Скаутский отдел" ? (
-                <ScoutingCenter {...{c,scene,act}} enabled={enabled && !progress && !frame.world.series && !frame.world.match} revision={frame.careerRevision||0} open={id=>open({group:"players",id})}/>
-              ) : active === "Тренерский штаб" ? (
-                <StaffOffice {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial={active}/>
-              ) : route.profile ? (
-                <EntityProfile
-                  revision={frame.careerRevision||0} key={route.profile.group + route.profile.id}
-                  {...{ profile: route.profile, scene, c, open, back }}
-                />
-              ) : active === "Организация" ? (
-                <EntityProfile
-                  {...{
-                    profile: { group: "teams", id: c.team },
-                    scene,
-                    c,
-                    open,
-                    back,
-                  }}
-                />
-              ) : active === "Состав" ? (
-                <Squad
-                  {...{
-                    scene,
-                    c,
-                    open,
-                    filter,
-                    setFilter,
-                    query,
-                    setQuery,
-                    sort,
-                    setSort,
-                  }}
-                />
-              ) : active === "Соревнования" || active === "Рейтинг VRS" ? (
-                <CompetitionCenter prepare={prepare} key={(route.edition||"directory")+":"+route.jump} initialEdition={route.edition} initialEntry={route.entry==="entry" || route.entry==="calendar"} initialConflict={route.entry==="calendar"} {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
-              ) : active === "База сцены" ? (
-                <Directory {...{ scene, open }} view={directoryView} />
-              ) : active === "Матч-центр" ? (
-                preparedFixture && !preparedFixture.pcw ? <Suspense fallback={<p role="status">Загружаем подготовку…</p>}>
-                  <Prematch key={preparedFixture.id} {...{c,scene,calendar,tournament,board,open}} revision={frame.careerRevision||0}
-                    event={preparedFixture} play={enabled && directMatch && c.queue[0]?.id===preparedFixture.id ? ()=>void resolve(required[0]) : undefined}/></Suspense>
-                  : <section className="surface panel-body"><h2>Матч-центр</h2><p>{preparedFixture ? "Подготовка к пракку доступна в тренировочном центре." : "В календаре пока нет ближайшей встречи."}</p>
-                    <button onClick={()=>calendar(preparedFixture?.date || c.date)}>Открыть календарь</button></section>
-              ) : (
-                <Dashboard
-                  {...{
-                    c,
-                    scene,
-                    box,
-                    go: nav,
-                    calendar,
-                    open,
-                    letter: showLetter,
-                  }}
-                />
-              ))}
-          </div>
+{content}
         </div>
       </div>
+      <nav className="pocket-nav" aria-label="Быстрая навигация" inert={drawer}>
+        {[
+          ["Кабинет","Кабинет","home"], ["Состав","Состав","users"], ["Матч-центр","Матч","player-play"],
+          ...(c.competitions ? [["Соревнования","Турниры","trophy"]] : [])
+        ].map(([page,title,icon])=><button key={page} aria-label={"Быстрый переход · "+title} aria-current={active===page?"page":undefined} onClick={()=>nav(page)}>
+          <Glyph name={icon}/><span>{title}</span></button>)}
+        <button aria-label="Все разделы" onClick={()=>setDrawer(true)}><Glyph name="menu"/><span>Ещё</span></button>
+      </nav>
+      </>}
       {search && (
         <Dialog title="Глобальный поиск" close={() => setSearch(false)}>
           <label className="search-box">
             <Glyph name="search" />
             <input
               autoFocus
-              placeholder="Игрок, команда, организация или раздел"
+              aria-label="Поиск по карьере" placeholder="Раздел, команда, игрок, турнир или матч"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => {
@@ -650,19 +687,32 @@ function Manager({
                 key={r.group + r.id}
                 onClick={() => open(r)}
               >
-                <Avatar name={r.name} {...r.visual} />
+                {r.group === "players" ? <LineupPortrait id={r.id} name={r.name} visual={r.visual}/> : <Avatar name={r.name} {...r.visual} />}
                 <span>
                   <strong>{r.name}</strong>
                   <small>{groupTitle[r.group]}</small>
                 </span>
               </button>
             ))}
+            {editions.map(e => <button type="button" className="search-result" key={e.id} onClick={()=>tournament(e.id)}>
+              <CompetitionMark mark={eventMark(e.id,e.organizer)} name={e.title} year={e.year} cycle={e.id} size={32}/>
+              <span><strong>{e.title}</strong><small>Турнир · {date(e.start)} — {date(e.end)}</small></span>
+            </button>)}
+            {fixtures.map(f => <button type="button" className="search-result" key={f.id} onClick={()=>{
+              if (fixtureScore(f)) { setSearch(false); setQuickResult(f.id); }
+              else prepare(f.id);
+            }}>
+              <span className="search-fixture-marks" aria-hidden="true">{f.teams.map(id=>
+                <Avatar key={id} name={c.teams[id] || id} {...scene?.teams[id]?.visual} club/>)}</span>
+              <span><strong>{fixtureName(c,f)}</strong><small>{date(f.date)} · {fixtureScore(f) ? "Протокол · "+fixtureScore(f) : "Предматчевая подготовка"} · {f.title}</small></span>
+            </button>)}
+            {searchTerm && c.competitions && !searchCompetitions.data && <Load {...searchCompetitions}/>}
             {!scene && <Load {...directory} />}
             {scene &&
-              !matches.length &&
+              !matches.length && !editions.length && !fixtures.length && (!c.competitions || !searchTerm || !!searchCompetitions.data) &&
               !sections.some(([, items]) =>
                 items.some(([s]) => s.toLowerCase().includes(q.toLowerCase())),
-              ) && <p className="empty-state">Ничего не найдено.</p>}
+              ) && <p className="empty-state">Совпадений нет. Попробуйте никнейм, название команды или турнира.</p>}
           </div>
         </Dialog>
       )}
