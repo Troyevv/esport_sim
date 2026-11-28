@@ -4,10 +4,11 @@ from itertools import combinations
 from math import exp
 from random import Random
 
-from . import skills, tactics, world
+from . import coaching, skills, tactics, world
 from .match_rules import RULES
 
-MODE = {"mode": "round", "version": 1}
+LEGACY_MODE = {"mode": "round", "version": 1}
+MODE = {"mode": "round", "version": 2}
 # Small side priors in skill points, modulated by the actual lineups and purchases.
 CT_EDGE = {"de_nuke": 2, "de_train": 2, "de_mirage": 0.8, "de_anubis": -1.5}
 FIELDS = "k d a hs damage opening openingDeaths kast spent clutches".split()
@@ -229,6 +230,23 @@ def play_map(game, map_id, first_attack, seed, strain=None):
     players, teamwork = zip(
         *(lineup(domain, rid, map_id or "depo", i) for i, rid in enumerate(rids))
     )
+    active_coaching = game.get("simulation") != LEGACY_MODE
+    if active_coaching:
+        from ._match_native import timeout_need
+        bench = coaching.bench(domain)
+        series = game.get("series", {})
+        regulation = series.get("profile", {})
+        limit = regulation.get("timeouts", RULES["timeouts"])
+        budgets = dict.fromkeys(teams, limit)
+        if regulation.get("timeoutScope", "series") == "series" and series.get("results"):
+            budgets.update(series["results"][-1].get("remainingTimeouts", {}))
+        last_break = [-10, -10]
+        for row in players:
+            for player in row:
+                profile = domain["players"][player["player"]]
+                player.update(strainOfPlay=0, stability=profile["skills"]["stress_resistance"],
+                              usualRisk=player["risk"], usualOpening=player["openingWeight"],
+                              usualAssist=player["assist"])
     board = game.get("practiceBoard")
     if board:
         club = teams.index(game["practiceTeam"])
@@ -260,6 +278,30 @@ def play_map(game, map_id, first_attack, seed, strain=None):
                 for _ in teams
             ]
             saved, losses = [[0] * 5 for _ in teams], [0, 0]
+        called_break = None
+        if active_coaching and n >= 3:
+            best = 0
+            for side, team in enumerate(teams):
+                if n-last_break[side] < 3 or not budgets[team]:
+                    continue
+                distress = sum(p["strainOfPlay"] for p in players[side]) // 5
+                losses_recent = sum(r["winnerTeamId"] != team for r in rounds[-3:])
+                poor_buy = rounds[-1]["buys"][side] in ("eco", "force")
+                setbacks = sum(p["strainOfPlay"] > 24 for p in players[side])
+                need = timeout_need(distress, setbacks, scores[1-side]-scores[side], losses_recent,
+                                    4 if poor_buy else 0, domain.get("matchImportance", 0)//3 +
+                                    (6 if max(scores) >= target-1 else 0), n, budgets[team], bench[team]["analysis"])
+                if need > best:
+                    best, called_break = need, team
+            if called_break:
+                side = teams.index(called_break)
+                budgets[called_break] -= 1
+                last_break[side] = n
+                for p in players[side]:
+                    p["strainOfPlay"] = max(0, p["strainOfPlay"] - bench[called_break]["support"]//10)
+                    # Reassign first contact to the readiest player and adjust the risk of a force buy.
+                    p["openingWeight"] = p["usualOpening"] * (1.12 if p["strainOfPlay"] < 20 else .83)
+                    p["risk"] = max(0, min(100, p["usualRisk"] + (10 if bench[called_break]["bold"] else -15)))
         if board:
             carried = sum(0 < value < 3000 for value in saved[club])
         powers, buys = [], []
@@ -306,6 +348,15 @@ def play_map(game, map_id, first_attack, seed, strain=None):
                     player["capacity"], strain.get(pid, 0) + player["wear"]
                 )
                 survived = i in alive[side]
+                if active_coaching:
+                    stress = player["strainOfPlay"]
+                    load = (8 if not survived else -4) + (5 if side != winner else -5)
+                    stress = max(0, min(65, stress * 4//5 + load*(145-player["stability"])//75
+                                        - (3 if i in contributed[side] else 0)))
+                    player["strainOfPlay"] = stress
+                    player["risk"] = player["usualRisk"] + min(10, stress//5)
+                    player["openingWeight"] = player["usualOpening"] * (1 - stress / 320)
+                    player["assist"] = player["usualAssist"] * (1 - stress / 400)
                 stats[side][i]["kast"] += int(survived or i in contributed[side])
                 if not survived:
                     saved[side][i] = 0
@@ -331,6 +382,8 @@ def play_map(game, map_id, first_attack, seed, strain=None):
                 reason="objective" if all(alive) else "elimination",
             )
         )
+        if called_break:
+            rounds[-1]["timeoutTeam"] = called_break
         if called:
             rounds[-1]["tactic"] = tactics.reference(board)
         if scores[winner] == target:
@@ -339,8 +392,9 @@ def play_map(game, map_id, first_attack, seed, strain=None):
         for p in row:
             strain[p["player"]] *= 1 - p["recovery"] / 160
     return dict(
-        simulation=MODE,
-        rules="round-mr12.1",
+        simulation=MODE if active_coaching else LEGACY_MODE,
+        rules="round-mr12.2" if active_coaching else "round-mr12.1",
+        **({"remainingTimeouts": budgets} if active_coaching else {}),
         mapId=map_id,
         seed=seed,
         teams=teams,
@@ -356,7 +410,7 @@ def play_map(game, map_id, first_attack, seed, strain=None):
 def validate(report, teams):
     from .database import require
 
-    ok = report["rules"] == "round-mr12.1" and report["firstAttackTeamId"] in teams
+    ok = report["rules"] == ("round-mr12.2" if report.get("simulation") == MODE else "round-mr12.1") and report["firstAttackTeamId"] in teams
     points = dict.fromkeys(teams, 0)
     rows = report["rounds"]
     for n, r in enumerate(rows, 1):

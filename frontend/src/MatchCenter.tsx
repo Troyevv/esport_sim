@@ -1,3 +1,4 @@
+import TimeoutRoom, {type Room} from "./TimeoutRoom";
 import { SeriesScore } from "./SeriesCenter";
 import { useState } from "react";
 import type { PlanRef } from "./tactics";
@@ -104,6 +105,9 @@ export interface MatchView {
   >;
   remaining: number;
   timeoutLimit: number;
+  room?: Room | null;
+  breakOwner?: string | null;
+  rivalRemaining?: number;
   pending: boolean;
   call: string | null;
   calls: string[];
@@ -280,6 +284,9 @@ export default function MatchCenter({
       played.set(key, entry);
     }
   }
+  if (m.room) return <article className="match-center"><TimeoutRoom key={m.round} match={m} map={world.map.name}
+    enabled={enabled} saved={frame.hasSave} act={act} openBoard={openBoard}/></article>;
+  const awayBreak=!!m.breakOwner && !timeout;
   return (
     <article className="match-center">
       <header className="match-title">
@@ -337,6 +344,7 @@ export default function MatchCenter({
           <span>{world.series && finished ? "Карта завершена" : phases[m.phase]}</span>
         </div>
       </section>
+      {awayBreak && <p className="match-result">{clubName(m.breakOwner!)} · Тактический перерыв · {clock(m.clock)}</p>}
       {finished && (
         <p className="match-result">
           Победитель {world.series ? "карты" : "матча"} — <strong>{clubName(m.winnerTeamId!)}</strong>
@@ -749,7 +757,7 @@ export default function MatchCenter({
             {!timeout ? (
               <button
                 disabled={
-                  !enabled || finished || m.pending || m.remaining === 0
+                  !enabled || finished || awayBreak || m.pending || m.remaining === 0
                 }
                 onClick={() => act("timeout")}
               >

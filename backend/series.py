@@ -119,6 +119,8 @@ def next_map(w):
     )
     budget = s["profile"].get("timeouts",game["remaining"])
     game["remaining"] = budget if s["profile"].get("timeoutScope")=="map" else w.get("remaining",budget)
+    if "rivalRemaining" in game:
+        game["rivalRemaining"] = budget if s["profile"].get("timeoutScope")=="map" else w.get("rivalRemaining",budget)
     game["openingTimeouts"] = game["remaining"]
     s["stage"] = "playing"
     game["series"] = s
@@ -161,8 +163,8 @@ def verify_map(report, teams, expected, seed, map_id):
     from . import round_sim
 
     mode = report.get("simulation", DETAILED)
-    require(mode in (round_sim.MODE, DETAILED), "Неизвестная версия симуляции")
-    if mode == round_sim.MODE:
+    require(mode in (round_sim.MODE, round_sim.LEGACY_MODE, DETAILED), "Неизвестная версия симуляции")
+    if mode in (round_sim.MODE, round_sim.LEGACY_MODE):
         round_sim.validate(report, teams)
     else:
         require(

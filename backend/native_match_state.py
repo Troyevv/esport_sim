@@ -101,7 +101,7 @@ def open_game(world):
 
 
 def play_map(world):
-    owner = open_game(world)
+    owner = open_game(dict(world, autonomous=True) if world.get("agentPolicy", 0) >= 12 else world)
     while owner.advance(2048) == 2048:
         pass
     final = json.loads(owner.snapshot())

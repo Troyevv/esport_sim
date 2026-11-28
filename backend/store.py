@@ -395,7 +395,7 @@ class Store:
                 )
             kind, value = command["kind"], command.get("value")
             c = state.get("career")
-            if state["world"].get("series",{}).get("spectator") and kind in ("timeout","call","resume","tactic-assign","series-veto"):
+            if state["world"].get("series",{}).get("spectator") and kind in ("address","timeout","call","resume","tactic-assign","series-veto"):
                 raise ValueError("В режиме наблюдения решения принимают команды")
             if kind == "career-exhibition":
                 # Switching away and validating the editor selection are one command.
@@ -471,7 +471,7 @@ class Store:
                 state.pop("exhibitions", None)
                 state.update(saved)
                 state["context"] = str(uuid4())
-            elif kind in ("timeout", "call", "resume"):
+            elif kind in ("address", "timeout", "call", "resume"):
                 if state["world"]["version"] != 2:
                     raise ValueError("Сначала откройте матч BO1")
                 game = state["world"]

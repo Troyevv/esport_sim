@@ -37,6 +37,7 @@ void announce(AgentTurn &turn, const char *channel, const char *state, const Poi
                 last["members"] = turn.group_members(actor_point(a));
         }
         if (last.at("channel") == "order") {
+            if (turn.w.value("agentPolicy",0)>=12) last["advancing"]=a.at("lastMove").get<Tick>() >= turn.now-1;
             last["armed"] = a.at("ammo") > 0 && a.at("reloadAt") == 0 && a.at("blind") <= turn.now;
             last["hasUtility"] = !a.at("utility").empty();
         }

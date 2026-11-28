@@ -1,0 +1,40 @@
+.timeout-room { max-width:1160px; margin:0 auto; padding:clamp(14px,3vw,38px); border:1px solid #345052; border-radius:12px; color:#e8f0ec; background:linear-gradient(125deg,#213a3a,#142729 44%,#111e24); }
+.timeout-head,.timeout-line,.bench-controls {display:flex; align-items:center; justify-content:space-between; gap:12px}
+.timeout-head {padding-bottom:18px;border-bottom:1px solid #506467}
+.timeout-head h1 {font-size:clamp(26px,4vw,50px);letter-spacing:-.04em;margin:5px 0}
+.timeout-head p,.timeout-line h2 {margin:0}
+.timeout-head span,.timeout-line span,.bench-five small,.bench-kda,.timeout-room label {color:#bfd0cc}
+.timeout-head b {margin:0 8px;color:#ffcf81}
+.timeout-room .round-clock {position:static;transform:none;display:grid;justify-items:center;min-width:80px;padding:8px;border:1px solid #7f775e;border-radius:6px;background:#172323}
+.timeout-room .round-clock strong {font:700 26px var(--mono);color:#ffcf81}
+.timeout-line {margin:15px 0 10px}
+.bench-five {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.bench-five button {position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:stretch;min-width:0;text-align:left;padding:0 10px 8px;background:linear-gradient(145deg,#344b49,#1a2e30 65%);border:1px solid #4b6060;border-radius:6px}
+.bench-five button[aria-pressed=true] {outline:2px solid #f7c77c;outline-offset:-2px}
+.bench-five .game-portrait {display:block;align-self:center;width:100%;height:clamp(82px,11vw,140px);border:0;border-radius:0;background:transparent}
+.bench-identity {display:grid}.bench-identity strong {font-size:clamp(17px,2vw,24px);color:#fff}.bench-five small {font-size:12px}
+.bench-state {font-size:14px;font-weight:650;color:#f6d199;margin:4px 0}
+.bench-kda {display:flex;justify-content:space-between;gap:4px;border-top:1px solid #455b59;margin-top:7px;padding-top:6px;font-size:11px}.bench-kda b {color:#eef6ef}
+.bench-columns {display:grid;grid-template-columns:1.35fr 1fr;gap:22px;margin-top:20px}
+.bench-columns section {min-width:0;border-top:2px solid #618c84;padding-top:10px}
+.bench-columns h2 {font-size:20px;margin:0 0 6px}.bench-columns .timeout-line {margin:0}
+.bench-columns label {display:grid;gap:4px;font-size:13px;margin:9px 0}
+.bench-columns select {width:100%;max-width:100%;min-width:0}
+.bench-controls {justify-content:flex-start;flex-wrap:wrap}.bench-save {margin-top:15px}
+.bench-columns .primary,.bench-send {margin-top:10px}
+.bench-notes {max-height:150px;overflow:auto}.bench-columns blockquote {color:#eff6f0;line-height:1.45}
+.bench-columns details {margin-top:12px}.bench-columns summary {cursor:pointer}
+@media(max-width:720px) {
+ .bench-five {grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .bench-columns {grid-template-columns:1fr;gap:16px}
+ .bench-five button {padding:0 6px 6px}.bench-five .game-portrait {height:80px}
+ .timeout-room {padding:12px}.bench-kda {flex-wrap:wrap}
+}
+@media(max-width:440px) {
+ .bench-five {grid-template-columns:repeat(2,minmax(0,1fr))}
+ .bench-five button:last-child {grid-column:span 2;display:grid;grid-template-columns:80px 1fr;align-items:center}
+ .bench-five button:last-child .game-portrait {grid-row:span 4}
+}
+@media(max-height:480px) and (min-width:600px){
+ .timeout-room {padding:12px}.bench-five {grid-template-columns:repeat(5,minmax(0,1fr))}.bench-five .game-portrait {height:72px}
+}

@@ -38,7 +38,6 @@ const Json &assignment(const Json &plan, const Json &a, const Squad &squad) {
         return order.at("screen");
     return order;
 }
-namespace {
 std::optional<std::string> site_for(const OpeningMap &arena, const Point &p, bool &approach) {
     if (auto site = arena.objectives().reported_site(p)) {
         approach = false;
@@ -65,6 +64,7 @@ std::optional<std::string> site_for(const OpeningMap &arena, const Point &p, boo
     }
     return result;
 }
+namespace {
 bool confirmed(const Json &r) { return r.at("source") == "Зрение" || r.at("source") == "Радио"; }
 } // namespace
 Pressure site_pressure(const OpeningMap &arena, const Reports &reports, Tick now) {

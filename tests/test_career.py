@@ -286,7 +286,7 @@ def test_manager_quick_result_survives_retry_restart_and_old_slot(tmp_path, monk
     c = store.read()["career"]
     assert len(c["history"]) == 1 and store.read()["world"]["version"] == 1
     result = c["history"][0]["result"]
-    assert store.careers.report(result)["simulation"] == {"mode":"round", "version":1}
+    assert store.careers.report(result)["simulation"] == {"mode":"round", "version":2}
     store.db.close()
     store = Store(path)
     assert store.read()["career"]["history"][0]["result"] == result

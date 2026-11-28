@@ -18,6 +18,7 @@ std::vector<std::string> categories(const std::string &buy) {
 }
 } // namespace
 void OpeningMap::begin_live(Json &w, const Json &cfg) const {
+    w.erase("breakOwner");
     const auto grid = objectives_->grid();
     const auto now = w.at("tick").get<Tick>();
     for (const std::string side : {"T", "CT"}) {
@@ -41,6 +42,8 @@ void OpeningMap::begin_live(Json &w, const Json &cfg) const {
             return a.at("team") == side && a.at("appointed") == true;
         });
         auto &captain = *it;
+        if (w.contains("aiCall") && w.at("aiCall").at("team")==captain.at("teamId"))
+            coach=w.at("aiCall").at("plan");
         std::string buy = grid ? grid_buy(w, cfg, side, coach)
                                : buy_decision(w, cfg, side, coach, nullptr, nullptr, nullptr)
                                      .at("scenario")
@@ -66,7 +69,8 @@ void OpeningMap::begin_live(Json &w, const Json &cfg) const {
         const auto &skills =
             w.at("domain").at("players").at(captain.at("playerId").get<std::string>()).at("skills");
         std::string style = coach == "Ускориться" || int((draw_rng(captain) >> 16) % 100) <
-                                                         20 + skills.at("aggression").get<double>() * .6
+                                                         20 + skills.at("aggression").get<double>() * .6 +
+                       (captain.contains("mind") ? captain.at("mind").at("initiative").get<int>()/2 : 0)
                                 ? "Быстро"
                                 : "Сбор";
         std::optional<std::string> planted;
@@ -206,6 +210,7 @@ void OpeningMap::begin_live(Json &w, const Json &cfg) const {
             equip_defense(w, plan, cfg);
         w.at("plans")[side] = std::move(plan);
     }
+    w.erase("aiCall");
     w["call"] = nullptr;
     w["phase"] = "live";
     w["deadline"] = plus_ticks(now, cfg.at("rules").at("live"));

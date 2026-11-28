@@ -41,6 +41,7 @@ class Command(BaseModel):
         "match",
         "series-veto",
         "series-next",
+        "address",
         "timeout",
         "call",
         "resume",

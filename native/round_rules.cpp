@@ -1,3 +1,4 @@
+#include "coaching.hpp"
 #include "round_rules.hpp"
 
 #include <algorithm>
@@ -206,6 +207,7 @@ void settle_round(Json &w, const Json &cfg, const std::string &side, const std::
                                                 : streak.at(1 - winner).get<int>() + 1;
     const int n = number(w, "round"), half = number(rules, "half"), ot = number(rules, "overtimeHalf");
     const int target = n <= half * 2 ? half + 1 : half + ot * (1 + (n - 2 * half - 1) / (2 * ot)) + 1;
+    for (auto &a : w.at("agents")) round_emotion(w,a,a.at("team")==side,target);
     bool finished = w.at("scoreByTeam").at(winner_id) >= target;
     w["phase"] = finished ? "finished" : "result";
     w["deadline"] = plus_ticks(w.at("tick"), number(rules, "result"));
@@ -254,6 +256,8 @@ void start_round(Json &w, const Json &cfg, const Json &spawns) {
             w["opponentEconomy"] = obj;
     }
     for (auto &a : w.at("agents")) {
+        initialize_mind(w,a);
+        a.erase("coachOrder");
         const std::string side =
             ((a.at("teamId") == w.at("firstAttackTeamId")) != bool(swaps % 2)) ? "T" : "CT";
         const auto slot = number(a, "slot");

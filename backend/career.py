@@ -220,6 +220,7 @@ def match_domain(pack, c, event, badges=None, portraits=None):
     domain["authority"]["mode"] = c["mode"]
     if c["team"] in domain["teams"]:
         domain["authority"]["organization"] = domain["teams"][c["team"]]["organization"]
+    domain["matchImportance"] = (12 if event.get("edition") else 0) + (6 if event.get("edition") and event.get("stage") == len(edition["stages"])-1 else 0)
     domain["managerPlayers"] = list(manager_players)
     if portraits:
         for pid, portrait in portraits.index(
@@ -261,7 +262,7 @@ def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
 
 
 def simulate(game):
-    if game.get("simulation") == round_sim.MODE:
+    if game.get("simulation") in (round_sim.MODE, round_sim.LEGACY_MODE):
         if "series" not in game:
             first = game["domain"]["rosters"][game["rosterIds"][0]]["team"]
             return round_sim.play_map(game, game["mapId"], first, game["seed"])

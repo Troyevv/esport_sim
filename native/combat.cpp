@@ -1,3 +1,4 @@
+#include "coaching.hpp"
 #include "grenades.hpp"
 #include "radio.hpp"
 #include "combat.hpp"
@@ -123,6 +124,8 @@ void death(Json &w, const Json &cfg, Json &shooter, Json &target, const std::str
         emit(w, "drop", target.at("name").get<std::string>() + " потерял C4", "T")
             .update(Json{{"x", target.at("x")}, {"y", target.at("y")}});
     }
+    encounter_emotion(w,target,false,false,kill_id);
+    if (&shooter != &target) encounter_emotion(w,shooter,enemy,!enemy,kill_id);
     target["evidence"] = Json{{"id", kill_id},
                               {"round", w.at("round")},
                               {"text", "Я выбыл в раунде " + std::to_string(w.at("round").get<int>()) +

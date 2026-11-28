@@ -1,3 +1,4 @@
+#include "coaching.hpp"
 #include "grenades.hpp"
 #include "radio.hpp"
 #include "match_state.hpp"
@@ -138,7 +139,7 @@ class MatchState::Impl {
             opening = std::make_shared<OpeningMap>(objectives);
         }
         if (state.contains("agentPolicy") && (!state.at("agentPolicy").is_number_integer() ||
-                                              (state.at("agentPolicy") < 1 || state.at("agentPolicy") > 11)))
+                                              (state.at("agentPolicy") < 1 || state.at("agentPolicy") > 12)))
             throw std::invalid_argument("Неизвестная версия индивидуального ИИ");
         if (spatial_grenades(state) && config.contains("utility")) {
             config.at("utility").at("Дым")[1] = 200;
@@ -173,6 +174,11 @@ class MatchState::Impl {
                 item.update(a.at("evidence"));
                 feedback.push_back(std::move(item));
             }
+        if (w.contains("talkSeconds")) {
+            w["breakOwner"] = coach;
+            w.at("talkSeconds") = 60;
+            timeout_recovery(w, coach);
+        }
         w["phase"] = "timeout";
         w["pending"] = false;
         w["remaining"] = remaining - 1;
@@ -195,6 +201,9 @@ class MatchState::Impl {
         const std::string phase = w.at("phase"), name = w.at("domain").at("teams").at(coach).at("name");
         if (phase == "finished")
             throw std::invalid_argument("Матч завершён");
+        if ((w.contains("series") && w.at("series").value("spectator",false)) ||
+            (w.contains("breakOwner") && w.at("phase") != "timeout"))
+            throw std::invalid_argument("Идёт перерыв другой команды");
         if (kind == "timeout") {
             int remaining = w.at("remaining");
             if (remaining <= 0 || w.at("pending") == true || phase == "timeout")
@@ -207,11 +216,14 @@ class MatchState::Impl {
             }
         } else if (phase != "timeout")
             throw std::invalid_argument("Колл разрешён только в собственный тактический тайм-аут");
+        else if (kind == "address" && w.contains("talkSeconds"))
+            coach_address(w, coach, Json::parse(value));
         else if (kind == "call" && calls.contains(value)) {
             w.erase("nextBoard");
             w["call"] = value;
             emit(w, "call", "Указание на следующий раунд · " + value, team_side(w.at("agents"), coach));
         } else if (kind == "resume") {
+            w.erase("breakOwner");
             w["phase"] = "freeze";
             w["deadline"] = plus_ticks(w.at("tick"), freeze);
             emit(w, "resume", "Тайм-аут завершён");
@@ -306,9 +318,9 @@ class MatchState::Impl {
                 return;
             if (sight.at("source") != "Граната" && sight.at("source") != "Слух")
                 sight["source"] = "Радио";
-            if (!grid && a.at("team") == "CT" && w.at("phase") == "live") {
+            if (!grid && (a.at("team") == "CT" || w.value("agentPolicy",0)>=12) && w.at("phase") == "live") {
                 sight["reporter"] = sender;
-                if (a.at("id") == w.at("plans").at("CT").at("captain") && sight.at("source") == "Радио" &&
+                if (a.at("id") == w.at("plans").at(a.at("team").get<std::string>()).at("captain") && sight.at("source") == "Радио" &&
                     (!old || (sight.value("carryingC4", false) && !old->value("carryingC4", false)) ||
                      sight.value("groupSize", 1) > old->value("groupSize", 1))) {
                     const auto player = a.at("playerId").get<std::string>();
@@ -342,6 +354,7 @@ class MatchState::Impl {
         Json pending = Json::array();
         bool live = w.at("phase") == "live" && w.at("plans").contains("CT");
         Tick review = live ? w.at("plans").at("CT").at("review").get<Tick>() : 0;
+        Tick attack_review = live ? w.at("plans").at("T").at("review").get<Tick>() : 0;
         for (const auto &m : messages) {
             if (m.at("due") > now) {
                 pending.push_back(m);
@@ -360,11 +373,12 @@ class MatchState::Impl {
                 auto &a = roster.at(i);
                 if (a.at("hp") == 0 || a.at("team") != m.at("team") || a.at("id") == m.at("sender"))
                     continue;
-                deliver(w, a, m, now, review, speaker ? reception_quality(w, *speaker, a) : -1);
+                deliver(w, a, m, now, a.at("team")=="T" ? attack_review : review, speaker ? reception_quality(w, *speaker, a) : -1);
             }
         }
         if (live)
             w.at("plans").at("CT").at("review") = review;
+        if (live && w.value("agentPolicy",0)>=12) w.at("plans").at("T").at("review")=attack_review;
         messages.swap(pending);
     }
     void resolve(Json &world, Json &intents) const {
@@ -388,6 +402,7 @@ class MatchState::Impl {
                     start_round(world, config, spawns);
                     if (world.at("pending") == true)
                         enter_timeout(world);
+                    else consider_break(world);
                 } else
                     opening_map().begin_live(world, config);
             }
@@ -544,6 +559,7 @@ int MatchState::advance_intermission(int ticks) {
             start_round(current, impl_->config, impl_->spawns);
             if (current.at("pending") == true)
                 impl_->enter_timeout(current);
+                    else consider_break(current);
         } else {
             impl_->opening_map().begin_live(current, impl_->config);
         }
@@ -766,6 +782,8 @@ void MatchState::assign_board(const std::string &input) {
     std::scoped_lock lock(impl_->mutex);
     impl_->authorize(impl_->state);
     auto w = impl_->state;
+    if ((w.contains("breakOwner") && w.at("phase") != "timeout") || (w.contains("series") && w.at("series").value("spectator", false)))
+        throw std::invalid_argument("Решения принимает тренер команды");
     if (board.at("map") != w.value("mapId", std::string("depo")) ||
         board.at("geometry") != w.at("map_version"))
         throw std::invalid_argument("Тактика создана для другой карты или версии геометрии");

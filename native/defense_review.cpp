@@ -145,6 +145,7 @@ void review_opening(const OpeningMap &arena, Json &plan, const Squad &squad, Tic
                 if (lost && now < job.at("coverOrder").at("until").get<Tick>() && !relief(plan, *assigned))
                     continue;
                 job.erase("coverOrder");
+                j.erase("replacement");
             }
         }
         if (!lost || !j.contains("gate") || relief(plan, *p) || truth(j, "withdrawn"))
@@ -270,7 +271,8 @@ void direct_defense(Json &w, const Json &cfg, const OpeningMap &arena, Json &pla
             carrier = r;
     Json bomb = nullptr, on_site = nullptr;
     if (carrier) {
-        if (auto s = sites.reported_site(actor_point(*carrier)))
+        bool approach;
+        if (auto s = w.value("agentPolicy",0)>=12 ? site_for(arena,actor_point(*carrier),approach) : sites.reported_site(actor_point(*carrier)))
             bomb = *s;
         if (now - carrier->at("tick").get<Tick>() < 20)
             if (auto s = sites.site_at(actor_point(*carrier)))

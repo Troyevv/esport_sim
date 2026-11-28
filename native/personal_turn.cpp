@@ -220,7 +220,7 @@ Json AgentTurn::personal_decision() {
     const auto map = grid ? std::string("depo") : w.at("mapId").get<std::string>().substr(3);
     const Json *duty = !grid && side == "CT" && !planted && revised_defense(w) ? relief(plan, a) : nullptr;
     const bool withdrawing = duty && duty->value("maneuver", std::string{}) == "yield";
-    const Situation situation{
+    Situation situation{
         .contacts = int(a.at("visible").size()),
         .hp = a.at("hp"),
         .ammo = a.at("ammo"),
@@ -245,6 +245,17 @@ Json AgentTurn::personal_decision() {
         .reload_exposure = reload_exposure,
         .confidence = certainty,
     };
+    const std::string duty_kind = a.contains("coachOrder") ? a.at("coachOrder").at("kind").get<std::string>() : "";
+    if (a.contains("mind")) {
+        const auto &mind = a.at("mind");
+        const int impulse = mind.at("initiative"), focus = mind.at("focus");
+        const int instruction = duty_kind=="cautious" || duty_kind=="hold" ? -18 :
+                                duty_kind=="aggressive" || duty_kind=="tempo" ? 18 : 0;
+        situation.aggression = std::clamp(situation.aggression+impulse+instruction,0,100);
+        situation.risk = std::clamp(situation.risk+impulse+instruction,0,100);
+        situation.discipline = std::clamp(situation.discipline+focus+(duty_kind=="discipline" ? 22 : 0),0,100);
+        situation.reading = std::clamp(situation.reading+focus,0,100);
+    }
     const char *goal =
         planted ? (side == "CT" ? "retake" : "postplant") : (side == "CT" ? "defend" : "attack");
     const char *task = withdrawing  ? "yield"
@@ -280,6 +291,9 @@ Json AgentTurn::personal_decision() {
     // Movement and the decision snapshot can grow the ordered actor object.
     // Keep the accepted message independent of those mutations.
     const Json request = received ? *received : Json(nullptr);
+    if (received && a.contains("mind"))
+        execution.assist_benefit = std::max(1, execution.assist_benefit + a.at("mind").at("focus").get<int>()/2 +
+            (duty_kind=="trade" || duty_kind=="support" ? 18 : 0));
     auto options = alternatives(situation, revised ? &execution : nullptr);
     Json intent;
     Choice chosen = Choice::assignment;

@@ -11,8 +11,10 @@ bool peer_radio(const Json &world) {
 int reception_quality(const Json &world, const Json &sender, const Json &recipient) {
     const auto &speaker = player_profile(world, sender).at("skills");
     const auto &listener = player_profile(world, recipient).at("skills");
-    return (speaker.at("communication").get<int>() + listener.at("coordination").get<int>() +
-            chemistry(world, sender, recipient)) / 3;
+    const int attention = sender.contains("mind") ?
+        (sender.at("mind").at("focus").get<int>()+recipient.at("mind").at("focus").get<int>())/3 : 0;
+    return std::clamp(attention + (speaker.at("communication").get<int>() + listener.at("coordination").get<int>() +
+            chemistry(world, sender, recipient)) / 3, 0, 100);
 }
 
 void report_contact(Json &world, Json &actor, const Json &sight) {

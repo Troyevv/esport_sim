@@ -1,3 +1,4 @@
+#include "coaching.hpp"
 #include "perception.hpp"
 
 #include <pybind11/pybind11.h>
@@ -31,6 +32,7 @@ PYBIND11_MODULE(_match_native, module) {
         .def("locate_many", &esport::NavSurfaces::locate_many, py::arg("points"), py::arg("max_vertical"),
              py::call_guard<py::gil_scoped_release>());
     using namespace esport;
+    module.def("timeout_need", &timeout_need);
     module.attr("PHYSICAL_NAV_API_VERSION") = 1;
     py::class_<Crossing>(module, "PhysicalCrossing").def(py::init<AreaId, AreaId, bool, std::vector<Lane>>());
     py::class_<MotionState>(module, "MotionState")

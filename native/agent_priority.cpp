@@ -12,6 +12,45 @@ Json AgentTurn::priority_intent() {
     auto intent = individual ? personal_decision() : contact_decision();
     if (!intent.is_null())
         return intent;
+    if (a.contains("coachOrder") && w.at("phase")=="live" && !active(plan,"board") &&
+        recovery.empty() && action.empty() && (device.empty() || device.at("carrier")!=a.at("id")) &&
+        w.at("deadline").get<Tick>()-now>100 && !active(plan,"rotated")) {
+        const auto &order=a.at("coachOrder");
+        const auto kind=order.at("kind");
+        std::optional<Point> goal;
+        std::string unavailable;
+        if (kind=="support") {
+            auto mate=std::ranges::find_if(squad,[&](auto member){return member->at("id")==order.at("mate");});
+            if (mate==squad.end()) unavailable="Напарник выбыл, возвращаюсь к задаче капитана.";
+            else if (gap(**mate)>18) goal=actor_point(**mate);
+        } else if (kind=="hold" || kind=="position") {
+            std::string site=order.at("site");
+            if (side=="T" && plan.at("site")!=site) unavailable="Выход пятёрки на другой плент. Остаюсь с группой.";
+            else if (grid) {
+                const auto &point=grid->data.at("positions").at(site).at(0);
+                goal=Point{point.at(0),point.at(1),0};
+            } else goal=arena.site_point(site);
+        }
+        if (goal) {
+            if (distance(actor_point(a),*goal)>6) {
+                bool moved=grid ? grid->walk(a,Json::array({(*goal)[0],(*goal)[1]}),2*move_speed(player),grid_fire,true) : move(*goal,2);
+                if (moved) {
+                    a["status"]=kind=="support" ? "Сближается с назначенным напарником" : "Занимает назначенную позицию";
+                    return Json::array({"move",nullptr});
+                }
+                unavailable="Путь к назначенной позиции закрыт.";
+            } else if (kind=="hold") {
+                a["status"]="Удерживает назначенное направление";
+                return Json::array({"hold",nullptr});
+            } else a.erase("coachOrder");
+        }
+        if (!unavailable.empty()) {
+            auto &event=emit(w,"order_refused",a.at("name").get<std::string>()+" · "+unavailable,side);
+            event["player"]=a.at("id");
+            a["evidence"]={{"id",event.at("id")},{"round",w.at("round")},{"text",unavailable}};
+            a.erase("coachOrder");
+        }
+    }
     if (grid)
         return grid_intent();
     const auto &nav = arena.objectives().map();
