@@ -46,10 +46,8 @@ test("Штаб, назначения и выбор между ECL и Major", asy
   const search = page.getByRole("dialog", { name: "Глобальный поиск" });
   await search.getByRole("textbox").fill("TOBIZ");
   await search.getByRole("button", { name: /TOBIZ/ }).click();
-  await expect(page.locator(".staff-office meter")).toHaveCount(24);
-  await expect(
-    page.getByRole("heading", { name: "Тренерская философия" }),
-  ).toBeVisible();
+  await expect(page.getByText("Оценки компетенций доступны для собственного штаба.")).toBeVisible();
+  await expect(page.locator(".staff-office meter")).toHaveCount(0);
   await press("Тренерский штаб");
   await expect(
     page.getByRole("heading", { name: "Главный тренер" }),
@@ -57,6 +55,7 @@ test("Штаб, назначения и выбор между ECL и Major", asy
   await capture("staff");
   await page.locator(".staff-member").filter({ hasText: "MaT" }).click();
   await expect(page.locator(".staff-office meter")).toHaveCount(24);
+  await expect(page.getByRole("heading", { name: "Тренерская философия" })).toBeVisible();
   await capture("profile");
   await page
     .locator(".staff-tabs")
