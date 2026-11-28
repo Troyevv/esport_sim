@@ -362,7 +362,7 @@ def project(w, view="full"):
     ratings = {}
     known = w["domain"].get("managerPlayers")
     coached = [a for a in w["agents"] if a["teamId"] == w["coachTeamId"]]
-    coach_view = coach_view and not w.get("series", {}).get("spectator")
+    coach_view = coach_view and not w.get("autonomous") and not w.get("series", {}).get("spectator")
     if coach_view:
         for a in w["agents"]:
             if a["teamId"] == w["coachTeamId"] and (known is None or a["playerId"] in known):

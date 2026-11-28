@@ -25,6 +25,7 @@ def main():
     started = time.perf_counter()
     if args.bo1:
         state = match.initial(args.seed,map_id=args.map)
+        state["autonomous"] = True
         match.play_map(state)
     else:
         state = engine.initial(args.seed)

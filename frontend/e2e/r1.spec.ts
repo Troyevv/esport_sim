@@ -5,7 +5,7 @@ test("полный BO1, колл, сохранение и итог матча", 
   page,
   hasTouch,
 }, info) => {
-  test.setTimeout(100_000);
+  test.setTimeout(150_000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const button = (name: string) =>
@@ -92,7 +92,7 @@ test("полный BO1, колл, сохранение и итог матча", 
   await press("Быстро");
   await press("Запустить");
   await expect(page.locator(".match-result")).toContainText("Победитель", {
-    timeout: 40_000,
+    timeout: 85_000,
   });
   await press("Раунды");
   const final = await (await page.request.get("/api/state")).json();

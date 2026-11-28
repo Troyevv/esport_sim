@@ -59,7 +59,7 @@ export default function TimeoutRoom({match:m,map,enabled,saved,act,openBoard}:Pr
       })}{!subjects.length && !m.feedback.length && <p>Пока нет игровых эпизодов для разбора.</p>}</div>
       <label>Предмет разговора<select value={topic} onChange={e=>setTopic(e.target.value)}>
         <option value="">Состояние перед раундом</option>{subjects.map(t=><option key={t.key} value={t.key}>{t.name} · R{t.round} · {t.text}</option>)}</select></label>
-      <label>Обращение<select value={action} onChange={e=>setAction(e.target.value)}>{Object.entries(actions).filter(([k])=>k!=="order" || selected).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
+      <label>Обращение<select aria-label="Обращение" value={action} onChange={e=>setAction(e.target.value)}>{Object.entries(actions).filter(([k])=>k!=="order" || selected).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
       {action==="order" && <><label>Индивидуальная задача<select value={order} onChange={e=>setOrder(e.target.value)}>{Object.entries(orders).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
         {order==="support" && <label>Напарник<select value={mate||partners[0].id} onChange={e=>setMate(e.target.value)}>{partners.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
         {["hold","position"].includes(order) && <label>Направление<select value={site} onChange={e=>setSite(e.target.value)}><option>A</option><option>B</option></select></label>}</>}

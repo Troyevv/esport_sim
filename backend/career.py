@@ -220,7 +220,13 @@ def match_domain(pack, c, event, badges=None, portraits=None):
     domain["authority"]["mode"] = c["mode"]
     if c["team"] in domain["teams"]:
         domain["authority"]["organization"] = domain["teams"][c["team"]]["organization"]
-    domain["matchImportance"] = (12 if event.get("edition") else 0) + (6 if event.get("edition") and event.get("stage") == len(edition["stages"])-1 else 0)
+    domain["matchImportance"] = 0
+    if event.get("edition"):
+        final_stage = event.get("stage") == len(edition["stages"]) - 1
+        domain["matchImportance"] = 18 if final_stage else 12
+    for sid, role in c.get("office", {}).get("positions", {}).items():
+        if sid in domain["staff"]:
+            domain["staff"][sid] = dict(domain["staff"][sid], matchRole=role)
     domain["managerPlayers"] = list(manager_players)
     if portraits:
         for pid, portrait in portraits.index(
@@ -256,6 +262,8 @@ def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
         c["team"] if c["team"] in event["teams"] else None,
         map_id=event.get("mapId","depo"),
     )
+    if c["team"] not in event["teams"]:
+        game["autonomous"] = True
     if event.get("pcw") and event.get("board"):
         match.assign(game, event["board"])
     return game

@@ -201,7 +201,7 @@ class MatchState::Impl {
         const std::string phase = w.at("phase"), name = w.at("domain").at("teams").at(coach).at("name");
         if (phase == "finished")
             throw std::invalid_argument("Матч завершён");
-        if ((w.contains("series") && w.at("series").value("spectator",false)) ||
+        if (w.value("autonomous",false) || (w.contains("series") && w.at("series").value("spectator",false)) ||
             (w.contains("breakOwner") && w.at("phase") != "timeout"))
             throw std::invalid_argument("Идёт перерыв другой команды");
         if (kind == "timeout") {
@@ -782,7 +782,7 @@ void MatchState::assign_board(const std::string &input) {
     std::scoped_lock lock(impl_->mutex);
     impl_->authorize(impl_->state);
     auto w = impl_->state;
-    if ((w.contains("breakOwner") && w.at("phase") != "timeout") || (w.contains("series") && w.at("series").value("spectator", false)))
+    if ((w.contains("breakOwner") && w.at("phase") != "timeout") || (w.value("autonomous", false) || (w.contains("series") && w.at("series").value("spectator", false))))
         throw std::invalid_argument("Решения принимает тренер команды");
     if (board.at("map") != w.value("mapId", std::string("depo")) ||
         board.at("geometry") != w.at("map_version"))

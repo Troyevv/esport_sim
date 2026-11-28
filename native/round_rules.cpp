@@ -134,6 +134,7 @@ void settle_round(Json &w, const Json &cfg, const std::string &side, const std::
     w.at("score").at(winner) = w.at("scoreByTeam").at(winner_id);
     emit(w, "round_end", title + " · " + reason)
         .update(Json{{"winner", winner}, {"winnerTeamId", winner_id}, {"side", side}, {"reason", reason}});
+    const Tick round_event = w.at("serial");
     if (w.contains("mapId") && w.at("plans").contains("T")) {
         append_limited(w["siteHistory"][teams.at("T")],
                        Json::array({w.at("plans").at("T").at("site"), side == "T"}), 6);
@@ -207,7 +208,7 @@ void settle_round(Json &w, const Json &cfg, const std::string &side, const std::
                                                 : streak.at(1 - winner).get<int>() + 1;
     const int n = number(w, "round"), half = number(rules, "half"), ot = number(rules, "overtimeHalf");
     const int target = n <= half * 2 ? half + 1 : half + ot * (1 + (n - 2 * half - 1) / (2 * ot)) + 1;
-    for (auto &a : w.at("agents")) round_emotion(w,a,a.at("team")==side,target);
+    for (auto &a : w.at("agents")) round_emotion(w,a,a.at("team")==side,target,round_event);
     bool finished = w.at("scoreByTeam").at(winner_id) >= target;
     w["phase"] = finished ? "finished" : "result";
     w["deadline"] = plus_ticks(w.at("tick"), number(rules, "result"));
