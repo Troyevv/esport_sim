@@ -61,9 +61,10 @@ export function PlayerHero({
   team,
   navigate,
   tab,
-  canTalk,
+  canTalk, compare,
 }: PlayerProps & {
   canTalk: boolean;
+  compare: () => void;
   role: string;
   setRole: (s: string) => void;
   back: () => void;
@@ -146,6 +147,7 @@ export function PlayerHero({
             >
               {own ? "Программа развития" : "Скаутский отдел"}
             </Button>
+            <Button onClick={compare}><Icon name="chart" size={16}/> Сравнить игроков</Button>
           </div>
         </div>
         <div className="club-profile-overall">

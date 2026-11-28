@@ -63,6 +63,12 @@ test("Карьера от выбора базы до общей сохранён
   await press("Открыть профиль");
   await expect(page.locator(".club-profile-copy h1")).toHaveText("ZywOo");
   await capture("profile");
+  await press("Сравнить игроков");
+  const comparison = page.getByRole("dialog", {name: "Сравнить с"});
+  await expect(comparison.getByRole("searchbox")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(comparison).toBeHidden();
+  await expect(page.getByRole("heading", {name: "История выступлений"})).toBeVisible();
   await press("Характеристики · 58");
   await expect(page.locator(".club-skill-grid .club-meter-row")).toHaveCount(58);
   await capture("skills");

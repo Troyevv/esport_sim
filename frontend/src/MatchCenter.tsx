@@ -4,7 +4,7 @@ import {Portrait,TeamLogo} from "./approved/Identity";
 import "./approved/Match.css";
 import TimeoutRoom, {type Room} from "./TimeoutRoom";
 import { SeriesScore } from "./SeriesCenter";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { PlanRef } from "./tactics";
 import Radar from "./Radar";
 import type { Frame, View } from "./session";
@@ -19,7 +19,7 @@ import { RoleRatings } from "./SceneProfiles";
 type Side = "CT" | "T";
 type Point = { x: number; y: number; z?: number };
 export interface MatchView {
-  award?: { name: string } | null;
+  award?: { name: string; player?:string; teamId?:string | null } | null;
   radio?: {player:string;channel:string;state:string;tick:number}[];
   impressions?:Record<string,string>;
   rules: string;
@@ -268,6 +268,10 @@ export default function MatchCenter({
   const [tab, setTab] = useState<(typeof tabs)[number]>("Радар");
   const [preparation, setPreparation] = useState("План на карту");
   const [focus, setFocus] = useState(false);
+  const [roundDetail, setRoundDetail] = useState<number | null>(null);
+  useEffect(() => {
+    if (tab === "Раунды" && roundDetail !== null) document.getElementById("round-detail-"+roundDetail)?.focus();
+  }, [tab,roundDetail]);
   const [showNames, setShowNames] = useState(true),
     [showGrenades, setShowGrenades] = useState(true);
   const [cameraControls, setCameraControls] = useState<HTMLDivElement | null>(
@@ -329,6 +333,11 @@ export default function MatchCenter({
   const awayBreak = !!m.breakOwner && !timeout;
   const ser = world.series;
   const scoreTeam = (club: MatchView["clubs"][number], rival = false) => {
+    const visible = world.view === "full" || world.view === club.side;
+    const lineup = visible ? world.agents.filter(player=>player.team===club.side) : [];
+    const complete = lineup.length > 0 && lineup.length === m.stats.filter(row=>row.teamId===club.id).length;
+    const balance = complete && lineup.every(p=>p.cash!=null) ? lineup.reduce((total,p)=>total+p.cash!,0) : null;
+    const alive = complete && lineup.every(p=>p.alive!=null) ? lineup.filter(p=>p.alive).length : null;
     const badge = <TeamLogo name={club.name} visual={club.visual} size={48} />;
     return (
       <div
@@ -342,11 +351,17 @@ export default function MatchCenter({
           <small>
             {club.side} · {rival ? "Соперник" : "Команда тренера"}
           </small>
+          {(alive!=null || balance!=null) && <div className="mx-team-resources">
+            {alive!=null && <span><Icon name="users" size={13}/>{alive}/{lineup.length} в живых</span>}
+            {balance!=null && <span>Банк <b>{money(balance)}</b></span>}
+          </div>}
         </div>
         {rival ? badge : <b>{club.score}</b>}
       </div>
     );
   };
+  const winningClub = finished && m.clubs.find(club=>club.id===m.winnerTeamId);
+  const awarded = m.award?.player && m.stats.find(row=>row.id===m.award?.player || world.agents.find(a=>a.id===row.id)?.playerId===m.award?.player);
   const tabItems =
     display === "Трансляция"
       ? ["Радар", "Статистика", "Раунды"]
@@ -497,13 +512,13 @@ export default function MatchCenter({
         <SeriesScore frame={frame} enabled={enabled} act={act} />
       )}
       {m.phase === "planted" && (
-        <div className="arena-event">
-          C4 установлена{m.bomb?.site && " · " + m.bomb.site}
+        <div className="arena-event match-signal" data-kind="bomb">
+          <ItemIcon name="C4" label=""/> C4 установлена{m.bomb?.site && " · " + m.bomb.site}
         </div>
       )}
       {m.phase === "result" && m.history.length > 0 && (
-        <div className="arena-event">
-          {clubName(m.history.at(-1)!.winnerTeamId)} ·{" "}
+        <div className="arena-event match-signal" data-kind="round">
+          <Icon name="flag"/>{clubName(m.history.at(-1)!.winnerTeamId)} ·{" "}
           {m.history.at(-1)!.reason}
         </div>
       )}
@@ -514,8 +529,8 @@ export default function MatchCenter({
           const previous = m.history.at(-1)!;
           const winner = m.clubs.find((c) => c.id === previous.winnerTeamId);
           return winner && winner.side !== previous.side ? (
-            <div className="arena-event">
-              Смена сторон · {coach.name} начинает за {coach.side}
+            <div className="arena-event match-signal" data-kind="sides">
+              <Icon name="refresh"/>Смена сторон · {coach.name} начинает за {coach.side}
             </div>
           ) : null;
         })()}
@@ -529,8 +544,8 @@ export default function MatchCenter({
             (a) => a.team !== club.side && a.alive,
           ).length;
           return alive.length === 1 && opponents > 1 ? (
-            <div className="arena-event" key={club.id}>
-              Клатч · {name(alive[0].id)} · 1 против {opponents}
+            <div className="arena-event match-signal" data-kind="clutch" key={club.id}>
+              <Icon name="bolt"/>Клатч · {name(alive[0].id)} · 1 против {opponents}
             </div>
           ) : null;
         })}
@@ -539,18 +554,15 @@ export default function MatchCenter({
           {clubName(m.breakOwner!)} · Тактический перерыв · {clock(m.clock)}
         </p>
       )}
-      {finished && (
-        <p className="match-result">
-          Победитель {world.series ? "карты" : "матча"} —{" "}
-          <strong>{clubName(m.winnerTeamId!)}</strong>
-          {m.award && (
-            <>
-              {" "}
-              · MVP карты <strong>{m.award.name}</strong>
-            </>
-          )}
-        </p>
-      )}
+      {winningClub && <section className="match-result honours-strip" aria-label="Итог карты">
+        <Icon name="trophy" size={25}/><TeamLogo name={winningClub.name} visual={winningClub.visual} size={42}/>
+        <div><small>Победитель {world.series ? "карты" : "матча"} · {world.map.name}</small>
+          <strong><ProfileAction group="teams" id={winningClub.id}>{winningClub.name}</ProfileAction></strong></div>
+        {m.award && <div className="honours-award">
+          {awarded && <LineupPortrait id={m.award.player || awarded.id} name={m.award.name} visual={awarded.visual || {}}/>}
+          <div><small>MVP карты</small><strong><ProfileAction group="players" id={m.award.player}>{m.award.name}</ProfileAction></strong></div>
+        </div>}
+      </section>}
       {m.pregame && !finished && (
         <section className="mx-pregame">
           <div>
@@ -808,9 +820,8 @@ export default function MatchCenter({
               key={r.round}
               onClick={() => {
                 setTab("Раунды");
-                document
-                  .querySelector(".match-data")
-                  ?.scrollIntoView({ block: "start" });
+                setRoundDetail(r.round);
+                document.getElementById("round-detail-"+r.round)?.focus();
               }}
               title={clubName(r.winnerTeamId) + " · " + r.reason}
               aria-label={
@@ -1062,7 +1073,7 @@ export default function MatchCenter({
                   .slice()
                   .reverse()
                   .map((r) => (
-                    <div key={r.round}>
+                    <div key={r.round} id={"round-detail-"+r.round} tabIndex={-1} data-highlight={r.round===roundDetail}>
                       <small>R{r.round}</small>
                       <b>
                         {m.clubs.map((c) => r.scoreByTeam[c.id]).join(" : ")}

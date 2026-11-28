@@ -55,8 +55,10 @@ function PickerDialog({group, options, label, value, select, empty, exclude, clo
   </Dialog>;
 }
 
-export function EntityPicker(props: Choice) {
-  const [open, setOpen] = useState(false);
+export function EntityPicker({ dialog, ...props }: Choice & {dialog?: { open: boolean; change: (open:boolean)=>void }}) {
+  const [local, setLocal] = useState(false);
+  const open = dialog?.open ?? local;
+  const setOpen = dialog?.change ?? setLocal;
   const {value, options, group, label, empty} = props;
   const selected = nameOf(options[value]);
   return <div className="entity-picker-field">

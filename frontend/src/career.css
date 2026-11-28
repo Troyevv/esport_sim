@@ -355,3 +355,9 @@
 .search-result .search-fixture-marks {display:grid;grid-template-columns:20px 20px;align-items:center}
 .search-result .search-fixture-marks .scene-avatar {width:20px;height:22px;object-fit:contain}
 .search-result .competition-mark {width:32px;height:32px;flex:none}
+.club-filter-result {display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.club-filter-result button {background:transparent;color:var(--text);border:0;text-decoration:underline;text-underline-offset:3px;min-height:40px}
+.create-selected {display:inline-flex;align-items:center;gap:10px;overflow-wrap:anywhere}
+.create-selected .scene-avatar {width:34px;height:34px;object-fit:contain;flex:none}
+.day-agenda-item[tabindex="-1"] {scroll-margin-block-start:80px}
+.day-agenda-item[tabindex="-1"]:focus-visible {outline:2px solid var(--orange);outline-offset:-2px}

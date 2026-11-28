@@ -1,4 +1,5 @@
 import { useCareerViewTab } from "./CareerViewTab";
+import { RecentForm } from "./RecentForm";
 import { PlayerRole } from "./CareerIdentity";
 import {PlayerHero,PlayerOverview,SkillRow,Section} from "./approved/Player";
 import {Tabs as ApprovedTabs} from "./approved/Shared";
@@ -18,7 +19,7 @@ import { Heading, Tabs, Glyph, Dialog, Readiness } from "./GameUI";
 import {
   age,
   date,
-  groupTitle,
+  fixtureOutcome, fixtureScore, groupTitle,
   useDirectoryView,
   useData,
   type Career,
@@ -375,6 +376,8 @@ export function EntityProfile({
   initialTab?: string;
 }) {
   const [tab, setTab] = useCareerViewTab(initialTab);
+  const [comparing, setComparing] = useState(false);
+  const compareProfile = () => {setTab("Статистика");setComparing(true)};
   const [skillQuery, setSkillQuery] = useState("");
   const [chosenRole, setRole] = useState("");
   const { group, id } = profile,
@@ -392,6 +395,7 @@ export function EntityProfile({
     team = group === "teams" ? scene.teams[id] : null,
     org = group === "organizations" ? scene.organizations[id] : null,
     staff = group === "staff" ? scene.staff[id] : null;
+  const form = team ? c.history.filter(f=>!f.pcw && fixtureOutcome(f,id)).slice(-5) : [];
   const orgTeams = Object.values(scene.teams).filter(
     (t) => t.organization === org?.id,
   );
@@ -466,6 +470,7 @@ export function EntityProfile({
         <PlayerHero
           {...{ c, scene, id, assessment, setRole, back, navigate, canTalk }}
           role={selectedRole}
+          compare={compareProfile}
           tab={setTab}
           team={(id) => open({ group: "teams", id })}
         />
@@ -493,7 +498,12 @@ export function EntityProfile({
                     : "Профиль сотрудника"}
               </div>
               <h2>{item.name}</h2>
-              <p className="club-fullname">{staff?.realName}</p>
+              {team && form.length>0 && <div className="team-form-strip">
+                <RecentForm results={form.map(f=>({id:f.id,won:fixtureOutcome(f,id)==="win",detail:date(f.date)+" · "+f.teams.map(t=>c.teams[t] || t).join(" — ")+" · "+fixtureScore(f)}))}/>
+                <button onClick={()=>setTab("Календарь и результаты")}>Результаты команды <Glyph name="chevron-right"/></button>
+              </div>}
+              {team && <button className="club-text-link team-compare" onClick={compareProfile}><Glyph name="arrows-sort"/>Сравнить команды</button>}
+              {staff?.realName && <p className="club-fullname">{staff.realName}</p>}
               <div className="club-profile-meta">
                 <Flag value={item.visual.flag} />
                 <span>{team ? teamTypes[team.teamType] : staff?.role}</span>
@@ -593,6 +603,7 @@ export function EntityProfile({
             scene={scene}
             group={group}
             id={id}
+            comparison={{open:comparing,change:setComparing}}
             revision={revision}
           />
         </Suspense>

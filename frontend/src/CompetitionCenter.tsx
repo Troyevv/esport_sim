@@ -4,7 +4,7 @@ import {TeamLogo} from "./approved/Identity";
 import {Mark} from "./approved/EventMark";
 import {serverURL} from "./session";
 import "./approved/Competition.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { date, fixtureScore, useData, type Act, type Career, type Profile, type Scene } from "./careerData";
 import { Dialog, Heading, MetricStrip, Tabs } from "./GameUI";
 import { Load, MatchReport } from "./CareerForms";
@@ -692,6 +692,12 @@ export function CompetitionCenter(props: Props) {
   const [report, openReport] = useState("");
   const [rulesOpen, setRulesOpen] = useState(false);
   const [mapDetail, setMapDetail] = useState("");
+  const [requestedStage, setRequestedStage] = useState<number | null>(null);
+  useEffect(() => {
+    if (requestedStage === null) return;
+    document.getElementById("edition-stage-"+requestedStage)?.focus();
+    setRequestedStage(null);
+  }, [requestedStage, tab]);
   const [participantQuery, setParticipantQuery] = useState("");
   const [region, filterRegion] = useState("Все регионы"),
     [search, filterName] = useState(""),
@@ -847,11 +853,11 @@ export function CompetitionCenter(props: Props) {
                 {e.feeds && !!e.advanced?.length && (
                   <b>
                     Прошли отбор ·{" "}
-                    {e.advanced.map((t) => c.teams[t]).join(", ")}
+                    <span className="qualification-teams">{e.advanced.map(t=><EntityName key={t} group="teams" id={t} fallback={c.teams[t]} link={false}/>)}</span>
                   </b>
                 )}
                 {!e.feeds && e.placements?.[0] && (
-                  <b>Победитель · {c.teams[e.placements[0]]}</b>
+                  <b>Победитель · <EntityName group="teams" id={e.placements[0]} fallback={c.teams[e.placements[0]]} link={false}/></b>
                 )}
               </button>
             ))}
@@ -871,13 +877,12 @@ export function CompetitionCenter(props: Props) {
     t.damage += r.damage;
   }
   const fixture = c.history.find((e) => e.id === report);
-  const stage =
-    event.stages[Math.max(0, event.draws.length - 1)] || event.stages[0];
+  const lastDrawn = event.draws.reduce((last, draws, index) => draws.length ? index : last, -1);
+  const stage = event.stages[Math.max(0,lastDrawn)];
   const upcoming = c.queue.find(
     (e) => e.edition === picked && e.teams.includes(c.team),
   );
-  const record = event.draws
-    .at(-1)
+  const record = event.draws[lastDrawn]
     ?.flatMap((draw) => draw.standings)
     .find((row) => row.team === c.team);
   const matchDay =
@@ -952,6 +957,27 @@ export function CompetitionCenter(props: Props) {
       />
       {tab === "Обзор" && (
         <>
+          {event.status==="finished" && !event.feeds && event.placements?.[0] && <section className="honours-strip" aria-label="Победитель турнира">
+            <Icon name="trophy" size={30}/><div><small>Чемпион турнира</small><strong><EntityName group="teams" id={event.placements[0]} fallback={c.teams[event.placements[0]]}/></strong></div>
+            {event.mvp && event.stats[event.mvp] && <div className="honours-award"><div><small>MVP турнира</small><EntityName group="players" id={event.mvp} historicalTeam={event.stats[event.mvp].team} recordedName={event.stats[event.mvp].name}/></div></div>}
+          </section>}
+          {event.feeds && event.status==="finished" && !!event.advanced?.length && <section className="honours-strip qualification-strip" aria-label="Прошли отбор">
+            <Icon name="flag" size={25}/><div><small>Прошли отбор</small><div className="qualification-teams">{event.advanced.map(team=>
+              <EntityName key={team} group="teams" id={team} fallback={c.teams[team]}/>)}</div></div>
+            <Button onClick={()=>(props.onEdition || select)(event.feeds!)}>Открыть основной турнир</Button>
+          </section>}
+          <ol className="edition-course" aria-label="Ход соревнования">{event.stages.map((phase,index)=>{
+            const drawReady = !!event.draws[index]?.length;
+            const current = event.status === "playing" && drawReady && stage === phase;
+            const done = drawReady && (index < lastDrawn || event.status === "finished");
+            const state = current ? "Идёт сейчас" : done ? "Завершена" : event.status==="cancelled" ? "Отменена" : event.status==="finished" ? "Нет сыгранной сетки" : "Ожидает сетку";
+            const content = <><small>{state}</small><strong>{phase.name}</strong>
+              <span>{formats[phase.format] || phase.format} · BO{phase.bestOf}</span><time>{span(phase.start,phase.end)}</time></>;
+            return <li key={index} data-state={current ? "live" : done ? "done" : "upcoming"}>{drawReady
+              ? <button aria-label={phase.name+" · "+state+" · открыть сетку"} onClick={()=>{
+                  setRequestedStage(index);show(groupStage(phase.format) ? "Группы" : "Сетка");
+                }}>{content}<Icon name="arrow" size={15}/></button> : <div>{content}</div>}</li>;
+          })}</ol>
           <div className="cp-two-col">
             <Panel title="На повестке тренера">
               <div className="cp-callout">
@@ -1281,8 +1307,7 @@ export function CompetitionCenter(props: Props) {
           {event.draws.map(
             (draws, i) =>
               groupStage(event.stages[i].format) === (tab === "Группы") && (
-                <TournamentStage
-                  key={event.id + "-" + i}
+                <div key={event.id+"-"+i} id={"edition-stage-"+i} className="edition-stage-target" tabIndex={-1}><TournamentStage
                   phase={event.stages[i]}
                   draws={draws}
                   c={c}
@@ -1293,7 +1318,7 @@ export function CompetitionCenter(props: Props) {
                       show("Результаты");
                     } else props.prepare(id);
                   }}
-                />
+                /></div>
               ),
           )}
         </>
@@ -1331,7 +1356,7 @@ export function CompetitionCenter(props: Props) {
                   </small>
                 </span>
                 <b><FixtureTeams teams={e.teams} names={c.teams}/></b>
-                {!e.score && (
+                {!fixtureScore(e) && (
                   <button
                     className="btn sm"
                     onClick={() => props.prepare(e.id)}
@@ -1339,7 +1364,7 @@ export function CompetitionCenter(props: Props) {
                     Подготовка и линия
                   </button>
                 )}
-                {!e.score && !e.teams.includes(c.team) && (
+                {!fixtureScore(e) && !e.teams.includes(c.team) && (
                   <button
                     className="btn sm"
                     disabled={!enabled || !!c.progress}
@@ -1354,7 +1379,7 @@ export function CompetitionCenter(props: Props) {
                       : "Остановиться перед матчем"}
                   </button>
                 )}
-                {e.score && (
+                {fixtureScore(e) && (
                   <button className="btn sm" onClick={() => openReport(e.id)}>
                     {fixtureScore(e)} · Протокол
                   </button>
@@ -1381,12 +1406,9 @@ export function CompetitionCenter(props: Props) {
             </p>
           ) : (
             <>
-              {event.mvp && (
-                <p>
-                  MVP турнира · <b>{event.stats[event.mvp].name}</b> ·
-                  максимальный ADR
-                </p>
-              )}
+              {event.mvp && event.stats[event.mvp] && <div className="honours-strip"><Icon name="trophy"/>
+                <div><small>MVP турнира · максимальный ADR</small><EntityName group="players" id={event.mvp} recordedName={event.stats[event.mvp].name} historicalTeam={event.stats[event.mvp].team}/></div>
+              </div>}
               <div className="table-wrap">
                 <table className="simple-table">
                   <thead>

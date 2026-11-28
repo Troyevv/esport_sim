@@ -718,3 +718,18 @@ button.host-action {
 .agenda-date small {white-space:normal}
 .calendar-agenda article[data-selected=true] {border-left:2px solid var(--orange)}
 @media(min-width:901px) {.calendar-layout {grid-template-columns:1fr}.calendar-grid {gap:0}.calendar-day {min-height:100px}}
+.game-request {display:flex;align-items:center;gap:12px;min-height:52px;margin:16px 0;padding:8px 14px;border-inline-start:2px solid var(--line);font-size:14px}
+.game-request[role=alert] {border-color:var(--orange);flex-wrap:wrap}
+.game-request .ui-icon {width:20px}
+.request-spinner {width:16px;height:16px;flex:none;border:2px solid var(--line);border-top-color:var(--orange);border-radius:50%;animation:request-turn .9s linear infinite}
+@keyframes request-turn {to {transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce) {.request-spinner {animation:none}}
+.outcome-tag {display:inline-flex;align-items:center;gap:8px;color:#f0b39c;font-weight:700}
+.outcome-tag[data-outcome=win] {color:var(--green)}
+.calendar-filters .btn,.calendar-agenda .day-agenda-item .btn {white-space:normal;max-width:100%;overflow-wrap:anywhere}
+@media(max-width:550px) {
+  .calendar-agenda article {grid-template-columns:minmax(0,1fr);gap:4px}
+  .calendar-agenda .agenda-date {display:flex;align-items:baseline;justify-content:flex-start;gap:10px;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:4px 0 8px;text-align:left}
+  .calendar-agenda .day-agenda-item {padding-inline:4px}
+  .calendar-agenda .day-agenda-item .btn {min-height:44px}
+}

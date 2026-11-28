@@ -1,5 +1,7 @@
 import { useCareerViewTab } from "./CareerViewTab";
 import { FixtureTeams, EntityName } from "./CareerIdentity";
+import { Dialog } from "./GameUI";
+import { MatchReport } from "./CareerForms";
 import { RecentForm } from "./RecentForm";
 import { useState } from "react";
 import { Avatar, LineupPortrait } from "./SceneIdentity";
@@ -89,6 +91,8 @@ export default function Prematch({
   play?: () => void;
 }) {
   const [tab, setTab] = useCareerViewTab(tabs[0]);
+  const [reportId, setReportId] = useState("");
+  const report = reportId ? c.history.find(row=>row.id===reportId) : undefined;
   const [chosenMap, setChosenMap] = useState("");
   const [planSide, setPlanSide] = useState<"CT" | "T">("T");
   const request = useData<Prep>(
@@ -114,7 +118,9 @@ export default function Prematch({
     rows.length ? (
       rows.map((r) => (
         <div key={r.id} className="prep-result"><time>{date(r.date)}</time>
-          <FixtureTeams teams={r.teams} names={c.teams}/><b>{r.score?.join(" : ") ?? "—"}</b></div>
+          <FixtureTeams teams={r.teams} names={c.teams}/>{c.history.some(f=>f.id===r.id)
+            ? <button className="prep-score" aria-label={"Протокол · "+r.teams.map(name).join(" — ")+" · "+date(r.date)} onClick={()=>setReportId(r.id)}>{r.score.join(" : ")} <Icon name="arrow" size={13}/></button>
+            : <b>{r.score?.join(" : ") ?? "—"}</b>}</div>
       ))
     ) : (
       <p>Завершённых встреч в доступной истории нет.</p>
@@ -538,8 +544,19 @@ export default function Prematch({
           </div>
         </>
       )}
-      {tab === tabs[4] && (
-        <div className="cp-two-col">
+      {tab === tabs[4] && (<>
+        <section className="prep-duel" aria-label="Сравнение команд">
+          <header>{teams.map(t=><EntityName key={t} group="teams" id={t} fallback={name(t)}/>)}</header>
+          {[
+            {label:"Очки VRS", values:teams.map(t=>data.clubs[t].points), note:data.publication && date(data.publication)},
+            {label:"Победы в последних матчах", values:teams.map(t=>data.clubs[t].recent.length ? data.clubs[t].recent.filter(r=>r.winnerTeamId===t).length : null), note:teams.map(t=>data.clubs[t].recent.length).join(" / ")+" встреч в выборке"},
+            {label:"Победы в очных встречах", values:teams.map(t=>data.h2h.length ? data.h2h.filter(r=>r.winnerTeamId===t).length : null), note:"Встреч в истории · "+data.h2h.length},
+          ].map(({label,values,note})=><div className="prep-duel-row" key={label}>
+            <b>{values[0] ?? "—"}</b><span>{label}<small>{note}</small></span><b>{values[1] ?? "—"}</b>
+            {values[0]!=null && values[1]!=null && values[0]+values[1]>0 &&
+              <i aria-hidden="true"><i style={{width:100*values[0]/(values[0]+values[1])+"%"}}/></i>}
+          </div>)}
+        </section><div className="cp-two-col">
           {teams.map((t) => (
             <section key={t} className="surface panel-body">
               <h2><EntityName group="teams" id={t} fallback={name(t)}/></h2>
@@ -550,8 +567,9 @@ export default function Prematch({
               {results(data.clubs[t].recent)}
             </section>
           ))}
-        </div>
+        </div></>
       )}
+      {report && <Dialog title="Протокол встречи" close={()=>setReportId("")}><MatchReport careerId={c.id} teams={c.teams} event={report} close={()=>setReportId("")}/></Dialog>}
       {tab === tabs[5] && (
         <ForecastLine
           quotes={data.forecasts}

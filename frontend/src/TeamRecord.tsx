@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Directory } from "./CompetitionCenter";
 import { MatchReport } from "./CareerForms";
 import { EditionLink, EntityName, FixtureTeams } from "./CareerIdentity";
-import { Dialog } from "./GameUI";
+import { Dialog, Glyph } from "./GameUI";
 import { date, fixtureScore, useData, type Career, type Scene } from "./careerData";
 
 export default function TeamRecord({c,scene,id,tab,revision}: {c:Career;scene:Scene;id:string;tab:string;revision:number}) {
@@ -39,6 +39,12 @@ export default function TeamRecord({c,scene,id,tab,revision}: {c:Career;scene:Sc
       {!lineups.length && <p>Сохранённых заявок на турниры пока нет.</p>}</section>;
   }
   const results = data.editions.filter(e=>e.status==="finished" && e.placements?.includes(id));
-  return <section className="surface panel-body"><h2>Турнирные достижения</h2>{results.map(e=><p key={e.id}><EditionLink id={e.id}>{e.title}</EditionLink> · {e.placements!.indexOf(id)+1} место · {date(e.end)}</p>)}
+  return <section className="surface panel-body"><h2>Турнирные достижения</h2>{results.slice().sort((a,b)=>b.end.localeCompare(a.end)).map(e=>{
+    const place=e.placements!.indexOf(id)+1;
+    return <article key={e.id} className="palmares-entry" data-podium={!e.feeds && place<=3}>
+      <span className="palmares-place"><Glyph name={e.feeds ? "crosshair" : "trophy"}/>{e.feeds ? <small>Отбор</small> : <><b>{place}</b><small>место</small></>}</span>
+      <div><time>{date(e.end)}</time><h3><EditionLink id={e.id}>{e.title}</EditionLink></h3>{e.feeds ? <strong>{e.advanced?.includes(id) ? "Прошли отбор" : "Участие в квалификации"}</strong> : place===1 && <strong>Чемпион турнира</strong>}</div>
+    </article>;
+  })}
     {!results.length && <p>В завершённых турнирах карьеры места команды ещё не зафиксированы.</p>}</section>;
 }

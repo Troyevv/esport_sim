@@ -150,3 +150,10 @@
 .organization-directory .roster-branch .scene-flag {width:20px}
 .directory-entity-name {display:grid;gap:2px}
 .directory-entity-name small:empty {display:none}
+.palmares-entry {display:flex;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--line)}
+.palmares-place {display:grid;grid-template-columns:auto auto;align-items:center;justify-items:center;gap:0 8px;min-width:68px}
+.palmares-place b {font:550 32px/1 Oswald,sans-serif}
+.palmares-place small {grid-column:1/-1;color:var(--muted)}
+.palmares-entry time {color:var(--muted);font-size:12px}
+.palmares-entry[data-podium=true] .palmares-place,.palmares-entry>div>strong {color:#ecbb70}
+.palmares-entry .palmares-place .ui-icon {width:22px}

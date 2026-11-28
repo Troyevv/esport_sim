@@ -2,6 +2,10 @@ import { useData, type Report, type Decision } from "./careerData";
 import type { Quote } from "./ForecastLine";
 import type { Directory } from "./CompetitionCenter";
 import { regions, roles } from "./databaseModel";
+import { Mark } from "./approved/EventMark";
+import { CompetitionMark, eventMark } from "./CompetitionMark";
+import { RecentForm } from "./RecentForm";
+import { decisionPresentation } from "./decisionPresentation";
 import { EntityName } from "./CareerIdentity";
 import "./home.css";
 import { useState } from "react";
@@ -11,7 +15,7 @@ import {
   dayAt,
   isoDay,
   monday,
-  fixtureName,
+  fixtureOutcome, fixtureName,
   fixtureScore,
   weekdays,
   position,
@@ -66,7 +70,7 @@ export function letters(c: Career): Letter[] {
   return box.reverse().sort((a, b) => b.date.localeCompare(a.date));
 }
 function letterIcon(m: Letter) {
-  if (m.event?.score) return "report-analytics";
+  if (m.event && fixtureScore(m.event)) return "report-analytics";
   if (m.event) return "calendar";
   return m.edition ? "trophy" : "mail";
 }
@@ -91,6 +95,7 @@ export function Inbox({
   const [filter, setFilter] = useState(false);
   const fixture = selected?.event;
   const score = fixture && fixtureScore(fixture);
+  const outcome = fixture && fixtureOutcome(fixture,c.team);
   const filtered = box.filter(
     (m) => !filter || !read.includes(m.id) || selected?.id === m.id,
   );
@@ -136,7 +141,8 @@ export function Inbox({
               <button className="btn mobile-back" onClick={() => select(null)}>
                 Все сообщения
               </button>
-              <span className="pill info">Уведомление</span>
+              {outcome ? <span className="outcome-tag" data-outcome={outcome}>
+                <Glyph name="crosshair"/>{outcome==="win" ? "Победа" : "Поражение"} · {c.club}</span> : <span className="pill info">{fixture ? "Предстоящая встреча" : "Уведомление"}</span>}
               <h2>{selected.title}</h2>
               <div className="message-author">
                 <span className="manager-avatar">
@@ -253,6 +259,9 @@ export function Dashboard({
     timeZone: "UTC",
   });
   const isToday = next?.date === c.date;
+  const recentForm = (tid: string) => c.history.filter(f=>!f.pcw && fixtureOutcome(f,tid)).slice(-5).map(f=>({
+    id:f.id, won:fixtureOutcome(f,tid)==="win", detail:date(f.date)+" · "+f.teams.map(team).join(" — ")+" · "+fixtureScore(f)
+  }));
   const teamButton = (tid?: string) => (
     <button
       className="hero-team"
@@ -273,6 +282,7 @@ export function Dashboard({
             scene.teams[tid]?.visual.flag
           : "Соперник ещё не определён"}
       </small>
+      {tid && <RecentForm results={recentForm(tid)}/>}
     </button>
   );
   const price = (id?: string) => {
@@ -292,8 +302,11 @@ export function Dashboard({
       : upcoming
         ? tournament(upcoming.id)
         : calendar(c.date);
-  const decisions = c.attention.slice(0, 3);
+  const priority = { required: 0, warning: 1, info: 2 };
+  const decisions = [...c.attention].sort((a,b)=>priority[a.level]-priority[b.level] || a.due.localeCompare(b.due)).slice(0, 3);
   const eventName = next?.title || upcoming?.title || "Календарь команды";
+  const editionId=next?.edition || upcoming?.id;
+  const mark=editionId ? eventMark(editionId,upcoming?.organizer || "") : null;
   const brand = eventName.match(/^([A-ZА-Я0-9]{2,}) (.+)$/);
 
   return (
@@ -333,6 +346,8 @@ export function Dashboard({
                       : calendar(c.date)
                 }
               >
+                {mark && (["major","contenders","eu14","blast"].includes(mark) ? <Mark mark={mark as "major"} size={30}/> :
+                  <CompetitionMark mark={mark} name={eventName} cycle={editionId} size={30}/>)}
                 {brand ? (
                   <>
                     <span>{brand[1]}</span> {brand[2]}
@@ -472,7 +487,8 @@ export function Dashboard({
             action={<Badge tone="orange">{c.attention.length}</Badge>}
           >
             {decisions.map((a) => (
-              <div key={a.id} className="decision-item">
+              <div key={a.id} className="decision-item" data-level={a.level}>
+                <span className="decision-kind"><Glyph name={decisionPresentation[a.action].icon}/>{a.level==="required" ? "Требует решения" : a.level==="warning" ? "Предупреждение" : "К сведению"}</span>
                 <Badge tone={a.level === "required" ? "orange" : "blue"}>
                   {date(a.due)}
                 </Badge>
@@ -483,7 +499,7 @@ export function Dashboard({
                     Рассчитать матч
                   </Button>
                 ) : (
-                  <Button onClick={() => resolve(a)}>Открыть решение</Button>
+                  <Button onClick={() => resolve(a)}>{decisionPresentation[a.action].label}</Button>
                 )}
               </div>
             ))}

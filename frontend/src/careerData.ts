@@ -40,6 +40,13 @@ export const fixtureScore = (e: Fixture) =>
     " : ",
   );
 
+export function fixtureOutcome(fixture: Fixture, team: string): "win" | "loss" | null {
+  if (fixture.kind !== "match" || fixture.teams.length !== 2 || !fixture.teams.includes(team)) return null;
+  const scored = (id: string) => fixture.scoreByTeam?.[id] ?? fixture.score?.[fixture.teams.indexOf(id)];
+  const own = scored(team), other = scored(fixture.teams.find(id=>id!==team)!);
+  return own == null || other == null || own === other ? null : own > other ? "win" : "loss";
+}
+
 export type Player = {
   id: string;
   name: string;

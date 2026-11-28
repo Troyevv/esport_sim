@@ -2,7 +2,7 @@ import { MapRecord } from "./MapRecord";
 import { EntityPicker } from "./EntityPicker";
 import { EntityName, EditionLink } from "./CareerIdentity";
 import { serverURL } from "./session";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { date, fixtureMap, useData, type Career, type Scene } from "./careerData";
 import { Dialog, Glyph } from "./GameUI";
 import { MatchReport } from "./CareerForms";
@@ -100,7 +100,8 @@ export function PlayerRecord({c,id,scene,revision,tab,overview}: Omit<Props,"gro
   </section>;
 }
 
-export default function ProfileHistory({c,scene,group,id,revision}: Props) {
+export default function ProfileHistory({c,scene,group,id,revision,comparison}: Props & {comparison?: {open:boolean; change:(open:boolean)=>void}}) {
+  const mapControl = useRef<HTMLSelectElement>(null);
   const [days,setDays] = useState("30");
   const [map,setMap] = useState("");
   const [event,setEvent] = useState("");
@@ -120,15 +121,15 @@ export default function ProfileHistory({c,scene,group,id,revision}: Props) {
   return <section className="match-report history-profile">
     <h2>История выступлений</h2><p>Официальные матчи карьеры · по {date(c.date)}</p>
     <div className="history-filters">
-      <label>Период<select value={days} onChange={e=>setDays(e.target.value)}><option value="7">7 дней</option><option value="30">30 дней</option><option value="0">Вся карьера</option></select></label>
-      <label>Карта<select value={map} onChange={e=>setMap(e.target.value)}><option value="">Все карты</option>{Array.from(maps).sort().map(m=><option key={m} value={m}>{labelMap(m)}</option>)}</select></label>
-      <label>Турнир<select value={event} onChange={e=>setEvent(e.target.value)}><option value="">Все турниры</option>{Array.from(editions,([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
-      <EntityPicker label="Сравнить с" group={group} options={directory} value={other} exclude={id} empty="Без сравнения" select={setOther}/>
+      <label>Период<select aria-label="Период" value={days} onChange={e=>setDays(e.target.value)}><option value="7">7 дней</option><option value="30">30 дней</option><option value="0">Вся карьера</option></select></label>
+      <label>Карта<select ref={mapControl} aria-label="Карта" value={map} onChange={e=>setMap(e.target.value)}><option value="">Все карты</option>{Array.from(maps).sort().map(m=><option key={m} value={m}>{labelMap(m)}</option>)}</select></label>
+      <label>Турнир<select aria-label="Турнир" value={event} onChange={e=>setEvent(e.target.value)}><option value="">Все турниры</option>{Array.from(editions,([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
+      <EntityPicker dialog={comparison} label="Сравнить с" group={group} options={directory} value={other} exclude={id} empty="Без сравнения" select={setOther}/>
     </div>
     <div className="report-lineups">{[current,...(other?[compare]:[])].map((request,i)=>request.error ? <p key={i} role="alert">{request.error} <button onClick={request.reload}>Повторить</button></p>
       : request.data ? <Summary key={i} result={request.data} subject={directory[i ? other : id]}/> : <p key={i} role="status">Загружаем историю…</p>)}</div>
     {current.data && <MapRecord current={current.data} compared={other ? compare.data ?? undefined : undefined}
-      names={[directory[id]?.name || id, directory[other]?.name || other]} active={map} select={setMap} label={labelMap}/>}
+      names={[directory[id]?.name || id, directory[other]?.name || other]} active={map} select={key=>{setMap(key);mapControl.current?.focus({preventScroll:true})}} label={labelMap}/>}
     {current.data && (current.data.rows.length ? <div className="report-table" tabIndex={0} role="region" aria-label="История выступлений"><table><caption>Карты и результаты</caption>
       <thead><tr>{["Дата","Команда на дату","Соперник","Турнир","Карта","Итог","K / D / A","ADR","Impact","MVP"].map(t=><th key={t}>{t}</th>)}</tr></thead>
       <tbody>{current.data.rows.map(r=><tr key={r.fixture+"/"+r.index}><th><button onClick={()=>setSelected(r.fixture)}>{date(r.date)}</button></th>

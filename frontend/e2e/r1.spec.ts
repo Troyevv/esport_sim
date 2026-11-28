@@ -95,7 +95,8 @@ test("полный BO1, колл, сохранение и итог матча", 
   await expect(page.locator(".match-result")).toContainText("Победитель", {
     timeout: 85_000,
   });
-  await press("Раунды");
+  await page.locator(".mx-round-timeline button").first().click();
+  await expect(page.locator(".round-list > [data-highlight=true]")).toBeFocused();
   const final = await (await page.request.get("/api/state")).json();
   await expect(page.locator(".round-list > div")).toHaveCount(
     final.world.match.score.reduce((a: number, b: number) => a + b, 0),

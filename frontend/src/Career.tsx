@@ -144,7 +144,7 @@ const EntityProfile = lazy(() => import("./CareerScene").then(v=>({default:v.Ent
 const Squad = lazy(() => import("./CareerScene").then(v=>({default:v.Squad})));
 const Archive = lazy(() => import("./CareerArchive"));
 const Prematch = lazy(() => import("./Prematch"));
-type Route = { page: string; tab?: string; fixture?:string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
+type Route = { page: string; calendarDay?:string; calendarScope?:string; tab?: string; fixture?:string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
 function Manager({
   frontMenu,
   pauseEnabled,
@@ -208,7 +208,7 @@ function Manager({
     closeOverlays();
     if (tool) leaveTool();
     if (frontMenu) go("hub");
-    historyStack.current.push({route, match:toolName==="Матч-центр" && !!(frame.world.match || frame.world.series)});
+    historyStack.current.push({route:route.page==="Календарь" ? {...route,calendarDay:route.calendarDay ?? day} : route, match:toolName==="Матч-центр" && !!(frame.world.match || frame.world.series)});
     setRoute({ page, profile, edition, entry, fixture, jump: historyStack.current.length });
     window.scrollTo(0, 0);
   };
@@ -386,7 +386,8 @@ function Manager({
           <div key={active} className="screen-enter"><Suspense fallback={<p role="status">Загружаем раздел…</p>}>
             {(tool && <CareerRoster.Provider value={c.roster}>{tool}</CareerRoster.Provider>) || frontMenu ||
               (active === "Календарь" ? (
-                <Calendar prepare={prepare} key={day} c={c} initial={day} tournament={tournament} revision={frame.careerRevision||0} training={d=>{setDay(d);to("Тренировочный центр")}}/>
+                <Calendar prepare={prepare} c={c} selected={route.calendarDay ?? day} filter={route.calendarScope ?? "club"}
+                  select={calendarDay=>setRoute(prev=>({...prev,calendarDay}))} setFilter={calendarScope=>setRoute(prev=>({...prev,calendarScope}))} tournament={tournament} revision={frame.careerRevision||0} training={d=>{setDay(d);to("Тренировочный центр")}}/>
               ) : active === "Входящие" ? (
                 <Inbox c={c} report={setQuickResult} prepare={prepare}
                   box={box}
