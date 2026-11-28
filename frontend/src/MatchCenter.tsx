@@ -1,3 +1,5 @@
+import { broadcastNotices, OnAirNotice } from "./BroadcastRound";
+import { clubColors, SeriesEvent } from "./SeriesIdentity";
 import { ProfileAction } from "./CareerIdentity";
 import {Badge,Button,Icon,Tabs as ApprovedTabs} from "./approved/Shared";
 import {Portrait,TeamLogo} from "./approved/Identity";
@@ -11,7 +13,7 @@ import type { Frame, View } from "./session";
 import type { RadarPlayback } from "./playback";
 import "./match.css";
 import "./arena.css";
-import { LineupPortrait, Identity, type Visual } from "./SceneIdentity";
+import { Flag, LineupPortrait, Identity, type Visual } from "./SceneIdentity";
 import { itemLabel } from "./scorebotIcons";
 import { Gear, ItemIcon, WeaponSlots } from "./MatchEquipment";
 import { RoleRatings } from "./SceneProfiles";
@@ -23,6 +25,7 @@ export interface MatchView {
   radio?: {player:string;channel:string;state:string;tick:number}[];
   impressions?:Record<string,string>;
   rules: string;
+  roundFormat?: {half: number; overtimeHalf: number};
   clubs: {
     id: string;
     name: string;
@@ -109,7 +112,7 @@ export interface MatchView {
     enemy: boolean;
   }[];
   plans: Partial<
-    Record<Side, { site: string; style: string; buy: string; tactic?: PlanRef }>
+    Record<Side, { start?:number; site: string; style: string; buy: string; tactic?: PlanRef }>
   >;
   remaining: number;
   timeoutLimit: number;
@@ -207,7 +210,7 @@ function RosterPanel({
               visual={row.visual || {}}
             />
             <div className="mx-live-player-data">
-              <strong>{row.name}</strong>
+              <strong className="mx-player-name">{row.visual?.flag && <Flag value={row.visual.flag}/>}<span>{row.name}</span></strong>
               <div className="mx-live-weapon">
                 {a?.weapon ? (
                   <ItemIcon name={a.weapon} side={a.team} />
@@ -332,16 +335,22 @@ export default function MatchCenter({
     );
   const awayBreak = !!m.breakOwner && !timeout;
   const ser = world.series;
-  const scoreTeam = (club: MatchView["clubs"][number], rival = false) => {
+  const resources = m.clubs.map(club => {
     const visible = world.view === "full" || world.view === club.side;
-    const lineup = visible ? world.agents.filter(player=>player.team===club.side) : [];
-    const complete = lineup.length > 0 && lineup.length === m.stats.filter(row=>row.teamId===club.id).length;
-    const balance = complete && lineup.every(p=>p.cash!=null) ? lineup.reduce((total,p)=>total+p.cash!,0) : null;
-    const alive = complete && lineup.every(p=>p.alive!=null) ? lineup.filter(p=>p.alive).length : null;
-    const badge = <TeamLogo name={club.name} visual={club.visual} size={48} />;
+    const lineup = visible ? world.agents.filter(p=>p.team===club.side) : [];
+    const complete = lineup.length > 0 && lineup.length === m.stats.filter(p=>p.teamId===club.id).length;
+    return {club, count:lineup.length, buy:visible ? m.plans[club.side]?.buy : undefined,
+      balance:complete && lineup.every(p=>p.cash!=null) ? lineup.reduce((sum,p)=>sum+p.cash!,0) : null,
+      gear:complete && lineup.every(p=>p.equipmentValue!=null) ? lineup.reduce((sum,p)=>sum+p.equipmentValue!,0) : null,
+      alive:complete && lineup.every(p=>p.alive!=null) ? lineup.filter(p=>p.alive).length : null};
+  });
+  const scoreTeam = (club: MatchView["clubs"][number], rival = false) => {
+    const {balance,alive,count} = resources.find(row=>row.club.id===club.id)!;
+    const badge = <TeamLogo name={club.name} visual={club.visual} size={58} />;
     return (
       <div
         data-team={club.id}
+        style={clubColors(club.id,club)}
         data-side={club.side}
         className={"mx-score-team " + (rival ? "rival" : "own")}
       >
@@ -352,7 +361,7 @@ export default function MatchCenter({
             {club.side} · {rival ? "Соперник" : "Команда тренера"}
           </small>
           {(alive!=null || balance!=null) && <div className="mx-team-resources">
-            {alive!=null && <span><Icon name="users" size={13}/>{alive}/{lineup.length} в живых</span>}
+            {alive!=null && <span><Icon name="users" size={13}/>{alive}/{count} в живых</span>}
             {balance!=null && <span>Банк <b>{money(balance)}</b></span>}
           </div>}
         </div>
@@ -360,6 +369,16 @@ export default function MatchCenter({
       </div>
     );
   };
+  const coachPlan = m.plans[coach.side];
+  const isCaptainCall = (e: Frame["world"]["events"][number]) =>
+    e.team === coach.side && (e.kind === "command" || e.kind === "rotate" || e.kind === "defense_call");
+  let captainCall;
+  if (tab === "Радар" && coachPlan) {
+    for (let i = world.events.length - 1; i >= 0; i--) {
+      if (world.events[i].tick < (coachPlan.start ?? 0)) break;
+      if (isCaptainCall(world.events[i])) { captainCall = world.events[i]; break; }
+    }
+  }
   const winningClub = finished && m.clubs.find(club=>club.id===m.winnerTeamId);
   const awarded = m.award?.player && m.stats.find(row=>row.id===m.award?.player || world.agents.find(a=>a.id===row.id)?.playerId===m.award?.player);
   const tabItems =
@@ -368,6 +387,7 @@ export default function MatchCenter({
       : Array.from(tabs);
   return (
     <article
+      data-observing={!m.pregame && !finished && !timeout}
       className={
         "mx-root mx-match-screen " +
         (display === "Трансляция" ? "mx-broadcast" : "mx-coach-view") +
@@ -417,6 +437,8 @@ export default function MatchCenter({
             <div className="mx-stage-actions">
               <button
                 className="mx-arena-toggle"
+                aria-label={focus ? "Выйти" : "Арена"}
+                title={focus ? "Выйти из арены" : "Развернуть радар"}
                 aria-pressed={focus}
                 onClick={() => {
                   setTab("Радар");
@@ -439,16 +461,14 @@ export default function MatchCenter({
                     Загрузить эпизод
                   </Button>
                   <Button onClick={openBoard}>Редактор тактик</Button>
+                  {frame.careerId && m.source && <small>Составы из базы · {m.source.id} / {m.source.revision}</small>}
                 </div>
               </details>
             </div>
           </header>
           <section className="mx-broadcast-score" aria-label="Счёт матча">
             <div className="mx-score-event">
-              <span>
-                {ser?.tournament ||
-                  (frame.careerId ? "Встреча календаря" : "Выставочная серия")}
-              </span>
+              <SeriesEvent series={ser} fallback={frame.careerId?"Встреча календаря":"Выставочная серия"}/>
               <span>
                 BO{ser?.bestOf || 1}
                 {ser && (
@@ -460,7 +480,7 @@ export default function MatchCenter({
                   ? "Режим наблюдателя"
                   : "Командная проекция"}
               </span>
-              {m.source && <small className="mx-score-source">Составы из базы · {m.source.id} / {m.source.revision}</small>}
+              {!frame.careerId && m.source && <small className="mx-score-source">Составы из базы · {m.source.id} / {m.source.revision}</small>}
             </div>
             {scoreTeam(coach)}
             <div className="mx-round-clock">
@@ -511,17 +531,12 @@ export default function MatchCenter({
       {ser && (finished || ser.stage === "finished") && (
         <SeriesScore frame={frame} enabled={enabled} act={act} />
       )}
-      {m.phase === "planted" && (
-        <div className="arena-event match-signal" data-kind="bomb">
-          <ItemIcon name="C4" label=""/> C4 установлена{m.bomb?.site && " · " + m.bomb.site}
-        </div>
-      )}
-      {m.phase === "result" && m.history.length > 0 && (
-        <div className="arena-event match-signal" data-kind="round">
-          <Icon name="flag"/>{clubName(m.history.at(-1)!.winnerTeamId)} ·{" "}
-          {m.history.at(-1)!.reason}
-        </div>
-      )}
+      <div className="mx-onair-line" aria-label="События раунда">
+        {broadcastNotices(m,ser).map(n=><OnAirNotice key={n.title+n.detail} {...n}/>)}
+        {m.phase==="planted" && <OnAirNotice title={m.action?.kind==="defuse"?"Обезвреживание C4":"C4 установлена"} detail={m.bomb?.site || ""} icon={m.action?.kind==="defuse"?"Набор":"C4"} tone="bomb"/>}
+        {m.phase==="result" && m.history.length>0 && <OnAirNotice title={m.history.at(-1)!.reason}
+          detail={clubName(m.history.at(-1)!.winnerTeamId) || ""} icon={m.history.at(-1)!.reason==="Обезвреживание"?"Набор":m.history.at(-1)!.reason==="Взрыв C4"?"C4":"flag"} tone="round"/>}
+      </div>
       {m.phase === "freeze" &&
         m.round > 1 &&
         m.history.at(-1)?.side &&
@@ -645,7 +660,7 @@ export default function MatchCenter({
             ))}
           </div>
         </div>
-        <span className="mx-permission-note">
+        <span className="mx-permission-note" data-important={!!(awayBreak || m.pending || m.pregame)}>
           {awayBreak
             ? "Перерыв соперника"
             : m.pending
@@ -704,8 +719,8 @@ export default function MatchCenter({
                   <ItemIcon name="C4" /> · {m.bomb?.site || "Установлена"}
                 </strong>
                 <span>
-                  {m.action?.kind === "defuse" ? "Обезвреживание" : "До взрыва"}{" "}
-                  · {clock(m.clock)}
+                  До взрыва · {clock(m.clock)}
+                  {m.action?.kind==="defuse" && <> · Обезвреживание · {clock(Math.max(0,m.action.end-world.tick))}</>}
                 </span>
                 <progress
                   aria-label="Время до взрыва"
@@ -731,7 +746,7 @@ export default function MatchCenter({
                   .reverse()
                   .map((k) => (
                     <div key={k.id} className="kill-row" data-kill={k.id}>
-                      <span className="kill-attacker">
+                      <span className="kill-attacker" data-side={m.stats.find(p=>p.id===k.player)?.team}>
                         {k.weapon !== "C4" && <b>{name(k.player)}</b>}
                         {k.assists?.length > 0 && (
                           <span className="assist">
@@ -783,7 +798,7 @@ export default function MatchCenter({
                             </abbr>
                           ))}
                       </span>
-                      <b>{name(k.target)}</b>
+                      <b className="kill-target" data-side={m.stats.find(p=>p.id===k.target)?.team}>{name(k.target)}</b>
                     </div>
                   ))}
               </section>
@@ -848,6 +863,17 @@ export default function MatchCenter({
 
       {tab === "Радар" && (
         <>
+          <section className="mx-buy-desk" aria-label="Сравнение экономики">
+            <h3><Icon name="chart" size={18}/> Экономика раунда</h3>
+            <div>{resources.map(({club,buy,balance,gear})=>
+              <section key={club.id} data-side={club.side}>
+                <header><TeamLogo name={club.name} visual={club.visual} size={24}/><strong>{club.name}</strong><span>{buy ? buy+" закупка" : "Закупка неизвестна"}</span></header>
+                <dl><div><dt>Стоимость снаряжения</dt><dd>{gear!=null ? money(gear) : "—"}</dd></div>
+                  <div><dt>Банк команды</dt><dd>{balance!=null ? money(balance) : "—"}</dd></div></dl>
+                {gear!=null && resources.every(row=>row.gear!=null) && <meter aria-label={"Стоимость снаряжения · "+club.name}
+                  min={0} max={Math.max(1,...resources.map(row=>row.gear!))} value={gear}/>}
+              </section>)}</div>
+          </section>
           <div className="mx-below-radar">
             <div className="mx-radio-card">
               <span className="mx-eyebrow">КОМАНДНОЕ РАДИО · {coach.name}</span>
@@ -869,11 +895,11 @@ export default function MatchCenter({
               </Button>
             </div>
             <div className="mx-current-order">
-              <span className="mx-eyebrow">УСТАНОВКА ТРЕНЕРА</span>
+              <span className="mx-eyebrow">{m.call ? "УСТАНОВКА ТРЕНЕРА" : "КОЛЛ IGL"} · {coach.name}</span>
               <h3>
                 {m.call ||
-                  m.plans[coach.side]?.tactic?.name ||
-                  "Решение капитана"}
+                  captainCall?.text || coachPlan?.tactic?.name ||
+                  (coachPlan ? coachPlan.style + " · " + coachPlan.site : "Колл пока недоступен")}
               </h3>
               <p>
                 {m.pending
@@ -891,9 +917,10 @@ export default function MatchCenter({
           <section className="surface panel-body">
             <h2>Состояние пятёрки</h2>
             {Object.entries(m.impressions || {}).map(([id, state]) => (
-              <p key={id}>
-                <strong>{name(id)}</strong> · {state}
-              </p>
+              <button key={id} className="mx-mind-observation" aria-pressed={id===selected}
+                onClick={()=>{select(id);setTab("Составы");}}>
+                <Icon name="eye" size={15}/><strong>{name(id)}</strong><span>{state}</span>
+              </button>
             ))}
             {!Object.keys(m.impressions || {}).length && (
               <p>В этой проекции наблюдения своего штаба недоступны.</p>

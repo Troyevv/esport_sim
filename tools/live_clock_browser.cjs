@@ -43,7 +43,7 @@ const { chromium } = require("../frontend/node_modules/playwright");
         if (!p.hud || at - p.hud.at(-1)[0] >= 250)
           (p.hud ??= []).push([
             at,
-            document.querySelector(".round-clock")?.textContent,
+            document.querySelector(".mx-round-clock, .round-clock")?.textContent,
           ]);
         for (const e of match.effects) {
           if (tick < e.start || tick >= e.land) continue;

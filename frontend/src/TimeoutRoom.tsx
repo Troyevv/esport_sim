@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { MatchView } from "./MatchCenter";
-import { LineupPortrait } from "./SceneIdentity";
+import { Avatar, LineupPortrait } from "./SceneIdentity";
 import { GamePortrait } from "./GamePortrait";
 import "./timeout.css";
 
@@ -123,8 +123,10 @@ export default function TimeoutRoom({
             {map} · {club.side} · Раунд {m.round}
           </span>
           <h1>Тактический перерыв</h1>
-          <p>
-            {m.clubs[0].name} <b>{m.score.join(" : ")}</b> {m.clubs[1].name}
+          <p className="timeout-scoreboard">
+            <span><Avatar name={m.clubs[0].name} club {...m.clubs[0].visual}/>{m.clubs[0].name}</span>
+            <b>{m.clubs.map(team=>team.score).join(" : ")}</b>
+            <span><Avatar name={m.clubs[1].name} club {...m.clubs[1].visual}/>{m.clubs[1].name}</span>
           </p>
         </div>
         <div className="round-clock">

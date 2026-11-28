@@ -255,7 +255,8 @@ def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
             game["series"].update(forecastBasis=basis, forecasts=quotes)
             forecast.after_veto(game["series"])
         if event.get("edition"):
-            game["series"]["tournament"]=c["circuit"]["editions"][event["edition"]]["title"]
+            game["series"]["edition"] = event["edition"]
+            game["series"]["tournament"] = c["circuit"]["editions"][event["edition"]]["title"]
         if c["team"] not in event["teams"] and detailed:
             game["autonomous"] = True
         if not detailed:

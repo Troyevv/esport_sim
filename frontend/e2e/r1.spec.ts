@@ -84,8 +84,16 @@ test("полный BO1, колл, сохранение и итог матча", 
     path: info.outputPath("bo1-" + info.project.name + ".png"),
     fullPage: true,
   });
+  const tick = (await (await page.request.get("/api/state")).json()).world.tick;
+  await press("Арена");
+  await expect(page.locator(".mx-focus > .match-grid")).toBeHidden();
+  await press("Выйти");
+  await press("Тренерский обзор");
+  await press("Трансляция");
+  expect((await (await page.request.get("/api/state")).json()).world.tick).toBe(tick);
   for (const view of ["CT", "T", "full"]) {
     await page.getByLabel("Режим обзора").selectOption(view);
+    await expect(page.locator(".mx-buy-desk dd").filter({hasText:/^—$/})).toHaveCount(view==="full"?0:2);
     await expect(page.getByTestId("connection")).toContainText("На связи");
   }
   await press("Статистика");

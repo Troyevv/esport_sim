@@ -229,3 +229,6 @@
 .timeout-room .timeout-head h1 {font:550 clamp(28px,4vw,44px)/1.15 Oswald,sans-serif;text-transform:uppercase;letter-spacing:.02em}
 .timeout-room .round-clock {border-color:#986b45;color:#ffc59c;background:#28221e}
 .timeout-room .bench-five button[aria-pressed=true] {border-color:var(--orange);background:#2d261f}
+.timeout-scoreboard,.timeout-scoreboard>span {display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap}
+.timeout-head .timeout-scoreboard .scene-avatar {width:25px;height:25px;object-fit:contain}
+.timeout-head .timeout-scoreboard b {white-space:nowrap;font-family:var(--mono);margin:0 3px}

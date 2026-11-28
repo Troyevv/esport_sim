@@ -47,10 +47,15 @@ if (process.env.ESPORT_CS2_QA) {
           ),
       )
       .toBeTruthy();
+    const series = (await (await page.request.get("/api/state")).json()).world.series;
+    const turn = series.steps[series.actions.length];
+    await expect(page.locator(".veto-turn")).toContainText(series.clubs[turn.team].name);
+    await expect(page.locator(".veto-progress li")).toHaveCount(series.steps.length);
     await capture("veto");
     const option = page.locator(".veto-select").first();
     if (hasTouch) await option.tap();
     else await option.click();
+    await expect(page.locator(".veto-card[data-selected=true]")).toContainText("К подтверждению");
     await press(
       (await button("Забанить карту").isVisible())
         ? "Забанить карту"
@@ -66,6 +71,7 @@ if (process.env.ESPORT_CS2_QA) {
         ? "Пикнуть карту"
         : "Подтвердить пик",
     );
+    await expect(page.locator(".veto-turn")).toContainText("Стартовая сторона");
     await press("Атака · T");
     await page.getByText("Делегировать оставшиеся ходы").click();
     await press("Капитану");

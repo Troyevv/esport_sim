@@ -394,6 +394,7 @@ def project(w, view="full"):
         events=journal[-48:],
         match=dict(
             rules=w["rules"],
+            roundFormat=dict(half=RULES["half"], overtimeHalf=RULES["overtimeHalf"]),
             source=w["domain"]["source"],
             roleRatings=ratings,
             teamRating=(

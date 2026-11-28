@@ -342,7 +342,20 @@ class Store:
         else:
             state["world"] = model.project(game, view)
         if "series" in game:
-            state["world"]["series"] = series.project(game, view)
+            projection = series.project(game, view)
+            state["world"]["series"] = projection
+            if c and projection.get("tournament"):
+                saved = game["series"]
+                edition_id = saved.get("edition")
+                # Older saves keep the fixture itself in the queue until settlement.
+                if not edition_id:
+                    for row in (c["queue"][:1] + c["history"][-1:]):
+                        if row.get("seed") == saved["seed"] and row.get("teams") == saved["teams"]:
+                            edition_id = row.get("edition")
+                            break
+                edition = c.get("circuit", {}).get("editions", {}).get(edition_id)
+                if edition:
+                    projection["edition"] = {k: edition[k] for k in ("id", "organizer", "year") if k in edition}
         world = state["world"]
         if self.motion and state["running"]:
             context, start, end, samples, speed = self.motion[-1]
