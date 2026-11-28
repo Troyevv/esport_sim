@@ -56,7 +56,38 @@
 }
 .history-profile h2 { font-size: 28px }
 .history-filters, .history-metrics { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 }
-.history-filters label { display: grid; flex: 1 1 140px; min-width: 0; gap: 6px; color: var(--muted) }
+.history-filters > label { display: grid; flex: 1 1 140px; min-width: 0; gap: 6px; color: var(--muted) }
 .history-filters select { width: 100% }
 .history-metrics dd { margin: 0; font: 24px 'IBM Plex Mono', monospace }
 .history-metrics dt { color: var(--muted); font-size: 13px }
+
+.protocol-player {display:inline-flex;gap:8px;align-items:center}
+.protocol-player>span {display:grid;place-items:center;width:30px;height:34px;flex:none}
+.protocol-player .scene-avatar {width:100%;height:100%;object-fit:contain}
+.report-member>:first-child {width:auto;height:auto}
+.report-member .protocol-player>span {width:42px;height:48px}
+.report-rounds button {min-width:38px;display:grid;place-items:center;gap:2px}
+.report-rounds button small {font:600 10px "IBM Plex Mono",monospace}
+.report-rounds [data-side=CT] small {color:#98cbeb}
+.report-rounds [data-side=T] small {color:#e5bf89}
+
+.result-club {display:flex;align-items:center;justify-content:center;gap:12px}
+.report-team:last-child .result-club {flex-direction:row-reverse}
+@media(max-width:700px) {
+  .report-team .result-club,.report-team:last-child .result-club {flex-direction:column;gap:6px}
+}
+
+.history-filters>.entity-picker-field {display:grid;flex:1 1 140px;min-width:0;gap:6px;color:var(--muted)}
+.entity-picker-trigger {display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:42px;min-width:0;width:100%;padding:6px 10px;text-align:start}
+.entity-picker-trigger>.ui-icon {width:14px;flex:none}
+.entity-picker {display:grid;gap:12px;padding:16px clamp(12px,3vw,20px);color:var(--text)}
+.entity-picker .entity-search {display:flex;align-items:center;gap:10px}
+.entity-search>.ui-icon {flex:none;width:18px;color:var(--muted)}
+.entity-search input {flex:1;min-width:0;font-size:16px}
+.entity-picker>.btn {justify-self:start}
+.entity-picker-list {overflow-y:auto;overscroll-behavior:contain;max-height:min(52dvh,450px)}
+.entity-picker-list>button {width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:6px 10px;text-align:start;background:transparent;border:0;border-bottom:1px solid var(--line)}
+.entity-picker-list>button:is(:hover,:focus-visible,[aria-pressed=true]) {background:var(--surface-2);color:var(--orange)}
+.entity-picker-list>button>span:last-child:not(.sport-identity) {font-size:12px}
+.entity-picker nav {display:flex;align-items:center;justify-content:space-between;gap:8px}
+@media(max-height:475px) { .entity-picker-list {max-height:35dvh} }

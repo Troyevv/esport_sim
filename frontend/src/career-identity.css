@@ -1,0 +1,55 @@
+.sport-identity,.fixture-identities,.edition-link {display:inline-flex;align-items:center;min-width:0;gap:7px;vertical-align:middle}
+.fixture-identities {flex-wrap:wrap;row-gap:3px}
+.versus-divider {color:var(--muted);font-weight:400}
+button.profile-action {padding:2px 0;border:0;background:transparent;color:inherit;font:inherit;text-align:inherit;cursor:pointer;line-height:1.35}
+button.profile-action:hover {color:var(--accent,#f7a55e);text-decoration:underline;text-underline-offset:.2em}
+button.profile-action:focus-visible {outline:2px solid var(--accent,#f7a55e);outline-offset:2px}
+button.profile-action:active {color:var(--text);transform:translateY(1px)}
+.sport-identity .identity-mark {width:25px;height:27px;display:inline-grid;place-items:center;flex:none}
+.identity-mark>.scene-avatar,.identity-mark>.game-portrait {width:100%;height:100%;object-fit:contain}
+.sport-identity>span:last-child {overflow-wrap:anywhere}
+.edition-link .ui-icon {width:15px;height:15px;flex:none}
+.tc-pair>div>.sport-identity {flex:1;justify-content:flex-start}
+.report-table .identity-mark {width:21px;height:22px}
+.history-profile .report-table th,.history-profile .report-table td {vertical-align:middle}
+.inbox-item .letter-source {display:inline-flex;align-items:center;gap:7px}
+.letter-source .ui-icon,.event-time .ui-icon {width:16px;height:16px;flex:none}
+.event-time {display:inline-flex;align-items:center;gap:6px}
+.day-agenda-item h3 .sport-identity {font-family:inherit;font-size:inherit}
+.history-map {display:inline-flex;align-items:center;gap:6px}
+.history-map img {width:32px;height:28px;object-fit:contain;background:#11171b}
+.prep-result {display:grid;gap:3px 12px;grid-template-columns:minmax(0,1fr) auto;padding:10px 0;border-bottom:1px solid var(--line)}
+.prep-result time {grid-column:1/-1;color:var(--muted);font-size:12px}
+.prep-result>b {font-family:"IBM Plex Mono",monospace;align-self:center;white-space:nowrap}
+.player-role {display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
+.player-role svg {flex-shrink:0;color:var(--muted)}
+.tc-state::before {content:"";display:inline-block;width:.54em;height:.54em;margin-right:6px;vertical-align:.09em;border-radius:50%;background:var(--muted)}
+.tc-state[data-tone=green]::before {background:var(--green)}
+.tc-state[data-tone=orange]::before {background:var(--accent)}
+.inbox-prompt {display:grid;justify-items:center;align-content:center;gap:14px;min-height:min(260px,40vh);text-align:center}
+.inbox-prompt>.ui-icon {width:27px;height:27px}
+.inbox-prompt h2 {margin:0}
+.scout-row .scene-flag {vertical-align:middle}
+.confidence-row {display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.settings-list {gap:0;justify-items:stretch}
+.settings-list>label {cursor:pointer;padding:14px 0;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;justify-content:space-between}
+.settings-list input {order:1;width:18px;height:18px;margin:0}
+.settings-list label small {display:block;margin-top:3px;color:var(--muted)}
+.settings-list .host-trigger {margin-top:12px;justify-self:start}
+.archive-score-row {display:grid;grid-template-columns:minmax(135px,1fr) minmax(0,2fr) auto;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.archive-event {display:grid;gap:4px;justify-items:start}
+.archive-event time {font:12px "IBM Plex Mono",monospace;color:var(--muted)}
+.archive-versus {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:center}
+.archive-contender {display:flex;align-items:center;gap:7px;min-width:0}
+.archive-contender:first-child {justify-content:flex-end}
+.archive-contender b {font:600 17px "IBM Plex Mono",monospace}
+.archive-contender:nth-child(2)>b {order:-1}
+@media(max-width:850px){
+ .archive-score-row {grid-template-columns:minmax(0,1fr) auto;gap:6px 10px}
+ .archive-event {grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+ .archive-versus {display:flex;flex-direction:column;align-items:stretch;gap:2px}
+ .archive-contender,.archive-contender:first-child {justify-content:space-between}
+ .archive-contender:nth-child(2)>b {order:0}
+}
+
+.registered-lineup {display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 12px}

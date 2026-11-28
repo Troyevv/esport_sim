@@ -1,3 +1,4 @@
+import { openLab } from "./openLab";
 import { test, expect } from "@playwright/test";
 import { touchCamera } from "./touchCamera";
 
@@ -14,7 +15,7 @@ test("полный BO1, колл, сохранение и итог матча", 
     if (hasTouch) await button(name).tap();
     else await button(name).click();
   };
-  await page.goto("/?screen=lab");
+  await openLab(page);
   await expect(page.getByTestId("connection")).toContainText("На связи");
   const seed = 7171 + info.project.name.length;
   // All suites use the same home server. Enter the real lab before choosing this match.
@@ -25,23 +26,23 @@ test("полный BO1, колл, сохранение и итог матча", 
   }
   await page.getByLabel("Seed", { exact: true }).fill(String(seed));
   await press("Открыть матч BO1");
-  await expect(page.locator(".scoreboard")).toContainText("РАУНД 1");
+  await expect(page.locator(".mx-broadcast-score")).toContainText("R1");
   await expect(page.getByTestId("radar")).toHaveAttribute("data-ready", "true");
-  await expect(page.locator(".lineups")).toContainText(/Север.*OVR/s);
-  if (await page.locator(".touch-lineup").isVisible()) await press("Север");
+  await expect(page.locator(".mx-roster-title[title^=OVR]")).toContainText("Север");
   await page.getByRole("button", { name: /Sable/ }).click();
-  if (await page.locator(".touch-lineup").isVisible()) await press("Радар");
+
   await expect(page.locator(".role-ratings")).toContainText(/Рифлер.*Снайпер.*Капитан/);
   await page.screenshot({ path: info.outputPath("r31-ratings.png"), fullPage: true });
+  await page.locator(".mx-match-tabs").getByRole("button",{name:"Радар",exact:true}).click();
   if (hasTouch) {
     await touchCamera(page);
     await press("Центрировать карту");
   }
   await press("8×");
   await press("Запустить");
-  await expect(page.locator(".round-clock")).toContainText("В игре");
+  await expect(page.locator(".mx-round-clock, .round-clock")).toContainText("В игре");
   await press("Запросить тайм-аут");
-  await expect(page.locator(".round-clock")).toContainText("ПАУЗА", {
+  await expect(page.locator(".mx-round-clock, .round-clock")).toContainText("ПАУЗА", {
     timeout: 25_000,
   });
   await expect(page.locator(".coaching blockquote").first()).toBeVisible();
@@ -62,11 +63,11 @@ test("полный BO1, колл, сохранение и итог матча", 
   ).toContainText("Выход B");
   await press("Сохранить");
   await page.reload();
-  await expect(page.locator(".round-clock")).toContainText("ПАУЗА");
+  await expect(page.locator(".mx-round-clock, .round-clock")).toContainText("ПАУЗА");
   await expect(page.locator(".coaching")).toContainText("2 / 3");
   await press("Загрузить");
   await press("Завершить тайм-аут");
-  await expect(page.locator(".round-clock")).toContainText("В игре");
+  await expect(page.locator(".mx-round-clock, .round-clock")).toContainText("В игре");
   await page.waitForTimeout(1100);
   await press("Пауза просмотра");
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -83,8 +84,16 @@ test("полный BO1, колл, сохранение и итог матча", 
     path: info.outputPath("bo1-" + info.project.name + ".png"),
     fullPage: true,
   });
+  const tick = (await (await page.request.get("/api/state")).json()).world.tick;
+  await press("Арена");
+  await expect(page.locator(".mx-focus > .match-grid")).toBeHidden();
+  await press("Выйти");
+  await press("Тренерский обзор");
+  await press("Трансляция");
+  expect((await (await page.request.get("/api/state")).json()).world.tick).toBe(tick);
   for (const view of ["CT", "T", "full"]) {
     await page.getByLabel("Режим обзора").selectOption(view);
+    await expect(page.locator(".mx-buy-desk dd").filter({hasText:/^—$/})).toHaveCount(view==="full"?0:2);
     await expect(page.getByTestId("connection")).toContainText("На связи");
   }
   await press("Статистика");
@@ -94,7 +103,8 @@ test("полный BO1, колл, сохранение и итог матча", 
   await expect(page.locator(".match-result")).toContainText("Победитель", {
     timeout: 85_000,
   });
-  await press("Раунды");
+  await page.locator(".mx-round-timeline button").first().click();
+  await expect(page.locator(".round-list > [data-highlight=true]")).toBeFocused();
   const final = await (await page.request.get("/api/state")).json();
   await expect(page.locator(".round-list > div")).toHaveCount(
     final.world.match.score.reduce((a: number, b: number) => a + b, 0),
@@ -119,7 +129,7 @@ test(
       baseURL: info.project.use.baseURL,
     });
     try {
-      await page.goto("/?screen=lab");
+      await openLab(page);
       await page.getByRole("button", { name: "Открыть матч BO1" }).click();
       let id = "";
       await page.route(
@@ -152,12 +162,13 @@ test(
 );
 
 test("ошибка чтения сохранения останавливает повторы и допускает ручное подключение", async ({ page }) => {
+  await openLab(page);
   let attempts = 0;
   await page.route("**/api/state?view=*", route => {
     attempts++;
     return route.fulfill({ status: 500, body: "Internal Server Error" });
   });
-  await page.goto("/?screen=lab");
+  await page.reload();
   await expect(page.getByRole("alert")).toContainText("HTTP 500");
   await expect(page.getByTestId("connection")).toHaveText("Ошибка загрузки");
   const failedAttempts = attempts;

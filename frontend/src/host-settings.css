@@ -86,3 +86,18 @@
   .host-pairing .host-url { grid-area: 2 / 2; align-self: start; margin-top: 0; }
   .host-pairing p { grid-area: 3 / 1 / 4 / 3; margin-top: 7px; }
 }
+
+.host-dialog {width:min(880px,calc(100vw - 24px));background:var(--surface);border-radius:5px;border-color:var(--line);color:var(--text)}
+.host-heading h2 {font:550 32px Oswald,sans-serif;letter-spacing:.02em;text-transform:uppercase}
+.host-emblem {background:#35271d;border-color:#69462d}
+.host-dialog .host-block {background:#191d23;border:1px solid var(--line);border-radius:4px}
+.host-dialog .host-action {background:var(--orange);color:#20170e;border-color:var(--orange)}
+.host-dialog .host-sectionhead h3 {font:500 23px Oswald,sans-serif}
+.host-page.host-dialog {position:static;display:block;width:100%;max-width:100%;height:auto;max-height:none;box-sizing:border-box;padding:0;overflow:visible;background:transparent;border:0;box-shadow:none}
+main:not(.manager-root)>.host-page {max-width:1280px;margin:auto;padding:clamp(16px,3vw,38px)}
+.host-page .host-status-strip {display:flex;align-items:center;flex-wrap:wrap;gap:16px;margin:22px 0;color:var(--muted);font-size:14px}
+.host-page .host-sections {display:grid;gap:20px;padding:0;margin-top:22px;overflow:visible}
+.host-page .host-columns {display:grid;grid-template-columns:minmax(0,1.3fr) minmax(250px,1fr);gap:22px;align-items:start}
+.host-page .host-block {padding:clamp(16px,2vw,24px)}
+.host-page .host-block h3 {font:500 24px Oswald,sans-serif}
+@media (max-width:1000px) {.host-page .host-columns {grid-template-columns:1fr}}

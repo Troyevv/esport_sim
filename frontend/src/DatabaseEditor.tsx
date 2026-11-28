@@ -1,3 +1,4 @@
+import AppearanceStudio from "./AppearanceStudio";
 import { FormatSelect } from "./SeriesCenter";
 import MapSelect from "./MapSelect";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -47,6 +48,7 @@ import PlayerEditorFields from "./PlayerEditorFields";
 
 type Destination = { group: Group; id: string };
 type Props = {
+  initial?:"editor"|"exhibition"|"appearance";
   onClose: () => void;
   start: (value: object) => Promise<boolean>;
   enabled: boolean;
@@ -141,7 +143,8 @@ function Select({
   );
 }
 
-export default function DatabaseEditor({ onClose, start, enabled }: Props) {
+export default function DatabaseEditor({ onClose, start, enabled, initial }: Props) {
+  const [studio,setStudio] = useState(initial==="appearance");
   const [format, setFormat] = useState(0);
   const [mapId, setMapId] = useState("depo");
   const [catalog, setCatalog] = useState<(Ref & { title: string })[]>([]);
@@ -158,7 +161,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
-  const [matchSetup, setMatchSetup] = useState(false),
+  const [matchSetup, setMatchSetup] = useState(initial==="exhibition"),
     [home, setHome] = useState(""),
     [away, setAway] = useState(""),
     [seed, setSeed] = useState("42");
@@ -252,7 +255,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
     );
   }
   function move(g: Group, id: string, scroll = false) {
-    if (!guard()) return;
+    if (!guard()) return false;
     setDraft(null);
     setCreate(false);
     setSection("Профиль");
@@ -268,6 +271,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
       requestAnimationFrame(() =>
         card.current?.scrollIntoView({ block: "start" }),
       );
+    return true;
   }
   async function load(ref?: Ref, select?: Destination) {
     setQuery("");
@@ -376,19 +380,33 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
       </button>
     );
   }
+  const editionActions = pack && <>
+          <button disabled={busy} onClick={() => input.current?.click()}>
+            Импорт
+          </button>
+          <button disabled={busy} onClick={()=>{
+            if(!move("players",at.group==="players"?at.id:firstId(pack,"players")))return;
+            setMatchSetup(false);setStudio(!studio);
+          }}>{studio?"Редактор базы":"Студия внешности"}</button>
+          <button disabled={busy} onClick={download}>
+            Экспорт
+          </button>
+  </>;
   const head = (
     <header className="db-heading">
       <div>
-        <span className="eyebrow">Редактор базы</span>
-        <h1>База сцены</h1>
+        <span className="eyebrow">{studio?"Образ команды":"До начала карьеры"}</span>
+        <h1>{studio?"Студия внешности":"Редактор базы"}</h1>
+        {!studio && <p>Редакция мира для новых карьер. В начатой карьере действует выбранная при создании версия.</p>}
       </div>
+      <div className="db-heading-actions">{!studio && editionActions}
       <button
         onClick={() => {
           if (guard()) onClose();
         }}
       >
         Вернуться
-      </button>
+      </button></div>
     </header>
   );
   if (!pack || !options)
@@ -448,6 +466,38 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
     date: "Дата состава",
     skills: "Базовый профиль",
   };
+  const library = <>
+      <PersonalBadges
+        refresh={async () => {
+          const marks = await request("/" + refKey(pack) + "/club-index");
+          setPack((previous) => {
+            if (!previous || refKey(previous) !== refKey(pack)) return previous;
+            const next = { ...previous };
+            attachArchiveClubs(next, marks);
+            attachPortraitCache(next, portraitCacheFor(previous));
+            return next;
+          });
+        }}
+      />
+      <PortraitImport initiallyOpen={studio}
+        pack={pack}
+        onRefresh={async () => {
+          const response = await fetch(
+            serverURL("/api/portraits/" + refKey(pack) + "/index"),
+            { credentials: "include" },
+          );
+          if (!response.ok) throw Error("Не удалось обновить портреты");
+          const cache = await response.json();
+          setPack((previous) => {
+            if (!previous || refKey(previous) !== refKey(pack)) return previous;
+            const next = { ...previous };
+            attachPortraitCache(next, cache);
+            attachArchiveClubs(next, archiveClubsFor(previous));
+            return next;
+          });
+        }}
+      />
+  </>;
   const fieldKeys = r
     ? Object.keys(r).filter((k) => !["fields", "origin"].includes(k))
     : [];
@@ -498,12 +548,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
           >
             Свой пакет
           </button>
-          <button disabled={busy} onClick={() => input.current?.click()}>
-            Импорт
-          </button>
-          <button disabled={busy} onClick={download}>
-            Экспорт
-          </button>
+          {studio && editionActions}
           <button
             className="primary"
             disabled={busy}
@@ -621,39 +666,10 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
           {notice}
         </p>
       )}
-      <PersonalBadges
-        refresh={async () => {
-          const marks = await request("/" + refKey(pack) + "/club-index");
-          setPack((previous) => {
-            if (!previous || refKey(previous) !== refKey(pack)) return previous;
-            const next = { ...previous };
-            attachArchiveClubs(next, marks);
-            attachPortraitCache(next, portraitCacheFor(previous));
-            return next;
-          });
-        }}
-      />
-      <PortraitImport
-        pack={pack}
-        onRefresh={async () => {
-          const response = await fetch(
-            serverURL("/api/portraits/" + refKey(pack) + "/index"),
-            { credentials: "include" },
-          );
-          if (!response.ok) throw Error("Не удалось обновить портреты");
-          const cache = await response.json();
-          setPack((previous) => {
-            if (!previous || refKey(previous) !== refKey(pack)) return previous;
-            const next = { ...previous };
-            attachPortraitCache(next, cache);
-            attachArchiveClubs(next, archiveClubsFor(previous));
-            return next;
-          });
-        }}
-      />
-      <div className="db-layout">
-        <section className="db-index">
-      <nav className="db-tabs" aria-label="Раздел базы">
+      {studio ? <AppearanceStudio pack={pack} group={g} id={at.id} record={r} {...{busy,latest,move}} dirty={!!draft}
+        patch={update=>{if(r)setDraft({...r,...update})}} save={()=>{if(draft)void save(draft)}} cancel={()=>setDraft(null)} library={library}/>
+        : <>{library}
+      <nav className="db-tabs db-category-tabs" aria-label="Раздел базы">
         {groupKeys.map((k) => (
           <button
             key={k}
@@ -665,7 +681,8 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
           </button>
         ))}
       </nav>
-
+      <div className="db-layout">
+        <section className="db-index">
           <div className="db-bar">
             <h2>{groups[g]}</h2>
             <button disabled={!latest || busy} onClick={() => begin()}>
@@ -1257,7 +1274,7 @@ export default function DatabaseEditor({ onClose, start, enabled }: Props) {
             </>
           )}
         </section>
-      </div>
+      </div></>}
     </article>
   );
 }

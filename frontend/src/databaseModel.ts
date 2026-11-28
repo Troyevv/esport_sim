@@ -338,10 +338,11 @@ export function archiveClubsFor(pack: Pack) {
 function clubBadge(pack: Pack, group: "teams" | "organizations", id: string) {
   return archiveClubs.get(pack)?.[group + "/" + id] || pack[group][id]?.logo;
 }
-const studioCache = new WeakMap<Pack, Record<string, PhotoAsset>>();
+type StudioAsset = PhotoAsset & {lineupPhoto?: {team:string;url:string}};
+const studioCache = new WeakMap<Pack, Record<string, StudioAsset>>();
 export function attachPortraitCache(
   pack: Pack,
-  cache: Record<string, PhotoAsset>,
+  cache: Record<string, StudioAsset>,
 ) {
   studioCache.set(pack, cache);
 }
@@ -392,6 +393,7 @@ export function entityVisual(p: Pack, g: Group, id: string) {
     club,
     player: g === "players" || g === "staff",
     staff: g === "staff",
+    lineupPhoto: g === "players" ? portraitCacheFor(p)[id]?.lineupPhoto : undefined,
     head: g === "players" ? playerAppearance(p, id)?.image : g === "staff" ? portraitCacheFor(p)[id]?.image : null,
     kit: g === "players" ? teamKit(p, latestTeam(p, id)) : g === "staff" ? teamKit(p,r.team) : null,
     photo: club

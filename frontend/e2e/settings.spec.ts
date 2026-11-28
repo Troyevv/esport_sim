@@ -20,7 +20,7 @@ async function verifyLauncher(page: Page) {
     await expect.poll(() => url.trim()).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/$/);
     await page.goto(url.trim());
     await page.getByRole('button', {name:'Настройки сервера'}).click();
-    const dialog = page.getByRole('dialog');
+    const dialog = page.getByRole('region',{name:'Домашний сервер'});
     await dialog.getByRole('button', {name:'Остановить приложение'}).click();
     await dialog.getByRole('button', {name:'Отмена'}).click();
     await expect(dialog.getByRole('button', {name:'Подтвердить остановку'})).toHaveCount(0);
@@ -39,7 +39,7 @@ test('управление доступом по LAN с домашнего ПК'
   const start = page.getByRole('button', {name: 'Настройки сервера'});
   await page.goto('/');
   await start.click();
-  const panel = page.getByRole('dialog', {name: 'Домашний сервер'});
+  const panel = page.getByRole('region', {name: 'Домашний сервер'});
   await expect(panel.getByText('Только этот ПК')).toBeVisible();
   await expect(panel.getByRole('button', {name:'Остановить приложение'})).toHaveCount(0);
   const address = panel.getByLabel('Сетевой интерфейс');
@@ -73,7 +73,7 @@ test('управление доступом по LAN с домашнего ПК'
     await panel.getByRole('link', {name:'Скачать сертификат (.cer)'}).click();
     const certificate = new X509Certificate(await readFile((await (await downloaded).path())!));
     await expect(panel.locator('.host-fingerprint code')).toHaveText(certificate.fingerprint256);
-    await panel.getByText('Доверие к сертификату', {exact:true}).click();
+    await panel.getByRole('button', {name:'Подключение',exact:true}).click();
 
     const client = (route: string, cookie = '', body?: object) => new Promise<{status: number; cookie: string; body: string}>((resolve, reject) => {
       const req = httpsRequest(new URL(route, origin), {
@@ -98,6 +98,7 @@ test('управление доступом по LAN с домашнего ПК'
     expect(paired.status).toBe(200);
     expect((await client('/api/state', paired.cookie)).status).toBe(200);
     expect(JSON.parse((await client('/api/capabilities', paired.cookie)).body)).toEqual({hostSettings:false});
+    await panel.getByRole('button', {name:'Устройства',exact:true}).click();
     const device = panel.getByRole('listitem').filter({hasText: 'Проверочный планшет'});
     await expect(device).toBeVisible();
     await device.getByRole('button', {name:'Отозвать доступ'}).click();
@@ -106,6 +107,7 @@ test('управление доступом по LAN с домашнего ПК'
     expect((await client('/api/state', paired.cookie)).status).toBe(401);
     await expect.poll(() => panel.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
   } finally {
+    await panel.getByRole('button', {name:'Подключение',exact:true}).click();
     const disable = panel.getByRole('button', {name:'Отключить LAN'});
     if (await disable.count()) await disable.click();
     await expect(panel.getByText('Только этот ПК')).toBeVisible();

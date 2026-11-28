@@ -1,17 +1,7 @@
 import { date, type Decision } from "./careerData";
-import { Dialog } from "./GameUI";
+import { decisionPresentation } from "./decisionPresentation";
+import { Dialog, Glyph } from "./GameUI";
 
-const actionLabel: Record<Decision["action"], string> = {
-  calendar: "Выбрать турнир",
-  entry: "Открыть заявку",
-  play: "В матч-центр",
-  match: "В матч-центр",
-  repair: "Проверить и восстановить карты",
-  retry: "Повторить расчёт",
-  overview: "Открыть турнир",
-  training: "Открыть отчёт",
-  inbox: "Во входящие",
-};
 export function ManagerAttention({
   items,
   open,
@@ -55,7 +45,7 @@ export function ManagerAttention({
               {rows.map((row) => (
                 <article key={row.id}>
                   <div>
-                    <time>{date(row.due)}</time>
+                    <time><Glyph name={decisionPresentation[row.action].icon}/>{date(row.due)}</time>
                     <strong>{row.title}</strong>
                     <p>{row.detail}</p>
                   </div>
@@ -64,7 +54,7 @@ export function ManagerAttention({
                     disabled={!enabled}
                     onClick={() => resolve(row)}
                   >
-                    {actionLabel[row.action]}
+                    {decisionPresentation[row.action].label}
                   </button>
                   {row.action === "play" && <button className="btn" disabled={!enabled} onClick={quick}>Быстро рассчитать матч</button>}
                   {row.action === "retry" && (

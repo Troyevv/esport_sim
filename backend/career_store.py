@@ -10,7 +10,7 @@ from pathlib import Path
 from time import monotonic
 from uuid import uuid4
 
-from . import performance, historical_protocol, scout_sources, scouting, training, training_center, attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
+from . import forecast, performance, historical_protocol, scout_sources, scouting, training, training_center, attention, staff, career, competition_scene, competitions, registrations, checkpoints, database, engine, match, series, veto, world
 from .database import require
 
 
@@ -260,6 +260,11 @@ class CareerStore:
                 map_id = None
             points = series.verify_map(report, teams, expected, event["seed"], map_id)
         facts = dict(facts or {}, simulation=report.get("simulation", series.DETAILED))
+        if report.get("forecasts"):
+            quote = report["forecasts"][-1]
+            observed = int(report["winnerTeamId"] == quote["teams"][0])
+            facts["forecastScore"] = dict(version=quote["version"], brier=(quote["probability"][0]-observed)**2)
+
         body = database.encode(report)
         digest = checksum(body)
         self.db.execute(
@@ -300,6 +305,7 @@ class CareerStore:
             require(type(value.get("revision")) is int, "Укажите редакцию базы")
             pack = self.pack(competition_scene.source(value["id"], value["revision"]))
             new = career.create(pack, value)
+            forecast.note_upcoming(new, pack)
             self.save(state, "auto")
             state.pop("exhibitions", None)
             state.update(
@@ -401,6 +407,7 @@ class CareerStore:
                 else:
                     raise ValueError("Неизвестное действие с заявкой")
                 c["error"] = None
+                forecast.note_upcoming(c,pack)
                 self.save(state,"auto")
             elif kind == "career-repair":
                 require(not c["progress"], "Дождитесь остановки расчёта")
@@ -632,6 +639,8 @@ class CareerStore:
                         if next_game is None:
                             break
                         self.record(c, career.simulate(next_game))
+            if not error and not c["progress"] and state["world"]["version"] == 1:
+                forecast.note_upcoming(c, self.pack(c["source"]))
             state["sequence"] += 1
             state["revision"] += 1
             state["careerRevision"] += 1

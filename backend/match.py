@@ -371,6 +371,15 @@ def project(w, view="full"):
                 ratings[a["id"]] = world.player_report(w["domain"], a["playerId"])[
                     "ratings"
                 ]
+    bench_view = {}
+    if coach_view and w.get("agentPolicy", 0) >= 12:
+        permitted = [a for a in coached if known is None or a["playerId"] in known]
+        detail = w["coaches"][w["coachTeamId"]]["support"] >= 55
+        bench_view["impressions"] = {a["id"]: coaching.impression(a["mind"], detail) for a in permitted if "mind" in a}
+        signals = [dict(player=a["id"], channel=channel, state=signal["state"], tick=signal["tick"])
+                   for a in permitted for channel, signal in (a.get("sentFeedback") or {}).items()
+                   if isinstance(signal,dict) and "tick" in signal and "state" in signal]
+        bench_view["radio"] = sorted(signals,key=lambda s:s["tick"],reverse=True)[:5]
     completed = {}
     if w["phase"] == "finished":
         from . import performance, series
@@ -385,6 +394,7 @@ def project(w, view="full"):
         events=journal[-48:],
         match=dict(
             rules=w["rules"],
+            roundFormat=dict(half=RULES["half"], overtimeHalf=RULES["overtimeHalf"]),
             source=w["domain"]["source"],
             roleRatings=ratings,
             teamRating=(
@@ -420,6 +430,7 @@ def project(w, view="full"):
             coachTeamId=w["coachTeamId"],
             winnerTeamId=w["winnerTeamId"],
             **completed,
+            **bench_view,
             history=[
                 dict(
                     {

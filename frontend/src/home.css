@@ -1,0 +1,301 @@
+.manager-home .text-button{background:none;border:0;padding:7px 0;color:var(--orange);font-size:13px;min-height:36px}
+.manager-home .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;min-width:0}
+.manager-home .section-heading{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:20px}
+.manager-home .section-heading h2{font-size:17px}
+.manager-home .home-layout{display:grid;grid-template-columns:minmax(0,1fr) 292px;gap:22px}
+.manager-home .home-main{display:flex;flex-direction:column;gap:24px}
+.manager-home .match-hero{background:#171a1f;border:1px solid var(--line);border-top:2px solid var(--orange);padding:20px 24px}
+.manager-home .hero-topline{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.9px;text-transform:uppercase}
+.manager-home .event-wordmark{display:flex;align-items:center;gap:9px;color:#eee;font-family:Oswald;font-size:15px;letter-spacing:1px}
+.manager-home .event-wordmark span{border:1px solid #777;padding:2px 6px;font-size:13px}
+.manager-home .hero-versus{display:grid;grid-template-columns:1fr 110px 1fr;align-items:center;text-align:center;padding:24px 6px 18px;gap:10px}
+.manager-home .hero-team{background:transparent;border:0;text-align:center;display:flex;align-items:center;flex-direction:column;gap:9px}
+.manager-home .hero-team .team-logo{width:88px;height:88px}
+.manager-home .hero-team h2{font-family:Oswald;font-weight:550;letter-spacing:1px;font-size:27px;text-transform:uppercase}
+.manager-home .hero-team small{font-size:10px;color:var(--muted)}
+.manager-home .versus-time strong{font-family:"IBM Plex Mono";font-weight:400;font-size:27px;display:block}
+.manager-home .versus-time small{color:var(--muted);font-size:10px;display:block;margin-top:9px}
+.manager-home .probability-line{height:3px;background:#505965;display:flex;margin:12px 0}
+.manager-home .probability-line i{width:62%;display:block;background:var(--green)}
+.manager-home .hero-odds{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--muted)}
+.manager-home .hero-odds b{color:var(--text);font-family:"IBM Plex Mono";font-size:14px;font-weight:400;margin-left:10px}
+.manager-home .hero-odds em{font-style:normal;color:var(--green);margin-right:5px}
+.manager-home .hero-action{border-top:1px solid var(--line);margin-top:18px;padding-top:18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.manager-home .hero-action p{font-size:11px;color:var(--muted)}
+.manager-home .hero-action strong{display:block;color:var(--text);margin-bottom:5px;font-size:12px}
+.manager-home .lineup-five{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.manager-home .home-player{padding:0;text-align:left;border:1px solid var(--line);background:var(--surface);overflow:hidden;border-radius:4px}
+.manager-home .home-player:hover{border-color:var(--orange)}
+.manager-home .home-player .portrait{width:100%;height:140px;border-bottom:1px solid #3b414a;border-radius:0;background:#252a2e;position:relative}
+.manager-home .home-player-info{padding:11px}
+.manager-home .home-player-info strong{display:block;font-family:Oswald;font-size:20px;font-weight:550}
+.manager-home .home-player-info small{font-size:10px;color:var(--muted);display:block;margin:5px 0 12px}
+.manager-home .home-player .meter{gap:5px;font-size:10px}
+.manager-home .home-player .meter b{font-size:10px}
+.manager-home .home-player .player-alert{font-size:9px;color:#eeb480;display:block;margin-top:8px}
+.manager-home .readiness-label{font-size:9px;color:var(--muted);margin-bottom:7px}
+.manager-home .week-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;border:1px solid var(--line);background:var(--surface);border-radius:4px;overflow:hidden}
+.manager-home .week-day{background:none;border:0;border-right:1px solid var(--line);padding:12px 8px;text-align:center;min-height:96px}
+.manager-home .week-day:last-child{border-right:0}
+.manager-home .week-day.active{background:#34291e;box-shadow:inset 0 2px var(--orange)}
+.manager-home .week-day small{font-size:9px;color:var(--muted);display:block}
+.manager-home .week-day b{font-family:"IBM Plex Mono";display:block;font-size:16px;font-weight:400;margin:5px 0 7px}
+.manager-home .week-day span{font-size:9px;color:var(--muted);line-height:1.4;display:block}
+.manager-home .week-day.match-day span{color:var(--orange)}
+.manager-home .home-aside{display:flex;flex-direction:column;gap:20px}
+.manager-home .home-aside .panel{padding:18px}
+.manager-home .decision-item{border-bottom:1px solid var(--line);padding:0 0 17px;margin-bottom:17px}
+.manager-home .decision-item:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.manager-home .decision-item h3{font-size:13px;line-height:1.5;margin:9px 0}
+.manager-home .decision-item p{font-size:11px;color:var(--muted);line-height:1.6}
+.manager-home .decision-item .btn{font-size:11px;min-height:36px;margin-top:12px;padding:8px 12px;width:100%}
+.manager-home .result-mini{display:flex;gap:9px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:12px}
+.manager-home .result-mini:last-child{border-bottom:0}
+.manager-home .result-mini .score{font-family:"IBM Plex Mono";font-size:16px;margin-left:auto}
+.manager-home .result-mini small{font-size:9px;color:var(--muted);display:block;margin-top:4px}
+.manager-home .result-mini button{border:0;background:none;padding:0;display:flex;align-items:center;gap:9px;text-align:left}
+.manager-home .focus-player{display:flex;gap:12px;align-items:center}
+.manager-home .focus-player .portrait{width:72px;height:80px}
+.manager-home .focus-player h3{font-family:Oswald;font-size:25px}
+.manager-home .focus-player p{font-size:11px;color:var(--muted)}
+
+@media(min-width:1650px){.manager-home .home-layout{grid-template-columns:minmax(0,1fr) 340px}
+.manager-home .hero-versus{padding:28px 20px}
+.manager-home .hero-team .team-logo{width:110px;height:110px}
+.manager-home .home-player .portrait{height:190px}
+.manager-home .hero-team h2{font-size:32px}
+.manager-home .decision-item h3{font-size:15px}
+.manager-home .decision-item p{font-size:13px}
+.manager-home .home-player-info small{font-size:12px}
+.manager-home .home-player-info strong{font-size:24px}
+.manager-home .hero-topline{font-size:12px}
+}
+
+@media(max-width:1250px){.manager-home .home-layout{grid-template-columns:minmax(0,1fr) 275px}
+.manager-home .home-player .portrait{height:130px}
+.manager-home .home-player-info{padding:9px}
+.manager-home .home-player-info small{font-size:9px}
+.manager-home .hero-versus{grid-template-columns:1fr 75px 1fr}
+.manager-home .hero-team .team-logo{width:70px;height:70px}
+.manager-home .hero-team h2{font-size:25px}
+.manager-home .match-hero{padding:20px}
+}
+
+@media(max-width:1020px){.manager-home .home-layout{grid-template-columns:minmax(0,1fr)}
+.manager-home .home-aside{display:grid;grid-template-columns:1fr 1fr}
+.manager-home .home-aside>.panel:first-child{grid-row:span 2}
+.manager-home .hero-versus{grid-template-columns:1fr 100px 1fr}
+.manager-home .hero-team .team-logo{width:90px;height:90px}
+.manager-home .home-player .portrait{height:160px}
+}
+
+@media(max-width:700px){.manager-home .panel{padding:17px}
+.manager-home .section-heading{gap:8px;margin-bottom:17px}
+.manager-home .section-heading h2{font-size:16px}
+.manager-home .section-heading .text-button{font-size:11px}
+.manager-home .home-layout{gap:20px}
+.manager-home .home-aside{display:flex}
+.manager-home .home-main{gap:22px}
+.manager-home .hero-topline{font-size:9px;letter-spacing:.3px}
+.manager-home .event-wordmark{font-size:13px}
+.manager-home .event-wordmark span{font-size:10px}
+.manager-home .match-hero{padding:17px}
+.manager-home .hero-versus{grid-template-columns:1fr 65px 1fr;gap:5px;padding:22px 0 17px}
+.manager-home .hero-team{gap:10px}
+.manager-home .hero-team .team-logo{width:64px;height:64px}
+.manager-home .hero-team h2{font-size:23px}
+.manager-home .hero-team small{font-size:9px}
+.manager-home .versus-time strong{font-size:23px}
+.manager-home .versus-time small{font-size:9px}
+.manager-home .hero-odds{font-size:9px;gap:6px}
+.manager-home .hero-odds b{font-size:12px;margin-left:4px}
+.manager-home .hero-odds>span:nth-child(2){display:none}
+.manager-home .hero-action{display:block}
+.manager-home .hero-action .btn{width:100%;margin-top:15px}
+.manager-home .hero-action p{font-size:11px}
+.manager-home .lineup-five{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding-bottom:8px}
+.manager-home .home-player{flex:0 0 133px;scroll-snap-align:start}
+.manager-home .home-player .portrait{height:143px}
+.manager-home .home-player-info{padding:11px}
+.manager-home .home-player-info small{font-size:11px}
+.manager-home .home-player-info strong{font-size:23px}
+.manager-home .home-player .meter b{font-size:11px}
+.manager-home .readiness-label{font-size:10px}
+.manager-home .week-strip{display:flex;overflow:auto}
+.manager-home .week-day{flex:0 0 80px;min-height:105px}
+.manager-home .week-day small,.manager-home .week-day span{font-size:10px}
+}
+
+.manager-home .decision-item h3{font-size:15px}
+.manager-home .decision-item p{font-size:13px}
+.manager-home .decision-item .btn{font-size:13px;min-height:44px}
+.manager-home .home-player-info small{font-size:12px}
+.manager-home .home-player-info strong{font-size:23px}
+.manager-home .readiness-label{font-size:11px}
+.manager-home .home-player .meter b{font-size:12px}
+.manager-home .home-player .player-alert{font-size:11px}
+.manager-home .hero-action p{font-size:12px}
+.manager-home .hero-action strong{font-size:14px}
+.manager-home .hero-topline{font-size:11px}
+.manager-home .hero-odds{font-size:12px}
+.manager-home .hero-team small{font-size:12px}
+.manager-home .versus-time small{font-size:11px}
+.manager-home .week-day small,.manager-home .week-day span{font-size:11px}
+.manager-home .result-mini{font-size:14px}
+.manager-home .result-mini small{font-size:11px}
+.manager-home .focus-player p{font-size:12px}
+.manager-home .home-aside .panel .section-heading{margin-bottom:16px}
+.manager-home .home-aside .panel{padding:18px}
+.manager-home .home-player .portrait{height:148px}
+
+@media(max-width:700px){.manager-home .hero-topline{font-size:10px}
+.manager-home .hero-odds{font-size:11px}
+.manager-home .hero-team small{font-size:10px}
+.manager-home .hero-action p{font-size:13px}
+.manager-home .hero-action strong{font-size:14px}
+.manager-home .week-day{flex-basis:88px}
+.manager-home .home-player .portrait{height:148px}
+.manager-home .home-player{flex-basis:146px}
+.manager-home .decision-item h3{font-size:16px}
+.manager-home .decision-item p{font-size:14px}
+.manager-home .decision-item .btn{font-size:14px}
+.manager-home .result-mini{font-size:15px}
+.manager-home .focus-player p{font-size:13px}
+}
+
+.manager-home .app-shell:has(.home-layout) .page-heading .eyebrow{display:none}
+
+.manager-home .app-shell:has(.home-layout) .page-heading{margin-bottom:18px}
+
+.manager-home .app-shell:has(.home-layout) .page-content{padding-top:22px}
+
+.manager-home .home-main>.section-heading h2,.manager-home .home-main>section>.section-heading h2,.manager-home .home-aside .section-heading h2{font-family:Oswald,sans-serif;font-size:25px;text-transform:uppercase;font-weight:500;letter-spacing:.3px}
+
+.manager-home .home-main>section>.section-heading h2{border-left:3px solid var(--green);padding-left:10px}
+
+.manager-home .home-main{gap:20px}
+.manager-home .home-main .section-heading{margin-bottom:12px}
+
+.manager-home .home-player .portrait{height:172px;background:#1c2125}
+.manager-home .home-player .portrait img{transform:scale(1.25);transform-origin:top center;object-position:center top}
+
+.manager-home .home-player-info{padding:10px 11px}
+.manager-home .home-player-info small{margin:3px 0 8px}
+.manager-home .readiness-label{display:none}
+
+.manager-home .home-aside .decision-item h3{margin:6px 0}
+.manager-home .home-aside .decision-item{padding-bottom:13px;margin-bottom:13px}
+.manager-home .home-aside .decision-item .btn{margin-top:9px}
+
+@media(min-width:1021px){
+ .manager-home .home-layout{grid-template-columns:minmax(0,1fr) 314px;gap:22px}
+
+ .manager-home .match-hero{padding:18px 22px}
+
+ .manager-home .hero-versus{grid-template-columns:minmax(0,1fr) 92px minmax(0,1fr);padding:24px 0 20px;gap:8px}
+
+ .manager-home .hero-team{display:grid;grid-template-columns:66px minmax(0,1fr);grid-template-rows:auto auto;gap:3px 9px;text-align:left}
+
+ .manager-home .hero-team .team-logo{width:66px;height:66px;grid-column:1;grid-row:1/3}
+
+ .manager-home .hero-team h2{font-size:29px;letter-spacing:0;align-self:end;white-space:nowrap}
+
+ .manager-home .hero-team small{font-size:10px;align-self:start}
+
+ .manager-home .hero-team:last-child{grid-template-columns:minmax(0,1fr) 66px;text-align:right}
+
+ .manager-home .hero-team:last-child .team-logo{grid-column:2}
+.manager-home .hero-team:last-child h2,.manager-home .hero-team:last-child small{grid-column:1}
+
+ .manager-home .hero-team:last-child h2{grid-row:1}
+.manager-home .hero-team:last-child small{grid-row:2}
+
+ .manager-home .hero-action{margin-top:14px;padding-top:14px}
+.manager-home .hero-action strong{font-size:13px}
+.manager-home .hero-action p{font-size:11px}
+
+ .manager-home .hero-odds{font-size:11px}
+.manager-home .hero-odds b{font-size:15px}
+
+}
+
+@media(max-width:700px){.manager-home .home-main>section>.section-heading h2,.manager-home .home-aside .section-heading h2{font-size:22px}
+.manager-home .home-player .portrait{height:160px}
+.manager-home .app-shell:has(.home-layout) .page-content{padding-top:18px}
+.manager-home .hero-team h2{font-size:22px}
+.manager-home .hero-versus{padding-block:15px}
+.manager-home .match-hero{padding:16px}
+.manager-home .hero-team .team-logo{width:60px;height:60px}
+.manager-home .hero-action{padding-top:14px;margin-top:14px}
+.manager-home .hero-action .btn{margin-top:12px}
+.manager-home .home-player-info small{font-size:12px}
+}
+
+@media(min-width:1021px){
+ .manager-home .home-aside .decision-item{display:grid;grid-template-columns:minmax(0,1fr) 105px;grid-template-areas:"label action" "title action" "body action";column-gap:12px;align-items:start}
+
+ .manager-home .home-aside .decision-item>.badge{grid-area:label;justify-self:start;font-size:10px}
+
+ .manager-home .home-aside .decision-item>h3{grid-area:title;font-size:14px;line-height:1.4;margin:5px 0}
+
+ .manager-home .home-aside .decision-item>p{grid-area:body;font-size:12px;line-height:1.5}
+
+ .manager-home .home-aside .decision-item>.btn{grid-area:action;align-self:center;min-height:44px;margin:0;padding:8px;font-size:12px;line-height:1.4}
+
+}
+
+@media(min-width:1021px){
+ .manager-home .home-layout{grid-template-columns:minmax(0,1fr) 340px}
+
+ .manager-home .app-shell:has(.home-layout) .page-heading{margin-bottom:14px}
+
+ .manager-home .app-shell:has(.home-layout) .page-content{padding-top:18px}
+
+ .manager-home .match-hero{padding:15px 22px}
+
+ .manager-home .hero-versus{padding:15px 0}
+
+ .manager-home .hero-action{margin-top:12px;padding-top:12px}
+
+ .manager-home .home-player .portrait{height:155px}
+
+ .manager-home .home-player .portrait img{transform:scale(1.55)}
+
+ .manager-home .home-player-info{padding:8px 11px}
+
+ .manager-home .home-aside .panel{background:transparent;border:0;padding:0}
+
+ .manager-home .home-aside .section-heading{border-left:3px solid var(--green);padding-left:10px}
+
+ .manager-home .home-aside .decision-item{padding-bottom:16px;margin-bottom:16px}
+
+ .manager-home .home-aside .decision-item>h3{font-size:15px}
+
+ .manager-home .home-aside .decision-item>p{font-size:13px}
+
+ .manager-home .home-aside .decision-item>.btn{background:transparent;border-color:#826348;color:#f0b382}
+
+}
+
+.manager-home .hero-team button {display:grid;justify-items:center;gap:8px;background:transparent;border:0;font:500 clamp(17px,2vw,30px) Oswald,sans-serif;color:var(--text)}
+.manager-home .hero-team .scene-avatar {width:clamp(42px,6vw,76px);height:auto;aspect-ratio:1;object-fit:contain}
+.manager-home .hero-team:nth-child(2) {order:3}
+.manager-home .versus-time {order:2}
+.manager-home .home-player .portrait>img,.manager-home .home-player .portrait>.game-portrait {width:100%;height:100%;object-fit:contain;object-position:bottom}
+.manager-home .home-player-info strong {overflow-wrap:anywhere}
+.home-caption h1,.manager-home h2 {font-family:Oswald,sans-serif;font-weight:500}
+.home-caption {margin-bottom:20px}
+.manager-home .panel {background:var(--surface);border:1px solid var(--line);padding:clamp(14px,2vw,24px)}
+.manager-home .home-aside>section {min-width:0}
+.manager-home .home-player {display:block;width:100%;min-width:0}
+.manager-home .home-player .portrait {display:block;width:100%;overflow:hidden}
+.manager-home .hero-team {min-width:0}
+.manager-home .hero-team button {width:100%}
+
+.letter-fixture {margin:20px 0;padding:clamp(12px,2vw,22px);background:var(--surface-2);border:1px solid var(--line);border-top:2px solid var(--orange)}
+.letter-fixture header {display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:5px 12px;margin-bottom:16px;color:var(--muted);font-size:13px}
+.letter-fixture header>span {color:var(--text);font-weight:650}
+.letter-fixture>div {display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}
+.letter-fixture .identity-mark {width:clamp(30px,4vw,52px);height:clamp(30px,4vw,52px)}
+.letter-fixture .sport-identity {flex-direction:column;text-align:center;font:500 clamp(17px,2vw,25px) Oswald,sans-serif}
+.letter-fixture>div>strong {color:var(--green);white-space:nowrap;font:600 clamp(17px,2vw,24px) "IBM Plex Mono",monospace}

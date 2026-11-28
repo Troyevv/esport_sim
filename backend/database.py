@@ -8,7 +8,7 @@ from copy import deepcopy
 from datetime import date
 from pathlib import Path
 
-from . import scene_portraits, club_art, match, skills, world
+from . import lineup_photos, scene_portraits, club_art, match, skills, world
 from .match_rules import SCOREBOT_VERSION
 
 GROUPS = ("players", "teams", "organizations", "staff", "rosters")
@@ -747,7 +747,7 @@ def edit(db, key, rev, group, ident, record, create):
     return dict(id=key, revision=p["revision"])
 
 
-def match_input(p, roster_ids, personal_badges=None):
+def match_input(p, roster_ids, personal_badges=None, portraits=None):
     require(
         isinstance(roster_ids, list) and len(roster_ids) == 2, "Выберите два состава"
     )
@@ -844,4 +844,13 @@ def match_input(p, roster_ids, personal_badges=None):
         mode="manager",
         organization=next(iter(domain["teams"].values()))["organization"],
     )
+    if portraits is not None:
+        full_photos = lineup_photos.index(portraits)
+        people = {pid: p["players"][pid] for pid in domain["players"]}
+        heads = portraits.index(people)
+        for pid, person in domain["players"].items():
+            if pid in full_photos:
+                person["visual"]["lineupPhoto"] = full_photos[pid]
+            if pid in heads and not people[pid].get("appearance"):
+                person["visual"]["head"] = heads[pid]["image"]
     return domain

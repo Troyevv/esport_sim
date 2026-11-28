@@ -31,3 +31,18 @@ def test_private_pack_is_atomic_idempotent_and_portable(tmp_path, monkeypatch):
     with ZipFile(BytesIO(lineup_photos.export(library))) as z:
         assert {k:z.read(k) for k in z.namelist()} == files
     assert all(library.image(rows[pid]["sha256"]) == files[pid] for pid in lineup_photos.index(library))
+
+
+def test_authenticated_image_cache_leaves_career_data_uncached(tmp_path):
+    from fastapi.testclient import TestClient
+    from backend import scene_portraits
+    from backend.server import create_app
+
+    with TestClient(create_app(tmp_path / "career.sqlite"), base_url="http://127.0.0.1",
+                    client=("127.0.0.1", 50000)) as client:
+        digest = next(iter(scene_portraits.catalog()["assets"]))
+        image = client.get("/api/portraits/generated/" + digest)
+        assert image.status_code == 200
+        assert "private" in image.headers["cache-control"]
+        assert "immutable" in image.headers["cache-control"]
+        assert client.get("/api/career").headers["cache-control"] == "no-store"

@@ -238,6 +238,7 @@ def result(w):
         "winnerTeamId": s["winner"],
         "maps": s["results"],
         "veto": s["actions"],
+        **({"forecasts": s["forecasts"]} if "forecasts" in s else {}),
         **({"preparation": {t:{d:{k:j[k] for k in ("person","quality")} for d,j in jobs.items()}
                              for t,jobs in s["work"].items()}} if "work" in s else {}),
         "order": s["order"],
@@ -303,6 +304,8 @@ def project(w, view="full"):
     public["specialists"] = {team: jobs["veto"].get("name", jobs["veto"]["person"])
                              for team, jobs in s.get("work", {}).items() if "veto" in jobs}
     if s["stage"] in ("veto", "ready"):
+        if "forecasts" in s:
+            public["forecasts"] = s["forecasts"]
         public["evidence"] = {
             t: {
                 m: {k: row[k] for k in ("wins", "games", "picks", "bans", "weight")}

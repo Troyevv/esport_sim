@@ -257,3 +257,6 @@ def advance(w, delegate=None):
             by = delegate if step["team"] == w["coachTeamId"] else (
                 "staff" if "veto" in s.get("work", {}).get(step["team"], {}) else "captain")
             apply(s, recommend(w, by), by)
+    if "forecastBasis" in s:
+        from . import forecast
+        forecast.after_veto(s)
