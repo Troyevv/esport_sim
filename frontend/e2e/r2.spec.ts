@@ -1,4 +1,5 @@
-import { test, expect, type Page } from "@playwright/test";
+import { openMatchBoard } from "./openLab";
+import { test, expect } from "@playwright/test";
 
 test("доска, жесты, библиотека, спарринг и назначение в BO1", async ({
   page,
@@ -13,10 +14,6 @@ test("доска, жесты, библиотека, спарринг и назн
     if (hasTouch) await button(s).tap();
     else await button(s).click();
   };
-  const openBoard = async (target: Page) => {
-    await target.locator(".mx-match-options:not([open]) > summary").click();
-    await target.getByRole("button", {name:"Редактор тактик", exact:true}).click();
-  };
   await page.goto("/?screen=lab");
   await expect(page.getByTestId("connection")).toContainText("На связи");
   if (await page.locator(".mx-broadcast-score").count()) {
@@ -24,7 +21,7 @@ test("доска, жесты, библиотека, спарринг и назн
     await press("Стенд R0");
   }
   await press("Открыть матч BO1");
-  await openBoard(page);
+  await openMatchBoard(page);
   await press("Новая тактика");
   const name = "Петля " + info.project.name;
   await page.getByLabel("Название тактики").fill(name);
@@ -91,7 +88,7 @@ test("доска, жесты, библиотека, спарринг и назн
   await at(95, 105);
   await expect(page.locator(".board-sequence li")).toHaveCount(6);
   await page.reload();
-  await openBoard(page);
+  await openMatchBoard(page);
   await expect(page.getByLabel("Название тактики")).toHaveValue(name);
   await expect(page.locator(".board-sequence li")).toHaveCount(6);
   await press("Сохранить тактику");
@@ -110,7 +107,7 @@ test("доска, жесты, библиотека, спарринг и назн
   try {
     const second = await peer.newPage();
     await second.goto("/?screen=lab");
-    await openBoard(second);
+    await openMatchBoard(second);
     const library = second.getByRole("button", { name: "▤ Библиотека" });
     if(await library.getAttribute("aria-expanded")!=="true")await library.click();
     await second

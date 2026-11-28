@@ -1,3 +1,4 @@
+import { ProfileAction } from "./CareerIdentity";
 import { useEffect, useRef, useState } from "react";
 import { Avatar, LineupPortrait } from "./SceneIdentity";
 import { ForecastLine } from "./ForecastLine";
@@ -64,7 +65,7 @@ export default function MatchReport({ careerId, event, teams, close }: Props) {
       {page === pages[0] && <div className="report-panel">
         <h3>MVP {selection < 0 && report.maps ? "серии" : "карты"}</h3>
         {award ? <div className="report-award"><div><LineupPortrait id={award.player} name={award.name} visual={visual(award.player,award.teamId)}/></div>
-          <div><small>{teamName(award.teamId)}</small><h4>{award.name}</h4>
+          <div><small>{teamName(award.teamId)}</small><h4><ProfileAction group="players" id={award.player} beforeOpen={close}>{award.name}</ProfileAction></h4>
             <p>{award.rounds} раундов · {metrics.version}</p><dl>
               <div><dt>Impact</dt><dd>{award.impact?.toFixed(2)}</dd></div>
               <div><dt>ADR</dt><dd>{award.adr?.toFixed(1)}</dd></div>
@@ -79,7 +80,7 @@ export default function MatchReport({ careerId, event, teams, close }: Props) {
         <tbody>{current.stats.filter(p=>p.teamId===tid).map(p=>{
           const summary = metrics.players.find(r=>r.player===p.player);
           const count = summary?.rounds;
-          return <tr key={p.player}><th scope="row">{p.name || p.player}</th>
+          return <tr key={p.player}><th scope="row"><ProfileAction group="players" id={p.player} beforeOpen={close}>{p.name || p.player}</ProfileAction></th>
             <td>{p.k ?? "—"}</td><td>{p.d ?? "—"}</td><td>{p.a ?? "—"}</td>
             <td>{count && p.damage != null ? (p.damage/count).toFixed(1) : "—"}</td><td>{count && p.kast != null ? (100*p.kast/count).toFixed(1)+"%" : "—"}</td>
             <td>{p.opening ?? "—"} / {p.openingDeaths ?? "—"}</td><td>{p.clutches ?? "—"}</td><td>{p.spent ?? "—"}</td><td>{summary?.impact?.toFixed(2) ?? "—"}</td></tr>;
@@ -93,7 +94,7 @@ export default function MatchReport({ careerId, event, teams, close }: Props) {
       {page === "Статистика" && !utilityRecorded && <p className="report-panel">Эффективность гранат в этом протоколе не записана.</p>}
       {page === "Статистика" && utilityRecorded && <div className="report-table" role="region" tabIndex={0} aria-label="Эффективность гранат"><table>
         <caption>Эффективность гранат</caption><thead><tr>{["Игрок","Световые","Ослепления соперника","Флеш-ассисты","Урон HE","Урон огнём","Дымовые"].map(h => <th scope="col" key={h}>{h}</th>)}</tr></thead>
-        <tbody>{current.stats.map(p => <tr key={p.player}><th scope="row">{p.name || p.player}</th>
+        <tbody>{current.stats.map(p => <tr key={p.player}><th scope="row"><ProfileAction group="players" id={p.player} beforeOpen={close}>{p.name || p.player}</ProfileAction></th>
           {[p.flashesThrown,p.enemiesFlashed,p.flashAssists,p.heDamage,p.fireDamage,p.smokesThrown].map((v,i) => <td key={i}>{v ?? "—"}</td>)}</tr>)}</tbody></table></div>}
       {page === "Раунды" && <section className="report-panel"><h3>История раундов</h3>
         <div className="report-rounds">{current.rounds.map((r,i)=><button aria-pressed={i===roundIndex} key={i} onClick={()=>setRoundIndex(i)}>{r.round ?? i+1}</button>)}</div>
@@ -102,7 +103,7 @@ export default function MatchReport({ careerId, event, teams, close }: Props) {
           <p>{round.buys?.map((b,i)=>teamName((current.teams || event.teams)[i])+" · "+(buyNames[b] || b)).join(" / ") || "Данные закупки не записаны"}</p></> : <p>Журнал раундов отсутствует.</p>}</section>}
       {page === "Составы на дату" && <div className="report-lineups">{groups.map(tid=><section className="report-panel" key={tid || "unknown"}><h3>{teamName(tid)}</h3>
         {current.stats.filter(p=>p.teamId===tid).map(p=><div className="report-member" key={p.player}><Avatar {...visual(p.player,tid)} name={p.name || p.player}/>
-          <span>{p.name || p.player}</span></div>)}</section>)}</div>}
+          <ProfileAction group="players" id={p.player} beforeOpen={close}>{p.name || p.player}</ProfileAction></div>)}</section>)}</div>}
       {page === "Протокол и данные" && report.forecasts && <ForecastLine quotes={report.forecasts} names={teams}/>}
       {page === "Протокол и данные" && <section className="report-panel"><h3>Происхождение и полнота</h3>
         <p>Встреча {event.id} · {date(event.date)}</p><p>Источник — сохранённые протоколы завершённых карт. Составы и принадлежность игроков определяются по записям встречи.</p>

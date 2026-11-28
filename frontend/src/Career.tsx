@@ -190,7 +190,7 @@ function Manager({
   const required = c.attention.filter(row=>row.level==="required");
   const directMatch = required.length===1 && ["play","match"].includes(required[0].action);
   const directoryView = useDirectoryView();
-  const historyStack = useRef<Route[]>([]);
+  const historyStack = useRef<{route:Route; match:boolean}[]>([]);
   const scene = directory.data,
     box = letters(c),
     unread = box.filter((m) => !read.includes(m.id)).length;
@@ -204,7 +204,7 @@ function Manager({
     closeOverlays();
     if (tool) leaveTool();
     if (frontMenu) go("hub");
-    historyStack.current.push(route);
+    historyStack.current.push({route, match:toolName==="Матч-центр" && !!frame.world.match});
     setRoute({ page, profile, edition, entry, fixture, jump: historyStack.current.length });
     window.scrollTo(0, 0);
   };
@@ -212,7 +212,9 @@ function Manager({
   const tournament = (id:string) => to("Соревнования",undefined,id);
   const open = (p: Profile) => to("Профиль", p);
   const back = () => {
-    setRoute(historyStack.current.pop() || { page: "Кабинет" });
+    const previous = historyStack.current.pop();
+    setRoute(previous?.route || { page: "Кабинет" });
+    if (previous?.match && frame.world.match) go("match");
     window.scrollTo(0, 0);
   };
   const calendar = (d: string) => {
@@ -435,7 +437,7 @@ function Manager({
                 <StaffOffice {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial={active}/>
               ) : route.profile ? (
                 <EntityProfile
-                  initialTab={route.profile.group==="players" && historyStack.current.at(-1)?.page==="Скаутский отдел" ? "Скаутинг" : undefined}
+                  initialTab={route.profile.group==="players" && historyStack.current.at(-1)?.route.page==="Скаутский отдел" ? "Скаутинг" : undefined}
                   canTalk={!!frame.world.match?.room} navigate={nav} revision={frame.careerRevision||0} key={route.profile.group + route.profile.id}
                   {...{ profile: route.profile, scene, c, open, back }}
                 />

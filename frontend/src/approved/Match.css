@@ -78,3 +78,17 @@
  .mx-focus .mx-radar-marker>text{font-size:25px}
  .mx-focus .mx-radar-marker>.mx-marker-label{font-size:31px;stroke-width:5px}
 }
+
+.mx-match-options:not([open])>div {display:none}
+.mx-match-options>summary {display:flex;gap:6px;align-items:center;justify-content:center}
+@media(max-width:700px){
+ .mx-stage-header .mx-match-options {display:block}
+ .mx-stage-header .mx-match-options>summary {width:40px;min-height:44px;padding:5px}
+ .mx-stage-header .mx-match-options>summary span {display:none}
+ .mx-stage-header .mx-match-options[open]>div {width:min(290px,85vw)}
+}
+.mx-score-event .mx-score-source {color:var(--muted);font-size:11px;overflow-wrap:anywhere}
+.mx-score-team,.mx-roster-title {position:relative}
+.mx-score-team .profile-action,.mx-roster-title .profile-action,.mx-player-detail .profile-action {font:inherit;color:inherit;text-align:inherit;letter-spacing:inherit;padding:0;background:none;border:0;cursor:pointer}
+.mx-score-team .profile-action::after,.mx-roster-title .profile-action::after {content:"";position:absolute;inset:0}
+.mx-score-team:hover .profile-action,.mx-roster-title:hover .profile-action,.mx-player-detail .profile-action:hover {text-decoration:underline;text-underline-offset:.15em}

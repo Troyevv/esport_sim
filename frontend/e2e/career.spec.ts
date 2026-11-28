@@ -116,6 +116,16 @@ test("Карьера от выбора базы до общей сохранён
     }
     await expect(page.locator("canvas").first()).toBeVisible();
     await capture("match");
+    const session = (await (await page.request.get("/api/state")).json()).context;
+    await page.locator(".mx-score-team.own .profile-action").click();
+    await expect(page.locator(".club-profile-hero")).toBeVisible();
+    await press("Назад");
+    await expect(page.locator(".mx-arena canvas")).toBeVisible();
+    expect((await (await page.request.get("/api/state")).json()).context).toBe(session);
+    const episode = page.locator(".mx-match-options");
+    await episode.locator("summary").click();
+    await expect(episode.getByRole("button",{name:"Сохранить эпизод"})).toBeVisible();
+    await episode.locator("summary").click();
     await press("Кабинет");
     await press("Сохранения");
     await page

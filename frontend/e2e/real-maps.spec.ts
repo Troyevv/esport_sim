@@ -1,3 +1,4 @@
+import { openMatchBoard } from "./openLab";
 import { expect, test } from "@playwright/test";
 
 if (process.env.ESPORT_CS2_QA) {
@@ -35,7 +36,7 @@ if (process.env.ESPORT_CS2_QA) {
         await expect(button("Сменить этаж")).toHaveText("Нижний");
       }
       await page.screenshot({path:info.outputPath(map.id+".png")});
-      await button("Редактор тактик").click();
+      await openMatchBoard(page);
       await expect(page.getByTestId("tactic-map")).toHaveAttribute("data-ready","true");
       if (map.id === "de_nuke") {
         const buy = page.getByRole("combobox", {name:"Закупка"});

@@ -12,6 +12,17 @@ export const CareerLinks = createContext<{
   tournament: (id: string) => void;
 } | null>(null);
 
+export function ProfileAction({group, id, children, beforeOpen}: {
+  group: Profile["group"]; id?: string; children: ReactNode; beforeOpen?: () => void;
+}) {
+  const nav = useContext(CareerLinks);
+  if (!id || !nav?.scene?.[group][id]) return <>{children}</>;
+  return <button className="profile-action" onClick={()=>{
+    beforeOpen?.();
+    nav.open({group,id});
+  }}>{children}</button>;
+}
+
 export function EntityName({group, id, fallback, historicalTeam, recordedName, link = true}: Profile & { fallback?: string; historicalTeam?: string | null; recordedName?: string; link?: boolean }) {
   const nav = useContext(CareerLinks);
   const entity = nav?.scene?.[group][id];

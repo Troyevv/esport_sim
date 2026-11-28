@@ -10,3 +10,9 @@ export async function openLab(page: Page) {
     await page.goto("/?screen=lab");
   }
 }
+
+export async function openMatchBoard(page: Page) {
+  const menu = page.locator(".mx-match-options");
+  if (await menu.getAttribute("open") === null) await menu.locator("summary").click();
+  await page.getByRole("button", {name:"Редактор тактик", exact:true}).click();
+}

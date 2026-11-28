@@ -1,3 +1,4 @@
+import { ProfileAction } from "./CareerIdentity";
 import {Badge,Button,Icon,Tabs as ApprovedTabs} from "./approved/Shared";
 import {Portrait,TeamLogo} from "./approved/Identity";
 import "./approved/Match.css";
@@ -178,7 +179,7 @@ function RosterPanel({
         }
       >
         <TeamLogo name={club.name} visual={club.visual} size={25} />
-        <strong>{club.name}</strong>
+        <strong><ProfileAction group="teams" id={club.id}>{club.name}</ProfileAction></strong>
         <small>{club.side}</small>
       </div>
       {players.map((row) => {
@@ -337,7 +338,7 @@ export default function MatchCenter({
       >
         {rival ? <b>{club.score}</b> : badge}
         <div>
-          <strong>{club.name}</strong>
+          <strong><ProfileAction group="teams" id={club.id}>{club.name}</ProfileAction></strong>
           <small>
             {club.side} · {rival ? "Соперник" : "Команда тренера"}
           </small>
@@ -916,7 +917,7 @@ export default function MatchCenter({
                 ? "Своя команда"
                 : "Публичные наблюдения"}
             </Badge>
-            <h3>{utilityStats.name}</h3>
+            <h3><ProfileAction group="players" id={selectedAgent?.playerId}>{utilityStats.name}</ProfileAction></h3>
             <p>
               {utilityStats.role} · {clubName(utilityStats.teamId)}
             </p>

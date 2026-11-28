@@ -119,6 +119,7 @@ export function ApprovedShell({
           className={"sidebar" + (drawer ? " open" : "")}
           ref={side}
           inert={small && !drawer}
+          aria-hidden={small && !drawer}
           aria-label="Навигация по игре"
         >
           <button className="brand" onClick={menu} aria-label="← Главное меню">
