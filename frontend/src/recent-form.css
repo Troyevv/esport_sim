@@ -5,3 +5,8 @@
 .adr-trend {margin:14px 0;display:grid;gap:6px}
 .adr-trend figcaption {color:var(--muted);font-size:12px}
 .adr-trend svg {width:100%;max-width:24rem;height:48px;overflow:visible}
+
+.record-subject {display:flex;align-items:center;gap:12px}
+.record-subject .scene-avatar {flex:none;width:42px;height:46px;object-fit:contain}
+.record-award {display:inline-flex;align-items:center;gap:5px;margin:3px 0 3px 8px;padding:3px 8px;border:1px solid #635032;border-radius:4px;color:#f1c981;font-weight:650}
+.record-award .ui-icon {width:15px;height:15px}
