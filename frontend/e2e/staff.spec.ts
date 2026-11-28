@@ -100,7 +100,7 @@ test("Штаб, назначения и выбор между ECL и Major", asy
   await expect(
     page.getByRole("button", { name: "Отменить участие" }),
   ).toBeVisible();
-  await press("← Все соревнования");
+  await press("Все соревнования");
   await page.getByRole("button", { name: /PGL Major Singapore 2026/ }).click();
   await press("Моя заявка");
   await expect(page.getByText(/Команда снялась · Регистрация/)).toBeVisible();

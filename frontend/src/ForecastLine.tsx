@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import "./forecast.css";
 import { date } from "./careerData";
 
@@ -8,13 +9,13 @@ export type Quote = {
 };
 const percent = (p:number) => (p*100).toFixed(1)+"%";
 const stages = {opening:"До veto",veto:"В ходе veto",locked:"Veto завершено"};
-export function ForecastLine({quotes,names,calibration}: {quotes:Quote[];names:Record<string,string>;calibration?:{count:number;brier:number|null}}) {
+export function ForecastLine({quotes,names,calibration,teamLabel}: {quotes:Quote[];names:Record<string,string>;teamLabel?:(id:string)=>ReactNode;calibration?:{count:number;brier:number|null}}) {
   const line = quotes.at(-1);
   if (!line) return <p>Датированная предматчевая линия отсутствует.</p>;
   return <section className="surface panel-body forecast-line"><h2>Виртуальная линия</h2>
     <p>{date(line.date)} · {stages[line.stage]} · {line.version}</p>
     <div className="cp-two-col">{line.teams.map((t,i)=><div className="forecast-side" key={t}>
-      <span>{names[t] || t}</span><strong>{percent(line.probability[i])}</strong><b>Коэффициент {line.odds[i].toFixed(2)}</b></div>)}</div>
+      <span>{teamLabel ? teamLabel(t) : names[t] || t}</span><strong>{percent(line.probability[i])}</strong><b>Коэффициент {line.odds[i].toFixed(2)}</b></div>)}</div>
     <div className="forecast-balance" aria-hidden="true">{line.teams.map((team,i) =>
       <span key={team} style={{flexGrow:line.probability[i]}}/>)}</div>
     <details><summary>Точный счёт BO{line.bestOf}</summary><table className="simple-table"><thead><tr><th>Счёт</th><th>Вероятность</th><th>Коэффициент</th></tr></thead>

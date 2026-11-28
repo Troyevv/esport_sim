@@ -1,3 +1,4 @@
+import { PlayerRole } from "./CareerIdentity";
 import {PlayerHero,PlayerOverview,SkillRow,Section} from "./approved/Player";
 import {Tabs as ApprovedTabs} from "./approved/Shared";
 import "./club.css";
@@ -93,6 +94,7 @@ export function Squad({
       own,
       name: p.name,
       role: roles[role] || "—",
+      roleKey: role,
       ovr: own?.ratings[role] ?? null,
       age: age(p.born, c.date),
       captain: own?.captain,
@@ -157,7 +159,7 @@ export function Squad({
           <span className="club-card-ovr"><b>{r.ovr ?? "—"}</b><small>OVR</small></span>
           <LineupPortrait id={r.p.id} name={r.name} visual={r.p.visual}/></button>
         <div className="club-player-card-body"><button className="club-player-name" onClick={()=>open({group:"players",id:r.p.id})}>{r.name} <Flag value={r.p.visual.flag}/></button>
-          <span>{r.role}{r.captain && " · Капитан"}</span>
+          <span><PlayerRole role={r.roleKey}/>{r.captain && r.roleKey !== "igl" && " · Капитан"}</span>
           <div className="club-card-metrics"><span>Форма <b>{r.own?.form ?? "—"}</b></span><span>Настрой <b>{r.own?.morale ?? "—"}</b></span></div>
           <Readiness fatigue={r.own?.fatigue}/>
           <button className="club-text-link" aria-label={"Действия · "+r.name} onClick={()=>setContext(r.p.id)}>Действия</button>
@@ -222,7 +224,7 @@ export function Squad({
                   <Flag value={r.p.visual.flag} /> {r.age ?? "—"}
                 </td>
                 <td>
-                  {r.role}
+                  <PlayerRole role={r.roleKey}/>
                   {r.captain ? " · C" : ""}
                 </td>
                 <td>
@@ -362,14 +364,16 @@ export function EntityProfile({
   canTalk = false,
   navigate,
   revision = 0,
+  initialTab = "Обзор",
 }: Props & {
   profile: Profile;
   back: () => void;
   canTalk?: boolean;
   navigate?: (p: string) => void;
   revision?: number;
+  initialTab?: string;
 }) {
-  const [tab, setTab] = useState("Обзор");
+  const [tab, setTab] = useState(initialTab);
   const [skillQuery, setSkillQuery] = useState("");
   const [chosenRole, setRole] = useState("");
   const { group, id } = profile,
@@ -528,6 +532,22 @@ export function EntityProfile({
           </header>{" "}
         </>
       )}
+      {player && (
+        <ApprovedTabs
+          items={[
+            "Обзор",
+            "Характеристики · 58",
+            "Развитие",
+            "Статистика",
+            "История",
+            "Достижения",
+            "Скаутинг",
+            "Контракт",
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+      )}
       {player && tab === "Скаутинг" && (
         <section className="surface panel-body">
           <h2>Знания организации</h2>
@@ -552,22 +572,6 @@ export function EntityProfile({
             <p>Загрузка оценок…</p>
           )}
         </section>
-      )}
-      {player && (
-        <ApprovedTabs
-          items={[
-            "Обзор",
-            "Характеристики · 58",
-            "Развитие",
-            "Статистика",
-            "История",
-            "Достижения",
-            "Скаутинг",
-            "Контракт",
-          ]}
-          value={tab}
-          onChange={setTab}
-        />
       )}
       {player && ["Обзор", "История", "Достижения"].includes(tab) && (
         <Suspense fallback={<p role="status">Загружаем профиль…</p>}>

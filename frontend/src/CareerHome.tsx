@@ -64,6 +64,11 @@ export function letters(c: Career): Letter[] {
     });
   return box.reverse().sort((a, b) => b.date.localeCompare(a.date));
 }
+function letterIcon(m: Letter) {
+  if (m.event?.score) return "report-analytics";
+  if (m.event) return "calendar";
+  return m.edition ? "trophy" : "mail";
+}
 export function Inbox({
   box,
   read,
@@ -107,7 +112,7 @@ export function Inbox({
               }
               onClick={() => select(m.id)}
             >
-              <span className="sender">{m.from}</span>
+              <span className="sender letter-source"><Glyph name={letterIcon(m)}/>{m.from}</span>
               <strong>{m.title}</strong>
               <small>{date(m.date)}</small>
               {!read.includes(m.id) && (
@@ -129,7 +134,7 @@ export function Inbox({
               <h2>{selected.title}</h2>
               <div className="message-author">
                 <span className="manager-avatar">
-                  <Glyph name="inbox" />
+                  <Glyph name={letterIcon(selected)} />
                 </span>
                 <span>
                   <strong>{selected.from}</strong>
@@ -150,7 +155,9 @@ export function Inbox({
               </div>
             </>
           ) : (
-            <p className="muted">Выберите сообщение.</p>
+            <div className="inbox-prompt"><Glyph name="inbox"/><h2>Выберите сообщение</h2>
+              {filtered.some(m=>!read.includes(m.id)) && <button className="btn" onClick={()=>select(filtered.find(m=>!read.includes(m.id))!.id)}>Открыть первое непрочитанное</button>}
+            </div>
           )}
         </article>
       </section>

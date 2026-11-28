@@ -769,6 +769,7 @@ export function TrainingCenter({
         <label>
           Раздел центра
           <select
+            aria-label="Раздел центра"
             value={tab}
             onChange={(e) => {
               setTab(e.target.value);

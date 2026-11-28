@@ -1,3 +1,4 @@
+import { CareerLinks } from "./CareerIdentity";
 import { ManagerAttention } from "./ManagerAttention";
 import { CareerRoster, type Decision } from "./careerData";
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
@@ -303,7 +304,7 @@ function Manager({
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, []);
-  const breakpoint = !frontMenu && (toolName==="Матч-центр" || ["Кабинет","Профиль","Матч-центр"].includes(active) || !!route.edition) ? "(max-width:700px)" : "(max-width:800px)";
+  const breakpoint = !frontMenu ? "(max-width:700px)" : "(max-width:800px)";
   const [narrow, setNarrow] = useState(
     () => matchMedia(breakpoint).matches,
   );
@@ -354,9 +355,8 @@ function Manager({
           .map((r) => ({ group: g, id: r.id, name: r.name, visual: r.visual })),
       )
     : [];
-  const approved = !frontMenu && (tool ? toolName==="Матч-центр" && !!frame.world.match :
-    active==="Кабинет" || route.profile?.group==="players" || active==="Соревнования" && !!route.edition || active==="Матч-центр" && !!preparedFixture && !preparedFixture.pcw);
-  const content = <>
+  const profileTitle = {players:"Профиль игрока", teams:"Профиль команды", organizations:"Организация", staff:"Профиль сотрудника"};
+  const content = <CareerLinks.Provider value={{scene, open, tournament}}>
           {progress && (
             <div className="cr-progress" role="status">
               Рассчитано встреч · {progress.done}
@@ -364,17 +364,6 @@ function Manager({
               <button className="btn" disabled={!pauseEnabled} onClick={()=>act("career-pause",{runId:progress.runId})}>Остановить расчёт</button>
             </div>
           )}
-          {!approved && !tool && !frontMenu && (active === "Кабинет" || required.length > 0) && (!progress || required.length > 0) && <button className="attention-summary surface" data-blocked={!!required.length}
-            aria-label={"Открыть центр решений · обязательных: " + required.length} aria-describedby="decision-explanation"
-            onClick={()=>{setDecisionError("");setDecisions(true)}}>
-            <span id="decision-explanation"><strong>{required.length ? required[0].title : "Центр решений"}</strong>
-            <small>{required.length ? required[0].detail : "Обязательных решений нет"}</small></span>
-            <b>{required.length ? "Требуют внимания · " + required.length : "Открыть"}</b>
-          </button>}
-          {!approved && !frontMenu && directMatch && required[0].action === "play" && !progress && <div className="quick-fixture surface">
-            <div><strong>{c.queue[0].teams.map(t=>c.teams[t]).join(" — ")}</strong><small>Расчёт по раундам с автоматическим выбором карт</small></div>
-            <button className="btn" disabled={!enabled} onClick={quick}>Быстро рассчитать матч</button>
-          </div>}
           {completedQuick && <Dialog title="Матч завершён" close={()=>setQuickResult(null)}><MatchReport careerId={c.id} event={completedQuick} teams={c.teams} close={()=>setQuickResult(null)}/></Dialog>}
           <ManagerAttention quick={quick} items={c.attention} open={decisions} close={()=>setDecisions(false)}
             enabled={enabled && !progress} resolve={resolve} repair={repair} error={decisionError}
@@ -402,7 +391,7 @@ function Manager({
                     title="Настройки"
                     sub="Отображение и домашний сервер"
                   />
-                  <div className="surface panel-body settings-list">
+                  <div className="surface panel-body settings-list"><h2>Отображение</h2>
                     <label>
                       <input
                         type="checkbox"
@@ -415,7 +404,7 @@ function Manager({
                           );
                         }}
                       />
-                      Компактные таблицы
+                      <span>Компактные таблицы<small>Уменьшить расстояние между строками</small></span>
                     </label>
                     <label>
                       <input
@@ -429,7 +418,7 @@ function Manager({
                           );
                         }}
                       />
-                      Анимации интерфейса
+                      <span>Анимации интерфейса<small>Переходы при открытии разделов и диалогов</small></span>
                     </label>
                     {settings}
                   </div>
@@ -446,6 +435,7 @@ function Manager({
                 <StaffOffice {...{c,scene,act}} enabled={enabled && !frame.world.series && !frame.world.match} initial={active}/>
               ) : route.profile ? (
                 <EntityProfile
+                  initialTab={route.profile.group==="players" && historyStack.current.at(-1)?.page==="Скаутский отдел" ? "Скаутинг" : undefined}
                   canTalk={!!frame.world.match?.room} navigate={nav} revision={frame.careerRevision||0} key={route.profile.group + route.profile.id}
                   {...{ profile: route.profile, scene, c, open, back }}
                 />
@@ -499,14 +489,14 @@ function Manager({
                 />
               ))}</Suspense>
           </div>
-  </>;
+  </CareerLinks.Provider>;
   return (
     <div
       className={
         (compact ? "density-compact " : "") + (motion ? "" : "reduced-motion")
       }
     >
-      {approved ? <ApprovedShell c={c} section={tool?active:route.profile?"Профиль игрока":route.edition?"Центр турнира":active==="Матч-центр"?"Подготовка к матчу":active} {...{active,nav,drawer,setDrawer,side,unread,advance,status}}
+      {!frontMenu ? <ApprovedShell c={c} section={tool?active:route.profile?profileTitle[route.profile.group]:route.edition?"Центр турнира":active==="Матч-центр"?"Подготовка к матчу":active} {...{active,nav,drawer,setDrawer,side,unread,advance,status}}
  small={narrow} action={directMatch?"В матч-центр":required.length?"Решения · "+required.length:"Продолжить"} day={currentDate}
  menu={()=>{closeOverlays();leaveTool();go("menu")}} team={()=>open({group:"teams",id:c.team})}
  disabled={!enabled || !!progress} search={()=>{setQ("");setSearch(true)}} decisions={()=>{setDecisionError("");setDecisions(true)}}>{content}</ApprovedShell> : <>

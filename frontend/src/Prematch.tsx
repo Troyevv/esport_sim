@@ -1,3 +1,5 @@
+import { FixtureTeams, EntityName } from "./CareerIdentity";
+import { RecentForm } from "./RecentForm";
 import { useState } from "react";
 import { Avatar, LineupPortrait } from "./SceneIdentity";
 import { Icon, Badge, Button, Panel, Tabs, Meter } from "./approved/Shared";
@@ -110,17 +112,15 @@ export default function Prematch({
   const results = (rows: Past[]) =>
     rows.length ? (
       rows.map((r) => (
-        <p key={r.id}>
-          <time>{date(r.date)}</time> · {r.teams.map(name).join(" — ")} ·{" "}
-          {r.score?.join(" : ")}
-        </p>
+        <div key={r.id} className="prep-result"><time>{date(r.date)}</time>
+          <FixtureTeams teams={r.teams} names={c.teams}/><b>{r.score?.join(" : ") ?? "—"}</b></div>
       ))
     ) : (
       <p>Завершённых встреч в доступной истории нет.</p>
     );
   const lineup = (tid: string) => (
     <section key={tid} className="surface panel-body">
-      <h2>{name(tid)}</h2>
+      <h2><EntityName group="teams" id={tid} fallback={name(tid)}/></h2>
       <small>
         {data.clubs[tid].version
           ? "Турнирная заявка · версия " + data.clubs[tid].version
@@ -188,13 +188,12 @@ export default function Prematch({
                 ? "СОПЕРНИК"
                 : "УЧАСТНИК"}
           </span>
-          <h1>{name(t)}</h1>
+          <h1><button className="hero-profile-action" onClick={()=>open({group:"teams",id:t})}>{name(t)}</button></h1>
           <p>
             VRS {data.clubs[t].rank ? "#" + data.clubs[t].rank : "—"} ·{" "}
-            {data.clubs[t].recent
-              .slice(0, 5)
-              .map((r) => (r.winnerTeamId === t ? "W" : "L"))
-              .join(" ") || "Истории пока нет"}
+            {data.clubs[t].recent.length ? <RecentForm results={data.clubs[t].recent.slice(0,5).reverse().map(r=>({
+              id:r.id, won:r.winnerTeamId===t, detail:date(r.date)+" · "+r.teams.map(name).join(" — ")+" · "+r.score.join(" : ")
+            }))}/> : "Истории пока нет"}
           </p>
         </div>
         {opposing && logo}
@@ -454,13 +453,13 @@ export default function Prematch({
                 own = c.roster.find((r) => r.id === pid);
               return (
                 <article key={pid}>
-                  <Portrait
+                  <button className="lineup-profile-action" aria-label={"Профиль · "+(p?.name || pid)} onClick={()=>open({group:"players",id:pid})}><Portrait
                     id={pid}
                     name={p?.name || pid}
                     visual={p?.visual}
                     size="large"
                   />
-                  <h3>{p?.name || pid}</h3>
+                  </button><h3>{p?.name || pid}</h3>
                   <Meter
                     value={own ? Math.round(100 - own.fatigue) : null}
                     label="Готовность"
@@ -542,7 +541,7 @@ export default function Prematch({
         <div className="cp-two-col">
           {teams.map((t) => (
             <section key={t} className="surface panel-body">
-              <h2>{name(t)}</h2>
+              <h2><EntityName group="teams" id={t} fallback={name(t)}/></h2>
               <p>
                 Очки VRS · {data.clubs[t].points ?? "—"}
                 {data.publication && " · " + date(data.publication)}
@@ -556,6 +555,7 @@ export default function Prematch({
         <ForecastLine
           quotes={data.forecasts}
           names={c.teams}
+          teamLabel={id=><EntityName group="teams" id={id} fallback={name(id)}/>}
           calibration={data.calibration}
         />
       )}

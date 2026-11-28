@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { date, fixtureName, fixtureScore, type Career, type Fixture, type Scene } from "./careerData";
+import { date, fixtureScore, type Career, type Fixture, type Scene } from "./careerData";
+import { EntityName, EditionLink } from "./CareerIdentity";
 import { Heading } from "./GameUI";
 import { MatchReport } from "./CareerForms";
 import ProfileHistory from "./ProfileHistory";
 
 export default function CareerArchive({ c, scene, revision, analytics }: { c:Career; scene:Scene; revision:number; analytics:boolean }) {
+  const [limit,setLimit] = useState(25);
   const [team,setTeam] = useState(c.team);
   const [group,setGroup] = useState<"teams"|"players">("teams");
   const [player,setPlayer] = useState(c.roster[0]?.id || "");
@@ -30,14 +32,19 @@ export default function CareerArchive({ c, scene, revision, analytics }: { c:Car
         <option value="teams">Команды</option><option value="players">Игроки</option></select></label>}
       {group==="players" && analytics ? <label>Игрок<select value={player} onChange={e=>setPlayer(e.target.value)}>
         {Object.values(scene.players).sort((a,b)=>a.name.localeCompare(b.name)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
-        : <label>Команда<select value={team} onChange={e=>setTeam(e.target.value)}>{!analytics && <option value="">Все команды</option>}
+        : <label>Команда<select value={team} onChange={e=>{setTeam(e.target.value);setLimit(25)}}>{!analytics && <option value="">Все команды</option>}
           {Object.entries(c.teams).sort((a,b)=>a[1].localeCompare(b[1])).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>}
     </div>
     {analytics ? <ProfileHistory key={group} c={c} scene={scene} revision={revision} group={group} id={group==="teams"?team:player}/>
       : <section className="surface panel-body"><h2>Завершённые встречи · {rows.length}</h2>
-        {rows.map(f=><button className="archive-match" id={"archive-"+f.id} key={f.id} onClick={()=>{lastFixture.current=f.id;setSelected(f)}}>
-          <time>{date(f.date)}</time><span><strong>{fixtureName(c,f)}</strong><small>{f.title || (f.pcw?"Пракк":"Встреча календаря")}</small></span>
-          <b>{fixtureScore(f) || "—"}</b></button>)}
+        {rows.slice(0,limit).map(f=><article className="archive-score-row" key={f.id}>
+          <div className="archive-event"><time>{date(f.date)}</time><EditionLink id={f.edition}>{f.title || (f.pcw?"Пракк":"Встреча календаря")}</EditionLink></div>
+          <div className="archive-versus">{f.teams.map((id,i)=><div key={id} className="archive-contender">
+            <EntityName group="teams" id={id} fallback={c.teams[id]}/>
+            <b>{f.scoreByTeam?.[id] ?? f.score?.[i] ?? "—"}</b></div>)}</div>
+          <button className="btn sm" id={"archive-"+f.id} aria-label={"Протокол "+f.teams.map(t=>c.teams[t] || t).join(" — ")+" · "+fixtureScore(f)} onClick={()=>{lastFixture.current=f.id;setSelected(f)}}>Протокол</button>
+        </article>)}
+        {limit<rows.length && <button className="btn" onClick={()=>setLimit(n=>n+25)}>Показать ещё · {Math.min(25,rows.length-limit)}</button>}
         {!rows.length && <p>В истории карьеры пока нет завершённых встреч для выбранной команды.</p>}
       </section>}
   </div>;

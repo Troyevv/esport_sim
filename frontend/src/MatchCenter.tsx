@@ -411,7 +411,7 @@ export default function MatchCenter({
                 <span>{focus ? "Выйти" : "Арена"}</span>
               </button>
               <details className="mx-match-options">
-                <summary>Эпизод</summary>
+                <summary aria-label="Действия с эпизодом"><Icon name="save" size={16}/><span>Эпизод</span></summary>
                 <div>
                   <Button disabled={!enabled} onClick={() => act("save")}>
                     Сохранить эпизод
@@ -444,6 +444,7 @@ export default function MatchCenter({
                   ? "Режим наблюдателя"
                   : "Командная проекция"}
               </span>
+              {m.source && <small className="mx-score-source">Составы из базы · {m.source.id} / {m.source.revision}</small>}
             </div>
             {scoreTeam(coach)}
             <div className="mx-round-clock">

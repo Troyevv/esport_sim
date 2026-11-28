@@ -1,3 +1,5 @@
+import { EntityName, EditionLink } from "./CareerIdentity";
+import { serverURL } from "./session";
 import { useState } from "react";
 import { date, fixtureMap, useData, type Career, type Scene } from "./careerData";
 import { Dialog } from "./GameUI";
@@ -86,7 +88,7 @@ export function PlayerRecord({c,id,scene,revision,tab,overview}: Omit<Props,"gro
       series.add(r.fixture);
       if (awards && r.mapMvp !== id && !awardedSeries) return null;
       return <div key={r.fixture+"/"+r.index} className="staff-line"><time>{date(r.date)}</time>
-        <span>{r.team ? scene.teams[r.team]?.name || r.team : "Команда неизвестна"} · {labelMap(r.mapId)}
+        <span>{r.team ? <EntityName group="teams" id={r.team}/> : "Команда неизвестна"} · {labelMap(r.mapId)}
         {awards && [r.mapMvp === id && "MVP карты",awardedSeries && "MVP встречи"].filter(Boolean).map(text => <b key={String(text)}> · {text}</b>)}</span>
         <button onClick={()=>setSelected(r.fixture)}>Протокол</button></div>;
     })}
@@ -124,10 +126,10 @@ export default function ProfileHistory({c,scene,group,id,revision}: Props) {
     {current.data && (current.data.rows.length ? <div className="report-table" tabIndex={0} role="region" aria-label="История выступлений"><table><caption>Карты и результаты</caption>
       <thead><tr>{["Дата","Команда на дату","Соперник","Турнир","Карта","Итог","K / D / A","ADR","Impact","MVP"].map(t=><th key={t}>{t}</th>)}</tr></thead>
       <tbody>{current.data.rows.map(r=><tr key={r.fixture+"/"+r.index}><th><button onClick={()=>setSelected(r.fixture)}>{date(r.date)}</button></th>
-        <td>{r.team ? scene.teams[r.team]?.name || r.team : "—"}</td><td>{r.opponent ? scene.teams[r.opponent]?.name || r.opponent : "—"}</td><td>{r.tournament || "Встреча календаря"}</td>
-        <td>{labelMap(r.mapId)}</td><td>{r.score && r.team && r.opponent ? r.score[r.team]+" : "+r.score[r.opponent] : "—"}</td>
+        <td>{r.team ? <EntityName group="teams" id={r.team}/> : "—"}</td><td>{r.opponent ? <EntityName group="teams" id={r.opponent}/> : "—"}</td><td><EditionLink id={r.edition}>{r.tournament || "Встреча календаря"}</EditionLink></td>
+        <td><span className="history-map">{r.mapId && <img loading="lazy" src={serverURL("/api/maps/"+encodeURIComponent(r.mapId)+"/radar.png").href} alt="" onError={e=>{e.currentTarget.hidden=true}}/>}{labelMap(r.mapId)}</span></td><td>{r.score && r.team && r.opponent ? r.score[r.team]+" : "+r.score[r.opponent] : "—"}</td>
         <td>{["k","d","a"].map(k=>r.counts[k] ?? "—").join(" / ")}</td><td>{rate([r],"damage")}</td><td>{r.impact?.toFixed(2) ?? "—"}</td>
-        <td>{r.mapMvp ? scene.players[r.mapMvp]?.name || r.mapMvp : "—"}</td></tr>)}</tbody></table></div> : <p>В выбранном периоде и турнире нет завершённых карт для этого профиля.</p>)}
+        <td>{r.mapMvp ? <EntityName group="players" id={r.mapMvp} historicalTeam={null}/> : "—"}</td></tr>)}</tbody></table></div> : <p>В выбранном периоде и турнире нет завершённых карт для этого профиля.</p>)}
     {fixture && <Dialog title="Результат встречи" close={()=>setSelected("")}><MatchReport event={fixture} careerId={c.id} teams={c.teams} close={()=>setSelected("")}/></Dialog>}
   </section>;
 }

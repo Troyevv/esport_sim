@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FixtureTeams, EditionLink } from "./CareerIdentity";
 import { MatchReport } from "./CareerForms";
 import {
   date,
@@ -45,10 +46,10 @@ export function Calendar({ c, initial,tournament, prepare, revision, training }:
     rows.map((e) => (
       <div className="day-agenda-item" key={e.id}>
         <small className="event-time">
-          {date(e.date)} · {e.kind === "match" ? "BO"+(e.bestOf ?? 1) : "Клуб"}
+          <Glyph name={e.kind === "match" ? "crosshair" : "calendar"}/>{date(e.date)} · {e.kind === "match" ? "BO"+(e.bestOf ?? 1) : "Клуб"}
         </small>
-        <h3>{fixtureName(c, e)}</h3>
-        {e.edition && <button className="link-button" onClick={()=>tournament(e.edition!)}>{e.title}</button>}
+        <h3>{e.kind === "match" ? <>{e.pcw && "Пракк · "}<FixtureTeams teams={e.teams} names={c.teams}/></> : fixtureName(c,e)}</h3>
+        {e.edition && <EditionLink id={e.edition}>{e.title}</EditionLink>}
         {e.agenda?.map(a=><p key={a.edition+a.title}><button className="link-button" onClick={()=>tournament(a.edition)}>{a.tournament}</button> · {a.title}</p>)}
         {!e.score && !e.pcw && e.kind === "match" && <button className="btn sm" onClick={()=>prepare(e.id)}>Предматчевая подготовка и линия</button>}
         {e.score && (

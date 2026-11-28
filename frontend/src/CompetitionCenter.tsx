@@ -4,11 +4,12 @@ import {Mark} from "./approved/EventMark";
 import {serverURL} from "./session";
 import "./approved/Competition.css";
 import { useState } from "react";
-import { date, useData, type Act, type Career, type Profile, type Scene } from "./careerData";
+import { date, fixtureScore, useData, type Act, type Career, type Profile, type Scene } from "./careerData";
 import { Dialog, Heading, MetricStrip, Tabs } from "./GameUI";
 import { Load, MatchReport } from "./CareerForms";
 import { Avatar } from "./SceneIdentity";
 import "./competitions.css";
+import { EntityName, FixtureTeams } from "./CareerIdentity";
 import { CompetitionMark, eventMark } from "./CompetitionMark";
 
 type Entry = {
@@ -175,6 +176,11 @@ const status: Record<string, string> = {
   notSelected: "Вне списка участников",
   qualifiedElsewhere: "Уже квалифицировались",
 };
+function statusTone(state: string) {
+  if (["playing","qualified","confirmed","accepted","locked"].includes(state)) return "green";
+  if (["offered","invited","waiting","registration"].includes(state)) return "orange";
+  return "neutral";
+}
 const formats: Record<string, string> = {
   swiss: "Швейцарская система",
   single: "Single elimination",
@@ -578,17 +584,18 @@ function Registration({
 
 type DrawProps = Pick<Props, "c" | "scene"> & { onFixture: (id: string) => void };
 
+function resolveSlot(draw: Draw, slot: Game["slots"][number]) {
+  if (!Array.isArray(slot)) return slot;
+  const parent = draw.games[slot[1]];
+  return slot[0] === "winner" ? parent?.winner : parent?.loser;
+}
+
 function GameDraw({ draw, c, scene, onFixture }: DrawProps & { draw: Draw }) {
   const [focusTeam, setFocusTeam] = useState(draw.teams.includes(c.team) ? c.team : "");
   const [branch, setBranch] = useState("Верхняя сетка");
   const [filter, setFilter] = useState("all");
-  function resolve(slot: Game["slots"][number]) {
-    if (!Array.isArray(slot)) return slot;
-    const parent = draw.games[slot[1]];
-    return slot[0] === "winner" ? parent?.winner : parent?.loser;
-  }
   function slotName(slot: Game["slots"][number]) {
-    const id = resolve(slot);
+    const id = resolveSlot(draw,slot);
     if (id) return c.teams[id] || scene.teams[id]?.name || id;
     if (!Array.isArray(slot)) return "Свободный слот";
     return (slot[0] === "winner" ? "Победитель" : "Проигравший") + " № " + (slot[1] + 1);
@@ -626,7 +633,7 @@ function GameDraw({ draw, c, scene, onFixture }: DrawProps & { draw: Draw }) {
       <table className="simple-table"><thead><tr><th>Место</th><th>Команда</th><th>В</th><th>П</th>
         <th>{draw.format === "swiss" ? "Бухгольц" : "± раундов"}</th></tr></thead>
         <tbody>{draw.standings.map((row,index) => <tr key={row.team} data-focused={row.team === focusTeam}>
-          <td>{index + 1}</td><td><div className="vrs-team"><Avatar club name={c.teams[row.team] || row.team} {...scene.teams[row.team]?.visual}/>{c.teams[row.team] || row.team}</div></td>
+          <td>{index + 1}</td><td><EntityName group="teams" id={row.team} fallback={c.teams[row.team]}/></td>
           <td>{row.wins}</td><td>{row.losses}</td><td>{draw.format === "swiss" ? row.buchholz : row.roundDiff}</td>
         </tr>)}</tbody></table>
     </div>}
@@ -634,13 +641,12 @@ function GameDraw({ draw, c, scene, onFixture }: DrawProps & { draw: Draw }) {
       {rounds.filter(r => filter === "all" || String(r) === filter).map(r => <section key={r} className="tc-round">
         <h3>Раунд {r + 1}</h3>
         {games.filter(({game}) => game.round === r).map(({ game, index }) =>
-          <article className="tc-pair" key={index} data-focused={!!focusTeam && game.slots.some(s => resolve(s) === focusTeam)}>
+          <article className="tc-pair" key={index} data-focused={!!focusTeam && game.slots.some(s => resolveSlot(draw,s) === focusTeam)}>
             <small>{game.label} · № {index + 1}{game.date && " · " + date(game.date)}</small>
             {game.slots.map((slot,i) => {
-              const id = resolve(slot);
+              const id = resolveSlot(draw,slot);
               return <div key={i} className={id && id === game.winner ? "tc-winner" : ""}>
-                {id && <Avatar club name={slotName(slot)} {...scene.teams[id]?.visual}/>}
-                <b>{slotName(slot)}</b><span>{game.score?.[i] ?? "—"}</span>
+                {id ? <EntityName group="teams" id={id} fallback={slotName(slot)}/> : <b>{slotName(slot)}</b>}<span>{game.score?.[i] ?? "—"}</span>
               </div>;
             })}
             {game.bye && <small>Проход без игры</small>}
@@ -826,7 +832,7 @@ export function CompetitionCenter(props: Props) {
                   />
                   <small>
                     {e.organizer} · {e.region}
-                    <span className="tc-state">{status[e.status]}</span>
+                    <span className="tc-state" data-tone={statusTone(e.status)}>{status[e.status] || e.status}</span>
                   </small>
                 </span>
                 <strong>{e.title}</strong>
@@ -911,7 +917,7 @@ export function CompetitionCenter(props: Props) {
             {span(event.start, event.end)} · {event.place}
           </p>
           <div className="cp-inline">
-            <Badge tone="green">{status[event.status] || event.status}</Badge>
+            <Badge tone={statusTone(event.status)}>{status[event.status] || event.status}</Badge>
             <Badge>
               {event.stages
                 .map((s) => formats[s.format] || s.format)
@@ -1137,7 +1143,7 @@ export function CompetitionCenter(props: Props) {
           {event.placements?.length ? (
             event.placements.map((t, i) => (
               <p key={t}>
-                {i + 1}. {c.teams[t] || t}
+                {i + 1}. <EntityName group="teams" id={t} fallback={c.teams[t]}/>
               </p>
             ))
           ) : (
@@ -1294,11 +1300,14 @@ export function CompetitionCenter(props: Props) {
           {tab === "Результаты" &&
             event.draws
               .flat()
-              .flatMap((d) => d.games.filter((g) => g.historical))
-              .map((g, i) => (
+              .flatMap((draw) => draw.games.filter((g) => g.historical).map(game=>({draw,game})))
+              .map(({draw,game:g}, i) => (
                 <div className="tc-result" key={"history" + i}>
                   <small>{date(g.date!)} · до начала карьеры</small>
-                  <b>{g.slots.map((t) => c.teams[t as string]).join(" — ")}</b>
+                  <b>{g.slots.map((slot,index)=>{
+                    const id = resolveSlot(draw,slot);
+                    return <span key={index}>{index>0 && " — "}{id ? <EntityName group="teams" id={id} fallback={c.teams[id]}/> : "Участник не определён"}</span>;
+                  })}</b>
                   <span>{g.score?.join(" : ")}</span>
                 </div>
               ))}
@@ -1318,7 +1327,7 @@ export function CompetitionCenter(props: Props) {
                     {date(e.date)} · BO{e.bestOf}
                   </small>
                 </span>
-                <b>{e.teams.map((t) => c.teams[t]).join(" — ")}</b>
+                <b><FixtureTeams teams={e.teams} names={c.teams}/></b>
                 {!e.score && (
                   <button
                     className="btn sm"
@@ -1344,7 +1353,7 @@ export function CompetitionCenter(props: Props) {
                 )}
                 {e.score && (
                   <button className="btn sm" onClick={() => openReport(e.id)}>
-                    {e.score.join(" : ")} · Протокол
+                    {fixtureScore(e)} · Протокол
                   </button>
                 )}
               </div>
@@ -1390,8 +1399,8 @@ export function CompetitionCenter(props: Props) {
                   <tbody>
                     {rows.map(([p, r]) => (
                       <tr key={p}>
-                        <td>{r.name}</td>
-                        <td>{c.teams[r.team]}</td>
+                        <td><EntityName group="players" id={p} recordedName={r.name} historicalTeam={r.team}/></td>
+                        <td><EntityName group="teams" id={r.team} fallback={c.teams[r.team]}/></td>
                         <td>{r.k}</td>
                         <td>{r.d}</td>
                         <td>{r.a}</td>
@@ -1404,7 +1413,7 @@ export function CompetitionCenter(props: Props) {
               <h2>Команды</h2>
               {Object.entries(teamStats).map(([t, r]) => (
                 <p key={t}>
-                  {c.teams[t]} · {r.k} убийств · {r.d} смертей · {r.damage}{" "}
+                  <EntityName group="teams" id={t} fallback={c.teams[t]}/> · {r.k} убийств · {r.d} смертей · {r.damage}{" "}
                   урона
                 </p>
               ))}

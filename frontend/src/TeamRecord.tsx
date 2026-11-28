@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Directory } from "./CompetitionCenter";
 import { MatchReport } from "./CareerForms";
+import { EditionLink, FixtureTeams } from "./CareerIdentity";
 import { Dialog } from "./GameUI";
 import { date, fixtureScore, useData, type Career, type Scene } from "./careerData";
 
@@ -12,7 +13,7 @@ export default function TeamRecord({c,scene,id,tab,revision}: {c:Career;scene:Sc
   if (fixtures) {
     const games = [...c.history,...c.queue].filter(f=>f.kind==="match" && f.teams.includes(id)).sort((a,b)=>b.date.localeCompare(a.date));
     return <section className="surface panel-body"><h2>{tab}</h2>{games.map(f=><div key={f.id} className="staff-line">
-      <time>{date(f.date)}</time><span>{f.teams.map(t=>c.teams[t] || scene.teams[t]?.name || t).join(" — ")} · {f.title || "Встреча календаря"}</span>
+      <time>{date(f.date)}</time><span><FixtureTeams teams={f.teams} names={c.teams}/> · <EditionLink id={f.edition}>{f.title || "Встреча календаря"}</EditionLink></span>
       {fixtureScore(f) ? <button onClick={()=>setSelected(f.id)}>{fixtureScore(f)} · Протокол</button> : <span>Запланирован</span>}</div>)}
       {!games.length && <p>Для команды ещё нет встреч в календаре карьеры.</p>}
       {fixture && <Dialog title="Результат встречи" close={()=>setSelected("")}><MatchReport careerId={c.id} event={fixture} teams={c.teams} close={()=>setSelected("")}/></Dialog>}</section>;
@@ -32,12 +33,12 @@ export default function TeamRecord({c,scene,id,tab,revision}: {c:Career;scene:Sc
     const lineups = data.editions.flatMap(e=>(e.registrations[id] || []).filter(v=>v.date<=c.date).map(v=>({v,e})))
       .sort((a,b)=>b.v.date.localeCompare(a.v.date));
     return <section className="surface panel-body"><h2>Зарегистрированные составы</h2>{lineups.map(({v,e})=><article className="staff-line" key={e.id+"/"+v.version}>
-      <time>{date(v.date)}</time><div><strong>{e.title} · версия {v.version}</strong><p>{v.players.map(p=>scene.players[p]?.name || p).join(" · ")}</p>
+      <time>{date(v.date)}</time><div><strong><EditionLink id={e.id}>{e.title}</EditionLink> · версия {v.version}</strong><p>{v.players.map(p=>scene.players[p]?.name || p).join(" · ")}</p>
       {v.reserves.length>0 && <p>Запасные · {v.reserves.map(p=>scene.players[p]?.name || p).join(" · ")}</p>}
       {v.coach && <p>Тренер · {scene.staff[v.coach]?.name || v.coach}</p>}</div></article>)}
       {!lineups.length && <p>Сохранённых заявок на турниры пока нет.</p>}</section>;
   }
   const results = data.editions.filter(e=>e.status==="finished" && e.placements?.includes(id));
-  return <section className="surface panel-body"><h2>Турнирные достижения</h2>{results.map(e=><p key={e.id}>{e.title} · {e.placements!.indexOf(id)+1} место · {date(e.end)}</p>)}
+  return <section className="surface panel-body"><h2>Турнирные достижения</h2>{results.map(e=><p key={e.id}><EditionLink id={e.id}>{e.title}</EditionLink> · {e.placements!.indexOf(id)+1} место · {date(e.end)}</p>)}
     {!results.length && <p>В завершённых турнирах карьеры места команды ещё не зафиксированы.</p>}</section>;
 }
