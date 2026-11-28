@@ -13,7 +13,7 @@ import {
   type Fixture,
 } from "./careerData";
 import { Dialog, Glyph, Heading, Tabs } from "./GameUI";
-export function Calendar({ c, initial,tournament, revision, training }: { revision:number; training:(day:string)=>void; c: Career; initial: string; tournament:(edition:string)=>void }) {
+export function Calendar({ c, initial,tournament, prepare, revision, training }: { prepare:(id:string)=>void; revision:number; training:(day:string)=>void; c: Career; initial: string; tournament:(edition:string)=>void }) {
   const [selected, select] = useState(initial),
     [mode, setMode] = useState("Месяц"),
     [filter, setFilter] = useState("club"),
@@ -50,6 +50,7 @@ export function Calendar({ c, initial,tournament, revision, training }: { revisi
         <h3>{fixtureName(c, e)}</h3>
         {e.edition && <button className="link-button" onClick={()=>tournament(e.edition!)}>{e.title}</button>}
         {e.agenda?.map(a=><p key={a.edition+a.title}><button className="link-button" onClick={()=>tournament(a.edition)}>{a.tournament}</button> · {a.title}</p>)}
+        {!e.score && !e.pcw && e.kind === "match" && <button className="btn sm" onClick={()=>prepare(e.id)}>Предматчевая подготовка и линия</button>}
         {e.score && (
           <button
             className="btn sm"

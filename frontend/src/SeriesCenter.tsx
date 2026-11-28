@@ -1,3 +1,4 @@
+import { ForecastLine, type Quote } from "./ForecastLine";
 import { useState } from "react";
 import { Avatar, type Visual } from "./SceneIdentity";
 import { serverURL, type Frame } from "./session";
@@ -13,6 +14,7 @@ type Evidence = {
 };
 export interface SeriesView {
   bestOf: number;
+  forecasts?:Quote[];
   award?: { name: string } | null;
   tournament?:string;
   spectator?:boolean;
@@ -264,6 +266,7 @@ export function VetoCenter({ frame, enabled, act }: Props) {
           </div>
         ))}
       </div>
+      {s.forecasts && <details><summary>Предматчевая линия</summary><ForecastLine quotes={s.forecasts} names={Object.fromEntries(s.teams.map(t=>[t,s.clubs[t].name]))}/></details>}
       <div className="veto-layout" data-action={step?.kind ?? "ready"}>
         <section>
           <header className="veto-pool-title">

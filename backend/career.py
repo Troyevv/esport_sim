@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import lineup_photos, scouting, training, round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
+from . import forecast, lineup_photos, scouting, training, round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
 from .database import require
 
 VERSION = 1
@@ -250,11 +250,20 @@ def match_domain(pack, c, event, badges=None, portraits=None):
 
 def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
     domain, rosters = match_domain(pack, c, event, badges, portraits)
+    quotes = list(event.get("forecasts", []))
+    basis = None
+    if not event.get("pcw"):
+        public, quote = forecast.opening(c, pack, event, min(c["date"], event["date"]))
+        forecast.remember(quotes, quote)
+        basis = {k:public[k] for k in ("teams","bestOf","day","mapProbabilities")}
     if "bestOf" in event:
         jobs = staff.booked(c, pack, event)
         game = series.initial(event["seed"], event["bestOf"], domain, rosters,
                               c["team"] if c["team"] in event["teams"] else None,
                               profile=(c["circuit"]["editions"][event["edition"]]["rules"] if event.get("edition") else c["seriesProfile"]), history=c["history"], today=event["date"], jobs=jobs, detailed=detailed)
+        if basis:
+            game["series"].update(forecastBasis=basis, forecasts=quotes)
+            forecast.after_veto(game["series"])
         if event.get("edition"):
             game["series"]["tournament"]=c["circuit"]["editions"][event["edition"]]["title"]
         if c["team"] not in event["teams"] and detailed:
@@ -264,6 +273,8 @@ def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
         return game
     if not detailed:
         game = dict(simulation=round_sim.MODE, seed=event["seed"], domain=domain, rosterIds=rosters, mapId=event.get("mapId"))
+        if quotes:
+            game["forecasts"] = quotes
         if event.get("pcw") and event.get("board"):
             game.update(practiceBoard=event["board"], practiceTeam=c["team"])
         return game
@@ -274,6 +285,8 @@ def initial(pack, c, event, badges=None, portraits=None, *, detailed=True):
         c["team"] if c["team"] in event["teams"] else None,
         map_id=event.get("mapId","depo"),
     )
+    if quotes:
+        game["forecasts"] = quotes
     if c["team"] not in event["teams"]:
         game["autonomous"] = True
     if event.get("pcw") and event.get("board"):
@@ -285,7 +298,10 @@ def simulate(game):
     if game.get("simulation") in (round_sim.MODE, round_sim.LEGACY_MODE):
         if "series" not in game:
             first = game["domain"]["rosters"][game["rosterIds"][0]]["team"]
-            return round_sim.play_map(game, game["mapId"], first, game["seed"])
+            report = round_sim.play_map(game, game["mapId"], first, game["seed"])
+            if game.get("forecasts"):
+                report["forecasts"] = game["forecasts"]
+            return report
         s = game["series"]
         veto.advance(game, "captain")
         strain = {}
@@ -313,7 +329,8 @@ def simulate(game):
 def result(game):
     if "series" in game:
         return series.result(game)
-    return dict(series.map_result(game), simulation=series.DETAILED)
+    return dict(series.map_result(game), simulation=series.DETAILED,
+                **({"forecasts": game["forecasts"]} if game.get("forecasts") else {}))
 
 
 def complete(c, digest, points, winner, facts=None):

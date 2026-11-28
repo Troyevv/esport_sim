@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic_core import to_json
 from pydantic import BaseModel, ConfigDict, StrictInt, Field
 
-from . import career_store, performance, training, training_center, competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
+from . import forecast, staff, career_store, performance, training, training_center, competition_scene, competitions, registrations, cs2_maps, career, career_scene, tactic_library, tactic_preview, tactics
 from .engine import TICK_SECONDS
 from .host import own_clock, issue_code, digest
 from .store import Conflict, Store
@@ -401,6 +401,34 @@ def create_app(
             return career.choices(app.state.store.careers.pack(competition_scene.source(key, revision)))
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
+
+    @app.get("/api/career/{career_id}/prematch/{fixture}")
+    async def prematch(career_id: str, fixture: str):
+        c, pack = scouting_career(career_id)
+        event = next((e for e in c["queue"] if e["id"] == fixture and e["kind"] == "match" and not e.get("pcw")), None)
+        if event is None:
+            raise HTTPException(404, "Встреча отсутствует в текущем календаре")
+        def prepare():
+            public, quote = forecast.opening(c, pack, event, min(c["date"],event["date"]))
+            quotes = list(event.get("forecasts", []))
+            forecast.remember(quotes,quote)
+            assigned = []
+            if c["team"] in event["teams"]:
+                assigned = [j for j in staff.day_plan(c,pack,c["team"],event["date"]) if j["event"] == event["id"]]
+            specialist = next((j for j in assigned if j["duty"] == "opponent"),None)
+            advice = None
+            if specialist:
+                rival = next(t for t in event["teams"] if t != c["team"])
+                evidence = public["evidence"][rival]
+                minimum = max(2, 6-specialist["quality"]//20)
+                known = [m for m,r in evidence.items() if r["games"] >= minimum]
+                order = sorted(known, key=lambda m: (evidence[m]["weightedWins"]+3)/(evidence[m]["weight"]+6))
+                advice = dict(author=specialist["name"], minimum=minimum,
+                              strongest=order[-1] if order else None, weakest=order[0] if len(order)>1 else None)
+            return dict(**public, forecasts=quotes, advice=advice,
+                        staff=[{k:j[k] for k in ("duty","name","due")} for j in assigned],
+                        calibration=forecast.calibration(c["history"]))
+        return await asyncio.to_thread(prepare)
 
     @app.get("/api/career/{career_id}/performance/{group}/{subject}")
     async def career_performance(career_id: str, group: Literal["teams", "players"], subject: str,

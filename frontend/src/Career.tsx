@@ -1,6 +1,6 @@
 import { ManagerAttention } from "./ManagerAttention";
-import { fixtureMap, type Decision } from "./careerData";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { type Decision } from "./careerData";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { Brand, Dialog, Glyph, Heading } from "./GameUI";
 import { Avatar } from "./SceneIdentity";
 import { type Frame } from "./session";
@@ -133,7 +133,8 @@ export default function CareerScreen(props: Props) {
     );
   return <Manager key={c.id} {...props} c={c} enabled={enabled} pauseEnabled={props.enabled && frame.careerId===c.id} />;
 }
-type Route = { page: string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
+const Prematch = lazy(() => import("./Prematch"));
+type Route = { page: string; fixture?:string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
 function Manager({
   pauseEnabled,
   c,
@@ -186,19 +187,20 @@ function Manager({
   const scene = directory.data,
     box = letters(c),
     unread = box.filter((m) => !read.includes(m.id)).length;
-  const next = c.queue.find((e) => e.teams.includes(c.team) || e.id===c.watchFixture),
-    ready = !!next && next.date === c.date && c.queue[0]?.id === next.id;
+  const next = c.queue.find(e => e.kind === "match" && (e.teams.includes(c.team) || e.id===c.watchFixture));
+  const preparedFixture = route.fixture ? c.queue.find(e=>e.id===route.fixture) : next;
   const closeOverlays = () => {
     setDrawer(false);
     setSearch(false);
   };
-  const to = (page: string, profile?: Profile, edition?:string, entry?:Decision["action"]) => {
+  const to = (page: string, profile?: Profile, edition?:string, entry?:Decision["action"], fixture?:string) => {
     closeOverlays();
     if (tool) leaveTool();
     historyStack.current.push(route);
-    setRoute({ page, profile, edition, entry, jump: historyStack.current.length });
+    setRoute({ page, profile, edition, entry, fixture, jump: historyStack.current.length });
     window.scrollTo(0, 0);
   };
+  const prepare = (id:string) => to("Матч-центр",undefined,undefined,undefined,id);
   const tournament = (id:string) => to("Соревнования",undefined,id);
   const open = (p: Profile) => to("Профиль", p);
   const back = () => {
@@ -263,7 +265,7 @@ function Manager({
       board();
       return;
     }
-    if (page === "Матч-центр" && (frame.world.match || frame.world.series || ready)) {
+    if (page === "Матч-центр" && (frame.world.match || frame.world.series)) {
       void advance();
       return;
     }
@@ -489,7 +491,7 @@ function Manager({
           <div key={active} className="screen-enter">
             {tool ||
               (active === "Календарь" ? (
-                <Calendar key={day} c={c} initial={day} tournament={tournament} revision={frame.careerRevision||0} training={d=>{setDay(d);to("Тренировочный центр")}}/>
+                <Calendar prepare={prepare} key={day} c={c} initial={day} tournament={tournament} revision={frame.careerRevision||0} training={d=>{setDay(d);to("Тренировочный центр")}}/>
               ) : active === "Входящие" ? (
                 <Inbox
                   box={box}
@@ -581,27 +583,15 @@ function Manager({
                   }}
                 />
               ) : active === "Соревнования" || active === "Рейтинг VRS" ? (
-                <CompetitionCenter key={(route.edition||"directory")+":"+route.jump} initialEdition={route.edition} initialEntry={route.entry==="entry" || route.entry==="calendar"} initialConflict={route.entry==="calendar"} {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
+                <CompetitionCenter prepare={prepare} key={(route.edition||"directory")+":"+route.jump} initialEdition={route.edition} initialEntry={route.entry==="entry" || route.entry==="calendar"} initialConflict={route.entry==="calendar"} {...{c,scene,act,enabled}} revision={frame.careerRevision||0} rankings={active==="Рейтинг VRS"}/>
               ) : active === "База сцены" ? (
                 <Directory {...{ scene, open }} view={directoryView} />
               ) : active === "Матч-центр" ? (
-                <>
-                  <Heading title="Матч-центр" sub="Ближайшая встреча" />
-                  <section className="surface panel-body">
-                    {next && (
-                      <>
-                        <h2>{next.teams.map((t) => c.teams[t]).join(" — ")}</h2>
-                        <p>{date(next.date)} · {next.title || "Выставочный"} BO{next.bestOf ?? 1} · {fixtureMap(next)}</p>
-                        <button
-                          className="btn"
-                          onClick={() => calendar(next.date)}
-                        >
-                          Открыть календарь
-                        </button>
-                      </>
-                    )}
-                  </section>
-                </>
+                preparedFixture && !preparedFixture.pcw ? <Suspense fallback={<p role="status">Загружаем подготовку…</p>}>
+                  <Prematch key={preparedFixture.id} {...{c,scene,calendar,tournament,board,open}} revision={frame.careerRevision||0}
+                    event={preparedFixture} play={enabled && directMatch && c.queue[0]?.id===preparedFixture.id ? ()=>void resolve(required[0]) : undefined}/></Suspense>
+                  : <section className="surface panel-body"><h2>Матч-центр</h2><p>{preparedFixture ? "Подготовка к пракку доступна в тренировочном центре." : "В календаре пока нет ближайшей встречи."}</p>
+                    <button onClick={()=>calendar(preparedFixture?.date || c.date)}>Открыть календарь</button></section>
               ) : (
                 <Dashboard
                   {...{

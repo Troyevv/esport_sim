@@ -94,6 +94,7 @@ export type Performance = {
     impact: number | null; adr: number | null; kastPercent: number | null }[];
 };
 export type Report = {
+  forecasts?: import("./ForecastLine").Quote[];
   teams?: string[]; scoreByTeam?: Record<string, number>; winnerTeamId?: string | null;
   mapId?: string; simulation?: Simulation; maps?: Report[]; performance: Performance;
   stats: {

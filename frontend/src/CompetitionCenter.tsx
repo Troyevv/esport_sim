@@ -137,6 +137,7 @@ export type Directory = {
   live?: { date: string; rows: Ranking[]; completeWindow: boolean };
 };
 type Props = {
+  prepare:(id:string)=>void;
   initialEdition?: string;
   initialEntry?: boolean;
   initialConflict?: boolean;
@@ -1053,6 +1054,7 @@ export function CompetitionCenter(props: Props) {
                   </small>
                 </span>
                 <b>{e.teams.map((t) => c.teams[t]).join(" — ")}</b>
+                {!e.score && <button className="btn sm" onClick={()=>props.prepare(e.id)}>Подготовка и линия</button>}
                 {!e.score && !e.teams.includes(c.team) && (
                   <button
                     className="btn sm"

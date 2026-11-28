@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Avatar, LineupPortrait } from "./SceneIdentity";
+import { ForecastLine } from "./ForecastLine";
 import { Tabs } from "./GameUI";
 import { date, fixtureMap, fixtureScore, useData, type Career, type Fixture, type Report, type Scene } from "./careerData";
 import { serverURL } from "./session";
@@ -106,6 +107,7 @@ export default function MatchReport({ careerId, event, teams, close }: Props) {
       {page === "Составы на дату" && <div className="report-lineups">{groups.map(tid=><section className="report-panel" key={tid || "unknown"}><h3>{teamName(tid)}</h3>
         {current.stats.filter(p=>p.teamId===tid).map(p=><div className="report-member" key={p.player}><Avatar {...visual(p.player,tid)} name={p.name || p.player}/>
           <span>{p.name || p.player}</span></div>)}</section>)}</div>}
+      {page === "Протокол и данные" && report.forecasts && <ForecastLine quotes={report.forecasts} names={teams}/>}
       {page === "Протокол и данные" && <section className="report-panel"><h3>Происхождение и полнота</h3>
         <p>Встреча {event.id} · {date(event.date)}</p><p>Источник — сохранённые протоколы завершённых карт. Составы и принадлежность игроков определяются по записям встречи.</p>
         <p>Методика {report.performance.version}. Прочерк означает, что показатель не записан или для его расчёта недостаточно сведений.</p></section>}
