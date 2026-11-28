@@ -1,0 +1,9 @@
+.forecast-line .forecast-balance {display:flex;gap:3px;height:6px;margin:6px 0 16px}
+.forecast-balance span {flex-basis:0;background:var(--green,#bedc89)}
+.forecast-balance span:nth-child(2) {background:var(--orange,#eca35b)}
+.forecast-line .forecast-side:nth-child(2) strong {color:var(--orange,#eca35b)}
+.forecast-chance {display:inline-flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.forecast-chance meter {width:clamp(2rem,8vw,6rem);height:8px;appearance:none;background:#303739;border:0}
+.forecast-chance meter::-webkit-meter-bar {height:8px;background:#303739;border:0;border-radius:0}
+.forecast-chance meter::-webkit-meter-optimum-value {background:#bfdc90}
+.forecast-chance meter::-moz-meter-bar {background:#bfdc90}

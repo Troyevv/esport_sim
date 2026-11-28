@@ -2,6 +2,7 @@ import { useState } from "react";
 import { date, fixtureMap, useData, type Career, type Scene } from "./careerData";
 import { Dialog } from "./GameUI";
 import { MatchReport } from "./CareerForms";
+import { RecentForm } from "./RecentForm";
 import "./report.css";
 
 type Subject = "players" | "teams";
@@ -21,6 +22,28 @@ function rate(rows: Row[], field: string, scale=1) {
   return samples ? (scale * known.reduce((n,r)=>n+r.counts[field]!,0)/samples).toFixed(1) : "—";
 }
 
+function MapTrend({ rows }: { rows: Row[] }) {
+  const recent = [...rows].sort((a,b) => a.date.localeCompare(b.date) || a.fixture.localeCompare(b.fixture) || a.index-b.index).slice(-10);
+  const points = recent.map(r => r.counts.damage != null && r.playerRounds > 0 ? r.counts.damage/r.playerRounds : null);
+  const observed = points.filter((v): v is number => v != null);
+  if (observed.length < 2) return null;
+  const top = Math.max(...observed, 1);
+  const x = (i:number) => 3 + i*234/(recent.length-1);
+  const y = (v:number) => 45 - v/top*40;
+  return <figure className="adr-trend"><figcaption>ADR по картам · {date(recent[0].date)} — {date(recent[recent.length-1].date)}</figcaption>
+    <svg viewBox="0 0 240 48" preserveAspectRatio="none" role="img" aria-label={"ADR по картам: "+points.map(v=>v?.toFixed(1) ?? "нет данных").join(", ")}>
+      <path d="M0 45h240" stroke="var(--line)" />
+      {points.map((v,i) => {
+        if (v == null) return null;
+        const previous = points[i-1];
+        return <g key={recent[i].fixture+"/"+recent[i].index} stroke="var(--green)">
+          {previous != null && <line x1={x(i-1)} y1={y(previous)} x2={x(i)} y2={y(v)} vectorEffect="non-scaling-stroke" strokeWidth="2"/>}
+          <circle cx={x(i)} cy={y(v)} r="2" fill="var(--green)"><title>{labelMap(recent[i].mapId)} · {v.toFixed(1)} ADR</title></circle>
+        </g>;
+      })}
+    </svg></figure>;
+}
+
 function Summary({result, name}: {result: Result; name: string}) {
   const known = result.rows.filter(r=>r.won !== null);
   const wins = known.filter(r=>r.won).length;
@@ -28,7 +51,11 @@ function Summary({result, name}: {result: Result; name: string}) {
     <dl className="history-metrics"><div><dt>Победы</dt><dd>{known.length ? wins+"/"+known.length : "—"}</dd></div>
       <div><dt>ADR</dt><dd>{rate(result.rows,"damage")}</dd></div>
       <div><dt>KAST</dt><dd>{rate(result.rows,"kast",100)}{result.rows.some(r=>r.counts.kast!=null && r.playerRounds>0) ? "%" : ""}</dd></div></dl>
-    <small>ADR и KAST учитывают только карты с записанным показателем.</small></article>;
+    <RecentForm results={[...known].sort((a,b)=>a.date.localeCompare(b.date) || a.fixture.localeCompare(b.fixture) || a.index-b.index).slice(-5).map(r => ({
+      id:r.fixture+"/"+r.index, won:r.won!, detail:date(r.date)+" · "+labelMap(r.mapId)
+    }))}/>
+    <MapTrend rows={result.rows}/>
+    <small style={{display:"block"}}>ADR и KAST учитывают только карты с записанным показателем.</small></article>;
 }
 
 export function PlayerRecord({c,id,scene,revision,tab,overview}: Omit<Props,"group"> & {tab:string;overview?:(maps:{key:string;name:string;impact:number|null}[])=>React.ReactNode}) {
