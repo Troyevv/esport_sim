@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from uuid import uuid4
 
-from . import scouting, training, round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
+from . import lineup_photos, scouting, training, round_sim, staff, competitions, registrations, cs2_maps, database, match, series, veto, world
 from .database import require
 
 VERSION = 1
@@ -236,6 +236,9 @@ def match_domain(pack, c, event, badges=None, portraits=None):
             domain["staff"][sid] = dict(domain["staff"][sid], matchRole=role)
     domain["managerPlayers"] = list(manager_players)
     if portraits:
+        for pid, photo in lineup_photos.index(portraits).items():
+            if pid in domain["players"]:
+                domain["players"][pid]["visual"]["lineupPhoto"] = photo
         for pid, portrait in portraits.index(
             {pid: pack["players"][pid] for pid in domain["players"]}
         ).items():

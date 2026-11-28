@@ -1,0 +1,79 @@
+{
+  "steam-76561198013243326": {
+    "team": "t-56a45db5be800c7288d9",
+    "file": "aleksib.png",
+    "size": 47265,
+    "sha256": "339b11d062ff9cb1a5b50838d077631f96bd23e6c39a9a133309bf3acbc38759",
+    "source": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/Aleksib.png"
+  },
+  "steam-76561198246607476": {
+    "team": "t-56a45db5be800c7288d9",
+    "file": "b1t.png",
+    "size": 103902,
+    "sha256": "6bcf2cd73fc4ac6a5fc79eede7852fdf9182d2741d604700829dcba6c6c18acd",
+    "source": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/B1T.png"
+  },
+  "steam-76561198050250233": {
+    "team": "t-56a45db5be800c7288d9",
+    "file": "im.png",
+    "size": 108313,
+    "sha256": "0fefd1d1d3887e461ccebaf36d9f0e5db5da418c10a8327e637a8351df158df7",
+    "source": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/Im.png"
+  },
+  "steam-76561199076189612": {
+    "team": "t-56a45db5be800c7288d9",
+    "file": "makazze.png",
+    "size": 46868,
+    "sha256": "f357914b92e617a2822f685924eb1009791d02da0fa147ef88073f7207f9a057",
+    "source": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/makazze.png"
+  },
+  "steam-76561199063068840": {
+    "team": "t-56a45db5be800c7288d9",
+    "file": "w0nderful.png",
+    "size": 43804,
+    "sha256": "866049d18ba3c6a0daa8dc0ca7eddbea3ee77fc1e544060b7edeb3dc54bba7d1",
+    "source": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/w0nderful.png"
+  },
+  "steam-76561199063238565": {
+    "team": "t-686f34552cee3bc3c46d",
+    "file": "magixx.png",
+    "size": 145771,
+    "sha256": "3133a5bf0e1816ad39e1f080e876682507b23d1273f01fc899c72f94bfaaf332",
+    "source": "https://raw.githubusercontent.com/diwmix/DiwmixTV/5963d18101989ee2540defac82dbc9a3e10b9b17/public/magixx.png"
+  },
+  "steam-76561198872013168": {
+    "team": "t-686f34552cee3bc3c46d",
+    "file": "tn1r.png",
+    "size": 155530,
+    "sha256": "e575bd7cfb7666a22fe33b01a0965ae200c63d6798730003539c206d0c4d7e1a",
+    "source": "https://raw.githubusercontent.com/diwmix/DiwmixTV/5963d18101989ee2540defac82dbc9a3e10b9b17/public/tn1r.png"
+  },
+  "steam-76561197978835160": {
+    "team": "t-b91dff98ff9b959126e9",
+    "file": "flamez.png",
+    "size": 177083,
+    "sha256": "b8d3ae9f5aecb5b0e6b8dbaee3c735da4d15330a2ced343058b06dfb22abb44f",
+    "source": "https://raw.githubusercontent.com/diwmix/DiwmixTV/5963d18101989ee2540defac82dbc9a3e10b9b17/public/flamez.png"
+  },
+  "steam-76561197989744167": {
+    "team": "t-b91dff98ff9b959126e9",
+    "file": "apex.png",
+    "size": 177802,
+    "sha256": "69d03ee95b4c3d411797f05c920eb94513db8b76d53662be4c2bcaf1ea1cc276",
+    "source": "https://raw.githubusercontent.com/diwmix/DiwmixTV/5963d18101989ee2540defac82dbc9a3e10b9b17/public/apex.png"
+  },
+  "steam-76561197991272318": {
+    "team": "t-b91dff98ff9b959126e9",
+    "file": "ropz.png",
+    "size": 116366,
+    "sha256": "e1343ebfc4744d6ffd0bf2d85c10d000fa86d238f90d7f084e5d57f95077d61b",
+    "source": "https://raw.githubusercontent.com/phantzzy/NoScope-Assets/e023cb78488e35bdd6fe227de91a7dace7b073b0/Players/ropz.png"
+  },
+  "steam-76561198113666193": {
+    "team": "t-b91dff98ff9b959126e9",
+    "file": "zywoo.png",
+    "size": 138936,
+    "sha256": "038a2b9b66dda5cd9d4dfdd9892372b08eef5490f7abae5b58c4a5682fbd2a8e",
+    "source": "https://raw.githubusercontent.com/Amar-elhachemi/elhash-gg/f807113d348541f78f7fb444e07fa5aee44997d7/public/images/players/ZywOo.png"
+  }
+}
