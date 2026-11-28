@@ -7,7 +7,7 @@ import { useState } from "react";
 import { date, fixtureScore, useData, type Act, type Career, type Profile, type Scene } from "./careerData";
 import { Dialog, Heading, MetricStrip, Tabs } from "./GameUI";
 import { Load, MatchReport } from "./CareerForms";
-import { Avatar } from "./SceneIdentity";
+import { Avatar, Flag } from "./SceneIdentity";
 import "./competitions.css";
 import { EntityName, FixtureTeams } from "./CareerIdentity";
 import { CompetitionMark, eventMark } from "./CompetitionMark";
@@ -290,6 +290,7 @@ function Rankings({ data, c, scene }: { data: Directory; c:Career; scene:Scene }
     const row=data.snapshots[d].find(r=>identity(r)===selected);
     return row?[{date:d,points:row.points,rank:row.rank}]:[];
   });
+  const maxPoints = past.reduce((max, row) => Math.max(max, row.points), 0);
   return (
     <>
       <Heading
@@ -365,16 +366,17 @@ function Rankings({ data, c, scene }: { data: Directory; c:Career; scene:Scene }
                     <button className="vrs-team" onClick={()=>setSelected(identity(r))}><Avatar club name={r.name} {...scene.teams[identity(r)]?.visual}/>{r.name}</button>
                     <small className="tc-sub">{r.nicks.join(" · ")}</small>
                   </td>
-                  <td>{r.region}</td>
+                  <td><span className="vrs-region"><Flag value={r.region}/>{r.region}</span></td>
                   <td className="mono accent">{r.points}</td>
                 </tr>
               ))}
           </tbody>
         </table>
       </section><aside className="surface vrs-trend"><h2>Динамика публикаций</h2>
-        <h3>{selectedRow?.name || c.teams[selected] || selected}</h3>
+        <h3><EntityName group="teams" id={selected} recordedName={selectedRow?.name} fallback={c.teams[selected]}/></h3>
         {selectedRow && <><p>Место #{selectedRow.rank} · {selectedRow.points} очков</p><small>Пятёрка на дату публикации</small><p>{selectedRow.nicks.join(" · ")}</p></>}
-        {past.length ? <ol>{past.map(p=><li key={p.date}><time>{date(p.date)}</time><strong>#{p.rank}</strong><span>{p.points}</span></li>)}</ol>
+        {past.length ? <ol>{past.map(p=><li key={p.date}><time>{date(p.date)}</time><strong>#{p.rank}</strong><span>{p.points}</span>
+          {past.length>1 && maxPoints>0 && <meter min={0} max={maxPoints} value={p.points} aria-label={"Очки VRS на "+date(p.date)}/>}</li>)}</ol>
           : <p>В доступных публикациях нет истории этой команды.</p>}
       </aside></div>
     </>
