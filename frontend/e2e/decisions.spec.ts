@@ -21,6 +21,7 @@ test("Aurora · приоритет турнира, центр решений и 
   await page.goto("/");
   await press("Новая карьера");
   await page.getByLabel("Редакция базы").selectOption("scene-20261125-staff/1");
+  await page.getByRole("button",{name:"Настроить карьеру",exact:true}).click();
   await page.getByLabel("Имя персонажа").fill("Тренер Aurora");
   await page
     .getByLabel("Команда", { exact: true })

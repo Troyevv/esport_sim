@@ -778,3 +778,11 @@ button.host-action {
   .metric-strip {grid-template-columns:repeat(2,minmax(0,1fr))}
   .metric-strip>div {padding:10px}
 }
+
+.calendar-layout:has(.calendar-agenda) {grid-template-columns:minmax(0,1fr)}
+.calendar-agenda article {display:grid;grid-template-columns:minmax(75px,110px) minmax(0,1fr);gap:12px;border-top:1px solid var(--line);padding:12px}
+.agenda-date {display:grid;align-self:start;background:transparent}
+.agenda-date b {font:500 26px Oswald,sans-serif}
+.agenda-date small {white-space:normal}
+.calendar-agenda article[data-selected=true] {border-left:2px solid var(--orange)}
+@media(min-width:901px) {.calendar-layout {grid-template-columns:1fr}.calendar-grid {gap:0}.calendar-day {min-height:100px}}

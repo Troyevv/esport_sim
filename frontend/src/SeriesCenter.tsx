@@ -236,7 +236,7 @@ export function VetoCenter({ frame, enabled, act }: Props) {
       <header className="veto-heading">
         <div>
           <span className="eyebrow">{s.tournament||"ВЫСТАВОЧНЫЙ МАТЧ"} · BO{s.bestOf}</span>
-          <h1>Map Veto</h1>
+          <h1>Map Veto</h1><p>Карты, порядок выбора и стартовые стороны серии.</p>
         </div>
         <div className="veto-tools">
           <button
@@ -256,6 +256,7 @@ export function VetoCenter({ frame, enabled, act }: Props) {
         </div>
       </header>
       <div className="veto-matchup">
+        <div className="veto-versus"><small>Формат серии</small><b>VS</b><strong>BO{s.bestOf}</strong></div>
         {s.teams.map((t) => (
           <div key={t} className="veto-club">
             <Avatar name={s.clubs[t].name} club {...s.clubs[t].visual} />

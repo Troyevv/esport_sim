@@ -35,3 +35,9 @@
 .intro-hero>div>small {color:var(--muted)}
 .intro-menu .ui-icon {width:26px;height:26px;flex-shrink:0}
 .root-menu .intro-hero {min-width:0;overflow:hidden}
+
+.screen-enter .root-menu-body {max-width:none;padding:0}
+.screen-enter .root-menu {min-height:auto}
+.intro-menu button {justify-content:flex-start}
+.intro-menu .ui-icon,.intro-menu .host-trigger svg {color:var(--orange)}
+.intro-menu .host-trigger {white-space:normal;align-items:flex-start;justify-content:flex-start}

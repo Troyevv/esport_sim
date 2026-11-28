@@ -14,12 +14,12 @@
 .club-player-visual .portrait img{width:100%;height:100%;object-fit:contain;object-position:bottom;position:relative;z-index:1}
 .club-card-ovr{position:absolute;top:14px;left:13px;z-index:3;display:flex;flex-direction:column;text-align:left}
 .club-card-ovr>b{font-family:Oswald;font-size:35px;line-height:1;color:var(--green);font-weight:500}
-.club-card-ovr>small{font-family:Plex;font-size:10px;margin-top:5px;letter-spacing:1px;color:var(--muted)}
+.club-card-ovr>small{font-family:var(--mono);font-size:10px;margin-top:5px;letter-spacing:1px;color:var(--muted)}
 .club-player-card-body{padding:17px 14px;border-top:2px solid #718b56}
 .club-player-name{font-family:Oswald,sans-serif;font-size:29px;font-weight:500;letter-spacing:.2px;background:none;border:0;padding:0;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;text-align:left;max-width:100%}
 .club-player-name:hover{color:var(--club-accent,var(--green))}
 .club-card-metrics{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-bottom:14px}
-.club-card-metrics b{font-family:Plex;color:var(--text);font-size:13px;margin-left:4px}
+.club-card-metrics b{font-family:var(--mono);color:var(--text);font-size:13px;margin-left:4px}
 .club-player-card .meter{font-size:12px;gap:6px}
 .club-text-link{background:none;border:0;color:var(--club-accent,var(--green));padding:7px 0;text-align:left;min-height:36px;font-size:14px;line-height:1.5}
 .club-text-link:hover{text-decoration:underline;text-underline-offset:4px}

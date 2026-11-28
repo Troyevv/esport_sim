@@ -451,3 +451,26 @@
   margin: 0;
   text-align: right;
 }
+
+.veto-center .veto-heading h1,.veto-pool-title h2,.veto-art strong,.veto-club strong {font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.02em}
+.veto-heading p {margin:0 0 16px;color:var(--muted)}
+.veto-matchup {grid-template-columns:1fr minmax(70px,.65fr) 1fr;align-items:center;border-radius:4px;padding:9px 0}
+.veto-matchup .veto-club:nth-child(2) {grid-column:1;grid-row:1;border-color:var(--green)}
+.veto-matchup .veto-club:last-child {grid-column:3;grid-row:1;border-color:var(--orange)}
+.veto-versus {grid-column:2;grid-row:1;display:grid;justify-items:center;color:var(--muted);gap:4px}
+.veto-versus b {font:500 30px Oswald,sans-serif;color:var(--text)}
+.veto-versus strong {font:12px var(--mono)}
+.veto-pool-title h2 {font-size:26px}
+.veto-art img {height:100%;width:100%;object-fit:contain;padding:8px 8px 32px}
+@media(min-width:1051px) {
+ .veto-layout {display:block}
+ .veto-pool {grid-template-columns:repeat(7,minmax(0,1fr))}
+ .veto-art {height:clamp(140px,13vw,215px)}
+ .veto-desk {margin:15px 0;display:grid;grid-template-columns:1fr 1fr;align-items:start}
+ .veto-center .veto-art strong {font-size:clamp(18px,1.8vw,26px)}
+ .veto-evidence div {display:grid;gap:2px;margin-bottom:5px}
+}
+@media(max-width:700px) {
+ .veto-club {padding:10px 5px;flex-direction:column;text-align:center}
+ .veto-club:last-child {flex-direction:column;text-align:center}
+}

@@ -598,7 +598,7 @@ function GameDraw({draw,c,scene,onFixture}: {draw:Draw;c:Career;scene:Scene;onFi
               <b>{id ? c.teams[id] || info?.name || id : Array.isArray(slot) ? (slot[0]==="winner"?"Победитель":"Проигравший")+" № "+(slot[1]+1) : "Свободный слот"}</b>
               <span>{g.score?.[i] ?? "—"}</span></div>})}
           {g.bye && <small>Проход без игры</small>}{g.administrative && <small>{g.reason || "Технический результат"}</small>}
-          {g.historical && <small>Историческая встреча</small>}
+          {g.historical && <small>До начала карьеры</small>}
           {next.has(n) && <small className="draw-path">{next.get(n)!.join(" · ")}</small>}
           {g.fixture && (c.history.some(f=>f.id===g.fixture) || c.queue.some(f=>f.id===g.fixture)) &&
             <button className="link-button" onClick={()=>onFixture(g.fixture!)}>{g.score ? "Протокол встречи" : "Подготовка и линия"}</button>}

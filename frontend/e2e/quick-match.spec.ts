@@ -5,6 +5,7 @@ test("Менеджер рассчитывает собственный матч 
   await page.goto("/");
   await button("Новая карьера").click();
   await page.getByLabel("Редакция базы").selectOption("austin-registration/1");
+  await page.getByRole("button",{name:"Настроить карьеру",exact:true}).click();
   await page.getByLabel("Имя персонажа").fill("Тренер Vitality");
   await page.getByLabel("Команда",{exact:true}).selectOption({label:"Vitality"});
   await button("Создать карьеру").click();

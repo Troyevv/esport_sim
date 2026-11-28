@@ -47,6 +47,7 @@ test("Скаутский отдел ведёт досье и сохраняет 
   await page.goto("/");
   await press("Новая карьера");
   await page.getByLabel("Редакция базы").selectOption("austin-registration/1");
+  await page.getByRole("button",{name:"Настроить карьеру",exact:true}).click();
   await page.getByLabel("Имя персонажа").fill("Скаут");
   await page
     .getByLabel("Команда", { exact: true })

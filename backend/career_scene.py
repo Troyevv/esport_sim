@@ -3,25 +3,28 @@
 from . import lineup_photos, club_art, scene_portraits, staff
 
 
-def directory(pack, badges, portraits, positions=None):
-    media = f"/api/database/{pack['id']}/{pack['revision']}/media/"
+def media_path(pack):
+    return f"/api/database/{pack['id']}/{pack['revision']}/media/"
 
-    def identity(group, key, row):
-        visual = dict(flag=row.get("nationality") or row.get("region"))
-        if group in ("teams", "organizations"):
-            badge = badges.get(group + "/" + key) or row.get("logo")
-            if group == "teams" and not badge:
-                badge = club_art.archive_badge(pack["id"], row)
-            visual["club"] = True
-            if badge:
-                visual["url"] = media + group + "/" + key
-                if isinstance(badge, dict):
-                    visual["badgeLicense"] = badge.get("license")
-        return dict(id=key, name=row["name"], visual=visual)
 
+def identity(pack, badges, group, key, row):
+    visual = dict(flag=row.get("nationality") or row.get("region"))
+    if group in ("teams", "organizations"):
+        badge = badges.get(group + "/" + key) or row.get("logo")
+        if group == "teams" and not badge:
+            badge = club_art.archive_badge(pack["id"], row)
+        visual["club"] = True
+        if badge:
+            visual["url"] = media_path(pack) + group + "/" + key
+            if isinstance(badge, dict):
+                visual["badgeLicense"] = badge.get("license")
+    return dict(id=key, name=row["name"], visual=visual)
+
+
+def directory(pack, badges, portraits, own_team=None, positions=None):
     teams = {}
     for key, row in pack["teams"].items():
-        team = identity("teams", key, row)
+        team = identity(pack, badges, "teams", key, row)
         teams[key] = dict(**team, organization=row["organization"], region=row["region"],
                           teamType=row.get("teamType", "unknown"), tier=row["tier"], members=[])
     # A partial, recent roster supersedes an older full five for directory purposes.
@@ -37,7 +40,7 @@ def directory(pack, badges, portraits, positions=None):
     full_photos = lineup_photos.index(portraits)
     heads = scene_portraits.index(pack, portraits)
     for pid, row in pack["players"].items():
-        p = identity("players", pid, row)
+        p = identity(pack, badges, "players", pid, row)
         clubs = membership.get(pid, [])
         if row["contract"] == "free":
             clubs = []
@@ -47,7 +50,7 @@ def directory(pack, badges, portraits, positions=None):
         tid = clubs[0] if len(clubs) == 1 else None
         if pid in full_photos:
             p["visual"]["lineupPhoto"] = full_photos[pid]
-        p["visual"].update(player=True, head=media + "appearance/" + pid if row.get("appearance")
+        p["visual"].update(player=True, head=media_path(pack) + "appearance/" + pid if row.get("appearance")
                            else heads.get(pid, {}).get("image"))
         if tid:
             t = teams[tid]
@@ -57,11 +60,13 @@ def directory(pack, badges, portraits, positions=None):
                             role=row["role"], contract=row["contract"], statistics=row["statistics"])
     specialists = {}
     for sid,row in pack["staff"].items():
-        person = identity("staff", sid, row)
+        person = identity(pack, badges, "staff", sid, row)
         tid = row["team"]
-        role = (positions or {}).get(sid, staff.position(row["role"]))
-        person.update(team=tid, role=staff.ROLES[role], realName=row["realName"],
-                      professional=staff.profile(sid, row))
+        role = staff.position(row["role"])
+        if own_team and tid == own_team:
+            role = (positions or {}).get(sid, role)
+            person["professional"] = staff.profile(sid, row)
+        person.update(team=tid, role=staff.ROLES[role], realName=row["realName"])
         person["visual"].update(player=True, staff=True, head=heads.get(sid, {}).get("image"), photo=row.get("photo"))
         if tid:
             t = teams[tid]
@@ -70,7 +75,7 @@ def directory(pack, badges, portraits, positions=None):
         specialists[sid] = person
     return dict(
         teams=teams, players=players,
-        organizations={k: dict(**identity("organizations", k, r), founded=r["founded"])
+        organizations={k: dict(**identity(pack, badges, "organizations", k, r), founded=r["founded"])
                        for k, r in pack["organizations"].items()},
         staff=specialists,
     )

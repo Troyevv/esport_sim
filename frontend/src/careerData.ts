@@ -78,6 +78,7 @@ export type Career = Summary & {
   slots: (Summary & { slot: string })[];
 };
 type Team = {
+  visual?: Visual;
   id: string;
   name: string;
   region: string | null;
@@ -208,7 +209,7 @@ export type Scene = {
       team: string | null;
       role: string;
       realName: string | null;
-      professional: Pick<Office["people"][string], "attributes" | "ratings" | "philosophy">;
+      professional?: Pick<Office["people"][string], "attributes" | "ratings" | "philosophy">;
     }
   >;
 };

@@ -303,6 +303,7 @@ export default function MatchCenter({
       </header>
       <section className="scoreboard mx-broadcast-score" aria-label="Счёт матча">
         <div className="mx-score-event"><span>{world.series?.tournament || (frame.careerId?"Встреча календаря":"Выставочный матч")}</span>
+          {m.source && m.source.id!=="depo-exhibition" && <small>Составы из базы · ред. {m.source.revision}</small>}
           <span>BO{world.series?.bestOf || 1} {world.series && " · Серия "+world.series.teams.map(t=>world.series!.score[t]).join(" : ")}</span></div>
         {m.clubs.map((club,i)=><div key={club.id} data-team={club.id} data-side={club.side} className={"mx-score-team "+(i?"rival":"own")}>
           <Avatar name={club.name} club {...club.visual}/><div><strong>{club.name}</strong><small>{club.side} · {club.id===coach.id?"Пятёрка тренера":"Соперник"}</small></div><b>{club.score}</b></div>)}
@@ -330,12 +331,6 @@ export default function MatchCenter({
           {m.award && <> · MVP карты <strong>{m.award.name}</strong></>}
         </p>
       )}
-      {display==="Тренерский обзор" && <div className="arena-bench">
-        <section className="surface panel-body"><h2>Состояние пятёрки</h2>{Object.entries(m.impressions || {}).map(([id,state])=><p key={id}><strong>{name(id)}</strong> · {state}</p>)}
-          {!Object.keys(m.impressions || {}).length && <p>В этой проекции наблюдения своего штаба недоступны.</p>}</section>
-        <section className="surface panel-body"><h2>Командное радио</h2>{m.radio?.map(r=><p key={r.player+r.channel}><strong>{name(r.player)}</strong> · {radioStates[r.state] || "Обновил статус задачи"} · {clock(r.tick)}</p>)}
-          {!m.radio?.length && <p>Подтверждённых передач пока нет.</p>}</section>
-      </div>}
       {rounds > 0 && (
         <div className="hud-history" aria-label="Последние раунды">
           <strong>Раунды</strong>
@@ -372,6 +367,27 @@ export default function MatchCenter({
         </div>
       )}
 
+      <section className="hud-controls" aria-label="Управление просмотром">
+        <button
+          className="primary"
+          disabled={!enabled || finished || timeout}
+          onClick={() => act(frame.running ? "pause" : "start")}
+        >
+          {frame.running ? "Пауза просмотра" : "Запустить"}
+        </button>
+        <div className="speed-list">
+          {[1, 2, 4, 8, 128].map((n) => (
+            <button
+              key={n}
+              disabled={!enabled}
+              aria-pressed={frame.speed === n}
+              onClick={() => act("speed", n)}
+            >
+              {n === 128 ? "Быстро" : n + "×"}
+            </button>
+          ))}
+        </div>
+      </section>
       <nav className="touch-lineup" aria-label="Панель матча">
         {["Радар", ...m.clubs.map((c) => c.name)].map((label, i) => (
           <button key={i} aria-pressed={pane === i} onClick={() => setPane(i)}>
@@ -501,27 +517,12 @@ export default function MatchCenter({
         </section>
         {roster(m.clubs[1])}
       </div>
-      <section className="hud-controls" aria-label="Управление просмотром">
-        <button
-          className="primary"
-          disabled={!enabled || finished || timeout}
-          onClick={() => act(frame.running ? "pause" : "start")}
-        >
-          {frame.running ? "Пауза просмотра" : "Запустить"}
-        </button>
-        <div className="speed-list">
-          {[1, 2, 4, 8, 128].map((n) => (
-            <button
-              key={n}
-              disabled={!enabled}
-              aria-pressed={frame.speed === n}
-              onClick={() => act("speed", n)}
-            >
-              {n === 128 ? "Быстро" : n + "×"}
-            </button>
-          ))}
-        </div>
-      </section>
+      {display==="Тренерский обзор" && <div className="arena-bench">
+        <section className="surface panel-body"><h2>Состояние пятёрки</h2>{Object.entries(m.impressions || {}).map(([id,state])=><p key={id}><strong>{name(id)}</strong> · {state}</p>)}
+          {!Object.keys(m.impressions || {}).length && <p>В этой проекции наблюдения своего штаба недоступны.</p>}</section>
+        <section className="surface panel-body"><h2>Командное радио</h2>{m.radio?.map(r=><p key={r.player+r.channel}><strong>{name(r.player)}</strong> · {radioStates[r.state] || "Обновил статус задачи"} · {clock(r.tick)}</p>)}
+          {!m.radio?.length && <p>Подтверждённых передач пока нет.</p>}</section>
+      </div>}
       <div className="match-grid">
         <div className="match-main">
           <section className="panel match-data">

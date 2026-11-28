@@ -38,6 +38,7 @@ test("Ноябрьская карьера · отбор, заявка, сохр�
   await page.goto("/");
   await press("Новая карьера");
   await page.getByLabel("Редакция базы").selectOption("scene-20261125-clubs/1");
+  await page.getByRole("button",{name:"Настроить карьеру",exact:true}).click();
   await page.getByLabel("Имя персонажа").fill("Тренер");
   await page
     .getByLabel("Команда", { exact: true })

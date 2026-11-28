@@ -9,7 +9,7 @@ test("Карьера от выбора базы до общей сохранён
     page.getByRole("button", { name, exact: true });
   const press = async (name: string) => {
     const drawer = button("Открыть навигацию");
-    if ((await drawer.isVisible()) && !(await button(name).isVisible()))
+    if ((await drawer.isVisible()) && await page.locator("aside.sidebar").getByRole("button",{name,exact:true}).count() && !(await button(name).isVisible()))
       await drawer.click();
     if (info.project.use.hasTouch) await button(name).tap();
     else await button(name).click();
@@ -33,6 +33,7 @@ test("Карьера от выбора базы до общей сохранён
   await capture("menu");
   await press("Новая карьера");
   await page.getByLabel("Редакция базы").selectOption("austin-registration/1");
+  await page.getByRole("button",{name:"Настроить карьеру",exact:true}).click();
   await page.getByLabel("Имя персонажа").fill("Алексей");
   await page
     .getByLabel("Команда", { exact: true })

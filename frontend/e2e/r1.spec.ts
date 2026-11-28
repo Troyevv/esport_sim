@@ -14,7 +14,10 @@ test("полный BO1, колл, сохранение и итог матча", 
     if (hasTouch) await button(name).tap();
     else await button(name).click();
   };
-  await page.goto("/?screen=lab");
+  if ((await (await page.request.get("/api/state")).json()).careerId) {
+    await page.goto("/");
+    await page.getByRole("button", {name: "Стенд симуляции", exact: true}).click();
+  } else await page.goto("/?screen=lab");
   await expect(page.getByTestId("connection")).toContainText("На связи");
   const seed = 7171 + info.project.name.length;
   // All suites use the same home server. Enter the real lab before choosing this match.
@@ -119,7 +122,10 @@ test(
       baseURL: info.project.use.baseURL,
     });
     try {
-      await page.goto("/?screen=lab");
+      if ((await (await page.request.get("/api/state")).json()).careerId) {
+    await page.goto("/");
+    await page.getByRole("button", {name: "Стенд симуляции", exact: true}).click();
+  } else await page.goto("/?screen=lab");
       await page.getByRole("button", { name: "Открыть матч BO1" }).click();
       let id = "";
       await page.route(
@@ -157,7 +163,10 @@ test("ошибка чтения сохранения останавливает 
     attempts++;
     return route.fulfill({ status: 500, body: "Internal Server Error" });
   });
-  await page.goto("/?screen=lab");
+  if ((await (await page.request.get("/api/state")).json()).careerId) {
+    await page.goto("/");
+    await page.getByRole("button", {name: "Стенд симуляции", exact: true}).click();
+  } else await page.goto("/?screen=lab");
   await expect(page.getByRole("alert")).toContainText("HTTP 500");
   await expect(page.getByTestId("connection")).toHaveText("Ошибка загрузки");
   const failedAttempts = attempts;

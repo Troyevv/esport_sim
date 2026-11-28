@@ -1,14 +1,15 @@
-import { FormatSelect, VetoCenter } from "./SeriesCenter";
 import MapSelect from "./MapSelect";
 import { Brand } from "./GameUI";
 import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import HostSettings from "./HostSettings";
+import HostSettings, {HostPage} from "./HostSettings";
 import { useSession, type View } from "./session";
 import "./style.css";
 import "./reference.css";
 import "./manager.css";
 
+const FormatSelect = lazy(() => import("./SeriesCenter").then(module => ({default:module.FormatSelect})));
+const VetoCenter = lazy(() => import("./SeriesCenter").then(module => ({default:module.VetoCenter})));
 const CareerScreen = lazy(() => import("./Career"));
 const DatabaseEditor = lazy(() => import("./DatabaseEditor"));
 const TacticEditor = lazy(() => import("./TacticEditor"));
@@ -94,6 +95,7 @@ function App() {
       : "menu",
   );
   const [database, showDatabase] = useState<false|"editor"|"exhibition"|"appearance">(false);
+  const [host, showHost] = useState(false);
   const [board, showBoard] = useState(false);
   const [view, setView] = useState<View>("full");
   const [selected, setSelected] = useState<string | null>(null);
@@ -120,7 +122,7 @@ function App() {
   }, [connection]);
   const world = frame?.world;
   const playingLab = screen === "lab" && !frame?.careerId;
-  const workspace = !board && !database;
+  const workspace = !board && !database && !host;
   const showMatch = playingLab || (screen === "match" && !!frame?.careerId);
   const agent = world?.agents.find((item) => item.id === selected);
   const enabled = !!frame && connection === "На связи" && !busy;
@@ -130,7 +132,7 @@ function App() {
   }, [world?.seed]);
   const inCareer = !!frame?.careerId && screen !== "menu" && !playingLab;
   const showManager =
-    !!frame && !playingLab && ((!database && !board) || inCareer);
+    !!frame && !playingLab && (host ? !!frame.careerId : ((!database && !board) || inCareer));
   const status = (
     <span
       className={"connection " + (connection === "На связи" ? "up" : "")}
@@ -140,8 +142,9 @@ function App() {
       {connection}
     </span>
   );
-  const settings = <HostSettings connected={connection === "На связи"} />;
+  const settings = <HostSettings connected={connection === "На связи"} open={()=>showHost(true)} />;
   const leaveTool = () => {
+    showHost(false);
     clearNotice();
     showBoard(false);
     showDatabase(false);
@@ -191,7 +194,7 @@ function App() {
     />
   );
   const tool =
-    editor ||
+    (host && <HostPage close={()=>showHost(false)}/>) || editor ||
     tactics ||
     (match && (
       <>
@@ -225,7 +228,7 @@ function App() {
             {playingLab ? "Лаборатория симуляции" : "База сцены"}
           </span>
           {status}
-          {settings}
+          {!host && settings}
         </header>
       )}
       <main className={showManager ? "manager-root" : ""}>
@@ -244,7 +247,7 @@ function App() {
             tool={tool}
             toolName={
               tool
-                ? board
+                ? host ? "Домашний сервер" : board
                   ? "Тактики"
                   : database
                     ? "Редактор базы"
@@ -259,12 +262,12 @@ function App() {
             ← Главное меню
           </button>
         )}
-        {world && playingLab && !database && !board && (
+        {world && playingLab && workspace && (
           <button className="database-entry" onClick={() => showDatabase("editor")}>
             База сцены
           </button>
         )}
-        {playingLab && !database && !board && !world?.match && !world?.series && (
+        {playingLab && workspace && !world?.match && !world?.series && (
           <div className="intro">
             <div>
               <div className="eyebrow">

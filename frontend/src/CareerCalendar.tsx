@@ -15,7 +15,7 @@ import {
 import { Dialog, Glyph, Heading, Tabs } from "./GameUI";
 export function Calendar({ c, initial,tournament, prepare, revision, training }: { prepare:(id:string)=>void; revision:number; training:(day:string)=>void; c: Career; initial: string; tournament:(edition:string)=>void }) {
   const [selected, select] = useState(initial),
-    [mode, setMode] = useState("Месяц"),
+    [mode, setMode] = useState(()=>matchMedia("(max-width:700px)").matches?"Повестка":"Месяц"),
     [filter, setFilter] = useState("club"),
     [report, setReport] = useState<Fixture | null>(null);
   const month = selected.slice(0, 7),
@@ -67,8 +67,8 @@ export function Calendar({ c, initial,tournament, prepare, revision, training }:
     notes = c.milestones.filter((m) => m.date === selected);
   return (
     <>
-      <Heading title="Календарь" sub={c.club + " · матчи и события клуба"}>
-        <Tabs items={["Месяц", "Неделя"]} value={mode} change={setMode} />
+      <Heading title="Календарь" eyebrow={c.club+" / Сезон "+c.date.slice(0,4)} sub="Матчи, турниры и подготовка команды">
+        <Tabs items={["Месяц", "Неделя", "Повестка"]} value={mode} change={setMode} />
       </Heading>
       <div className="filter-bar">
         <label>
@@ -107,7 +107,14 @@ export function Calendar({ c, initial,tournament, prepare, revision, training }:
               <Glyph name="chevron-right" />
             </button>
           </div>
-          <div className="calendar-weekdays">
+          {mode === "Повестка" ? <div className="calendar-agenda">{Array.from({length:end.getUTCDate()},(_,i)=>{
+            const d=isoDay(dayAt(first,i)), games=events.filter(e=>e.date===d), notes=c.milestones.filter(m=>m.date===d), sessions=preparation.data?.[d] || [];
+            if(!games.length && !notes.length && !sessions.length && d!==selected)return null;
+            return <article key={d} data-selected={d===selected}><button className="agenda-date" onClick={()=>select(d)}><b>{d.slice(-2)}</b><small>{date(d)}</small></button><div>
+              {buttons(games)}{notes.map((m,i)=><p key={i}>{m.title}</p>)}{sessions.length>0 && <button onClick={()=>training(d)}>Тренировки · {sessions.length}</button>}
+              {!games.length && !notes.length && !sessions.length && <small>Событий нет</small>}
+            </div></article>;
+          })}</div> : <><div className="calendar-weekdays">
             {weekdays.map((w) => (
               <span key={w}>{w}</span>
             ))}
@@ -144,9 +151,9 @@ export function Calendar({ c, initial,tournament, prepare, revision, training }:
                 </button>
               );
             })}
-          </div>
+          </div></>}
         </section>
-        <section className="surface day-details mobile-open">
+        {mode!=="Повестка" && <section className="surface day-details mobile-open">
           <div className="panel-head">
             <h2>{date(selected)}</h2>
           </div>
@@ -161,9 +168,9 @@ export function Calendar({ c, initial,tournament, prepare, revision, training }:
           {!today.length && !notes.length && !sessions.length && (
             <p className="panel-body muted">Событий нет.</p>
           )}
-        </section>
+        </section>}
       </div>
-      {events.some((e) => e.score && e.date.startsWith(month)) && (
+      {mode!=="Повестка" && events.some((e) => e.score && e.date.startsWith(month)) && (
         <section className="surface completed-fixtures">
           <div className="panel-head">
             <h2>Результаты месяца</h2>

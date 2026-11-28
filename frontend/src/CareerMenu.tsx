@@ -4,6 +4,7 @@ import { date, type Summary } from "./careerData";
 import "./menu.css";
 import { Avatar } from "./SceneIdentity";
 export function CareerMenu({
+  embedded,
   current,
   careers,
   create,
@@ -15,6 +16,7 @@ export function CareerMenu({
   lab,
   settings,
 }: {
+  embedded:boolean;
   current: Summary | null;
   careers: Summary[];
   create: () => void;
@@ -29,9 +31,9 @@ export function CareerMenu({
   const [load, setLoad] = useState(false);
   return (
     <section className="root-menu" aria-label="Главное меню">
-      <header className="menu-top"><Brand/>{settings}</header>
+      {!embedded && <header className="menu-top"><Brand/></header>}
       <div className="root-menu-body">
-        <div className="intro-hero"><div><div className="eyebrow">ESPORT SIM · TEAM MANAGER</div>
+        <div className="intro-hero"><div><div className="eyebrow">ESPORT SIM · {current?"СЕЗОН "+current.date.slice(0,4):"TEAM MANAGER"}</div>
           <h1 className="intro-title" aria-label="Главное меню">ПЯТЬ ИГРОКОВ.<br/>ОДНА <em>АМБИЦИЯ.</em></h1>
           <p>Постройте команду, которая выдержит давление. Каждое решение ведёт к следующему раунду.</p>
           <div className="intro-actions">{current && <button className="btn primary" onClick={resume}>Продолжить карьеру</button>}
@@ -47,7 +49,7 @@ export function CareerMenu({
           {title:"Лаборатория матчей",label:"Стенд симуляции",detail:"Настройка серии и воспроизводимый разбор",glyph:"report-analytics",run:lab},
           {title:"Студия образа",detail:"Портреты, форма и личные пакеты",glyph:"users",run:()=>database("appearance")}
         ].map(item=><button key={item.title} aria-label={item.label || item.title} onClick={item.run}><Glyph name={item.glyph}/><span>
-          <strong>{item.title}</strong><small>{item.detail}</small></span></button>)}</div>
+          <strong>{item.title}</strong><small>{item.detail}</small></span></button>)}{settings}</div>
       </div>
       {load && (
         <Dialog title="Мои карьеры" close={() => setLoad(false)}>

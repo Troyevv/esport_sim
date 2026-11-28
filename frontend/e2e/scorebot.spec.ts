@@ -3,7 +3,10 @@ import { expect, test } from "@playwright/test";
 test("Scorebot показывает установленную C4, обе пятёрки и счёт их команд", async ({
   page,
 }, info) => {
-  await page.goto("/?screen=lab");
+  if ((await (await page.request.get("/api/state")).json()).careerId) {
+    await page.goto("/");
+    await page.getByRole("button", {name: "Стенд симуляции", exact: true}).click();
+  } else await page.goto("/?screen=lab");
   const command = async (kind: string, value?: unknown) => {
     const response = await page.evaluate(
       async ({ kind, value }) => {

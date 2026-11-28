@@ -85,3 +85,23 @@
 .mx-stage-header button{min-height:44px}.mx-score-team strong{overflow-wrap:anywhere}
 .arena-event {border-inline-start:3px solid var(--orange);padding:10px 15px;background:#211c19}
 .arena-bench {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(255px,100%),1fr));gap:12px;margin:16px 0}
+
+.match-center .mx-broadcast-score {
+ display:grid; grid-template-areas:"event event event" "home clock away";grid-template-columns:minmax(0,1fr) minmax(90px,14%) minmax(0,1fr);
+ grid-template-rows:auto auto;align-items:stretch;border-radius:3px;margin:0 0 8px
+}
+.mx-broadcast-score>.mx-score-event {grid-area:event}
+.mx-broadcast-score>.mx-score-team.own {grid-area:home}
+.mx-broadcast-score>.mx-score-team.rival {grid-area:away}
+.match-center .mx-broadcast-score>.round-clock {grid-area:clock;align-self:stretch;justify-content:center}
+.mx-broadcast-score>.mx-score-team {min-width:0}
+.mx-score-team>div {min-width:0}.mx-score-team small {white-space:normal}
+.mx-match-screen .hud-controls {margin:10px 0}
+.mx-match-screen .series-score {margin:0 0 8px;padding:8px 12px}
+.mx-match-screen .series-score .series-order {margin-block:6px}
+@media(max-width:700px) {
+ .mx-broadcast-score>.mx-score-team.rival>.scene-avatar {grid-row:1;grid-column:2}
+ .mx-broadcast-score .mx-score-team strong {font-size:17px}
+ .mx-broadcast-score .round-clock small {letter-spacing:0;white-space:normal}
+ .mx-match-screen .hud-controls {display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+}

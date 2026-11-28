@@ -104,9 +104,9 @@ export default function CareerScreen(props: Props) {
         </div>
       </>
     );
-  if (!c || screen === "menu")
-    return (
+  const menu = (
       <CareerMenu
+        embedded={!!c}
         current={c}
         careers={res.data.careers}
         create={() => setCreate(true)}
@@ -122,14 +122,12 @@ export default function CareerScreen(props: Props) {
           if (!c || (await act("career-lab"))) go("lab");
         }}
         settings={
-          <div className="menu-settings">
-            {status}
-            {settings}
-          </div>
+          settings
         }
       />
     );
-  return <Manager key={c.id} {...props} c={c} enabled={enabled} pauseEnabled={props.enabled && frame.careerId===c.id} />;
+  if (!c) return menu;
+  return <Manager frontMenu={screen==="menu"?menu:null} key={c.id} {...props} c={c} enabled={enabled} pauseEnabled={props.enabled && frame.careerId===c.id} />;
 }
 const TrainingCenter = lazy(() => import("./TrainingCenter").then(v=>({default:v.TrainingCenter})));
 const CompetitionCenter = lazy(() => import("./CompetitionCenter").then(v=>({default:v.CompetitionCenter})));
@@ -141,6 +139,7 @@ const Archive = lazy(() => import("./CareerArchive"));
 const Prematch = lazy(() => import("./Prematch"));
 type Route = { page: string; fixture?:string; profile?: Profile; edition?:string; entry?:Decision["action"]; jump?:number };
 function Manager({
+  frontMenu,
   pauseEnabled,
   c,
   frame,
@@ -153,7 +152,7 @@ function Manager({
   tool,
   toolName,
   leaveTool,
-}: Props & { c: Career; pauseEnabled:boolean }) {
+}: Props & { frontMenu:ReactNode; c: Career; pauseEnabled:boolean }) {
   const progress = frame.calendarProgress;
   const currentDate = progress?.date || c.date;
   const directory = useData<Scene>("/api/career/" + c.id + "/scene");
@@ -201,6 +200,7 @@ function Manager({
   const to = (page: string, profile?: Profile, edition?:string, entry?:Decision["action"], fixture?:string) => {
     closeOverlays();
     if (tool) leaveTool();
+    if (frontMenu) go("hub");
     historyStack.current.push(route);
     setRoute({ page, profile, edition, entry, fixture, jump: historyStack.current.length });
     window.scrollTo(0, 0);
@@ -267,6 +267,7 @@ function Manager({
       return;
     }
     if (page === "Тактики") {
+      if (frontMenu) go("hub");
       board();
       return;
     }
@@ -286,7 +287,7 @@ function Manager({
     }
     to(page);
   };
-  const active = toolName || route.page;
+  const active = toolName || (frontMenu ? "Главное меню" : route.page);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -322,7 +323,7 @@ function Manager({
   }, [drawer]);
   const navButton = (label: string, icon: string) => (
     <button
-      aria-label={label}
+      aria-label={frontMenu && label==="База сцены"?"Справочник сцены":label}
       className={"nav-item " + (active === label ? "active" : "")}
       aria-current={active === label ? "page" : undefined}
       key={label}
@@ -371,6 +372,7 @@ function Manager({
       >
         <Brand
           menu={() => {
+            closeOverlays();
             leaveTool();
             go("menu");
           }}
@@ -478,14 +480,14 @@ function Manager({
               <button className="btn" disabled={!pauseEnabled} onClick={()=>act("career-pause",{runId:progress.runId})}>Остановить расчёт</button>
             </div>
           )}
-          {!tool && (active === "Кабинет" || required.length > 0) && (!progress || required.length > 0) && <button className="attention-summary surface" data-blocked={!!required.length}
+          {!tool && !frontMenu && (active === "Кабинет" || required.length > 0) && (!progress || required.length > 0) && <button className="attention-summary surface" data-blocked={!!required.length}
             aria-label={"Открыть центр решений · обязательных: " + required.length} aria-describedby="decision-explanation"
             onClick={()=>{setDecisionError("");setDecisions(true)}}>
             <span id="decision-explanation"><strong>{required.length ? required[0].title : "Центр решений"}</strong>
             <small>{required.length ? required[0].detail : "Обязательных решений нет"}</small></span>
             <b>{required.length ? "Требуют внимания · " + required.length : "Открыть"}</b>
           </button>}
-          {directMatch && required[0].action === "play" && !progress && <div className="quick-fixture surface">
+          {!frontMenu && directMatch && required[0].action === "play" && !progress && <div className="quick-fixture surface">
             <div><strong>{c.queue[0].teams.map(t=>c.teams[t]).join(" — ")}</strong><small>Расчёт по раундам с автоматическим выбором карт</small></div>
             <button className="btn" disabled={!enabled} onClick={quick}>Быстро рассчитать матч</button>
           </div>}
@@ -493,8 +495,8 @@ function Manager({
           <ManagerAttention quick={quick} items={c.attention} open={decisions} close={()=>setDecisions(false)}
             enabled={enabled && !progress} resolve={resolve} repair={repair} error={decisionError}
             saves={()=>{setDecisions(false);to("Сохранения")}}/>
-          <div key={active} className="screen-enter">
-            {tool ||
+          <div key={active} className="screen-enter"><Suspense fallback={<p role="status">Загружаем раздел…</p>}>
+            {tool || frontMenu ||
               (active === "Календарь" ? (
                 <Calendar prepare={prepare} key={day} c={c} initial={day} tournament={tournament} revision={frame.careerRevision||0} training={d=>{setDay(d);to("Тренировочный центр")}}/>
               ) : active === "Входящие" ? (
@@ -611,7 +613,7 @@ function Manager({
                     letter: showLetter,
                   }}
                 />
-              ))}
+              ))}</Suspense>
           </div>
         </div>
       </div>

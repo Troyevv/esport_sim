@@ -379,3 +379,9 @@
 .tactics button {
   touch-action: manipulation;
 }
+
+.tactics .board-title h1 {font:550 clamp(28px,3vw,38px)/1.15 Oswald,sans-serif;text-transform:uppercase;letter-spacing:.02em}
+.tactics .board-title .eyebrow {color:var(--orange)}
+.tactics .board-section h2 {font:500 24px Oswald,sans-serif}
+.tactics .panel {background:var(--surface);border-color:var(--line);border-radius:4px}
+.tactics .board-tools button[aria-pressed=true],.tactics .board-players button[aria-pressed=true] {border-color:var(--orange);background:#2c251e;color:#ffc498}

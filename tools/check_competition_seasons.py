@@ -17,7 +17,21 @@ def check():
     ids = set()
     played = {}
     while c["queue"][0]["date"] < "2028-01-01":
-        fixture = c["queue"].pop(0)
+        fixture = c["queue"][0]
+        if fixture.get("edition") and competitions.fixture_conflicts(c, fixture):
+            c["date"] = fixture["date"]
+            competitions.settle_fixture_conflicts(c, fixture, pack)
+            if c.get("error"):
+                # This unattended acceptance career chooses the higher-priority
+                # tournament when production asks its manager for a decision.
+                others = competitions.fixture_conflicts(c, fixture)
+                competing = [c["circuit"]["editions"][f["edition"]] for f in [fixture,*others] if team in f["teams"]]
+                assert len(competing) >= 2, c["error"]
+                lost = max(competing, key=lambda e: competitions.priority_for(e, team))
+                competitions.leave(c, lost, team, pack, "Приоритет календаря в контрольном сезоне")
+                c.pop("error", None)
+            continue
+        c["queue"].pop(0)
         assert fixture["date"] >= c["date"] and fixture["id"] not in ids
         ids.add(fixture["id"])
         c["date"] = fixture["date"]

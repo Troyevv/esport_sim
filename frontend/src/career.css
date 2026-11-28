@@ -335,3 +335,19 @@
 .cr-rounds ol { padding-inline-start:2.3em }
 .cr-rounds li { padding:5px 0; font-variant-numeric:tabular-nums }
 .cr-rounds li small { display:block; color:var(--muted) }
+
+.career-create .filter-bar {align-items:end}
+.create-club-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:22px 0}
+.create-club-card {position:relative;display:grid;justify-items:start;align-content:start;gap:8px;text-align:left;background:var(--surface);border:1px solid var(--line);padding:18px;min-width:0}
+.create-club-card .scene-avatar {width:74px;height:74px;object-fit:contain}
+.create-club-card strong {font:500 24px/1.15 Oswald,sans-serif;overflow-wrap:anywhere}
+.create-club-card small {color:var(--muted)}
+.create-club-card[aria-pressed=true] {border-color:var(--orange);background:#292420}
+.create-club-card b {font:11px var(--mono);color:var(--orange)}
+.create-next {display:flex;justify-content:flex-end;gap:14px;align-items:center;margin:18px 0}
+@media(max-width:900px) {.create-club-grid {grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:610px) {.create-club-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.create-club-card {padding:12px}}
+
+.career-create {grid-template-columns:minmax(0,1fr)}
+.career-create .filter-bar,.career-create .filter-bar label,.career-create .filter-bar select,.career-create .page-heading>div {min-width:0;max-width:100%}
+@media(max-width:700px) {.career-create .filter-bar {display:grid;grid-template-columns:minmax(0,1fr)}.career-create .filter-bar select,.career-create .filter-bar input {width:100%}}
